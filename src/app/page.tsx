@@ -1,103 +1,444 @@
-import Image from "next/image";
+"use client";
+import React, { useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-export default function Home() {
+// Sortable Task Item Component
+function SortableTaskItem({ task, isSelected, onSelect, onToggle, onEdit, onMove, view, isEditing, editingField, editingText, setEditingText, saveEdit }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`flex items-center justify-between p-2 rounded cursor-pointer touch-none ${
+        isSelected ? "bg-gray-100" : ""
+      }`}
+      onClick={() => onSelect(task.id)}
+    >
+      <div className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          checked={task.done}
+          onChange={(e) => {
+            e.stopPropagation();
+            onToggle(task.id);
+          }}
+          className="mt-1"
         />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+        <div>
+          {isEditing && editingField === "title" ? (
+            <input
+              type="text"
+              value={editingText}
+              onChange={(e) => {
+                if (e.target.value.length <= 30) setEditingText(e.target.value);
+              }}
+              onBlur={() => saveEdit(task.id)}
+              onKeyDown={(e) => {
+                e.stopPropagation(); // 防止事件冒泡到全局keydown
+                if (e.key === "Enter") saveEdit(task.id);
+              }}
+              autoFocus
+              className="border rounded px-1 text-sm truncate w-64"
+              onClick={(e) => e.stopPropagation()}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          ) : (
+            <p
+              className="font-medium cursor-pointer truncate w-64"
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                onEdit(task.id, "title", task.title);
+              }}
+            >
+              {task.title}
+            </p>
+          )}
+
+          {isEditing && editingField === "description" ? (
+            <textarea
+              value={editingText}
+              onChange={(e) => setEditingText(e.target.value)}
+              onBlur={() => saveEdit(task.id)}
+              onKeyDown={(e) => {
+                e.stopPropagation(); // 防止事件冒泡到全局keydown
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  saveEdit(task.id);
+                }
+              }}
+              autoFocus
+              rows={2}
+              className="border rounded px-1 text-xs text-gray-500 w-64 resize-none"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            task.description && (
+              <p
+                className="text-sm text-gray-500 cursor-pointer break-words w-64"
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(task.id, "description", task.description);
+                }}
+              >
+                {task.description}
+              </p>
+            )
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+      <span
+        className="text-xl cursor-pointer hover:bg-gray-200 rounded px-2"
+        onClick={(e) => {
+          e.stopPropagation();
+          onMove(task);
+        }}
+      >
+        {view === "daily" ? "→" : "←"}
+      </span>
+    </div>
+  );
+}
+
+export default function App() {
+  const [dailyTasks, setDailyTasks] = useState([
+    { id: "1", title: "this is a task title", description: "task description is here", done: true },
+    { id: "2", title: "this is a task title", description: "task description is here", done: true },
+  ]);
+  const [futureTasks, setFutureTasks] = useState([
+    { id: "f1", title: "future task title", description: "future task description", done: false },
+  ]);
+
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDesc, setNewTaskDesc] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editingText, setEditingText] = useState("");
+  const [editingField, setEditingField] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [view, setView] = useState("daily"); // "daily" or "future"
+  const [isEditingInput, setIsEditingInput] = useState(false); // 新增状态跟踪是否在编辑输入框
+
+  const [messages, setMessages] = useState([
+    { id: 1, sender: "ai", text: "你好，我是AI助手，有什么可以帮你？" },
+  ]);
+  const [input, setInput] = useState("");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const today = new Date();
+  const formattedDate = today.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const tasks = view === "daily" ? dailyTasks : futureTasks;
+  const setTasks = view === "daily" ? setDailyTasks : setFutureTasks;
+
+  const addTask = () => {
+    if (newTaskTitle.trim() !== "") {
+      const newTask = {
+        id: Date.now().toString(),
+        title: newTaskTitle,
+        description: newTaskDesc,
+        done: false,
+      };
+      if (view === "daily") {
+        setDailyTasks([...dailyTasks, newTask]);
+      } else {
+        setFutureTasks([...futureTasks, newTask]);
+      }
+      setNewTaskTitle("");
+      setNewTaskDesc("");
+      setAdding(false);
+    }
+  };
+
+  const saveEdit = (id) => {
+    const updateTasks = (taskList) => taskList.map(t => t.id === id ? { ...t, [editingField]: editingText } : t);
+    if (view === "daily") {
+      setDailyTasks(updateTasks(dailyTasks));
+    } else {
+      setFutureTasks(updateTasks(futureTasks));
+    }
+    setEditingId(null);
+    setEditingText("");
+    setEditingField(null);
+    setIsEditingInput(false); // 编辑结束
+  };
+
+  const handleKeyDown = (e) => {
+    // 只有在不编辑状态且有选中任务时才允许删除
+    if (e.key === "Backspace" && selectedId && !isEditingInput && editingId === null) {
+      e.preventDefault();
+      if (view === "daily") {
+        setDailyTasks(dailyTasks.filter(t => t.id !== selectedId));
+      } else {
+        setFutureTasks(futureTasks.filter(t => t.id !== selectedId));
+      }
+      setSelectedId(null);
+    }
+  };
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = tasks.findIndex((task) => task.id === active.id);
+      const newIndex = tasks.findIndex((task) => task.id === over.id);
+      
+      const newTasks = arrayMove(tasks, oldIndex, newIndex);
+      setTasks(newTasks);
+    }
+  };
+
+  const toggleTask = (id) => {
+    const toggleTasks = (taskList) => taskList.map((t) => t.id === id ? { ...t, done: !t.done } : t);
+    if (view === "daily") {
+      setDailyTasks(toggleTasks(dailyTasks));
+    } else {
+      setFutureTasks(toggleTasks(futureTasks));
+    }
+  };
+
+  const startEdit = (id, field, value) => {
+    setEditingId(id);
+    setEditingField(field);
+    setEditingText(value);
+    setIsEditingInput(true); // 开始编辑
+  };
+
+  const moveTask = (task) => {
+    if (view === "daily") {
+      setDailyTasks(dailyTasks.filter(t => t.id !== task.id));
+      setFutureTasks([...futureTasks, task]);
+    } else {
+      setFutureTasks(futureTasks.filter(t => t.id !== task.id));
+      setDailyTasks([...dailyTasks, task]);
+    }
+  };
+
+  const sendMessage = () => {
+    if (input.trim() === "") return;
+    const newMsg = { id: Date.now(), sender: "user", text: input };
+    setMessages([...messages, newMsg]);
+    setInput("");
+
+    // 模拟AI回复
+    setTimeout(() => {
+      const aiReply = { id: Date.now() + 1, sender: "ai", text: "这是AI的回复" };
+      setMessages((prev) => [...prev, aiReply]);
+    }, 800);
+  };
+
+  return (
+    <div className="h-screen w-screen flex bg-[#d6c7b5] p-4" onKeyDown={handleKeyDown} tabIndex={0}>
+      {/* Sidebar */}
+      <div className="w-1/6 flex flex-col items-center gap-6 text-black font-medium">
+        <h1 className="text-2xl font-bold mb-4">Bullet + AI</h1>
+        <div className="flex flex-col gap-3 w-full px-2">
+          <button
+            onClick={() => setView("daily")}
+            disabled={view === "daily"}
+            className={`w-full py-2 rounded-xl border text-sm font-medium transition-colors ${
+              view === "daily" 
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed" 
+                : "bg-white hover:bg-gray-100 hover:shadow-sm"
+            }`}
+          >
+            Daily Log
+          </button>
+          <button
+            onClick={() => setView("future")}
+            disabled={view === "future"}
+            className={`w-full py-2 rounded-xl border text-sm font-medium transition-colors ${
+              view === "future" 
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed" 
+                : "bg-white hover:bg-gray-100 hover:shadow-sm"
+            }`}
+          >
+            Future Log
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 grid grid-cols-3 gap-4">
+        {/* Task List */}
+        <div className="col-span-2 bg-white rounded-2xl p-6 shadow-lg">
+          <h2 className="text-3xl font-bold mb-6 text-gray-800">
+            {view === "daily" ? formattedDate : "Future List"}
+          </h2>
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {tasks.map((task) => (
+                  <SortableTaskItem
+                    key={task.id}
+                    task={task}
+                    isSelected={selectedId === task.id}
+                    onSelect={setSelectedId}
+                    onToggle={toggleTask}
+                    onEdit={startEdit}
+                    onMove={moveTask}
+                    view={view}
+                    isEditing={editingId === task.id}
+                    editingField={editingField}
+                    editingText={editingText}
+                    setEditingText={setEditingText}
+                    saveEdit={saveEdit}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+
+          {adding ? (
+            <div className="flex flex-col gap-3 mt-6 p-4 border rounded-xl bg-gray-50">
+              <input
+                type="text"
+                value={newTaskTitle}
+                onChange={(e) => {
+                  if (e.target.value.length <= 30) setNewTaskTitle(e.target.value);
+                }}
+                onFocus={() => setIsEditingInput(true)}
+                onBlur={() => setIsEditingInput(false)}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter") addTask();
+                  if (e.key === "Escape") setAdding(false);
+                }}
+                placeholder="Task title (max 30 chars)"
+                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent"
+                autoFocus
+              />
+              <textarea
+                value={newTaskDesc}
+                onChange={(e) => setNewTaskDesc(e.target.value)}
+                onFocus={() => setIsEditingInput(true)}
+                onBlur={() => setIsEditingInput(false)}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    addTask();
+                  }
+                  if (e.key === "Escape") setAdding(false);
+                }}
+                placeholder="Task description (optional)"
+                rows={3}
+                className="border rounded-lg px-3 py-2 text-sm text-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={addTask}
+                  className="px-4 py-2 text-sm rounded-lg bg-[#d6c7b5] text-white hover:bg-[#c9b8a1] transition-colors font-medium"
+                >
+                  Add Task
+                </button>
+                <button
+                  onClick={() => setAdding(false)}
+                  className="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAdding(true)}
+              className="text-gray-400 hover:text-[#d6c7b5] text-sm mt-6 font-medium transition-colors flex items-center gap-1"
+            >
+              <span className="text-lg">+</span> Add a task
+            </button>
+          )}
+        </div>
+
+        {/* Chat Box */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg flex flex-col">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">AI Assistant</h3>
+          <div className="flex-1 overflow-y-auto space-y-3 mb-4 max-h-96">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`max-w-[80%] px-3 py-2 rounded-xl text-sm leading-relaxed ${
+                  msg.sender === "user"
+                    ? "ml-auto bg-[#d6c7b5] text-white"
+                    : "mr-auto bg-gray-100 text-gray-800"
+                }`}
+              >
+                {msg.text}
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onFocus={() => setIsEditingInput(true)}
+              onBlur={() => setIsEditingInput(false)}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === "Enter") sendMessage();
+              }}
+              placeholder="Type a message..."
+              className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent"
+            />
+            <button
+              onClick={sendMessage}
+              className="bg-[#d6c7b5] text-white px-4 py-2 rounded-xl hover:bg-[#c9b8a1] transition-colors font-medium"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
