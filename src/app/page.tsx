@@ -8,7 +8,7 @@ export default function Home() {
         <h1 className="text-4xl font-bold text-gray-800 mb-3">欢迎来到 Bullet + AI</h1>
         <p className="text-gray-600 mb-8">这是一个简单的欢迎页。点击下方按钮进入任务页面。</p>
         <Link
-          href="/task"
+          href="/task-ai"
           className="inline-block px-6 py-3 rounded-xl bg-[#d6c7b5] text-white font-medium hover:bg-[#c9b8a1] transition-colors"
         >
           前往任务页
