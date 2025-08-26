@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-
+import Link from "next/link";
 // Sortable Task Item Component
 function SortableTaskItem({
   task,
@@ -192,7 +192,7 @@ export default function TaskPage() {
   };
 
   const saveEdit = (id: string) => {
-    const updateTasks = (taskList: any[]) => taskList.map((t) => (t.id === id ? { ...t, [editingField as string]: editingText } : t));
+    const updateTasks = (taskList) => taskList.map((t) => (t.id === id ? { ...t, [editingField as string]: editingText } : t));
     if (view === "daily") setDailyTasks(updateTasks(dailyTasks));
     else setFutureTasks(updateTasks(futureTasks));
     setEditingId(null);
@@ -210,7 +210,7 @@ export default function TaskPage() {
     }
   };
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event) => {
     const { active, over } = event;
     if (active.id !== over?.id) {
       const oldIndex = tasks.findIndex((task) => task.id === active.id);
@@ -221,7 +221,7 @@ export default function TaskPage() {
   };
 
   const toggleTask = (id: string) => {
-    const toggleTasks = (taskList: any[]) => taskList.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+    const toggleTasks = (taskList) => taskList.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
     if (view === "daily") setDailyTasks(toggleTasks(dailyTasks));
     else setFutureTasks(toggleTasks(futureTasks));
   };
@@ -233,7 +233,7 @@ export default function TaskPage() {
     setIsEditingInput(true);
   };
 
-  const moveTask = (task: any) => {
+  const moveTask = (task) => {
     if (view === "daily") {
       setDailyTasks(dailyTasks.filter((t) => t.id !== task.id));
       setFutureTasks([...futureTasks, task]);
@@ -274,6 +274,12 @@ export default function TaskPage() {
           >
             Future Log
           </button>
+            <Link
+          href="/"
+          className={`w-full py-2 rounded-xl border text-sm font-medium bg-brown-200 text-black-700 text-center hover:shadow-sm`}
+        >
+          返回主页面
+        </Link>
         </div>
       </div>
 
