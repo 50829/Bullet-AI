@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -8,6 +8,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
@@ -16,9 +17,9 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 type Task = {
   id: string;
@@ -154,6 +155,7 @@ export default function TaskPage() {
   const [dailyTasks, setDailyTasks] = useState<Task[]>([]);
   const [futureTasks, setFutureTasks] = useState<Task[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDesc, setNewTaskDesc] = useState("");
@@ -169,6 +171,22 @@ export default function TaskPage() {
     { id: 1, sender: "ai", text: "你好，我是AI助手，有什么可以帮你？" },
   ]);
   const [input, setInput] = useState("");
+
+  const handleSignOut = async () => {
+    try {
+      setSigningOut(true);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Sign out error:", error.message);
+      }
+    } finally {
+      router.replace("/");
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -219,7 +237,7 @@ export default function TaskPage() {
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "tasks", filter: `user_id=eq.${user.id}` },
-          (payload: any) => {
+          (payload: RealtimePostgresChangesPayload<Task>) => {
             const type = payload.eventType as "INSERT" | "UPDATE" | "DELETE";
             if (type === "INSERT") {
               const row = payload.new as Task;
@@ -266,7 +284,7 @@ export default function TaskPage() {
     };
   }, [router]);
 
-  const insertSorted = (arr: Task[], row: Task) => sortByPosition([...arr, row]);
+  const insertSorted = (arr: Task[], row: Task) => arr.slice().concat(row).sort((a, b) => a.position - b.position);
   const sortByPosition = (arr: Task[]) => arr.slice().sort((a, b) => a.position - b.position);
 
   const addTask = async () => {
@@ -292,13 +310,40 @@ export default function TaskPage() {
   };
 
   const saveEdit = async (id: string) => {
-    const patch: any = { title: editingTitle, description: editingDesc };
+    const nextTitle = editingTitle.trim().slice(0, 30);
+    const nextDesc = editingDesc.trim();
+    const patch: Pick<Task, "title" | "description"> = {
+      title: nextTitle,
+      description: nextDesc === "" ? null : nextDesc,
+    };
+
+    // 记录旧数据，做失败回滚
+    const prevDaily = dailyTasks;
+    const prevFuture = futureTasks;
+
+    const applyLocal = () => {
+      setDailyTasks((list) => list.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+      setFutureTasks((list) => list.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    };
+    const rollbackLocal = () => {
+      setDailyTasks(prevDaily);
+      setFutureTasks(prevFuture);
+    };
+
+    // 本地乐观更新
+    applyLocal();
+
+    // 持久化
     const { error } = await supabase
       .from("tasks")
       .update(patch)
       .eq("id", id)
       .eq("user_id", userId!);
-    if (error) console.error("Update task error:", error.message);
+    if (error) {
+      console.error("Update task error:", error.message);
+      rollbackLocal();
+      return;
+    }
     setEditingId(null);
     setIsEditingInput(false);
   };
@@ -320,15 +365,16 @@ export default function TaskPage() {
     }
   };
 
-  const handleDragEnd = async (event: any) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (active.id !== over?.id) {
-      const oldIndex = tasks.findIndex((task) => task.id === active.id);
-      const newIndex = tasks.findIndex((task) => task.id === over.id);
+      const activeId = String(active.id);
+      const overId = over ? String(over.id) : null;
+      const oldIndex = tasks.findIndex((task) => task.id === activeId);
+      const newIndex = tasks.findIndex((task) => task.id === overId);
       const newTasks = arrayMove(tasks, oldIndex, newIndex);
       setTasks(newTasks);
-      // 持久化 position
-      const listName = view; // 当前列表
+  // 持久化 position
       try {
         await Promise.all(
           newTasks.map((t, idx) =>
@@ -414,12 +460,13 @@ export default function TaskPage() {
           >
             Future Log
           </button>
-            <Link
-          href="/"
-          className={`w-full py-2 rounded-xl border text-sm font-medium bg-brown-200 text-black-700 text-center hover:shadow-sm`}
-        >
-          返回主页面
-        </Link>
+          <button
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="w-full py-2 rounded-xl border text-sm font-medium bg-brown-200 text-black-700 text-center hover:shadow-sm"
+          >
+            退出登录
+          </button>
         </div>
       </div>
 
