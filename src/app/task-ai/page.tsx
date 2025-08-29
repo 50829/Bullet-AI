@@ -51,10 +51,13 @@ function SortableTaskItem({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
+  // 移除缩放分量，避免拖拽预览被压扁或拉伸；并固定宽度占满容器
+  const finalTransform = transform ? { ...transform, scaleX: 1, scaleY: 1 } : null;
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Transform.toString(finalTransform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    width: "100%",
   } as React.CSSProperties;
 
   return (
@@ -179,7 +182,7 @@ export default function TaskPage() {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({ scope: "global" });
       if (error) {
         console.error("Sign out error:", error.message);
       }
@@ -391,16 +394,33 @@ export default function TaskPage() {
     const list = view;
     const cur = (list === "daily" ? dailyTasks : futureTasks).find((t) => t.id === id);
     if (!cur) return;
+
+    // 记录旧列表以便失败回滚
+    const prevDaily = dailyTasks;
+    const prevFuture = futureTasks;
+
+    // 本地乐观更新（立即反馈，不等待网络）
+    const applyLocal = () => {
+      const toggleMap = (taskList: Task[]) => taskList.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+      setDailyTasks(toggleMap);
+      setFutureTasks(toggleMap);
+    };
+    const rollbackLocal = () => {
+      setDailyTasks(prevDaily);
+      setFutureTasks(prevFuture);
+    };
+    applyLocal();
+
+    // 后台持久化
     const { error } = await supabase
       .from("tasks")
       .update({ done: !cur.done })
       .eq("id", id)
       .eq("user_id", userId!);
-    if (error) console.error("Toggle task error:", error.message);
-    // 本地乐观更新
-    const toggleTasks = (taskList: Task[]) => taskList.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
-    if (list === "daily") setDailyTasks(toggleTasks(dailyTasks));
-    else setFutureTasks(toggleTasks(futureTasks));
+    if (error) {
+      console.error("Toggle task error:", error.message);
+      rollbackLocal();
+    }
   };
 
   const startEdit = (id: string, title: string, desc: string) => {

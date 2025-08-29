@@ -6,8 +6,8 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  // 允许通过环境变量覆盖站点地址，避免在生产/预览上误跳到 localhost
-  const getOrigin = () => (process.env.NEXT_PUBLIC_SITE_URL ?? (typeof window !== "undefined" ? window.location.origin : ""));
+  // 优先使用浏览器当前地址，确保本地开发跳回本地；仅在无 window 时回退到环境变量
+  const getOrigin = () => (typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? ""));
 
   const signInWithEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +33,7 @@ export default function Home() {
       provider,
       options: {
   redirectTo: `${getOrigin()}/auth/callback`,
+  queryParams: provider === "github" ? { prompt: "login" } : undefined,
       },
     });
     if (error) {
