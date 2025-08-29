@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
+// 避免该路由在构建阶段被预渲染（Vercel 构建环境可能没有注入 NEXT_PUBLIC_* 变量）
+export const dynamic = "force-dynamic";
+
 export default function AuthCallback() {
   const router = useRouter();
   const called = useRef(false);

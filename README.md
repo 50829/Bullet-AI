@@ -1,3 +1,6 @@
+## website
+**this app is currently deployed on Vercel：<https://react-test1-kappa-ten.vercel.app/>**
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

@@ -6,6 +6,8 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // 允许通过环境变量覆盖站点地址，避免在生产/预览上误跳到 localhost
+  const getOrigin = () => (process.env.NEXT_PUBLIC_SITE_URL ?? (typeof window !== "undefined" ? window.location.origin : ""));
 
   const signInWithEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -14,7 +16,7 @@ export default function Home() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+  emailRedirectTo: `${getOrigin()}/auth/callback`,
       },
     });
     setLoading(false);
@@ -30,7 +32,7 @@ export default function Home() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+  redirectTo: `${getOrigin()}/auth/callback`,
       },
     });
     if (error) {
@@ -43,7 +45,7 @@ export default function Home() {
     <main className="min-h-screen flex items-center justify-center bg-[#d6c7b5]">
       <div className="bg-white rounded-2xl shadow-lg p-10 text-center w-full max-w-md mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">登录 Bullet + AI</h1>
-        <p className="text-gray-600 mb-6">使用邮箱或第三方账号登录，成功后将跳转到 /task-ai</p>
+        <p className="text-gray-600 mb-6">使用邮箱或第三方账号登录，登录后将跳转到任务面板</p>
 
         <form onSubmit={signInWithEmail} className="space-y-3 mb-6 text-left">
           <label className="block text-sm text-gray-700">邮箱</label>
@@ -71,13 +73,14 @@ export default function Home() {
         </div>
 
         <div className="grid gap-3">
-          <button
+          {/* 暂时先不用google登录 
+            <button
             onClick={() => signInWithProvider("google")}
             disabled={loading}
             className="w-full px-4 py-2 rounded-xl border hover:bg-gray-50"
           >
             使用 Google 登录
-          </button>
+          </button> */}
           <button
             onClick={() => signInWithProvider("github")}
             disabled={loading}
