@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -17,6 +17,20 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
+import { supabase } from "../../lib/supabaseClient";
+import { useRouter } from "next/navigation";
+
+type Task = {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  done: boolean;
+  list: "daily" | "future";
+  position: number;
+  created_at?: string;
+  updated_at?: string | null;
+};
 // Sortable Task Item Component
 function SortableTaskItem({
   task,
@@ -27,10 +41,12 @@ function SortableTaskItem({
   onMove,
   view,
   isEditing,
-  editingField,
-  editingText,
-  setEditingText,
+  editingTitle,
+  editingDesc,
+  setEditingTitle,
+  setEditingDesc,
   saveEdit,
+  cancelEdit,
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
@@ -48,8 +64,12 @@ function SortableTaskItem({
       {...listeners}
       className={`flex items-center justify-between p-2 rounded cursor-pointer touch-none ${isSelected ? "bg-gray-100" : ""}`}
       onClick={() => onSelect(task.id)}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onEdit(task.id, task.title, task.description || "");
+      }}
    >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2 w-full">
         <input
           type="checkbox"
           checked={task.done}
@@ -59,64 +79,59 @@ function SortableTaskItem({
           }}
           className="mt-1"
         />
-        <div>
-          {isEditing && editingField === "title" ? (
-            <input
-              type="text"
-              value={editingText}
-              onChange={(e) => {
-                if (e.target.value.length <= 30) setEditingText(e.target.value);
-              }}
-              onBlur={() => saveEdit(task.id)}
-              onKeyDown={(e) => {
-                e.stopPropagation();
-                if (e.key === "Enter") saveEdit(task.id);
-              }}
-              autoFocus
-              className="border rounded px-1 text-sm truncate w-64"
-              onClick={(e) => e.stopPropagation()}
-            />
-          ) : (
-            <p
-              className="font-medium cursor-pointer truncate w-64"
-              onDoubleClick={(e) => {
-                e.stopPropagation();
-                onEdit(task.id, "title", task.title);
-              }}
-            >
-              {task.title}
-            </p>
-          )}
-
-          {isEditing && editingField === "description" ? (
-            <textarea
-              value={editingText}
-              onChange={(e) => setEditingText(e.target.value)}
-              onBlur={() => saveEdit(task.id)}
-              onKeyDown={(e) => {
-                e.stopPropagation();
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  saveEdit(task.id);
-                }
-              }}
-              autoFocus
-              rows={2}
-              className="border rounded px-1 text-xs text-gray-500 w-64 resize-none"
-              onClick={(e) => e.stopPropagation()}
-            />
-          ) : (
-            task.description && (
-              <p
-                className="text-sm text-gray-500 cursor-pointer break-words w-64"
-                onDoubleClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(task.id, "description", task.description);
+        <div className="flex-1">
+          {isEditing ? (
+            <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="text"
+                value={editingTitle}
+                onChange={(e) => {
+                  if (e.target.value.length <= 30) setEditingTitle(e.target.value);
                 }}
-              >
-                {task.description}
-              </p>
-            )
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter") saveEdit(task.id);
+                }}
+                autoFocus
+                placeholder="任务标题（最多30字符）"
+                className="border rounded px-2 py-1 text-sm w-full"
+              />
+              <textarea
+                value={editingDesc}
+                onChange={(e) => setEditingDesc(e.target.value)}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    saveEdit(task.id);
+                  }
+                }}
+                rows={2}
+                placeholder="任务描述（可选）"
+                className="border rounded px-2 py-1 text-xs text-gray-700 w-full resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  className="px-3 py-1 text-sm rounded bg-[#d6c7b5] text-white hover:bg-[#c9b8a1]"
+                  onClick={() => saveEdit(task.id)}
+                >
+                  保存
+                </button>
+                <button
+                  className="px-3 py-1 text-sm rounded bg-gray-200 hover:bg-gray-300"
+                  onClick={() => cancelEdit()}
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="font-medium cursor-pointer truncate w-64">{task.title}</p>
+              {task.description && (
+                <p className="text-sm text-gray-500 break-words w-64">{task.description}</p>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -134,20 +149,18 @@ function SortableTaskItem({
 }
 
 export default function TaskPage() {
-  const [dailyTasks, setDailyTasks] = useState([
-    { id: "1", title: "this is a task title", description: "task description is here", done: true },
-    { id: "2", title: "this is a task title", description: "task description is here", done: true },
-  ]);
-  const [futureTasks, setFutureTasks] = useState([
-    { id: "f1", title: "future task title", description: "future task description", done: false },
-  ]);
+  const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [dailyTasks, setDailyTasks] = useState<Task[]>([]);
+  const [futureTasks, setFutureTasks] = useState<Task[]>([]);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDesc, setNewTaskDesc] = useState("");
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingText, setEditingText] = useState("");
-  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [editingDesc, setEditingDesc] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [view, setView] = useState<"daily" | "future">("daily");
   const [isEditingInput, setIsEditingInput] = useState(false);
@@ -172,74 +185,201 @@ export default function TaskPage() {
   const tasks = view === "daily" ? dailyTasks : futureTasks;
   const setTasks = view === "daily" ? setDailyTasks : setFutureTasks;
 
-  const addTask = () => {
-    if (newTaskTitle.trim() !== "") {
-      const newTask = {
-        id: Date.now().toString(),
-        title: newTaskTitle,
-        description: newTaskDesc,
-        done: false,
-      };
-      if (view === "daily") {
-        setDailyTasks([...dailyTasks, newTask]);
-      } else {
-        setFutureTasks([...futureTasks, newTask]);
+  // 登录校验并加载任务 + 订阅实时
+  useEffect(() => {
+    let unsubscribed = false;
+    const init = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      if (!user) {
+        router.replace("/");
+        return;
       }
-      setNewTaskTitle("");
-      setNewTaskDesc("");
-      setAdding(false);
+      setUserId(user.id);
+      // 拉取任务
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("list", { ascending: true })
+        .order("position", { ascending: true });
+      if (!unsubscribed) {
+        if (error) {
+          console.error("Load tasks error:", error.message);
+        } else {
+          const rows = (data || []) as Task[];
+          setDailyTasks(rows.filter((t) => t.list === "daily"));
+          setFutureTasks(rows.filter((t) => t.list === "future"));
+        }
+      }
+
+      // 实时订阅
+      const channel = supabase
+        .channel("tasks_changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "tasks", filter: `user_id=eq.${user.id}` },
+          (payload: any) => {
+            const type = payload.eventType as "INSERT" | "UPDATE" | "DELETE";
+            if (type === "INSERT") {
+              const row = payload.new as Task;
+              if (row.list === "daily") {
+                setDailyTasks((prev) => (prev.some((p) => p.id === row.id) ? prev : insertSorted(prev, row)));
+              } else {
+                setFutureTasks((prev) => (prev.some((p) => p.id === row.id) ? prev : insertSorted(prev, row)));
+              }
+            } else if (type === "UPDATE") {
+              const row = payload.new as Task;
+              // 若更换了 list，需要在两边移动
+              setDailyTasks((prev) => {
+                const existsInDaily = prev.some((p) => p.id === row.id);
+                if (row.list === "daily") {
+                  const next = existsInDaily ? prev.map((p) => (p.id === row.id ? row : p)) : insertSorted(prev, row);
+                  return sortByPosition(next);
+                } else {
+                  return prev.filter((p) => p.id !== row.id);
+                }
+              });
+              setFutureTasks((prev) => {
+                const existsInFuture = prev.some((p) => p.id === row.id);
+                if (row.list === "future") {
+                  const next = existsInFuture ? prev.map((p) => (p.id === row.id ? row : p)) : insertSorted(prev, row);
+                  return sortByPosition(next);
+                } else {
+                  return prev.filter((p) => p.id !== row.id);
+                }
+              });
+            } else if (type === "DELETE") {
+              const row = payload.old as Task;
+              setDailyTasks((prev) => prev.filter((p) => p.id !== row.id));
+              setFutureTasks((prev) => prev.filter((p) => p.id !== row.id));
+            }
+          }
+        )
+        .subscribe();
+      channelRef.current = channel;
+    };
+    init();
+    return () => {
+      unsubscribed = true;
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+    };
+  }, [router]);
+
+  const insertSorted = (arr: Task[], row: Task) => sortByPosition([...arr, row]);
+  const sortByPosition = (arr: Task[]) => arr.slice().sort((a, b) => a.position - b.position);
+
+  const addTask = async () => {
+    if (!userId) return;
+    const title = newTaskTitle.trim();
+    if (title === "") return;
+    const position = (view === "daily" ? dailyTasks.length : futureTasks.length);
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert({ user_id: userId, title, description: newTaskDesc || null, done: false, list: view, position })
+      .select("*")
+      .single();
+    if (error) {
+      console.error("Add task error:", error.message);
+      return;
     }
+    const row = data as Task;
+    if (view === "daily") setDailyTasks((prev) => (prev.some((t) => t.id === row.id) ? prev : [...prev, row]));
+    else setFutureTasks((prev) => (prev.some((t) => t.id === row.id) ? prev : [...prev, row]));
+    setNewTaskTitle("");
+    setNewTaskDesc("");
+    setAdding(false);
   };
 
-  const saveEdit = (id: string) => {
-    const updateTasks = (taskList) => taskList.map((t) => (t.id === id ? { ...t, [editingField as string]: editingText } : t));
-    if (view === "daily") setDailyTasks(updateTasks(dailyTasks));
-    else setFutureTasks(updateTasks(futureTasks));
+  const saveEdit = async (id: string) => {
+    const patch: any = { title: editingTitle, description: editingDesc };
+    const { error } = await supabase
+      .from("tasks")
+      .update(patch)
+      .eq("id", id)
+      .eq("user_id", userId!);
+    if (error) console.error("Update task error:", error.message);
     setEditingId(null);
-    setEditingText("");
-    setEditingField(null);
     setIsEditingInput(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+  const cancelEdit = () => {
+    setEditingId(null);
+    setIsEditingInput(false);
+  };
+
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Backspace" && selectedId && !isEditingInput && editingId === null) {
       e.preventDefault();
+      const { error } = await supabase.from("tasks").delete().eq("id", selectedId).eq("user_id", userId!);
+      if (error) console.error("Delete task error:", error.message);
+      // 本地先行移除以提升响应速度
       if (view === "daily") setDailyTasks(dailyTasks.filter((t) => t.id !== selectedId));
       else setFutureTasks(futureTasks.filter((t) => t.id !== selectedId));
       setSelectedId(null);
     }
   };
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = async (event: any) => {
     const { active, over } = event;
     if (active.id !== over?.id) {
       const oldIndex = tasks.findIndex((task) => task.id === active.id);
       const newIndex = tasks.findIndex((task) => task.id === over.id);
       const newTasks = arrayMove(tasks, oldIndex, newIndex);
       setTasks(newTasks);
+      // 持久化 position
+      const listName = view; // 当前列表
+      try {
+        await Promise.all(
+          newTasks.map((t, idx) =>
+            supabase.from("tasks").update({ position: idx }).eq("id", t.id).eq("user_id", userId!)
+          )
+        );
+      } catch (err) {
+        console.error("Persist positions error:", err);
+      }
     }
   };
 
-  const toggleTask = (id: string) => {
-    const toggleTasks = (taskList) => taskList.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
-    if (view === "daily") setDailyTasks(toggleTasks(dailyTasks));
+  const toggleTask = async (id: string) => {
+    const list = view;
+    const cur = (list === "daily" ? dailyTasks : futureTasks).find((t) => t.id === id);
+    if (!cur) return;
+    const { error } = await supabase
+      .from("tasks")
+      .update({ done: !cur.done })
+      .eq("id", id)
+      .eq("user_id", userId!);
+    if (error) console.error("Toggle task error:", error.message);
+    // 本地乐观更新
+    const toggleTasks = (taskList: Task[]) => taskList.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+    if (list === "daily") setDailyTasks(toggleTasks(dailyTasks));
     else setFutureTasks(toggleTasks(futureTasks));
   };
 
-  const startEdit = (id: string, field: string, value: string) => {
+  const startEdit = (id: string, title: string, desc: string) => {
     setEditingId(id);
-    setEditingField(field);
-    setEditingText(value);
+    setEditingTitle(title);
+    setEditingDesc(desc || "");
     setIsEditingInput(true);
   };
 
-  const moveTask = (task) => {
-    if (view === "daily") {
-      setDailyTasks(dailyTasks.filter((t) => t.id !== task.id));
-      setFutureTasks([...futureTasks, task]);
+  const moveTask = async (task: Task) => {
+    const targetList: "daily" | "future" = view === "daily" ? "future" : "daily";
+    const targetPos = targetList === "daily" ? dailyTasks.length : futureTasks.length;
+    const { error } = await supabase
+      .from("tasks")
+      .update({ list: targetList, position: targetPos })
+      .eq("id", task.id)
+      .eq("user_id", userId!);
+    if (error) console.error("Move task error:", error.message);
+    // 乐观本地移动
+    if (targetList === "daily") {
+      setFutureTasks((prev) => prev.filter((t) => t.id !== task.id));
+      setDailyTasks((prev) => [...prev, { ...task, list: targetList, position: targetPos }]);
     } else {
-      setFutureTasks(futureTasks.filter((t) => t.id !== task.id));
-      setDailyTasks([...dailyTasks, task]);
+      setDailyTasks((prev) => prev.filter((t) => t.id !== task.id));
+      setFutureTasks((prev) => [...prev, { ...task, list: targetList, position: targetPos }]);
     }
   };
 
@@ -303,10 +443,12 @@ export default function TaskPage() {
                     onMove={moveTask}
                     view={view}
                     isEditing={editingId === task.id}
-                    editingField={editingField}
-                    editingText={editingText}
-                    setEditingText={setEditingText}
+                    editingTitle={editingTitle}
+                    editingDesc={editingDesc}
+                    setEditingTitle={setEditingTitle}
+                    setEditingDesc={setEditingDesc}
                     saveEdit={saveEdit}
+                    cancelEdit={cancelEdit}
                   />
                 ))}
               </div>
