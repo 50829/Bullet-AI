@@ -174,6 +174,11 @@ export default function TaskPage() {
     { id: 1, sender: "ai", text: "你好，我是AI助手，有什么可以帮你？" },
   ]);
   const [input, setInput] = useState("");
+  const [pendingPlan, setPendingPlan] = useState<{
+    tasksDaily?: { title: string; description?: string }[];
+    tasksFuture?: { title: string; description?: string }[];
+  } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -449,19 +454,85 @@ export default function TaskPage() {
     }
   };
 
-  const sendMessage = () => {
-    if (input.trim() === "") return;
-    const newMsg = { id: Date.now(), sender: "user", text: input } as const;
-    setMessages([...messages, newMsg]);
+  const sendMessage = async () => {
+    const content = input.trim();
+    if (!content) return;
+    const userMsg = { id: Date.now(), sender: "user" as const, text: content };
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    setTimeout(() => {
-      const aiReply = { id: Date.now() + 1, sender: "ai", text: "这是AI的回复" } as const;
-      setMessages((prev) => [...prev, aiReply]);
-    }, 800);
+    setAiLoading(true);
+    try {
+      // 构造上下文消息
+      const history = messages.slice(-8).map((m) => ({ role: m.sender === "user" ? "user" : "assistant", content: m.text }));
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [...history, { role: "user", content }] }),
+      });
+      const data = await res.json();
+      const aiText: string = data.reply || "(无回复)";
+      const aiMsg = { id: Date.now() + 1, sender: "ai" as const, text: aiText };
+      setMessages((prev) => [...prev, aiMsg]);
+      if (data.plan) {
+        setPendingPlan(data.plan);
+      } else {
+        setPendingPlan(null);
+      }
+    } catch (e) {
+      const errMsg = { id: Date.now() + 2, sender: "ai" as const, text: "AI 调用失败，请稍后重试。" };
+      setMessages((prev) => [...prev, errMsg]);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const confirmPlan = async () => {
+    if (!pendingPlan || !userId) return;
+    const inserts: Omit<Task, "id" | "done" | "created_at" | "updated_at">[] = [] as any;
+    const clamp = (s: string) => (s.length > 30 ? s.slice(0, 30) : s);
+    // 计算插入位置
+    let dailyPos = dailyTasks.length;
+    let futurePos = futureTasks.length;
+    if (pendingPlan.tasksDaily) {
+      for (const t of pendingPlan.tasksDaily) {
+        inserts.push({ user_id: userId, title: clamp(t.title), description: t.description ?? null, list: "daily", position: dailyPos++ });
+      }
+    }
+    if (pendingPlan.tasksFuture) {
+      for (const t of pendingPlan.tasksFuture) {
+        inserts.push({ user_id: userId, title: clamp(t.title), description: t.description ?? null, list: "future", position: futurePos++ });
+      }
+    }
+    if (inserts.length === 0) {
+      setPendingPlan(null);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert(inserts.map((x) => ({ ...x, done: false })))
+      .select("*");
+    if (error) {
+      console.error("Insert plan error:", error.message);
+      return;
+    }
+    const rows = (data || []) as Task[];
+    const dailyAdded = rows.filter((r) => r.list === "daily");
+    const futureAdded = rows.filter((r) => r.list === "future");
+    if (dailyAdded.length) setDailyTasks((prev) => sortByPosition([...prev, ...dailyAdded]));
+    if (futureAdded.length) setFutureTasks((prev) => sortByPosition([...prev, ...futureAdded]));
+    setPendingPlan(null);
+  };
+
+  const discardPlan = () => setPendingPlan(null);
+
+  const newConversation = () => {
+    setMessages([{ id: Date.now(), sender: "ai", text: "你好，我是AI助手，有什么可以帮你？" }]);
+    setPendingPlan(null);
+    setInput("");
   };
 
   return (
-    <div className="h-screen w-screen flex bg-[#d6c7b5] p-4" onKeyDown={handleKeyDown} tabIndex={0}>
+    <div className="h-svh w-svw box-border overflow-hidden flex bg-[#d6c7b5] p-4" onKeyDown={handleKeyDown} tabIndex={0}>
       {/* Sidebar */}
       <div className="w-1/6 flex flex-col items-center gap-6 text-black font-medium">
         <h1 className="text-2xl font-bold mb-4">Bullet + AI</h1>
@@ -490,94 +561,96 @@ export default function TaskPage() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 grid grid-cols-3 gap-4">
+  {/* Main Content */}
+  <div className="flex-1 grid grid-cols-3 gap-4 h-full min-h-0">
         {/* Task List */}
-        <div className="col-span-2 bg-white rounded-2xl p-6 shadow-lg">
-          <h2 className="text-3xl font-bold mb-6 text-gray-800">{view === "daily" ? formattedDate : "Future List"}</h2>
+        <div className="col-span-2 bg-white rounded-2xl p-6 shadow-lg flex flex-col h-full min-h-0">
+          <h2 className="text-3xl font-bold mb-4 text-gray-800">{view === "daily" ? formattedDate : "Future List"}</h2>
 
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={tasks.map((task) => task.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
-                {tasks.map((task) => (
-                  <SortableTaskItem
-                    key={task.id}
-                    task={task}
-                    isSelected={selectedId === task.id}
-                    onSelect={setSelectedId}
-                    onToggle={toggleTask}
-                    onEdit={startEdit}
-                    onMove={moveTask}
-                    view={view}
-                    isEditing={editingId === task.id}
-                    editingTitle={editingTitle}
-                    editingDesc={editingDesc}
-                    setEditingTitle={setEditingTitle}
-                    setEditingDesc={setEditingDesc}
-                    saveEdit={saveEdit}
-                    cancelEdit={cancelEdit}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={tasks.map((task) => task.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {tasks.map((task) => (
+                    <SortableTaskItem
+                      key={task.id}
+                      task={task}
+                      isSelected={selectedId === task.id}
+                      onSelect={setSelectedId}
+                      onToggle={toggleTask}
+                      onEdit={startEdit}
+                      onMove={moveTask}
+                      view={view}
+                      isEditing={editingId === task.id}
+                      editingTitle={editingTitle}
+                      editingDesc={editingDesc}
+                      setEditingTitle={setEditingTitle}
+                      setEditingDesc={setEditingDesc}
+                      saveEdit={saveEdit}
+                      cancelEdit={cancelEdit}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
 
-          {adding ? (
-            <div className="flex flex-col gap-3 mt-6 p-4 border rounded-xl bg-gray-50">
-              <input
-                type="text"
-                value={newTaskTitle}
-                onChange={(e) => {
-                  if (e.target.value.length <= 30) setNewTaskTitle(e.target.value);
-                }}
-                onFocus={() => setIsEditingInput(true)}
-                onBlur={() => setIsEditingInput(false)}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                  if (e.key === "Enter") addTask();
-                  if (e.key === "Escape") setAdding(false);
-                }}
-                placeholder="Task title (max 30 chars)"
-                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent"
-                autoFocus
-              />
-              <textarea
-                value={newTaskDesc}
-                onChange={(e) => setNewTaskDesc(e.target.value)}
-                onFocus={() => setIsEditingInput(true)}
-                onBlur={() => setIsEditingInput(false)}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    addTask();
-                  }
-                  if (e.key === "Escape") setAdding(false);
-                }}
-                placeholder="Task description (optional)"
-                rows={3}
-                className="border rounded-lg px-3 py-2 text-sm text-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent"
-              />
-              <div className="flex gap-2">
-                <button onClick={addTask} className="px-4 py-2 text-sm rounded-lg bg-[#d6c7b5] text-white hover:bg-[#c9b8a1] transition-colors font-medium">
-                  Add Task
-                </button>
-                <button onClick={() => setAdding(false)} className="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors font-medium">
-                  Cancel
-                </button>
+            {adding ? (
+              <div className="flex flex-col gap-3 mt-6 p-4 border rounded-xl bg-gray-50">
+                <input
+                  type="text"
+                  value={newTaskTitle}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 30) setNewTaskTitle(e.target.value);
+                  }}
+                  onFocus={() => setIsEditingInput(true)}
+                  onBlur={() => setIsEditingInput(false)}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Enter") addTask();
+                    if (e.key === "Escape") setAdding(false);
+                  }}
+                  placeholder="Task title (max 30 chars)"
+                  className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent"
+                  autoFocus
+                />
+                <textarea
+                  value={newTaskDesc}
+                  onChange={(e) => setNewTaskDesc(e.target.value)}
+                  onFocus={() => setIsEditingInput(true)}
+                  onBlur={() => setIsEditingInput(false)}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      addTask();
+                    }
+                    if (e.key === "Escape") setAdding(false);
+                  }}
+                  placeholder="Task description (optional)"
+                  rows={3}
+                  className="border rounded-lg px-3 py-2 text-sm text-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent"
+                />
+                <div className="flex gap-2">
+                  <button onClick={addTask} className="px-4 py-2 text-sm rounded-lg bg-[#d6c7b5] text-white hover:bg-[#c9b8a1] transition-colors font-medium">
+                    Add Task
+                  </button>
+                  <button onClick={() => setAdding(false)} className="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors font-medium">
+                    Cancel
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <button onClick={() => setAdding(true)} className="text-gray-400 hover:text-[#d6c7b5] text-sm mt-6 font-medium transition-colors flex items-center gap-1">
-              <span className="text-lg">+</span> Add a task
-            </button>
-          )}
+            ) : (
+              <button onClick={() => setAdding(true)} className="text-gray-400 hover:text-[#d6c7b5] text-sm mt-6 font-medium transition-colors flex items-center gap-1">
+                <span className="text-lg">+</span> Add a task
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Chat Box */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg flex flex-col">
+        <div className="bg-white rounded-2xl p-6 shadow-lg flex flex-col h-full min-h-0 relative">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">AI Assistant</h3>
-          <div className="flex-1 overflow-y-auto space-y-3 mb-4 max-h-96">
+          <div className="flex-1 overflow-y-auto space-y-3 mb-4">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -586,6 +659,41 @@ export default function TaskPage() {
                 {msg.text}
               </div>
             ))}
+            {pendingPlan && (
+              <div className="p-3 border rounded-xl bg-gray-50 text-sm text-gray-700">
+                <div className="font-medium mb-2">是否将以下任务添加到列表？</div>
+                {pendingPlan.tasksDaily && pendingPlan.tasksDaily.length > 0 && (
+                  <div className="mb-2">
+                    <div className="text-gray-600 mb-1">今日任务：</div>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {pendingPlan.tasksDaily.map((t, i) => (
+                        <li key={`d-${i}`}>
+                          <span className="font-medium">{t.title}</span>
+                          {t.description ? <span className="text-gray-500"> — {t.description}</span> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {pendingPlan.tasksFuture && pendingPlan.tasksFuture.length > 0 && (
+                  <div className="mb-2">
+                    <div className="text-gray-600 mb-1">未来任务：</div>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {pendingPlan.tasksFuture.map((t, i) => (
+                        <li key={`f-${i}`}>
+                          <span className="font-medium">{t.title}</span>
+                          {t.description ? <span className="text-gray-500"> — {t.description}</span> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="flex gap-2 mt-2">
+                  <button onClick={confirmPlan} className="px-3 py-1 rounded bg-[#d6c7b5] text-white hover:bg-[#c9b8a1]">确认添加</button>
+                  <button onClick={discardPlan} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300">取消</button>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <input
@@ -601,12 +709,16 @@ export default function TaskPage() {
               placeholder="Type a message..."
               className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent"
             />
-            <button onClick={sendMessage} className="bg-[#d6c7b5] text-white px-4 py-2 rounded-xl hover:bg-[#c9b8a1] transition-colors font-medium">
-              Send
+            <button onClick={sendMessage} disabled={aiLoading} className="bg-[#d6c7b5] text-white px-4 py-2 rounded-xl hover:bg-[#c9b8a1] transition-colors font-medium disabled:opacity-60">
+              {aiLoading ? "Thinking..." : "Send"}
+            </button>
+            <button onClick={newConversation} className="bg-[#d6c7b5] text-white px-4 py-2 rounded-xl hover:bg-[#c9b8a1] transition-colors font-medium">
+              +
             </button>
           </div>
         </div>
       </div>
+
     </div>
   );
 }
