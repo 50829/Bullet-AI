@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
   let resp: Response | null = null;
   let usedBase = "";
-  let lastErr: any = null;
+  let lastErr = null;
   for (const baseUrl of fallbacks) {
     try {
       usedBase = baseUrl;
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
         }),
       });
       break;
-    } catch (err: any) {
+    } catch (err) {
       lastErr = err;
       resp = null;
       continue;
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
   let reply: string = "";
   const choice = data?.choices?.[0];
   const msg = choice?.message ?? data?.message;
-  let content: any = msg?.content;
+  const content = msg?.content;
   if (typeof content === "string") {
     reply = content;
   } else if (Array.isArray(content)) {

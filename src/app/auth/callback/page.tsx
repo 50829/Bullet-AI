@@ -34,7 +34,7 @@ export default function AuthCallback() {
           // 未拿到会话，给出提示（仍然尝试跳转，由受保护页二次校验）
           setMsg("未获取到会话，正在跳转…");
         }
-      } catch (e: unknown) {
+      } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         console.error("Auth callback exception:", msg);
         setMsg("处理登录时出现问题，正在跳转…");

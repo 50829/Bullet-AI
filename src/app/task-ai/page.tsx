@@ -478,7 +478,7 @@ export default function TaskPage() {
       } else {
         setPendingPlan(null);
       }
-    } catch (e) {
+  } catch {
       const errMsg = { id: Date.now() + 2, sender: "ai" as const, text: "AI 调用失败，请稍后重试。" };
       setMessages((prev) => [...prev, errMsg]);
     } finally {
@@ -488,7 +488,8 @@ export default function TaskPage() {
 
   const confirmPlan = async () => {
     if (!pendingPlan || !userId) return;
-    const inserts: Omit<Task, "id" | "done" | "created_at" | "updated_at">[] = [] as any;
+    type InsertTask = Omit<Task, "id" | "done" | "created_at" | "updated_at">;
+    const inserts: InsertTask[] = [];
     const clamp = (s: string) => (s.length > 30 ? s.slice(0, 30) : s);
     // 计算插入位置
     let dailyPos = dailyTasks.length;
