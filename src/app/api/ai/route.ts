@@ -29,16 +29,19 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const userMessages = (body?.messages ?? []) as ChatMessage[];
 
-  const apiKey = process.env.DOUBAO_API_KEY;
-  const model = process.env.DOUBAO_MODEL;
-  const primary = process.env.DOUBAO_BASE_URL || "https://ark.cn-beijing.volcengine.com/api/v3/chat/completions";
-  const fallbacks = [primary, "https://ark.cn-beijing.volces.com/api/v3/chat/completions"].filter(
+  // 修改1: 允许从 body 或 env 中获取配置，使其支持任意 OpenAI-compatible API
+  // 优先使用 body 中的值（用于动态测试），fallback 到 env（用于生产）
+  const apiKey = body.apiKey || process.env.LLM_API_KEY;  // 要修改: 设置环境变量 LLM_API_KEY 为你的 API key
+  const model = body.model || process.env.LLM_MODEL;      // 要修改: 设置环境变量 LLM_MODEL 为你的模型名称
+  // baseUrl 支持多个 fallback，包括你的新 API 的 URL
+  const primaryBase = body.baseUrl || process.env.LLM_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3";  // 要修改: 设置 LLM_BASE_URL 为你的 API base URL，或修改默认值
+  const fallbacks = [primaryBase, "https://ark.cn-beijing.volces.com/api/v3"].filter(  // 要修改: 替换或添加你的 API fallback URL
     (v, i, arr) => !!v && arr.indexOf(v) === i
   );
 
   if (!apiKey || !model) {
     return NextResponse.json(
-      { error: "Missing Doubao config: set DOUBAO_API_KEY and DOUBAO_MODEL" },
+      { error: "Missing LLM config: provide apiKey and model in body or set LLM_API_KEY and LLM_MODEL in env" },
       { status: 400 }
     );
   }
@@ -57,7 +60,9 @@ export async function POST(req: NextRequest) {
   for (const baseUrl of fallbacks) {
     try {
       usedBase = baseUrl;
-      resp = await fetch(baseUrl, {
+      // 修改2: 确保 endpoint 是 /chat/completions（大多数兼容 API 使用这个）
+      const endpoint = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}/chat/completions`;
+      resp = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -70,7 +75,7 @@ export async function POST(req: NextRequest) {
           temperature: 0.3,
         }),
       });
-      break;
+      if (resp.ok) break;  // 如果成功，跳出循环
     } catch (err) {
       lastErr = err;
       resp = null;
@@ -79,33 +84,35 @@ export async function POST(req: NextRequest) {
   }
   if (!resp) {
     return NextResponse.json(
-      { error: `Fetch to Doubao failed: ${lastErr?.message || String(lastErr)}`, baseTried: fallbacks },
+      { error: `Fetch to LLM failed: ${lastErr?.message || String(lastErr)}`, baseTried: fallbacks },
       { status: 502 }
     );
   }
 
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
-    return NextResponse.json({ error: `Doubao error: ${resp.status} ${text}`, baseUrl: usedBase }, { status: 500 });
+    return NextResponse.json({ error: `LLM error: ${resp.status} ${text}`, baseUrl: usedBase }, { status: 500 });
   }
 
   const data = await resp.json();
-  // 兼容 ark chat completions / openai 兼容结构
+  // 修改3: 增强兼容性，处理更多可能的响应结构（e.g., OpenAI, Anthropic, 或其他）
   let reply: string = "";
   const choice = data?.choices?.[0];
-  const msg = choice?.message ?? data?.message;
-  const content = msg?.content;
+  const msg = choice?.message ?? data?.message ?? data?.completion;
+  const content = msg?.content ?? choice?.text ?? data?.output?.text;
   if (typeof content === "string") {
     reply = content;
   } else if (Array.isArray(content)) {
-    // 某些实现中 content 可能是分段数组
     reply = content
       .map((seg) => (typeof seg === "string" ? seg : seg?.text ?? seg?.content ?? ""))
       .join("");
   } else if (typeof data?.output_text === "string") {
     reply = data.output_text;
+  } else if (data?.content) {
+    reply = data.content;  // 额外兼容
   }
   const plan = extractJson(reply);
 
+  // 修改4: 响应中避免返回 apiKey（安全）
   return NextResponse.json({ reply, plan });
 }
