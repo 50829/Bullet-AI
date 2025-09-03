@@ -32,7 +32,8 @@ type Task = {
   created_at?: string;
   updated_at?: string | null;
 };
-// Sortable Task Item Component
+
+// 任务项组件
 function SortableTaskItem({
   task,
   isSelected,
@@ -81,7 +82,7 @@ function SortableTaskItem({
             e.stopPropagation();
             onToggle(task.id);
           }}
-          className="mt-1"
+          className="w-5 h-5 self-center"
         />
         <div className="flex-1">
           {isEditing ? (
@@ -131,9 +132,9 @@ function SortableTaskItem({
             </div>
           ) : (
             <>
-              <p className="font-medium cursor-pointer truncate w-64">{task.title}</p>
+              <p className="text-xl font-medium cursor-pointer truncate w-80">{task.title}</p>
               {task.description && (
-                <p className="text-sm text-gray-500 break-words w-64">{task.description}</p>
+                <p className="text-lg text-gray-500 break-words w-80 mt-0.5">{task.description}</p>
               )}
             </>
           )}
@@ -152,6 +153,7 @@ function SortableTaskItem({
   );
 }
 
+// 组件状态管理
 export default function TaskPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -180,6 +182,7 @@ export default function TaskPage() {
   } | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
+  // 退出登录
   const handleSignOut = async () => {
     try {
       setSigningOut(true);
@@ -196,6 +199,7 @@ export default function TaskPage() {
     }
   };
 
+  // 接入鼠标和键盘
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -292,14 +296,33 @@ export default function TaskPage() {
     };
   }, [router]);
 
+  // 任务排序
   const insertSorted = (arr: Task[], row: Task) => arr.slice().concat(row).sort((a, b) => a.position - b.position);
   const sortByPosition = (arr: Task[]) => arr.slice().sort((a, b) => a.position - b.position);
 
+  // 添加新任务
   const addTask = async () => {
     if (!userId) return;
     const title = newTaskTitle.trim();
     if (title === "") return;
     const position = (view === "daily" ? dailyTasks.length : futureTasks.length);
+    // 构造临时任务对象
+    const tempTask: Task = {
+      id: `temp-${Date.now()}`, // 临时 ID
+      user_id: userId,
+      title,
+      description: newTaskDesc || null,
+      done: false,
+      list: view,
+      position,
+    };
+    // 乐观更新本地状态
+    if (view === "daily") setDailyTasks((prev) => [...prev, tempTask]);
+    else setFutureTasks((prev) => [...prev, tempTask]);
+    setNewTaskTitle("");
+    setNewTaskDesc("");
+    setAdding(false);
+    // 异步持久化到 Supabase
     const { data, error } = await supabase
       .from("tasks")
       .insert({ user_id: userId, title, description: newTaskDesc || null, done: false, list: view, position })
@@ -307,16 +330,18 @@ export default function TaskPage() {
       .single();
     if (error) {
       console.error("Add task error:", error.message);
+      // 回滚：移除临时任务
+      if (view === "daily") setDailyTasks((prev) => prev.filter((t) => t.id !== tempTask.id));
+      else setFutureTasks((prev) => prev.filter((t) => t.id !== tempTask.id));
       return;
     }
     const row = data as Task;
-    if (view === "daily") setDailyTasks((prev) => (prev.some((t) => t.id === row.id) ? prev : [...prev, row]));
-    else setFutureTasks((prev) => (prev.some((t) => t.id === row.id) ? prev : [...prev, row]));
-    setNewTaskTitle("");
-    setNewTaskDesc("");
-    setAdding(false);
+    // 替换临时任务为实际任务
+    if (view === "daily") setDailyTasks((prev) => prev.map((t) => (t.id === tempTask.id ? row : t)));
+    else setFutureTasks((prev) => prev.map((t) => t.id === tempTask.id ? row : t));
   };
 
+  // 保存任务编辑
   const saveEdit = async (id: string) => {
     const nextTitle = editingTitle.trim().slice(0, 30);
     const nextDesc = editingDesc.trim();
@@ -356,23 +381,36 @@ export default function TaskPage() {
     setIsEditingInput(false);
   };
 
+  // 取消任务编辑
   const cancelEdit = () => {
     setEditingId(null);
     setIsEditingInput(false);
   };
 
+  // backspace删除任务
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Backspace" && selectedId && !isEditingInput && editingId === null) {
       e.preventDefault();
-      const { error } = await supabase.from("tasks").delete().eq("id", selectedId).eq("user_id", userId!);
-      if (error) console.error("Delete task error:", error.message);
-      // 本地先行移除以提升响应速度
-      if (view === "daily") setDailyTasks(dailyTasks.filter((t) => t.id !== selectedId));
-      else setFutureTasks(futureTasks.filter((t) => t.id !== selectedId));
+      // 保存当前任务以便回滚
+      const deletedTask = (view === "daily" ? dailyTasks : futureTasks).find((t) => t.id === selectedId);
+      // 乐观更新：先移除任务
+      if (view === "daily") setDailyTasks((prev) => prev.filter((t) => t.id !== selectedId));
+      else setFutureTasks((prev) => prev.filter((t) => t.id !== selectedId));
       setSelectedId(null);
+      // 异步删除
+      const { error } = await supabase.from("tasks").delete().eq("id", selectedId).eq("user_id", userId!);
+      if (error) {
+        console.error("Delete task error:", error.message);
+        // 回滚：恢复任务
+        if (deletedTask) {
+          if (view === "daily") setDailyTasks((prev) => [...prev, deletedTask]);
+          else setFutureTasks((prev) => [...prev, deletedTask]);
+        }
+      }
     }
   };
 
+  // 拖拽改变任务顺序
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (active.id !== over?.id) {
@@ -395,6 +433,7 @@ export default function TaskPage() {
     }
   };
 
+  // 完成任务
   const toggleTask = async (id: string) => {
     const list = view;
     const cur = (list === "daily" ? dailyTasks : futureTasks).find((t) => t.id === id);
@@ -428,6 +467,7 @@ export default function TaskPage() {
     }
   };
 
+  // 进入任务编辑
   const startEdit = (id: string, title: string, desc: string) => {
     setEditingId(id);
     setEditingTitle(title);
@@ -435,6 +475,7 @@ export default function TaskPage() {
     setIsEditingInput(true);
   };
 
+  // 迁移任务
   const moveTask = async (task: Task) => {
     const targetList: "daily" | "future" = view === "daily" ? "future" : "daily";
     const targetPos = targetList === "daily" ? dailyTasks.length : futureTasks.length;
@@ -454,6 +495,7 @@ export default function TaskPage() {
     }
   };
 
+  // 向AI发送信息
   const sendMessage = async () => {
     const content = input.trim();
     if (!content) return;
@@ -486,6 +528,7 @@ export default function TaskPage() {
     }
   };
 
+  // 确认/取消AI给出的计划
   const confirmPlan = async () => {
     if (!pendingPlan || !userId) return;
     type InsertTask = Omit<Task, "id" | "done" | "created_at" | "updated_at">;
@@ -526,17 +569,19 @@ export default function TaskPage() {
 
   const discardPlan = () => setPendingPlan(null);
 
+  // 开启新对话
   const newConversation = () => {
     setMessages([{ id: Date.now(), sender: "ai", text: "你好，我是AI助手，有什么可以帮你？" }]);
     setPendingPlan(null);
     setInput("");
   };
 
+  // 渲染页面
   return (
     <div className="h-svh w-svw box-border overflow-hidden flex bg-[#d6c7b5] p-4" onKeyDown={handleKeyDown} tabIndex={0}>
       {/* Sidebar */}
       <div className="w-1/6 flex flex-col items-center gap-6 text-black font-medium">
-        <h1 className="text-2xl font-bold mb-4">Bullet + AI</h1>
+        <h1 className="text-4xl font-bold mt-6 mb-4">Bullet + AI</h1>
         <div className="flex flex-col gap-3 w-full px-2">
           <button
             onClick={() => setView("daily")}
