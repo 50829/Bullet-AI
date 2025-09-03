@@ -580,20 +580,20 @@ export default function TaskPage() {
   return (
     <div className="h-svh w-svw box-border overflow-hidden flex bg-[#d6c7b5] p-4" onKeyDown={handleKeyDown} tabIndex={0}>
       {/* Sidebar */}
-      <div className="w-1/6 flex flex-col items-center gap-6 text-black font-medium">
-        <h1 className="text-4xl font-bold mt-6 mb-4">Bullet + AI</h1>
+      <div className="w-1/6 flex flex-col gap-6 text-black font-medium">
+        <h1 className="text-4xl font-bold mt-6 mb-4 text-center w-full">Bullet + AI</h1>
         <div className="flex flex-col gap-3 w-full px-2">
           <button
             onClick={() => setView("daily")}
             disabled={view === "daily"}
-            className={`w-full py-2 rounded-xl border text-sm font-medium transition-colors ${view === "daily" ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-white hover:bg-gray-100 hover:shadow-sm"}`}
+            className={`text-xl font-medium transition-colors text-left ${view === "daily" ? "text-black cursor-not-allowed" : "text-gray-500 hover:text-gray-700"}`}
           >
             Daily Log
           </button>
           <button
             onClick={() => setView("future")}
             disabled={view === "future"}
-            className={`w-full py-2 rounded-xl border text-sm font-medium transition-colors ${view === "future" ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-white hover:bg-gray-100 hover:shadow-sm"}`}
+            className={`text-xl font-medium transition-colors text-left ${view === "future" ? "text-black cursor-not-allowed" : "text-gray-500 hover:text-gray-700"}`}
           >
             Future Log
           </button>
