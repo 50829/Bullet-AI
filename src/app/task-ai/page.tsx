@@ -210,7 +210,7 @@ export default function TaskPage() {
   );
 
   const today = new Date();
-  const formattedDate = today.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit" });
+  const formattedDate = today.toLocaleDateString("en-US", { day: "2-digit", month: "2-digit", weekday: "short"});
 
   const tasks = view === "daily" ? dailyTasks : futureTasks;
   const setTasks = view === "daily" ? setDailyTasks : setFutureTasks;
@@ -580,27 +580,27 @@ export default function TaskPage() {
   return (
     <div className="h-svh w-svw box-border overflow-hidden flex bg-[#d6c7b5] p-4" onKeyDown={handleKeyDown} tabIndex={0}>
       {/* Sidebar */}
-      <div className="w-1/6 flex flex-col gap-6 text-black font-medium">
-        <h1 className="text-4xl font-bold mt-6 mb-4 text-center w-full">Bullet + AI</h1>
-        <div className="flex flex-col gap-3 w-full px-2">
+      <div className="w-1/6 flex flex-col gap-3 text-black font-medium">
+        <h1 className="text-[40px] font-bold mt-6 mb-4 text-center w-full">Bullet + AI</h1>
+        <div className="flex flex-col gap-3 w-full px-10">
           <button
             onClick={() => setView("daily")}
             disabled={view === "daily"}
-            className={`text-xl font-medium transition-colors text-left ${view === "daily" ? "text-black cursor-not-allowed" : "text-gray-500 hover:text-gray-700"}`}
+            className={`text-2xl font-medium transition-colors text-left ${view === "daily" ? "text-black cursor-not-allowed" : "text-gray-500 hover:text-gray-700"}`}
           >
             Daily Log
           </button>
           <button
             onClick={() => setView("future")}
             disabled={view === "future"}
-            className={`text-xl font-medium transition-colors text-left ${view === "future" ? "text-black cursor-not-allowed" : "text-gray-500 hover:text-gray-700"}`}
+            className={`text-2xl font-medium transition-colors text-left ${view === "future" ? "text-black cursor-not-allowed" : "text-gray-500 hover:text-gray-700"}`}
           >
             Future Log
           </button>
           <button
             onClick={handleSignOut}
             disabled={signingOut}
-            className="w-full py-2 rounded-xl border text-sm font-medium bg-brown-200 text-black-700 text-center hover:shadow-sm"
+            className="w-full py-2 mb-6 rounded-2xl border text-sm font-medium bg-brown-200 text-black-700 text-center hover:shadow-sm"
           >
             退出登录
           </button>
@@ -610,8 +610,8 @@ export default function TaskPage() {
   {/* Main Content */}
   <div className="flex-1 grid grid-cols-3 gap-4 h-full min-h-0">
         {/* Task List */}
-        <div className="col-span-2 bg-white rounded-2xl p-6 shadow-lg flex flex-col h-full min-h-0">
-          <h2 className="text-3xl font-bold mb-4 text-gray-800">{view === "daily" ? formattedDate : "Future List"}</h2>
+        <div className="col-span-2 bg-[#F5F5F5] rounded-2xl p-6 shadow-lg flex flex-col h-full min-h-0">
+          <h2 className="text-[40px] font-bold mb-4 text-gray-800">{view === "daily" ? formattedDate : "Future List"}</h2>
 
           <div className="flex-1 min-h-0 overflow-y-auto pr-1">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -694,7 +694,7 @@ export default function TaskPage() {
         </div>
 
         {/* Chat Box */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg flex flex-col h-full min-h-0 relative">
+        <div className="bg-[#F5F5F5] rounded-2xl p-6 shadow-lg flex flex-col h-full min-h-0 relative">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">AI Assistant</h3>
           <div className="flex-1 overflow-y-auto space-y-3 mb-4">
             {messages.map((msg) => (
