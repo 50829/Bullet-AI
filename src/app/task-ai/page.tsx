@@ -67,7 +67,7 @@ function SortableTaskItem({
       style={style}
       {...attributes}
       {...listeners}
-      className={`flex items-center justify-between p-2 rounded cursor-pointer touch-none ${isSelected ? "bg-gray-100" : ""}`}
+      className={`flex items-center justify-between p-2 rounded cursor-pointer touch-none ${isSelected ? "bg-gray-200" : ""}`}
       onClick={() => onSelect(task.id)}
       onDoubleClick={(e) => {
         e.stopPropagation();
@@ -700,7 +700,7 @@ export default function TaskPage() {
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`max-w-[80%] px-3 py-2 rounded-xl text-sm leading-relaxed ${msg.sender === "user" ? "ml-auto bg-[#d6c7b5] text-white" : "mr-auto bg-gray-100 text-gray-800"}`}
+                className={`max-w-[80%] px-3 py-2 rounded-xl text-sm leading-relaxed whitespace-pre-wrap ${msg.sender === "user" ? "ml-auto bg-[#d6c7b5] text-white" : "mr-auto bg-gray-200 text-gray-800"}`}
               >
                 {msg.text}
               </div>
@@ -742,19 +742,23 @@ export default function TaskPage() {
             )}
           </div>
           <div className="flex gap-2">
-            <input
-              type="text"
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onFocus={() => setIsEditingInput(true)}
               onBlur={() => setIsEditingInput(false)}
               onKeyDown={(e) => {
                 e.stopPropagation();
-                if (e.key === "Enter") sendMessage();
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
               }}
               placeholder="Type a message..."
-              className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent"
+              rows={1}
+              className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent resize-none overflow-y-auto"
             />
+
             <button onClick={sendMessage} disabled={aiLoading} className="bg-[#d6c7b5] text-white px-4 py-2 rounded-xl hover:bg-[#c9b8a1] transition-colors font-medium disabled:opacity-60">
               {aiLoading ? "Thinking..." : "Send"}
             </button>
