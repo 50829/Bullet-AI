@@ -99,7 +99,7 @@ function SortableTaskItem({
                 }}
                 autoFocus
                 placeholder="任务标题（最多30字符）"
-                className="border rounded px-2 py-1 text-sm w-full"
+                className="border rounded px-2 py-1 text-sm w-full text-black"
               />
               <textarea
                 value={editingDesc}
@@ -132,7 +132,7 @@ function SortableTaskItem({
             </div>
           ) : (
             <>
-              <p className="text-xl font-medium cursor-pointer truncate w-80">{task.title}</p>
+              <p className="text-xl font-medium text-black cursor-pointer truncate w-80">{task.title}</p>
               {task.description && (
                 <p className="text-lg text-gray-500 break-words w-80 mt-0.5">{task.description}</p>
               )}
