@@ -43,7 +43,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#d6c7b5]">
+    <main className="min-h-screen flex items-center justify-center bg-[#d6c7b5] text-black">
       <div className="bg-white rounded-2xl shadow-lg p-10 text-center w-full max-w-md mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">登录 Bullet + AI</h1>
         <p className="text-gray-600 mb-6">使用邮箱或第三方账号登录，登录后将跳转到任务面板</p>
@@ -85,7 +85,7 @@ export default function Home() {
           <button
             onClick={() => signInWithProvider("github")}
             disabled={loading}
-            className="w-full px-4 py-2 rounded-xl border hover:bg-gray-50"
+            className="w-full px-4 py-2 rounded-xl border hover:bg-gray-50 text-black"
           >
             使用 GitHub 登录
           </button>

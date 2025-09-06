@@ -123,7 +123,7 @@ function SortableTaskItem({
                   保存
                 </button>
                 <button
-                  className="px-3 py-1 text-sm rounded bg-gray-200 hover:bg-gray-300"
+                  className="px-3 py-1 text-sm rounded bg-gray-200 hover:bg-gray-300 text-black"
                   onClick={() => cancelEdit()}
                 >
                   取消
@@ -641,7 +641,7 @@ export default function TaskPage() {
             </DndContext>
 
             {adding ? (
-              <div className="flex flex-col gap-3 mt-6 p-4 border rounded-xl bg-gray-50">
+              <div className="flex flex-col gap-3 mt-6 p-4 border border-black rounded-xl bg-gray-50">
                 <input
                   type="text"
                   value={newTaskTitle}
@@ -656,7 +656,7 @@ export default function TaskPage() {
                     if (e.key === "Escape") setAdding(false);
                   }}
                   placeholder="Task title (max 30 chars)"
-                  className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent"
+                  className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent text-black"
                   autoFocus
                 />
                 <textarea
@@ -680,7 +680,7 @@ export default function TaskPage() {
                   <button onClick={addTask} className="px-4 py-2 text-sm rounded-lg bg-[#d6c7b5] text-white hover:bg-[#c9b8a1] transition-colors font-medium">
                     Add Task
                   </button>
-                  <button onClick={() => setAdding(false)} className="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors font-medium">
+                  <button onClick={() => setAdding(false)} className="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors font-medium text-black">
                     Cancel
                   </button>
                 </div>
@@ -736,7 +736,7 @@ export default function TaskPage() {
                 )}
                 <div className="flex gap-2 mt-2">
                   <button onClick={confirmPlan} className="px-3 py-1 rounded bg-[#d6c7b5] text-white hover:bg-[#c9b8a1]">确认添加</button>
-                  <button onClick={discardPlan} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300">取消</button>
+                  <button onClick={discardPlan} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-black">取消</button>
                 </div>
               </div>
             )}
@@ -756,7 +756,7 @@ export default function TaskPage() {
               }}
               placeholder="Type a message..."
               rows={1}
-              className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent resize-none overflow-y-auto"
+              className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent resize-none overflow-y-auto text-black"
             />
 
             <button onClick={sendMessage} disabled={aiLoading} className="bg-[#d6c7b5] text-white px-4 py-2 rounded-xl hover:bg-[#c9b8a1] transition-colors font-medium disabled:opacity-60">
