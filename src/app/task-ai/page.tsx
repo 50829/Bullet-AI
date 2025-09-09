@@ -141,7 +141,7 @@ function SortableTaskItem({
         </div>
       </div>
       <span
-        className="text-xl cursor-pointer hover:bg-gray-200 rounded px-2"
+        className="text-xl cursor-pointer hover:bg-gray-200 rounded px-2 text-black"
         onClick={(e) => {
           e.stopPropagation();
           onMove(task);
