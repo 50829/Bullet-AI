@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
-// 避免该路由在构建阶段被预渲染（Vercel 构建环境可能没有注入 NEXT_PUBLIC_* 变量）
 export const dynamic = "force-dynamic";
 
 export default function AuthCallback() {
@@ -17,27 +16,44 @@ export default function AuthCallback() {
 
     const run = async () => {
       try {
-        // 兼容两种回调：
-        // 1) OAuth PKCE: URL 上带 ?code=xxx，需要交换 session
-        // 2) 魔法链接/implicit: URL hash 带 token，detectSessionInUrl + getSession 即可
-        const { error: exchError } = await supabase.auth.exchangeCodeForSession(window.location.href);
-        if (exchError) {
-          // 不是所有流程都会有 code，非致命，继续尝试读取本地 session
-          console.debug("exchangeCodeForSession skipped:", exchError.message);
+        // 从 URL 中获取 token 和 type
+        const url = new URL(window.location.href);
+        const token = url.searchParams.get("token");
+        const type = url.searchParams.get("type") || "email";
+        const email = url.searchParams.get("email"); // 假设邮箱通过 URL 传递
+
+        if (token && email) {
+          // 验证 OTP
+          const { data: { session }, error } = await supabase.auth.verifyOtp({
+            email,
+            token,
+            type: type as "email",
+          });
+          if (error) {
+            console.error("verifyOtp error:", error.message);
+            setMsg(`验证失败：${error.message}`);
+            return;
+          }
+          if (session) {
+            setMsg("登录成功，正在跳转…");
+            router.replace("/task-ai");
+            return;
+          }
         }
 
+        // 尝试获取已有会话
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error("getSession error:", error.message);
-        }
-        if (!session) {
-          // 未拿到会话，给出提示（仍然尝试跳转，由受保护页二次校验）
           setMsg("未获取到会话，正在跳转…");
         }
+        if (!session) {
+          setMsg("未获取到会话，请重试");
+        }
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.error("Auth callback exception:", msg);
-        setMsg("处理登录时出现问题，正在跳转…");
+        const errorMsg = e instanceof Error ? e.message : String(e);
+        console.error("Auth callback exception:", errorMsg);
+        setMsg(`处理登录时出现问题：${errorMsg}`);
       } finally {
         router.replace("/task-ai");
       }
