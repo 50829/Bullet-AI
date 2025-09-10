@@ -173,7 +173,7 @@ export default function TaskPage() {
   const [isEditingInput, setIsEditingInput] = useState(false);
 
   const [messages, setMessages] = useState([
-    { id: 1, sender: "ai", text: "你好，我是AI助手，有什么可以帮你？" },
+    { id: 1, sender: "ai", text: "老板，您上线了，接下来怎么安排？" },
   ]);
   const [input, setInput] = useState("");
   const [pendingPlan, setPendingPlan] = useState<{
@@ -571,7 +571,7 @@ export default function TaskPage() {
 
   // 开启新对话
   const newConversation = () => {
-    setMessages([{ id: Date.now(), sender: "ai", text: "你好，我是AI助手，有什么可以帮你？" }]);
+    setMessages([{ id: Date.now(), sender: "ai", text: "我等您吩咐，老板。" }]);
     setPendingPlan(null);
     setInput("");
   };
@@ -707,7 +707,7 @@ export default function TaskPage() {
             ))}
             {pendingPlan && (
               <div className="p-3 border rounded-xl bg-gray-50 text-sm text-gray-700">
-                <div className="font-medium mb-2">是否将以下任务添加到列表？</div>
+                <div className="font-medium mb-2">方案已经为您设计完毕，请您指示</div>
                 {pendingPlan.tasksDaily && pendingPlan.tasksDaily.length > 0 && (
                   <div className="mb-2">
                     <div className="text-gray-600 mb-1">今日任务：</div>
@@ -735,8 +735,8 @@ export default function TaskPage() {
                   </div>
                 )}
                 <div className="flex gap-2 mt-2">
-                  <button onClick={confirmPlan} className="px-3 py-1 rounded bg-[#d6c7b5] text-white hover:bg-[#c9b8a1]">确认添加</button>
-                  <button onClick={discardPlan} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-black">取消</button>
+                  <button onClick={confirmPlan} className="px-3 py-1 rounded bg-[#d6c7b5] text-white hover:bg-[#c9b8a1]">就这么干</button>
+                  <button onClick={discardPlan} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-black">不行</button>
                 </div>
               </div>
             )}

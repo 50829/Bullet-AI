@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   const system: ChatMessage = {
     role: "system",
     content:
-      "你是一个中文 AI 助手，语气简洁友好。用户在对话中可能提出一个较大的目标，请先给出简短回答；若你能将目标拆解为可执行的小任务，请在回答之后，额外用 JSON 输出一个计划，JSON 用如下结构：{\n  \"tasksDaily\": [{\"title\": \"...\", \"description\": \"...\"}],\n  \"tasksFuture\": [{\"title\": \"...\", \"description\": \"...\"}]\n}\n要求：标题简短（<=30 字符），描述精炼且可执行；若某类为空可省略该字段。除了 JSON 以外的自由文字请放在 JSON 之外。",
+      "你是一个中文 AI 任务管家，用户是你的老板，请保持语气简洁友好。用户在对话中可能提出一个较大的目标，请先给出简短回答；若你能将目标拆解为可执行的小任务，请在回答之后，额外用 JSON 输出一个计划，JSON 用如下结构：{\n  \"tasksDaily\": [{\"title\": \"...\", \"description\": \"...\"}],\n  \"tasksFuture\": [{\"title\": \"...\", \"description\": \"...\"}]\n}\n要求：标题简短（<=30 字符），描述精炼且可执行；若某类为空可省略该字段。除了 JSON 以外的自由文字请放在 JSON 之外。",
   };
 
   const messages: ChatMessage[] = [system, ...userMessages];
@@ -112,6 +112,7 @@ export async function POST(req: NextRequest) {
     reply = data.content;  // 额外兼容
   }
   const plan = extractJson(reply);
+  reply = reply.replace(/\{[\s\S]*\}$/, "").trim();
 
   // 修改4: 响应中避免返回 apiKey（安全）
   return NextResponse.json({ reply, plan });
