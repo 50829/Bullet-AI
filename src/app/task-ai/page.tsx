@@ -588,14 +588,14 @@ export default function TaskPage() {
             disabled={view === "daily"}
             className={`text-2xl font-medium transition-colors text-left ${view === "daily" ? "text-black cursor-not-allowed" : "text-gray-500 hover:text-gray-700"}`}
           >
-            Daily Log
+            Today
           </button>
           <button
             onClick={() => setView("future")}
             disabled={view === "future"}
             className={`text-2xl font-medium transition-colors text-left ${view === "future" ? "text-black cursor-not-allowed" : "text-gray-500 hover:text-gray-700"}`}
           >
-            Future Log
+            Future
           </button>
           <button
             onClick={handleSignOut}
@@ -611,7 +611,7 @@ export default function TaskPage() {
   <div className="flex-1 grid grid-cols-3 gap-4 h-full min-h-0">
         {/* Task List */}
         <div className="col-span-2 bg-[#F5F5F5] rounded-2xl p-6 shadow-lg flex flex-col h-full min-h-0">
-          <h2 className="text-[40px] font-bold mb-4 text-gray-800">{view === "daily" ? formattedDate : "Future List"}</h2>
+          <h2 className="text-[40px] font-bold mb-4 text-gray-800">{view === "daily" ? formattedDate : "Future to-do"}</h2>
 
           <div className="flex-1 min-h-0 overflow-y-auto pr-1">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
