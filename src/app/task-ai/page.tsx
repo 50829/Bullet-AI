@@ -581,7 +581,7 @@ export default function TaskPage() {
     <div className="h-svh w-svw box-border overflow-hidden flex bg-[#d6c7b5] p-4" onKeyDown={handleKeyDown} tabIndex={0}>
       {/* Sidebar */}
       <div className="w-1/6 flex flex-col gap-3 text-black font-medium">
-        <h1 className="text-[40px] font-bold mt-6 mb-4 text-center w-full">Bullet + AI</h1>
+        <h1 className="text-[40px] font-bold mt-6 mb-4 text-center w-full">Bullet AI</h1>
         <div className="flex flex-col gap-3 w-full px-10">
           <button
             onClick={() => setView("daily")}
@@ -687,7 +687,7 @@ export default function TaskPage() {
               </div>
             ) : (
               <button onClick={() => setAdding(true)} className="text-gray-400 hover:text-[#d6c7b5] text-sm mt-6 font-medium transition-colors flex items-center gap-1">
-                <span className="text-lg">+</span> Add a task
+                <span className="text-lg">+</span> 点击添加新任务
               </button>
             )}
           </div>
@@ -695,7 +695,7 @@ export default function TaskPage() {
 
         {/* Chat Box */}
         <div className="bg-[#F5F5F5] rounded-2xl p-6 shadow-lg flex flex-col h-full min-h-0 relative">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">AI Assistant</h3>
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">我的 AI 管家</h3>
           <div className="flex-1 overflow-y-auto space-y-3 mb-4">
             {messages.map((msg) => (
               <div
@@ -754,13 +754,13 @@ export default function TaskPage() {
                   sendMessage();
                 }
               }}
-              placeholder="Type a message..."
+              placeholder="请提出您的需求..."
               rows={1}
               className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d6c7b5] focus:border-transparent resize-none overflow-y-auto text-black"
             />
 
             <button onClick={sendMessage} disabled={aiLoading} className="bg-[#d6c7b5] text-white px-4 py-2 rounded-xl hover:bg-[#c9b8a1] transition-colors font-medium disabled:opacity-60">
-              {aiLoading ? "Thinking..." : "Send"}
+              {aiLoading ? "请您稍等..." : "发送"}
             </button>
             <button onClick={newConversation} className="bg-[#d6c7b5] text-white px-4 py-2 rounded-xl hover:bg-[#c9b8a1] transition-colors font-medium">
               +
