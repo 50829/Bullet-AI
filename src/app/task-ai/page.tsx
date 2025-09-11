@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
 import { supabase } from "../../lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
@@ -173,7 +174,7 @@ export default function TaskPage() {
   const [isEditingInput, setIsEditingInput] = useState(false);
 
   const [messages, setMessages] = useState([
-    { id: 1, sender: "ai", text: "老板，您上线了，接下来怎么安排？" },
+    { id: 1, sender: "ai", text: "老板好，欢迎上线，接下来怎么安排？" },
   ]);
   const [input, setInput] = useState("");
   const [pendingPlan, setPendingPlan] = useState<{
@@ -571,7 +572,7 @@ export default function TaskPage() {
 
   // 开启新对话
   const newConversation = () => {
-    setMessages([{ id: Date.now(), sender: "ai", text: "我等您吩咐，老板。" }]);
+    setMessages([{ id: Date.now(), sender: "ai", text: "老板，请您吩咐。" }]);
     setPendingPlan(null);
     setInput("");
   };
@@ -736,7 +737,7 @@ export default function TaskPage() {
                 )}
                 <div className="flex gap-2 mt-2">
                   <button onClick={confirmPlan} className="px-3 py-1 rounded bg-[#d6c7b5] text-white hover:bg-[#c9b8a1]">就这么干</button>
-                  <button onClick={discardPlan} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-black">不行</button>
+                  <button onClick={discardPlan} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-black">算了</button>
                 </div>
               </div>
             )}
