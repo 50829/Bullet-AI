@@ -1,8 +1,3 @@
-console.log("【AI Route】env check", {
-  LLM_API_KEY: process.env.LLM_API_KEY?.slice(0,6),   // 只打前6位
-  LLM_MODEL: process.env.LLM_MODEL,
-  LLM_BASE_URL: process.env.LLM_BASE_URL,
-});
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -33,14 +28,10 @@ function extractJson(text: string): Plan | null {
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const userMessages = (body?.messages ?? []) as ChatMessage[];
-
-  // 修改1: 允许从 body 或 env 中获取配置，使其支持任意 OpenAI-compatible API
-  // 优先使用 body 中的值（用于动态测试），fallback 到 env（用于生产）
-  const apiKey = body.apiKey || process.env.LLM_API_KEY;  // 要修改: 设置环境变量 LLM_API_KEY 为你的 API key
-  const model = body.model || process.env.LLM_MODEL;      // 要修改: 设置环境变量 LLM_MODEL 为你的模型名称
-  // baseUrl 支持多个 fallback，包括你的新 API 的 URL
-  const primaryBase = body.baseUrl || process.env.LLM_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3";  // 要修改: 设置 LLM_BASE_URL 为你的 API base URL，或修改默认值
-  const fallbacks = [primaryBase, "https://ark.cn-beijing.volces.com/api/v3"].filter(  // 要修改: 替换或添加你的 API fallback URL
+  const apiKey = body.apiKey || process.env.LLM_API_KEY;
+  const model = body.model || process.env.LLM_MODEL;
+  const primaryBase = body.baseUrl || process.env.LLM_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3";
+  const fallbacks = [primaryBase, "https://ark.cn-beijing.volces.com/api/v3"].filter(
     (v, i, arr) => !!v && arr.indexOf(v) === i
   );
 
@@ -56,8 +47,14 @@ export async function POST(req: NextRequest) {
     content:
       "你是一个中文 AI 任务管家，用户是你的老板，请保持语气简洁友好。用户在对话中可能提出一个较大的目标，请先给出简短回答；若你能将目标拆解为可执行的小任务，请在回答之后，额外用 JSON 输出一个计划，JSON 用如下结构：{\n  \"tasksDaily\": [{\"title\": \"...\", \"description\": \"...\"}],\n  \"tasksFuture\": [{\"title\": \"...\", \"description\": \"...\"}]\n}\n要求：标题简短（<=30 字符），描述精炼且可执行；若某类为空可省略该字段。除了 JSON 以外的自由文字请放在 JSON 之外。",
   };
-
-  const messages: ChatMessage[] = [system, ...userMessages];
+  
+  // 确保每个 userMessages 都有 content 字段
+  const userMessagesWithContent = userMessages.map(msg => ({
+    ...msg,
+    content: msg.content || "（无内容）",
+  }));
+  
+  const messages: ChatMessage[] = [system, ...userMessagesWithContent];
 
   let resp: Response | null = null;
   let usedBase = "";
@@ -65,8 +62,8 @@ export async function POST(req: NextRequest) {
   for (const baseUrl of fallbacks) {
     try {
       usedBase = baseUrl;
-      // 修改2: 确保 endpoint 是 /chat/completions（大多数兼容 API 使用这个）
       const endpoint = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}/chat/completions`;
+      console.log(`【AI Route】Trying endpoint: ${endpoint}`);
       resp = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -80,14 +77,17 @@ export async function POST(req: NextRequest) {
           temperature: 0.3,
         }),
       });
-      if (resp.ok) break;  // 如果成功，跳出循环
+      if (resp.ok) break;
     } catch (err) {
       lastErr = err;
+      console.error(`【AI Route】Error fetching ${usedBase}:`, err);
       resp = null;
       continue;
     }
   }
+
   if (!resp) {
+    console.error(`【AI Route】All fetch attempts failed:`, lastErr);
     return NextResponse.json(
       { error: `Fetch to LLM failed: ${lastErr?.message || String(lastErr)}`, baseTried: fallbacks },
       { status: 502 }
@@ -96,11 +96,11 @@ export async function POST(req: NextRequest) {
 
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
+    console.error(`【AI Route】LLM error: ${resp.status} ${text}`);
     return NextResponse.json({ error: `LLM error: ${resp.status} ${text}`, baseUrl: usedBase }, { status: 500 });
   }
 
   const data = await resp.json();
-  // 修改3: 增强兼容性，处理更多可能的响应结构（e.g., OpenAI, Anthropic, 或其他）
   let reply: string = "";
   const choice = data?.choices?.[0];
   const msg = choice?.message ?? data?.message ?? data?.completion;
@@ -114,11 +114,11 @@ export async function POST(req: NextRequest) {
   } else if (typeof data?.output_text === "string") {
     reply = data.output_text;
   } else if (data?.content) {
-    reply = data.content;  // 额外兼容
+    reply = data.content;
   }
   const plan = extractJson(reply);
   reply = reply.replace(/\{[\s\S]*\}$/, "").trim();
 
-  // 修改4: 响应中避免返回 apiKey（安全）
+  console.log(`【AI Route】Response: ${reply}`);
   return NextResponse.json({ reply, plan });
 }
