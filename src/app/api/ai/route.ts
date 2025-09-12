@@ -1,3 +1,8 @@
+console.log("【AI Route】env check", {
+  LLM_API_KEY: process.env.LLM_API_KEY?.slice(0,6),   // 只打前6位
+  LLM_MODEL: process.env.LLM_MODEL,
+  LLM_BASE_URL: process.env.LLM_BASE_URL,
+});
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";

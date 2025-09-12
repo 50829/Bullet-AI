@@ -1,30 +1,179 @@
 // src/components/AIAssistant.tsx
-import { Bot, Plus } from "lucide-react";
+import { Bot, Plus, Send, FileEdit } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Task } from "../types";
 
-export function AIAssistant() {
+type Message = {
+  role: "user" | "ai";
+  text: string;
+};
+
+interface AIPlan {
+  tasksDaily?: { title: string; description?: string }[];
+  tasksFuture?: { title: string; description?: string }[];
+}
+
+export function AIAssistant({ tasks }: { tasks: Task[] }) {
+  const [text, setText] = useState("");
+  const [messages, setMessages] = useState<Message[]>([
+    { role: "ai", text: "老板好，欢迎上线，接下来怎么安排？" },
+  ]);
+  const [loading, setLoading] = useState(false);
+  const [plan, setPlan] = useState<AIPlan | null>(null);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
+
+  /* ---------- 调后端 /api/ai ---------- */
+  const handleSend = async () => {
+    if (!text.trim()) return;
+    const userMsg: Message = { role: "user", text };
+    setMessages((prev) => [...prev, userMsg]);
+    setText("");
+    setLoading(true);
+    setPlan(null); // 清空上次计划
+
+    const body = {
+      messages: [userMsg],
+      tasks, // 当前全部任务给 AI 做上下文
+    };
+
+    const res = await fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      setMessages((prev) => [...prev, { role: "ai", text: "AI 开小差了，稍后再试~" }]);
+      setLoading(false);
+      return;
+    }
+
+    const json = await res.json();
+    const { reply, plan } = json;
+
+    // 显示 AI 文字
+    if (reply) setMessages((prev) => [...prev, { role: "ai", text: reply }]);
+    // 若后端返回计划，弹窗提示
+    if (plan && (plan.tasksDaily?.length || plan.tasksFuture?.length)) {
+      setPlan(plan);
+    }
+
+    setLoading(false);
+  };
+
+  /* ---------- 一键添加计划任务 ---------- */
+  const handleAddPlan = () => {
+    if (!plan) return;
+    const newTasks: Task[] = [
+      ...(plan.tasksDaily ?? []).map((t) => ({
+        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        title: t.title,
+        description: t.description,
+        priority: "medium" as const,
+        tags: [],
+        startDate: null,
+        dueDate: new Date(), // 今日任务
+        isCompleted: false,
+        createdAt: new Date(),
+      })),
+      ...(plan.tasksFuture ?? []).map((t) => ({
+        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        title: t.title,
+        description: t.description,
+        priority: "medium" as const,
+        tags: [],
+        startDate: null,
+        dueDate: null, // 迁移列表
+        isCompleted: false,
+        createdAt: new Date(),
+      })),
+    ];
+    // 反向追加到顶部（可按需调整）
+    // setTasks(prev => [...newTasks, ...prev]);
+    // 追加到尾部示例
+    // setTasks(prev => [...prev, ...newTasks]);
+    // 这里用父级 props 没有 setTasks，抛事件或全局状态管理自行接入
+    alert(`已生成 ${newTasks.length} 条任务，请按需手动添加！`);
+    setPlan(null);
+  };
+
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm h-full">
+    <div className="bg-white p-6 rounded-2xl shadow-sm h-full flex flex-col">
+      {/* 顶部标题 */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-semibold text-lg">我的 AI 管家</h3>
         <button className="text-gray-400 hover:text-gray-600">
           <Plus size={20} />
         </button>
       </div>
-      <div className="space-y-4">
-        <div className="flex items-start space-x-3">
-          <div className="bg-gray-200 p-2 rounded-full">
-            <Bot size={20} className="text-gray-600" />
+
+      {/* 聊天内容区 */}
+      <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`flex items-start space-x-3 ${msg.role === "user" ? "flex-row-reverse space-x-reverse" : ""}`}>
+            {msg.role === "ai" && (
+              <div className="bg-gray-200 p-2 rounded-full">
+                <Bot size={20} className="text-gray-600" />
+              </div>
+            )}
+            <div
+              className={`max-w-[75%] px-3 py-2 rounded-lg text-sm ${
+                msg.role === "user"
+                  ? "bg-orange-500 text-white rounded-br-none"
+                  : "bg-gray-100 text-gray-800 rounded-tl-none"
+              }`}
+            >
+              {msg.text}
+            </div>
           </div>
-          <div className="bg-gray-100 p-3 rounded-lg rounded-tl-none">
-            <p className="text-sm">老板好，欢迎上线，接下来怎么安排？</p>
+        ))}
+        {loading && <div className="text-sm text-gray-400">AI 正在思考…</div>}
+        <div ref={scrollRef} />
+      </div>
+
+      {/* 计划弹窗（有任务时显示） */}
+      {plan && (
+        <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-orange-700">AI 已生成任务计划</span>
+            <button
+              onClick={handleAddPlan}
+              className="ml-2 px-3 py-1 text-xs bg-orange-500 text-white rounded hover:bg-orange-600"
+            >
+              一键添加
+            </button>
           </div>
+          <ul className="mt-2 text-xs text-orange-800 list-disc pl-5">
+            {plan.tasksDaily?.map((t, i) => <li key={`d-${i}`}>今日：{t.title}</li>)}
+            {plan.tasksFuture?.map((t, i) => <li key={`f-${i}`}>未来：{t.title}</li>)}
+          </ul>
         </div>
-        {/* 这里可以添加输入框和交互逻辑 */}
-        <input
-            type="text"
-            placeholder="例如: 明天下午3点提醒我开会"
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-orange-500 focus:border-orange-500"
+      )}
+
+      {/* 输入栏 + 发送按钮 */}
+      <div className="flex items-end gap-2 mt-4">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="例如：明天下午3点提醒我开会"
+          className="w-full resize-none px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-orange-500 focus:border-orange-500 max-h-32 overflow-y-auto"
+          rows={2}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
         />
+        <button
+          onClick={handleSend}
+          disabled={!text.trim() || loading}
+          className="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <Send size={18} />
+        </button>
       </div>
     </div>
   );

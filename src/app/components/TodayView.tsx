@@ -127,7 +127,7 @@ export function TodayView({ todayTasks, tasks, setTasks }: TodayViewProps) {
           )}
         </div>
 
-        <AIAssistant />
+        <AIAssistant tasks={tasks} />
       </div>
     </div>
   );

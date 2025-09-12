@@ -104,7 +104,7 @@ export function FutureView({
           />
         </div>
 
-        <AIAssistant />
+        <AIAssistant tasks={tasks} />
       </div>
 
       {isAdding && (
