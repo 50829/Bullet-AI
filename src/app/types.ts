@@ -7,6 +7,7 @@ export interface Task {
   isCompleted: boolean;
   priority: 'low' | 'medium' | 'high';
   tags: string[];
-  startDate?: Date;  // Add this
-  dueDate?: Date;
+  startDate: Date | null;
+  dueDate: Date | null;
+  createdAt: Date;
 }
