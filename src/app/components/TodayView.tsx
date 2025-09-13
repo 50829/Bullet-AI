@@ -127,7 +127,10 @@ export function TodayView({ todayTasks, tasks, setTasks }: TodayViewProps) {
           )}
         </div>
 
-        <AIAssistant tasks={tasks} />
+        <AIAssistant
+  tasks={tasks}
+  onAddTasks={(newTasks) => setTasks([...tasks, ...newTasks])}
+/>
       </div>
     </div>
   );

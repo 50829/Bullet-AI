@@ -104,7 +104,10 @@ export function FutureView({
           />
         </div>
 
-        <AIAssistant tasks={tasks} />
+        <AIAssistant
+  tasks={tasks}
+  onAddTasks={(newTasks) => setTasks([...tasks, ...newTasks])}
+/>
       </div>
 
       {isAdding && (

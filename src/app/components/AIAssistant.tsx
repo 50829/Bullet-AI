@@ -3,17 +3,20 @@ import { Bot, Plus, Send, FileEdit } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Task } from "../types";
 
-type Message = {
-  role: "user" | "ai";
-  text: string;
-};
+type Message = { role: "user" | "ai"; text: string };
 
 interface AIPlan {
   tasksDaily?: { title: string; description?: string }[];
   tasksFuture?: { title: string; description?: string }[];
 }
 
-export function AIAssistant({ tasks }: { tasks: Task[] }) {
+export function AIAssistant({
+  tasks,
+  onAddTasks,
+}: {
+  tasks: Task[];
+  onAddTasks?: (newTasks: Task[]) => void;
+}) {
   const [text, setText] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     { role: "ai", text: "老板好，欢迎上线，接下来怎么安排？" },
@@ -31,13 +34,9 @@ export function AIAssistant({ tasks }: { tasks: Task[] }) {
     setMessages((prev) => [...prev, userMsg]);
     setText("");
     setLoading(true);
-    setPlan(null); // 清空上次计划
+    setPlan(null);
 
-    const body = {
-      messages: [userMsg],
-      tasks, // 当前全部任务给 AI 做上下文
-    };
-
+    const body = { messages: [userMsg], tasks };
     const res = await fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -52,14 +51,8 @@ export function AIAssistant({ tasks }: { tasks: Task[] }) {
 
     const json = await res.json();
     const { reply, plan } = json;
-
-    // 显示 AI 文字
     if (reply) setMessages((prev) => [...prev, { role: "ai", text: reply }]);
-    // 若后端返回计划，弹窗提示
-    if (plan && (plan.tasksDaily?.length || plan.tasksFuture?.length)) {
-      setPlan(plan);
-    }
-
+    if (plan && (plan.tasksDaily?.length || plan.tasksFuture?.length)) setPlan(plan);
     setLoading(false);
   };
 
@@ -90,18 +83,12 @@ export function AIAssistant({ tasks }: { tasks: Task[] }) {
         createdAt: new Date(),
       })),
     ];
-    // 反向追加到顶部（可按需调整）
-    // setTasks(prev => [...newTasks, ...prev]);
-    // 追加到尾部示例
-    // setTasks(prev => [...prev, ...newTasks]);
-    // 这里用父级 props 没有 setTasks，抛事件或全局状态管理自行接入
-    alert(`已生成 ${newTasks.length} 条任务，请按需手动添加！`);
+    onAddTasks?.(newTasks);
     setPlan(null);
   };
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm h-full flex flex-col">
-      {/* 顶部标题 */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-semibold text-lg">我的 AI 管家</h3>
         <button className="text-gray-400 hover:text-gray-600">
@@ -109,7 +96,6 @@ export function AIAssistant({ tasks }: { tasks: Task[] }) {
         </button>
       </div>
 
-      {/* 聊天内容区 */}
       <div className="flex-1 overflow-y-auto space-y-4 pr-2">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex items-start space-x-3 ${msg.role === "user" ? "flex-row-reverse space-x-reverse" : ""}`}>
@@ -133,7 +119,6 @@ export function AIAssistant({ tasks }: { tasks: Task[] }) {
         <div ref={scrollRef} />
       </div>
 
-      {/* 计划弹窗（有任务时显示） */}
       {plan && (
         <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
           <div className="flex justify-between items-center">
@@ -152,7 +137,6 @@ export function AIAssistant({ tasks }: { tasks: Task[] }) {
         </div>
       )}
 
-      {/* 输入栏 + 发送按钮 */}
       <div className="flex items-end gap-2 mt-4">
         <textarea
           value={text}
