@@ -320,7 +320,7 @@ export default function App() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen font-sans text-gray-800">
+    <div className="bg-[#F9F7F1] min-h-screen font-sans text-gray-800">
       <main className="max-w-7xl mx-auto p-4 md:p-8">
         <div className="flex items-center justify-end space-x-2 mb-6">
           <button
