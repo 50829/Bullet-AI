@@ -107,7 +107,7 @@ export function AIAssistant({
             <div
               className={`max-w-[75%] px-3 py-2 rounded-lg text-sm ${
                 msg.role === "user"
-                  ? "bg-orange-500 text-white rounded-br-none"
+                  ? "bg-[#d6c7b5] text-white rounded-br-none"
                   : "bg-gray-100 text-gray-800 rounded-tl-none"
               }`}
             >
@@ -120,17 +120,17 @@ export function AIAssistant({
       </div>
 
       {plan && (
-        <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-orange-700">AI 已生成任务计划</span>
+            <span className="text-sm font-medium text-blue-700">AI 已生成任务计划</span>
             <button
               onClick={handleAddPlan}
-              className="ml-2 px-3 py-1 text-xs bg-orange-500 text-white rounded hover:bg-orange-600"
+              className="ml-2 px-3 py-1 text-xs bg-[#d6c7b5] text-white rounded hover:bg-[#d6c7b5]"
             >
               一键添加
             </button>
           </div>
-          <ul className="mt-2 text-xs text-orange-800 list-disc pl-5">
+          <ul className="mt-2 text-xs text-black list-disc pl-5">
             {plan.tasksDaily?.map((t, i) => <li key={`d-${i}`}>今日：{t.title}</li>)}
             {plan.tasksFuture?.map((t, i) => <li key={`f-${i}`}>未来：{t.title}</li>)}
           </ul>
@@ -154,7 +154,7 @@ export function AIAssistant({
         <button
           onClick={handleSend}
           disabled={!text.trim() || loading}
-          className="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-2 bg-[#d6c7b5] text-white rounded-lg hover:bg-[#d6c7b5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Send size={18} />
         </button>

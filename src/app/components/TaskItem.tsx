@@ -59,7 +59,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
     });
     // 逾期判断：未完成任务 && 现实时间已超 dueDate
     const isOver = !task.isCompleted && task.dueDate.getTime() < now.getTime();
-    const color = isOver ? 'text-red-500' : 'text-orange-500';
+    const color = isOver ? 'text-red-500' : 'text-blue-500';
     return { dueTimeStr: str, dueColor: color };
   }, [task.dueDate, task.isCompleted, now]);
   /* ------------------------------------- */
@@ -170,7 +170,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
                     setNewTag('');
                   }
                 }}
-                className="bg-blue-500 text-white px-4 rounded-r"
+                className="bg-[#d6c7b5] text-white px-4 rounded-r"
               >
                 +
               </button>
@@ -203,7 +203,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
             <button onClick={() => setIsEditing(false)} className="px-4 py-2 border rounded text-gray-600">
               取消
             </button>
-            <button onClick={handleUpdate} className="px-4 py-2 bg-orange-500 text-white rounded">
+            <button onClick={handleUpdate} className="px-4 py-2 bg-[#d6c7b5] text-white rounded">
               更新任务
             </button>
           </div>

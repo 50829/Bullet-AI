@@ -20,9 +20,14 @@ interface CalendarProps {
   setTasks: (tasks: Task[]) => void;
   selectedDate?: Date | null;
   onDateSelect?: (date: Date) => void;
+  t: {
+    calendarTitle: string;
+    weekDays: string[]; // ← 这里是数组
+  };
+  lang: 'zh' | 'en';
 }
 
-export function Calendar({ tasks, onDateSelect }: CalendarProps) {
+export function Calendar({ tasks, onDateSelect, t, lang }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const firstDayOfMonth = startOfMonth(currentMonth);
@@ -46,7 +51,9 @@ export function Calendar({ tasks, onDateSelect }: CalendarProps) {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">{format(currentMonth, 'yyyy年MM月')}</h2>
+        <h2 className="text-lg font-semibold">{t.calendarTitle
+    .replace('{year}', format(currentMonth, 'yyyy'))
+    .replace('{month}', format(currentMonth, lang === 'en' ? 'MM' : 'MM'))}</h2>
         <div className="space-x-2">
           <button
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
@@ -64,9 +71,9 @@ export function Calendar({ tasks, onDateSelect }: CalendarProps) {
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-center text-sm text-gray-500 mb-2">
-        {['日', '一', '二', '三', '四', '五', '六'].map((day) => (
-          <div key={day}>{day}</div>
-        ))}
+      {t.weekDays.map((day) => (
+    <div key={day}>{day}</div>
+  ))}
       </div>
 
       <div className="grid grid-cols-7 gap-2">
@@ -82,18 +89,18 @@ export function Calendar({ tasks, onDateSelect }: CalendarProps) {
               key={day.toString()}
               onClick={() => onDateSelect?.(day)}
               className={`p-2 rounded-lg cursor-pointer flex flex-col items-center justify-start h-24 border ${
-                isToday(day) ? 'bg-orange-100 border-orange-200' : 'hover:bg-gray-50'
+                isToday(day) ? 'bg-blue-100 border-blue-200' : 'hover:bg-gray-50'
               }`}
             >
               <span
                 className={`${
-                  isToday(day) ? 'font-bold text-orange-600' : ''
+                  isToday(day) ? 'font-bold text-blue-600' : ''
                 } ${!isSameMonth(day, currentMonth) ? 'text-gray-300' : ''}`}
               >
                 {format(day, 'd')}
               </span>
               {dayTasks.length > 0 && (
-                <div className="mt-1 w-2 h-2 bg-blue-500 rounded-full" />
+                <div className="mt-1 w-2 h-2 bg-blue-400 rounded-full" />
               )}
             </div>
           );

@@ -21,9 +21,11 @@ interface ScheduledTasksProps {
   tasks: Task[];
   setTasks: (tasks: Task[]) => void;
   targetDate: Date | null;
+  t: Record<string, string>;
+  lang: 'zh' | 'en';
 }
 
-export function ScheduledTasks({ tasks, setTasks, targetDate }: ScheduledTasksProps) {
+export function ScheduledTasks({ tasks, setTasks, targetDate, t, lang }: ScheduledTasksProps) {
   const sensors = useSensors(useSensor(PointerSensor));
 
   const dayTasks = targetDate
@@ -59,9 +61,11 @@ export function ScheduledTasks({ tasks, setTasks, targetDate }: ScheduledTasksPr
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm">
       <h3 className="font-semibold text-lg mb-2">
-        已安排任务 · {targetDate ? format(targetDate, 'MM月dd日') : '请选择日期'}
+      {targetDate
+    ? t.scheduledTitle.replace('{date}', format(targetDate, lang === 'en' ? 'MM/dd' : 'MM月dd日'))
+    : '请选择日期'}
       </h3>
-      <p className="text-sm text-gray-500 mb-4">选中日期的任务清单</p>
+      <p className="text-sm text-gray-500 mb-4">{t.scheduledSubtitle}</p>
 
       {dayTasks.length > 0 ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -79,11 +83,11 @@ export function ScheduledTasks({ tasks, setTasks, targetDate }: ScheduledTasksPr
                   <button
                     onClick={() => handleMoveToToday(task.id)}
                     className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg
-                      bg-gradient-to-r from-orange-400 to-orange-500 text-white
+                      bg-[#d6c7b5] text-white
                       shadow-md hover:shadow-lg active:brightness-95
                       transition-all duration-200"
                   >
-                    迁回今日
+                    {t.scheduledMoveTodayBtn}
                   </button>
                 </div>
               ))}
@@ -93,8 +97,8 @@ export function ScheduledTasks({ tasks, setTasks, targetDate }: ScheduledTasksPr
       ) : (
         <div className="text-center py-16 text-gray-500">
           <FileEdit className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-lg font-medium">暂无任务</h3>
-          <p className="mt-1 text-sm">点击上方日历选择日期，或把迁移列表任务移动到该日期</p>
+          <h3 className="mt-2 text-lg font-medium">{t.scheduledEmptyTitle}</h3>
+          <p className="mt-1 text-sm">{t.scheduledEmptyHint}</p>
         </div>
       )}
     </div>

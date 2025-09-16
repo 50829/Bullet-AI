@@ -22,6 +22,7 @@ interface MigrationListProps {
   migrationTasks: Task[];
   onMove: (taskId: string) => void;
   selectedDate: Date | null;
+  t: Record<string, string>;
 }
 
 export function MigrationList({
@@ -30,6 +31,7 @@ export function MigrationList({
   migrationTasks,
   onMove,
   selectedDate,
+  t,
 }: MigrationListProps) {
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -58,8 +60,8 @@ export function MigrationList({
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm">
-      <h3 className="font-semibold text-lg mb-2">迁移列表</h3>
-      <p className="text-sm text-gray-500 mb-4">此处任务可安排至未来日期。</p>
+      <h3 className="font-semibold text-lg mb-2">{t.migrateTitle}</h3>
+      <p className="text-sm text-gray-500 mb-4">{t.migrateSubtitle}</p>
 
       <div className="border-2 border-dashed border-gray-200 rounded-lg min-h-[150px]">
         {migrationTasks.length > 0 ? (
@@ -88,7 +90,7 @@ export function MigrationList({
         disabled:opacity-50 disabled:cursor-not-allowed
         transition-all duration-200"
     >
-                      移动
+                      {t.migrateMoveBtn}
                     </button>
                   </div>
                 ))}
@@ -98,7 +100,7 @@ export function MigrationList({
         ) : (
           <div className="text-center text-gray-400 py-8">
             <FileEdit className="mx-auto h-8 w-8" />
-            <p className="mt-2 text-sm">迁移列表为空</p>
+            <p className="mt-2 text-sm">{t.migrateEmpty}</p>
           </div>
         )}
       </div>

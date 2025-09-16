@@ -23,9 +23,11 @@ interface TodayViewProps {
   todayTasks: Task[];
   tasks: Task[];
   setTasks: (tasks: Task[]) => void;
+  t: Record<string, string>;
+  lang: 'zh' | 'en'; 
 }
 
-export function TodayView({ todayTasks, tasks, setTasks }: TodayViewProps) {
+export function TodayView({ todayTasks, tasks, setTasks, t, lang }: TodayViewProps) {
   const sensors = useSensors(useSensor(PointerSensor));
 
   /* ---- 统计 ---- */
@@ -72,14 +74,14 @@ export function TodayView({ todayTasks, tasks, setTasks }: TodayViewProps) {
     <div>
       <div className="mb-6">
         <h1 className="text-3xl font-bold">
-          今日任务{' '}
-          {new Date().toLocaleDateString('zh-CN', {
+        {t.todayTitle}{' '}
+          {new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'zh-CN', {
             month: '2-digit',
             day: '2-digit',
             weekday: 'long',
           })}
         </h1>
-        <p className="text-gray-500">专注当下，高效执行</p>
+        <p className="text-gray-500">{t.todaySubtitle}</p>
       </div>
 
       <TaskStats
@@ -87,6 +89,7 @@ export function TodayView({ todayTasks, tasks, setTasks }: TodayViewProps) {
         completed={completedCount}
         pending={todayTasks.length - completedCount}
         overdue={overdueCount}
+        t={t}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
@@ -107,11 +110,11 @@ export function TodayView({ todayTasks, tasks, setTasks }: TodayViewProps) {
                       <button
                         onClick={() => handleMigrate(task.id)}
                         className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg
-                          bg-gradient-to-r from-indigo-400 to-indigo-500 text-white
+                          bg-[#d6c7b5] text-white
                           shadow-md hover:shadow-lg active:brightness-95
                           transition-all duration-200"
                       >
-                        迁移
+                        {t.migrateBtn}
                       </button>
                     </div>
                   ))}
@@ -121,8 +124,8 @@ export function TodayView({ todayTasks, tasks, setTasks }: TodayViewProps) {
           ) : (
             <div className="text-center py-16 text-gray-500">
               <FileEdit className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-lg font-medium">暂无任务</h3>
-              <p className="mt-1 text-sm">今天还没有安排任务，点击上方按钮开始创建</p>
+              <h3 className="mt-2 text-lg font-medium">{t.noTask}</h3>
+              <p className="mt-1 text-sm">{t.noTaskHint}</p>
             </div>
           )}
         </div>

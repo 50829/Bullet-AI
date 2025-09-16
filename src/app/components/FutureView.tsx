@@ -13,6 +13,8 @@ interface FutureViewProps {
   setTasks: (tasks: Task[]) => void;
   futureTasks: Task[];
   migrationListTasks: Task[];
+  t: Record<string, string>;
+  lang: 'zh' | 'en';
 }
 
 export function FutureView({
@@ -20,6 +22,8 @@ export function FutureView({
   setTasks,
   futureTasks,
   migrationListTasks,
+  t,
+  lang,
 }: FutureViewProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
@@ -59,14 +63,14 @@ export function FutureView({
     <>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">未来规划</h1>
-          <p className="text-gray-500">提前布局，掌控节奏</p>
+          <h1 className="text-3xl font-bold">{t.futureTitle}</h1>
+          <p className="text-gray-500">{t.futureSubtitle}</p>
         </div>
         <button
           onClick={() => setIsAdding(true)}
-          className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600"
+          className="bg-[#d6c7b5] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d6c7b5]"
         >
-          + 添加任务
+          {t.addTask}
         </button>
       </div>
 
@@ -75,6 +79,7 @@ export function FutureView({
         completed={completedCount}
         pending={futureTasks.length + migrationListTasks.length - completedCount}
         overdue={0}
+        t={t}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
@@ -86,6 +91,7 @@ export function FutureView({
             migrationTasks={migrationListTasks}
             onMove={handleMoveTask}
             selectedDate={selectedDate}
+            t={t}
           />
 
           {/* 日历 */}
@@ -94,6 +100,8 @@ export function FutureView({
             setTasks={setTasks}
             onDateSelect={setSelectedDate}
             selectedDate={selectedDate}
+            t={t as unknown as { calendarTitle: string; weekDays: string[] }}
+            lang={lang}
           />
 
           {/* 与选中日期一一对应的「已安排任务」面板 */}
@@ -101,6 +109,8 @@ export function FutureView({
             tasks={tasks}
             setTasks={setTasks}
             targetDate={selectedDate}
+            t={t}
+            lang={lang}
           />
         </div>
 

@@ -108,7 +108,7 @@ export function AddTaskPanel({ onClose, onConfirm }: Props) {
                     setNewTag('');
                   }
                 }}
-                className="bg-blue-500 text-white px-4 rounded-r"
+                className="bg-[#d6c7b5] text-white px-4 rounded-r"
               >
                 +
               </button>
@@ -145,7 +145,7 @@ export function AddTaskPanel({ onClose, onConfirm }: Props) {
             <button onClick={onClose} className="px-4 py-2 border rounded text-gray-600">
               取消
             </button>
-            <button onClick={handleConfirm} className="px-4 py-2 bg-orange-500 text-white rounded">
+            <button onClick={handleConfirm} className="px-4 py-2 bg-[#d6c7b5] text-white rounded">
               添加任务
             </button>
           </div>
