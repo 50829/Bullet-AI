@@ -121,7 +121,7 @@ export function AIAssistant({
             <div
               className={`max-w-[75%] px-3 py-2 rounded-lg text-sm ${
                 msg.role === "user"
-                  ? "bg-[#d6c7b5] text-white rounded-br-none"
+                  ? "bg-[var(--brand-color)] text-white rounded-br-none"
                   : "bg-gray-100 text-gray-800 rounded-tl-none"
               }`}
             >
@@ -139,7 +139,7 @@ export function AIAssistant({
             <span className="text-sm font-medium text-blue-700">{t.planGenerated}</span>
             <button
               onClick={handleAddPlan}
-              className="ml-2 px-3 py-1 text-xs bg-[#d6c7b5] text-white rounded hover:bg-[#d6c7b5]"
+              className="ml-2 px-3 py-1 text-xs bg-[var(--brand-color)] text-white rounded hover:bg-[var(--brand-color-hover)]"
             >
               {t.oneClickAdd}
             </button>

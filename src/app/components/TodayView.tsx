@@ -111,7 +111,7 @@ export function TodayView({ todayTasks, tasks, setTasks, t, lang }: TodayViewPro
                       <button
                         onClick={() => handleMigrate(task.id)}
                         className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg
-                          bg-[#d6c7b5] text-white
+                          bg-[var(--brand-color)] text-white
                           shadow-md hover:shadow-lg active:brightness-95
                           transition-all duration-200"
                       >

@@ -3,6 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Brand palette */
+  --brand-color: #d6c7b5;
+  --brand-color-hover: #c9b8a1;
 }
 
 @theme inline {

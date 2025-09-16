@@ -170,7 +170,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
                     setNewTag('');
                   }
                 }}
-                className="bg-[#d6c7b5] text-white px-4 rounded-r"
+                className="bg-[var(--brand-color)] text-white px-4 rounded-r"
               >
                 +
               </button>
@@ -203,7 +203,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
             <button onClick={() => setIsEditing(false)} className="px-4 py-2 border rounded text-gray-600">
               取消
             </button>
-            <button onClick={handleUpdate} className="px-4 py-2 bg-[#d6c7b5] text-white rounded">
+            <button onClick={handleUpdate} className="px-4 py-2 bg-[var(--brand-color)] text-white rounded">
               更新任务
             </button>
           </div>

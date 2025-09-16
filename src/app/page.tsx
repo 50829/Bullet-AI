@@ -107,14 +107,14 @@ export default function Home() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#d6c7b5]"
+              className="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)]"
               placeholder="you@example.com"
               disabled={loading}
             />
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 px-4 py-2 rounded-xl bg-[#d6c7b5] text-white hover:bg-[#c9b8a1] disabled:opacity-60"
+              className="w-full mt-2 px-4 py-2 rounded-xl bg-[var(--brand-color)] text-white hover:bg-[var(--brand-color-hover)] disabled:opacity-60"
             >
               {loading ? "发送中…" : "发送验证码"}
             </button>
@@ -127,14 +127,14 @@ export default function Home() {
               required
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#d6c7b5]"
+              className="w-full border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)]"
               placeholder="请输入验证码"
               disabled={loading}
             />
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 px-4 py-2 rounded-xl bg-[#d6c7b5] text-white hover:bg-[#c9b8a1] disabled:opacity-60"
+              className="w-full mt-2 px-4 py-2 rounded-xl bg-[var(--brand-color)] text-white hover:bg-[var(--brand-color-hover)] disabled:opacity-60"
             >
               {loading ? "验证中…" : "验证并登录"}
             </button>

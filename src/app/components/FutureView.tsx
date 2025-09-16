@@ -69,7 +69,7 @@ export function FutureView({
         </div>
         <button
           onClick={() => setIsAdding(true)}
-          className="bg-[#d6c7b5] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#d6c7b5]"
+          className="bg-[var(--brand-color)] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--brand-color-hover)]"
         >
           {t.addTask}
         </button>
