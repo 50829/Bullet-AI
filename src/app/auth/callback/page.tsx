@@ -62,7 +62,7 @@ export default function AuthCallback() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F9F7F1]">
+  <div className="min-h-screen flex items-center justify-center bg-[var(--surface-soft)]">
       <div className="bg-white rounded-2xl shadow p-6 text-gray-700">{msg}</div>
     </div>
   );

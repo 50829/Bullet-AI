@@ -6,6 +6,16 @@
   /* Brand palette */
   --brand-color: #d6c7b5;
   --brand-color-hover: #c9b8a1;
+  /* Surfaces */
+  --surface-soft: #F9F7F1; /* 主背景淡色 */
+  --surface-alt: #ffffff;
+  /* Text semantic */
+  --text-primary: #171717;
+  --text-inverse: #ffffff;
+  /* State colors (可后续扩展 */
+  --state-success: #16a34a;
+  --state-warning: #d97706;
+  --state-danger: #dc2626;
 }
 
 @theme inline {
@@ -19,6 +29,8 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --text-primary: #ededed;
+    --surface-alt: #1a1a1a;
   }
 }
 

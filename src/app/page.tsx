@@ -94,7 +94,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#F9F7F1] text-black">
+  <main className="min-h-screen flex items-center justify-center bg-[var(--surface-soft)] text-[var(--text-primary)]">
       <div className="bg-white rounded-2xl shadow-lg p-10 text-center w-full max-w-md mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">登录 BulletAI</h1>
         <p className="text-gray-600 mb-6">使用邮箱验证码或第三方账号登录，登录后将跳转到任务面板</p>
