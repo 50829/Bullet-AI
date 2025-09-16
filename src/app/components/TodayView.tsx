@@ -3,6 +3,7 @@ import { Task } from '../types';
 import { TaskStats } from './TaskStats';
 import { AIAssistant } from './AIAssistant';
 import { TaskItem } from './TaskItem';
+import { AIAssistantProps } from './AIAssistant';
 import {
   DndContext,
   closestCenter,
@@ -131,8 +132,9 @@ export function TodayView({ todayTasks, tasks, setTasks, t, lang }: TodayViewPro
         </div>
 
         <AIAssistant
-  tasks={tasks}
-  onAddTasks={(newTasks) => setTasks([...tasks, ...newTasks])}
+          tasks={tasks}
+          onAddTasks={(newTasks) => setTasks([...tasks, ...newTasks])}
+          t={t as unknown as AIAssistantProps['t']}
 />
       </div>
     </div>

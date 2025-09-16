@@ -7,6 +7,7 @@ import { AIAssistant } from './AIAssistant';
 import { TaskStats } from './TaskStats';
 import { useState } from 'react';
 import { AddTaskPanel } from './AddTaskPanel';
+import { AIAssistantProps } from './AIAssistant';
 
 interface FutureViewProps {
   tasks: Task[];
@@ -115,8 +116,9 @@ export function FutureView({
         </div>
 
         <AIAssistant
-  tasks={tasks}
-  onAddTasks={(newTasks) => setTasks([...tasks, ...newTasks])}
+          tasks={tasks}
+          onAddTasks={(newTasks) => setTasks([...tasks, ...newTasks])}
+          t={t as unknown as AIAssistantProps['t']}
 />
       </div>
 

@@ -10,16 +10,30 @@ interface AIPlan {
   tasksFuture?: { title: string; description?: string }[];
 }
 
+export interface AIAssistantProps {
+  tasks: Task[];
+  onAddTasks?: (newTasks: Task[]) => void;
+  t: {
+    aiTitle: string;
+    aiGreeting: string;
+    aiThinking: string;
+    aiError: string;
+    planGenerated: string;
+    oneClickAdd: string;
+    todayPlanPrefix: string;
+    futurePlanPrefix: string;
+    aiPlaceholder: string;
+  };
+}
+
 export function AIAssistant({
   tasks,
   onAddTasks,
-}: {
-  tasks: Task[];
-  onAddTasks?: (newTasks: Task[]) => void;
-}) {
+  t,
+}: AIAssistantProps) {
   const [text, setText] = useState("");
   const [messages, setMessages] = useState<Message[]>([
-    { role: "ai", text: "老板好，欢迎上线，接下来怎么安排？" },
+    { role: "ai", text: t.aiGreeting },
   ]);
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<AIPlan | null>(null);
@@ -44,7 +58,7 @@ export function AIAssistant({
     });
 
     if (!res.ok) {
-      setMessages((prev) => [...prev, { role: "ai", text: "AI 开小差了，稍后再试~" }]);
+      setMessages((prev) => [...prev, { role: "ai", text: t.aiError }]);
       setLoading(false);
       return;
     }
@@ -90,7 +104,7 @@ export function AIAssistant({
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold text-lg">我的 AI 管家</h3>
+        <h3 className="font-semibold text-lg">{t.aiTitle}</h3>
         <button className="text-gray-400 hover:text-gray-600">
           <Plus size={20} />
         </button>
@@ -115,24 +129,24 @@ export function AIAssistant({
             </div>
           </div>
         ))}
-        {loading && <div className="text-sm text-gray-400">AI 正在思考…</div>}
+        {loading && <div className="text-sm text-gray-400">{t.aiThinking}</div>}
         <div ref={scrollRef} />
       </div>
 
       {plan && (
         <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-blue-700">AI 已生成任务计划</span>
+            <span className="text-sm font-medium text-blue-700">{t.planGenerated}</span>
             <button
               onClick={handleAddPlan}
               className="ml-2 px-3 py-1 text-xs bg-[#d6c7b5] text-white rounded hover:bg-[#d6c7b5]"
             >
-              一键添加
+              {t.oneClickAdd}
             </button>
           </div>
           <ul className="mt-2 text-xs text-black list-disc pl-5">
-            {plan.tasksDaily?.map((t, i) => <li key={`d-${i}`}>今日：{t.title}</li>)}
-            {plan.tasksFuture?.map((t, i) => <li key={`f-${i}`}>未来：{t.title}</li>)}
+          {plan.tasksDaily?.map((task, i) => <li key={`d-${i}`}>{t.todayPlanPrefix}{task.title}</li>)}
+          {plan.tasksFuture?.map((task, i) => <li key={`f-${i}`}>{t.futurePlanPrefix}{task.title}</li>)}
           </ul>
         </div>
       )}
@@ -141,7 +155,7 @@ export function AIAssistant({
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="例如：明天下午3点提醒我开会"
+          placeholder={t.aiPlaceholder}
           className="w-full resize-none px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-orange-500 focus:border-orange-500 max-h-32 overflow-y-auto"
           rows={2}
           onKeyDown={(e) => {
