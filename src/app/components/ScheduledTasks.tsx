@@ -25,15 +25,27 @@ interface ScheduledTasksProps {
   lang: 'zh' | 'en';
 }
 
-export function ScheduledTasks({ tasks, setTasks, targetDate, t, lang }: ScheduledTasksProps) {
+export function ScheduledTasks({
+  tasks,
+  setTasks,
+  targetDate,
+  t,
+  lang,
+}: ScheduledTasksProps) {
   const sensors = useSensors(useSensor(PointerSensor));
 
   const dayTasks = targetDate
-    ? tasks.filter((t) => t.dueDate && format(t.dueDate, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd'))
+    ? tasks.filter(
+        (t) =>
+          t.dueDate &&
+          format(t.dueDate, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')
+      )
     : [];
 
   const handleToggle = (id: string) => {
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)));
+    setTasks(
+      tasks.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t))
+    );
   };
   const handleDelete = (id: string) => {
     setTasks(tasks.filter((t) => t.id !== id));
@@ -44,7 +56,9 @@ export function ScheduledTasks({ tasks, setTasks, targetDate, t, lang }: Schedul
 
   /* ---- 迁回今日（dueDate 改为今天）---- */
   const handleMoveToToday = (id: string) => {
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, dueDate: new Date() } : t)));
+    setTasks(
+      tasks.map((t) => (t.id === id ? { ...t, dueDate: new Date() } : t))
+    );
   };
 
   function handleDragEnd(event: DragEndEvent) {
@@ -53,7 +67,9 @@ export function ScheduledTasks({ tasks, setTasks, targetDate, t, lang }: Schedul
       const oldIndex = dayTasks.findIndex((t) => t.id === active.id);
       const newIndex = dayTasks.findIndex((t) => t.id === over.id);
       const reorderedDay = arrayMove(dayTasks, oldIndex, newIndex);
-      const otherTasks = tasks.filter((t) => !dayTasks.some((dt) => dt.id === t.id));
+      const otherTasks = tasks.filter(
+        (t) => !dayTasks.some((dt) => dt.id === t.id)
+      );
       setTasks([...otherTasks, ...reorderedDay]);
     }
   }
@@ -61,28 +77,44 @@ export function ScheduledTasks({ tasks, setTasks, targetDate, t, lang }: Schedul
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm">
       <h3 className="font-semibold text-lg mb-2">
-      {targetDate
-    ? t.scheduledTitle.replace('{date}', format(targetDate, lang === 'en' ? 'MM/dd' : 'MM月dd日'))
-    : '请选择日期'}
+        {targetDate
+          ? t.scheduledTitle.replace(
+              '{date}',
+              format(targetDate, lang === 'en' ? 'MM/dd' : 'MM月dd日')
+            )
+          : '请选择日期'}
       </h3>
       <p className="text-sm text-gray-500 mb-4">{t.scheduledSubtitle}</p>
 
       {dayTasks.length > 0 ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={dayTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-4">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={dayTasks.map((t) => t.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-2 p-4">
               {dayTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                  <TaskItem
-                    task={task}
-                    onToggle={handleToggle}
-                    onDelete={handleDelete}
-                    onUpdate={handleUpdate}
-                  />
+                <div
+                  key={task.id}
+                  className="flex items-center justify-between bg-gray-100 p-2 rounded"
+                >
+                  <div className="flex-1">
+                    <TaskItem
+                      task={task}
+                      onToggle={handleToggle}
+                      onDelete={handleDelete}
+                      onUpdate={handleUpdate}
+                      t={t}
+                    />
+                  </div>
                   {/* 迁回今日按钮 */}
                   <button
                     onClick={() => handleMoveToToday(task.id)}
-                    className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg
+                    className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg shrink-0
                       bg-[var(--brand-color)] text-white
                       shadow-md hover:shadow-lg active:brightness-95
                       transition-all duration-200"

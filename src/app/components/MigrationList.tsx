@@ -77,6 +77,7 @@ export function MigrationList({
         onToggle={handleToggle}
         onDelete={handleDelete}
         onUpdate={handleUpdate}
+        t={t}
       />
     </div>
 
@@ -85,7 +86,7 @@ export function MigrationList({
       onClick={() => onMove(task.id)}
       disabled={!selectedDate}
       className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg
-        bg-gradient-to-r from-orange-400 to-orange-500 text-white
+        bg-[var(--brand-color)] text-white
         shadow-md hover:shadow-lg active:brightness-95
         disabled:opacity-50 disabled:cursor-not-allowed
         transition-all duration-200"

@@ -25,10 +25,16 @@ interface TodayViewProps {
   tasks: Task[];
   setTasks: (tasks: Task[]) => void;
   t: Record<string, string>;
-  lang: 'zh' | 'en'; 
+  lang: 'zh' | 'en';
 }
 
-export function TodayView({ todayTasks, tasks, setTasks, t, lang }: TodayViewProps) {
+export function TodayView({
+  todayTasks,
+  tasks,
+  setTasks,
+  t,
+  lang,
+}: TodayViewProps) {
   const sensors = useSensors(useSensor(PointerSensor));
 
   /* ---- 统计 ---- */
@@ -45,7 +51,9 @@ export function TodayView({ todayTasks, tasks, setTasks, t, lang }: TodayViewPro
 
   /* ---- 任务操作 ---- */
   const handleToggle = (id: string) => {
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)));
+    setTasks(
+      tasks.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t))
+    );
   };
   const handleDelete = (id: string) => {
     setTasks(tasks.filter((t) => t.id !== id));
@@ -66,7 +74,9 @@ export function TodayView({ todayTasks, tasks, setTasks, t, lang }: TodayViewPro
       const oldIndex = todayTasks.findIndex((t) => t.id === active.id);
       const newIndex = todayTasks.findIndex((t) => t.id === over.id);
       const reorderedToday = arrayMove(todayTasks, oldIndex, newIndex);
-      const otherTasks = tasks.filter((t) => !todayTasks.some((tt) => tt.id === t.id));
+      const otherTasks = tasks.filter(
+        (t) => !todayTasks.some((tt) => tt.id === t.id)
+      );
       setTasks([...reorderedToday, ...otherTasks]);
     }
   }
@@ -75,7 +85,7 @@ export function TodayView({ todayTasks, tasks, setTasks, t, lang }: TodayViewPro
     <div>
       <div className="mb-6">
         <h1 className="text-3xl font-bold">
-        {t.todayTitle}{' '}
+          {t.todayTitle}{' '}
           {new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'zh-CN', {
             month: '2-digit',
             day: '2-digit',
@@ -96,21 +106,34 @@ export function TodayView({ todayTasks, tasks, setTasks, t, lang }: TodayViewPro
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm">
           {todayTasks.length > 0 ? (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={todayTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-4">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={todayTasks.map((t) => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2 p-4">
                   {todayTasks.map((task) => (
-                    <div key={task.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                      <TaskItem
-                        task={task}
-                        onToggle={handleToggle}
-                        onDelete={handleDelete}
-                        onUpdate={handleUpdate}
-                      />
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between bg-gray-100 p-2 rounded"
+                    >
+                      <div className="flex-1">
+                        <TaskItem
+                          task={task}
+                          onToggle={handleToggle}
+                          onDelete={handleDelete}
+                          onUpdate={handleUpdate}
+                          t={t}
+                        />
+                      </div>
                       {/* 迁移按钮 */}
                       <button
                         onClick={() => handleMigrate(task.id)}
-                        className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg
+                        className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg shrink-0
                           bg-[var(--brand-color)] text-white
                           shadow-md hover:shadow-lg active:brightness-95
                           transition-all duration-200"
@@ -135,7 +158,7 @@ export function TodayView({ todayTasks, tasks, setTasks, t, lang }: TodayViewPro
           tasks={tasks}
           onAddTasks={(newTasks) => setTasks([...tasks, ...newTasks])}
           t={t as unknown as AIAssistantProps['t']}
-/>
+        />
       </div>
     </div>
   );

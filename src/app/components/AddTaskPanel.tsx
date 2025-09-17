@@ -5,9 +5,10 @@ import { Task } from '../types';
 interface Props {
   onClose: () => void;
   onConfirm: (task: Partial<Task>) => void;
+  t: Record<string, string>;
 }
 
-export function AddTaskPanel({ onClose, onConfirm }: Props) {
+export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
   const [newTask, setNewTask] = useState<Partial<Task>>({
     title: '',
     description: '',
@@ -38,11 +39,11 @@ export function AddTaskPanel({ onClose, onConfirm }: Props) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 className="font-bold mb-4">添加新任务</h3>
+        <h3 className="font-bold mb-4">{t.add}</h3>
         <div className="space-y-4">
           {/* 标题 */}
           <div>
-            <label className="block text-sm font-medium">任务标题 *</label>
+            <label className="block text-sm font-medium">{t.noTitle}</label>
             <input
               type="text"
               className="w-full border rounded p-2"
@@ -55,7 +56,7 @@ export function AddTaskPanel({ onClose, onConfirm }: Props) {
 
           {/* 描述 */}
           <div>
-            <label className="block text-sm font-medium">任务描述</label>
+            <label className="block text-sm font-medium">{t.description}</label>
             <textarea
               className="w-full border rounded p-2"
               value={newTask.description || ''}
@@ -65,21 +66,21 @@ export function AddTaskPanel({ onClose, onConfirm }: Props) {
 
           {/* 优先级 */}
           <div>
-            <label className="block text-sm font-medium">优先级</label>
+            <label className="block text-sm font-medium">{t.priority}</label>
             <select
               className="w-full border rounded p-2"
               value={newTask.priority}
               onChange={e => setNewTask({ ...newTask, priority: e.target.value as 'low' | 'medium' | 'high' })}
             >
-              <option value="low">低优先级</option>
-              <option value="medium">中优先级</option>
-              <option value="high">高优先级</option>
+              <option value="low">{t.low}</option>
+              <option value="medium">{t.medium}</option>
+              <option value="high">{t.high}</option>
             </select>
           </div>
 
           {/* 标签 */}
           <div>
-            <label className="block text-sm font-medium">标签</label>
+            <label className="block text-sm font-medium">{t.tags}</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {(newTask.tags || []).map(tag => (
                 <span key={tag} className="bg-gray-200 text-gray-600 px-2 py-1 rounded text-xs flex items-center">
@@ -99,7 +100,7 @@ export function AddTaskPanel({ onClose, onConfirm }: Props) {
                 className="flex-grow border rounded-l p-2"
                 value={newTag}
                 onChange={e => setNewTag(e.target.value)}
-                placeholder="添加标签"
+                placeholder= {t.addTag}
               />
               <button
                 onClick={() => {
@@ -117,10 +118,10 @@ export function AddTaskPanel({ onClose, onConfirm }: Props) {
 
           {/* 时间（开始/截止）*/}
           <div>
-            <label className="block text-sm font-medium">时间设置</label>
+            <label className="block text-sm font-medium">{t.timeSetting}</label>
             <div className="flex space-x-4">
               <div className="flex-1">
-                <label className="block text-xs">开始时间</label>
+                <label className="block text-xs">{t.startTime}</label>
                 <input
                   type="time"
                   className="w-full border rounded p-2"
@@ -129,7 +130,7 @@ export function AddTaskPanel({ onClose, onConfirm }: Props) {
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-xs">截止时间</label>
+                <label className="block text-xs">{t.endTime}</label>
                 <input
                   type="time"
                   className="w-full border rounded p-2"
@@ -143,10 +144,10 @@ export function AddTaskPanel({ onClose, onConfirm }: Props) {
           {/* 按钮区 */}
           <div className="flex justify-end space-x-2 mt-4">
             <button onClick={onClose} className="px-4 py-2 border rounded text-gray-600">
-              取消
+              {t.cancel}
             </button>
             <button onClick={handleConfirm} className="px-4 py-2 bg-[var(--brand-color)] text-white rounded">
-              添加任务
+              {t.addTask}
             </button>
           </div>
         </div>

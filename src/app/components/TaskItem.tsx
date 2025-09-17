@@ -10,6 +10,7 @@ interface TaskItemProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updatedTask: Task) => void;
+  t: Record<string, string>;
 }
 
 const priorityClasses = {
@@ -18,7 +19,7 @@ const priorityClasses = {
   high: 'border-l-red-500',
 };
 
-export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) {
+export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProps) {
   const {
     attributes,
     listeners,
@@ -97,10 +98,10 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
         style={style}
         className={`bg-gray-50 rounded-lg p-4 border-l-4 ${priorityClasses[editedTask.priority]} transition-shadow hover:shadow-md`}
       >
-        <h3 className="font-bold mb-4">编辑任务</h3>
+        <h3 className="font-bold mb-4">{t.editTask}</h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium">任务标题 *</label>
+            <label className="block text-sm font-medium">{t.taskTitle}</label>
             <input
               type="text"
               className="w-full border rounded p-2"
@@ -111,7 +112,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
             <p className="text-sm text-gray-500">{editedTask.title.length}/50 字符</p>
           </div>
           <div>
-            <label className="block text-sm font-medium">任务描述</label>
+            <label className="block text-sm font-medium">{t.description}</label>
             <textarea
               className="w-full border rounded p-2"
               value={editedTask.description || ''}
@@ -119,7 +120,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">优先级</label>
+            <label className="block text-sm font-medium">{t.priority}</label>
             <select
               className="w-full border rounded p-2"
               value={editedTask.priority}
@@ -127,13 +128,13 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
                 setEditedTask({ ...editedTask, priority: e.target.value as 'low' | 'medium' | 'high' })
               }
             >
-              <option value="low">低优先级</option>
-              <option value="medium">中优先级</option>
-              <option value="high">高优先级</option>
+              <option value="low">{t.low}</option>
+              <option value="medium">{t.medium}</option>
+              <option value="high">{t.high}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium">标签</label>
+            <label className="block text-sm font-medium">{t.tags}</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {editedTask.tags.map((tag) => (
                 <span
@@ -161,7 +162,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
                 className="flex-grow border rounded-l p-2"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                placeholder="添加标签"
+                placeholder={t.addTag}
               />
               <button
                 onClick={() => {
@@ -177,10 +178,10 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium">时间设置</label>
+            <label className="block text-sm font-medium">{t.timeSetting}</label>
             <div className="flex space-x-4">
               <div className="flex-1">
-                <label className="block text-xs">开始时间</label>
+                <label className="block text-xs">{t.startTime}</label>
                 <input
                   type="time"
                   className="w-full border rounded p-2"
@@ -189,7 +190,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-xs">截止时间</label>
+                <label className="block text-xs">{t.endTime}</label>
                 <input
                   type="time"
                   className="w-full border rounded p-2"
@@ -201,10 +202,10 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate }: TaskItemProps) 
           </div>
           <div className="flex justify-end space-x-2 mt-4">
             <button onClick={() => setIsEditing(false)} className="px-4 py-2 border rounded text-gray-600">
-              取消
+            {t.cancel}
             </button>
             <button onClick={handleUpdate} className="px-4 py-2 bg-[var(--brand-color)] text-white rounded">
-              更新任务
+            {t.updateTask}
             </button>
           </div>
         </div>

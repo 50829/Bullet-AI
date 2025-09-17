@@ -126,6 +126,7 @@ export function FutureView({
         <AddTaskPanel
           onClose={() => setIsAdding(false)}
           onConfirm={handleAddTask}
+          t={t as Record<string, string>}
         />
       )}
     </>
