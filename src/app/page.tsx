@@ -177,32 +177,39 @@ export default function BulletAILandingPage() {
 
       <main>
         {/* ****** Hero ****** */}
-        <section id="hero" className="min-h-screen flex items-center justify-center py-24 text-center">
-          <div className="container mx-auto max-w-3xl px-4">
-            <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full bg-[#E9E2D9] px-4 py-1 text-sm">
-              <StarIcon className="h-4 w-4 text-gray-700"/>
-              {t.heroBadge}
-            </div>
-            <h1 className="text-5xl font-extrabold tracking-tight md:text-6xl">
-              {t.heroTitle}<span className="rounded-lg bg-[#C8B5A6] px-2 py-1 text-white">{t.heroHighlight}</span>
-            </h1>
-            <p className="mx-auto mt-6 max-w-xl text-lg text-gray-600">
-              {t.heroDesc}
-            </p>
-            <div className="mt-8 flex justify-center gap-4">
-              <button
-                onClick={goLogin}
-                className="rounded-lg bg-white px-6 py-3 font-semibold shadow-md transition hover:bg-gray-50"
-              >
-                {t.btnStartFree}
-              </button>
-              <a href="#" className="rounded-lg border border-gray-300 bg-transparent px-6 py-3 font-semibold transition hover:bg-gray-50">
-                {t.btnWatchDemo}
-              </a>
-            </div>
-            <p className="mt-6 text-sm text-gray-500">{t.users}</p>
-          </div>
-        </section>
+        {/* ****** Hero ****** */}
+<section id="hero" className="min-h-screen flex items-center justify-center py-24 text-center">
+  <div className="container mx-auto max-w-3xl px-4">
+    <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full bg-[#E9E2D9] px-4 py-1 text-sm">
+      <StarIcon className="h-4 w-4 text-gray-700"/>
+      {t.heroBadge}
+    </div>
+
+    {/* 两行标题：第一行普通文字，第二行棕色块 */}
+    <h1 className="text-5xl font-extrabold tracking-tight md:text-6xl">
+      {t.heroTitle}
+    </h1>
+    <div className="mt-4 inline-block rounded-lg bg-[#C8B5A6] px-4 py-2 text-5xl font-extrabold text-white md:text-6xl">
+      {t.heroHighlight}
+    </div>
+
+    <p className="mx-auto mt-6 max-w-xl text-lg text-gray-600">
+      {t.heroDesc}
+    </p>
+    <div className="mt-8 flex justify-center gap-4">
+      <button
+        onClick={goLogin}
+        className="rounded-lg bg-white px-6 py-3 font-semibold shadow-md transition hover:bg-gray-50"
+      >
+        {t.btnStartFree}
+      </button>
+      <a href="#" className="rounded-lg border border-gray-300 bg-transparent px-6 py-3 font-semibold transition hover:bg-gray-50">
+        {t.btnWatchDemo}
+      </a>
+    </div>
+    <p className="mt-6 text-sm text-gray-500">{t.users}</p>
+  </div>
+</section>
 
         {/* ****** Features ****** */}
         <section id="features" className="min-h-screen bg-white flex items-center py-20">
