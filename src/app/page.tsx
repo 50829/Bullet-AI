@@ -119,16 +119,15 @@ const messages = {
 /* ---------------- 主组件 ---------------- */
 export default function BulletAILandingPage() {
   const router = useRouter();
-  const [lang, setLang] = useState<'en' | 'zh'>('en'); // 默认英文
+  const [lang, setLang] = useState<'en' | 'zh'>('en');
   const t = messages[lang];
 
   const toggleLang = () => setLang(prev => (prev === 'en' ? 'zh' : 'en'));
+
   const goLogin = () => {
-    // 1. 如果有 hash，先清掉（replace 不会留下历史记录）
     if (window.location.hash) {
       window.history.replaceState(null, '', window.location.pathname);
     }
-    // 2. 再正常跳转到登录（压栈）
     router.push('/login');
   };
 
@@ -137,6 +136,7 @@ export default function BulletAILandingPage() {
       {/* ****** Header ****** */}
       <header className="sticky top-0 z-50 bg-[#F8F5F2]/80 backdrop-blur-sm shadow-sm">
         <div className="container mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+          {/* Logo */}
           <a href="#" className="flex items-center gap-2 text-xl font-bold">
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gray-300">
               <BookIcon className="h-4 w-4 text-gray-700"/>
@@ -144,6 +144,7 @@ export default function BulletAILandingPage() {
             <span>BulletAI</span>
           </a>
 
+          {/* 桌面导航 */}
           <nav className="hidden items-center gap-6 md:flex">
             <a href="#features" className="text-sm text-gray-600 hover:text-black">{t.navFeatures}</a>
             <a href="#preview" className="text-sm text-gray-600 hover:text-black">{t.navPreview}</a>
@@ -156,6 +157,15 @@ export default function BulletAILandingPage() {
             </button>
           </nav>
 
+          {/* 移动端语言切换（右上角始终可见） */}
+          <button
+            onClick={toggleLang}
+            className="rounded-full border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 md:hidden"
+          >
+            {t.langBtn}
+          </button>
+
+          {/* 桌面端 CTA */}
           <button
             onClick={goLogin}
             className="hidden rounded-lg bg-[#E9E2D9] px-4 py-2 text-sm font-medium hover:bg-[#dcd3c8] md:block"
