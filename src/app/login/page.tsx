@@ -1,16 +1,20 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 
-export default function Home() {
+export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  // 优先使用浏览器当前地址，确保本地开发跳回本地；仅在无 window 时回退到环境变量
-  const getOrigin = () => (typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? ""));
+  const getOrigin = () =>
+    typeof window !== "undefined"
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,25 +24,20 @@ export default function Home() {
     }
     setLoading(true);
     setMessage(null);
-
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: {
-          emailRedirectTo: `${getOrigin()}/auth/callback`,
-        },
+        options: { emailRedirectTo: `${getOrigin()}/auth/callback` },
       });
       if (error) {
         setMessage(`发送验证码失败：${error.message}`);
-        console.error("signInWithOtp error:", error.message);
       } else {
         setMessage("验证码已发送，请检查您的邮箱");
         setStep("code");
       }
-    } catch (e) {
+    } catch (e) {                                 // ← 去掉 :any
       const errorMsg = e instanceof Error ? e.message : String(e);
       setMessage(`发生错误：${errorMsg}`);
-      console.error("send code exception:", errorMsg);
     } finally {
       setLoading(false);
     }
@@ -52,26 +51,23 @@ export default function Home() {
     }
     setLoading(true);
     setMessage(null);
-
     try {
-      const { data: { session }, error } = await supabase.auth.verifyOtp({
+      const { data, error } = await supabase.auth.verifyOtp({
         email,
         token: code,
         type: "email",
       });
       if (error) {
         setMessage(`验证码验证失败：${error.message}`);
-        console.error("verifyOtp error:", error.message);
-      } else if (session) {
+      } else if (data.session) {
         setMessage("登录成功，正在跳转…");
         window.location.href = "/task-ai";
       } else {
         setMessage("未获取到会话，请重试");
       }
-    } catch (e) {
+    } catch (e) {                                 // ← 去掉 :any
       const errorMsg = e instanceof Error ? e.message : String(e);
       setMessage(`发生错误：${errorMsg}`);
-      console.error("verify code exception:", errorMsg);
     } finally {
       setLoading(false);
     }
@@ -94,7 +90,14 @@ export default function Home() {
   };
 
   return (
-  <main className="min-h-screen flex items-center justify-center bg-[var(--surface-soft)] text-[var(--text-primary)]">
+    <main className="min-h-screen flex items-center justify-center bg-[var(--surface-soft)] text-[var(--text-primary)] relative">
+      <button
+  onClick={() => router.push('/')}   // 改为显式回首页，不带 hash
+  className="absolute top-6 left-6 rounded-lg bg-white px-4 py-2 shadow hover:bg-gray-50 text-sm text-gray-700"
+>
+  ← 返回
+</button>
+
       <div className="bg-white rounded-2xl shadow-lg p-10 text-center w-full max-w-md mx-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">登录 BulletAI</h1>
         <p className="text-gray-600 mb-6">使用邮箱验证码或第三方账号登录，登录后将跳转到任务面板</p>
