@@ -22,12 +22,18 @@ interface CalendarProps {
   onDateSelect?: (date: Date) => void;
   t: {
     calendarTitle: string;
-    weekDays: string[]; // ← 这里是数组
+    weekDays: string[];
   };
   lang: 'zh' | 'en';
 }
 
-export function Calendar({ tasks, onDateSelect, t, lang }: CalendarProps) {
+export function Calendar({
+  tasks,
+  onDateSelect,
+  selectedDate,
+  t,
+  lang,
+}: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const firstDayOfMonth = startOfMonth(currentMonth);
@@ -50,10 +56,13 @@ export function Calendar({ tasks, onDateSelect, t, lang }: CalendarProps) {
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm">
+      {/* 标题 & 翻月按钮 */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">{t.calendarTitle
-    .replace('{year}', format(currentMonth, 'yyyy'))
-    .replace('{month}', format(currentMonth, lang === 'en' ? 'MM' : 'MM'))}</h2>
+        <h2 className="text-lg font-semibold">
+          {t.calendarTitle
+            .replace('{year}', format(currentMonth, 'yyyy'))
+            .replace('{month}', format(currentMonth, lang === 'en' ? 'MM' : 'MM'))}
+        </h2>
         <div className="space-x-2">
           <button
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
@@ -70,12 +79,14 @@ export function Calendar({ tasks, onDateSelect, t, lang }: CalendarProps) {
         </div>
       </div>
 
+      {/* 星期标题 */}
       <div className="grid grid-cols-7 gap-1 text-center text-sm text-gray-500 mb-2">
-      {t.weekDays.map((day) => (
-    <div key={day}>{day}</div>
-  ))}
+        {t.weekDays.map((day) => (
+          <div key={day}>{day}</div>
+        ))}
       </div>
 
+      {/* 日期格子 */}
       <div className="grid grid-cols-7 gap-2">
         {Array.from({ length: startingDayIndex }).map((_, i) => (
           <div key={`empty-${i}`} />
@@ -84,13 +95,15 @@ export function Calendar({ tasks, onDateSelect, t, lang }: CalendarProps) {
         {daysInMonth.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd');
           const dayTasks = tasksByDate[dateKey] || [];
+          const isSelected = selectedDate && isSameDay(day, selectedDate);
+
           return (
             <div
               key={day.toString()}
               onClick={() => onDateSelect?.(day)}
-              className={`p-2 rounded-lg cursor-pointer flex flex-col items-center justify-start h-24 border ${
-                isToday(day) ? 'bg-blue-100 border-blue-200' : 'hover:bg-gray-50'
-              }`}
+              className={`p-2 rounded-lg cursor-pointer flex flex-col items-center justify-start h-24 border transition
+                ${isSelected ? 'bg-[#F9F7F1] border-[#c9b8a1]' : isToday(day) ? 'bg-blue-100 border-blue-200' : 'hover:bg-gray-50'}
+              `}
             >
               <span
                 className={`${

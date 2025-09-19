@@ -59,7 +59,7 @@ const I18N: Record<Lang, I18nShape> = {
     scheduledSubtitle: "选中日期的任务清单",
     scheduledMoveTodayBtn: "迁回今日",
     scheduledEmptyTitle: "暂无任务",
-    scheduledEmptyHint: "点击上方日历选择日期，或把迁移列表任务移动到该日期",
+    scheduledEmptyHint: "点击上方日历选择日期，把迁移列表任务移动到该日期",
     calendarTitle: "{year}年{month}月",
     weekDays: ["日", "一", "二", "三", "四", "五", "六"],
     aiTitle: "我的 AI 管家",
@@ -118,7 +118,7 @@ const I18N: Record<Lang, I18nShape> = {
     scheduledMoveTodayBtn: "Move to Today",
     scheduledEmptyTitle: "No tasks",
     scheduledEmptyHint:
-      "Select a date in the calendar above or move tasks from the migration list",
+      "Select a date in the calendar above and move tasks from the migration list",
     calendarTitle: "{month}/{year}",
     weekDays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     aiTitle: "My AI Butler",
