@@ -9,46 +9,37 @@ interface Props {
 }
 
 export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
-  /* ---------- 初始状态：时间全部为 null ---------- */
   const [newTask, setNewTask] = useState<Partial<Task>>({
     title: '',
     description: '',
     priority: 'medium',
     tags: [],
     startDate: null,
-    dueDate: null,
+    dueDate: null,   // 未来视图默认 null
     isCompleted: false,
   });
   const [newTag, setNewTag] = useState('');
 
-  /* ---------- 时间工具 ---------- */
-  const fmt = (d: Date | null): string => {
-    if (!d) return '';
-    const h = d.getHours().toString().padStart(2, '0');
-    const m = d.getMinutes().toString().padStart(2, '0');
-    return `${h}:${m}`;
-  };
+  const getTimeString = (d: Date | null) =>
+    d ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
 
-  const parse = (time: string): Date | null => {
-    if (!time) return null;          // 用户清空时立即变 null
+  const setTime = (time: string, isStart: boolean) => {
+    if (!time) return;
     const [h, m] = time.split(':').map(Number);
-    const d = new Date();
-    d.setHours(h, m, 0, 0);
-    return d;
+    const date = new Date();
+    date.setHours(h, m, 0, 0);
+    setNewTask(p => ({ ...p, [isStart ? 'startDate' : 'dueDate']: date }));
   };
 
-  /* ---------- 确认 ---------- */
   const handleConfirm = () => {
     if (!newTask.title?.trim()) return;
     onConfirm(newTask);
   };
 
-  /* ---------- 渲染 ---------- */
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h3 className="font-bold mb-4">{t.add}</h3>
-
         <div className="space-y-4">
           {/* 标题 */}
           <div>
@@ -57,10 +48,10 @@ export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
               type="text"
               className="w-full border rounded p-2"
               value={newTask.title}
-              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+              onChange={e => setNewTask({ ...newTask, title: e.target.value })}
               maxLength={50}
             />
-            <p className="text-sm text-gray-500">{(newTask.title || '').length}/50</p>
+            <p className="text-sm text-gray-500">{(newTask.title || '').length}/50 字符</p>
           </div>
 
           {/* 描述 */}
@@ -69,7 +60,7 @@ export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
             <textarea
               className="w-full border rounded p-2"
               value={newTask.description || ''}
-              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+              onChange={e => setNewTask({ ...newTask, description: e.target.value })}
             />
           </div>
 
@@ -79,9 +70,7 @@ export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
             <select
               className="w-full border rounded p-2"
               value={newTask.priority}
-              onChange={(e) =>
-                setNewTask({ ...newTask, priority: e.target.value as 'low' | 'medium' | 'high' })
-              }
+              onChange={e => setNewTask({ ...newTask, priority: e.target.value as 'low' | 'medium' | 'high' })}
             >
               <option value="low">{t.low}</option>
               <option value="medium">{t.medium}</option>
@@ -93,19 +82,11 @@ export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
           <div>
             <label className="block text-sm font-medium">{t.tags}</label>
             <div className="flex flex-wrap gap-2 mb-2">
-              {(newTask.tags || []).map((tag) => (
-                <span
-                  key={tag}
-                  className="bg-gray-200 text-gray-600 px-2 py-1 rounded text-xs flex items-center"
-                >
+              {(newTask.tags || []).map(tag => (
+                <span key={tag} className="bg-gray-200 text-gray-600 px-2 py-1 rounded text-xs flex items-center">
                   {tag}
                   <button
-                    onClick={() =>
-                      setNewTask({
-                        ...newTask,
-                        tags: (newTask.tags || []).filter((tg) => tg !== tag),
-                      })
-                    }
+                    onClick={() => setNewTask({ ...newTask, tags: (newTask.tags || []).filter(t => t !== tag) })}
                     className="ml-1 text-red-500"
                   >
                     x
@@ -118,8 +99,8 @@ export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
                 type="text"
                 className="flex-grow border rounded-l p-2"
                 value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                placeholder={t.addTag}
+                onChange={e => setNewTag(e.target.value)}
+                placeholder= {t.addTag}
               />
               <button
                 onClick={() => {
@@ -135,7 +116,7 @@ export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
             </div>
           </div>
 
-          {/* 时间：开始 / 截止 */}
+          {/* 时间（开始/截止）*/}
           <div>
             <label className="block text-sm font-medium">{t.timeSetting}</label>
             <div className="flex space-x-4">
@@ -144,10 +125,8 @@ export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
                 <input
                   type="time"
                   className="w-full border rounded p-2"
-                  value={fmt(newTask.startDate)}      // 初始必为空串
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, startDate: parse(e.target.value) })
-                  }
+                  value={getTimeString(newTask.startDate)}
+                  onChange={e => setTime(e.target.value, true)}
                 />
               </div>
               <div className="flex-1">
@@ -155,16 +134,14 @@ export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
                 <input
                   type="time"
                   className="w-full border rounded p-2"
-                  value={fmt(newTask.dueDate)}        // 初始必为空串
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, dueDate: parse(e.target.value) })
-                  }
+                  value={getTimeString(newTask.dueDate)}
+                  onChange={e => setTime(e.target.value, false)}
                 />
               </div>
             </div>
           </div>
 
-          {/* 按钮 */}
+          {/* 按钮区 */}
           <div className="flex justify-end space-x-2 mt-4">
             <button onClick={onClose} className="px-4 py-2 border rounded text-gray-600">
               {t.cancel}
