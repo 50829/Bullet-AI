@@ -35,11 +35,11 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
   };
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editedTask, setEditedTask] = useState({ ...task, description: task.description || '' });
+  const [editedTask, setEditedTask] = useState<Task>({ ...task, description: task.description || '' });
   const [newTag, setNewTag] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
 
-  /* ------------ 时间颜色规则 ------------ */
+  /* ------------ 展示用时间字符串 ------------ */
   const now = new Date();
 
   const startTimeStr = useMemo(() => {
@@ -62,32 +62,28 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
     const color = isOver ? 'text-red-500' : 'text-blue-500';
     return { dueTimeStr: str, dueColor: color };
   }, [task.dueDate, task.isCompleted, now]);
-  /* ------------------------------------- */
+
+  /* ------------ 编辑相关 ------------ */
+  // 把 Date 转成 hh:mm 或空串
+  const fmt = (d?: Date | null): string => {
+    if (!d) return '';
+    const h = d.getHours().toString().padStart(2, '0');
+    const m = d.getMinutes().toString().padStart(2, '0');
+    return `${h}:${m}`;
+  };
+
+  // 把 hh:mm 或空串 转成 Date 或 null
+  const parse = (time: string): Date | null => {
+    if (!time) return null;          // 用户清空 → null
+    const [h, m] = time.split(':').map(Number);
+    const newDate = new Date();
+    newDate.setHours(h, m, 0, 0);
+    return newDate;
+  };
 
   const handleUpdate = () => {
     onUpdate(task.id, editedTask);
     setIsEditing(false);
-  };
-
-  const getTimeString = (date?: Date) => {
-    if (!date) return '';
-    return new Date(date).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
-  };
-
-  const setTime = (time: string, isStart: boolean) => {
-    if (!time) return;
-    const [hours, minutes] = time.split(':').map(Number);
-    const newDate = new Date();
-    newDate.setHours(hours, minutes, 0, 0);
-    if (isStart) {
-      setEditedTask({ ...editedTask, startDate: newDate });
-    } else {
-      setEditedTask({ ...editedTask, dueDate: newDate });
-    }
   };
 
   if (isEditing) {
@@ -108,8 +104,9 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
               onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
               maxLength={50}
             />
-            <p className="text-sm text-gray-500">{editedTask.title.length}/50 字符</p>
+            <p className="text-sm text-gray-500">{editedTask.title.length}/50</p>
           </div>
+
           <div>
             <label className="block text-sm font-medium">{t.description}</label>
             <textarea
@@ -118,6 +115,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
               onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
             />
           </div>
+
           <div>
             <label className="block text-sm font-medium">{t.priority}</label>
             <select
@@ -132,6 +130,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
               <option value="high">{t.high}</option>
             </select>
           </div>
+
           <div>
             <label className="block text-sm font-medium">{t.tags}</label>
             <div className="flex flex-wrap gap-2 mb-2">
@@ -176,6 +175,8 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
               </button>
             </div>
           </div>
+
+          {/* 时间设置：开始 / 截止 */}
           <div>
             <label className="block text-sm font-medium">{t.timeSetting}</label>
             <div className="flex space-x-4">
@@ -184,8 +185,10 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
                 <input
                   type="time"
                   className="w-full border rounded p-2"
-                  value={getTimeString(editedTask.startDate)}
-                  onChange={(e) => setTime(e.target.value, true)}
+                  value={fmt(editedTask.startDate)}   // 空 → 输入框留空
+                  onChange={(e) =>
+                    setEditedTask({ ...editedTask, startDate: parse(e.target.value) })
+                  }
                 />
               </div>
               <div className="flex-1">
@@ -193,12 +196,15 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
                 <input
                   type="time"
                   className="w-full border rounded p-2"
-                  value={getTimeString(editedTask.dueDate)}
-                  onChange={(e) => setTime(e.target.value, false)}
+                  value={fmt(editedTask.dueDate)}     // 空 → 输入框留空
+                  onChange={(e) =>
+                    setEditedTask({ ...editedTask, dueDate: parse(e.target.value) })
+                  }
                 />
               </div>
             </div>
           </div>
+
           <div className="flex justify-end space-x-2 mt-4">
             <button onClick={() => setIsEditing(false)} className="px-4 py-2 border rounded text-gray-600">
               {t.cancel}
@@ -212,6 +218,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
     );
   }
 
+  /* ==================== 正常展示 ==================== */
   return (
     <>
       <div
@@ -232,7 +239,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
           className="form-checkbox h-5 w-5 text-orange-500 rounded border-gray-300 focus:ring-orange-500"
         />
 
-        {/* 内容 */}
+        {/* 内容区 */}
         <div className="flex-grow" onDoubleClick={() => setIsEditing(true)}>
           <p className={`font-medium ${task.isCompleted ? 'line-through text-gray-400' : ''}`}>
             {task.title}
@@ -251,7 +258,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
           </div>
         </div>
 
-        {/* 时间区域 */}
+        {/* 时间展示：只有真正设置了时间才渲染 */}
         <div className="text-sm text-gray-500">
           {startTimeStr && <span className="text-green-500">{startTimeStr}</span>}
           {startTimeStr && dueTimeStr && <span className="mx-1">-</span>}
@@ -268,7 +275,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
         </button>
       </div>
 
-      {/* 确认删除面板 */}
+      {/* 确认删除弹窗 */}
       <ConfirmDialog
         open={showConfirm}
         title={
