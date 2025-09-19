@@ -138,7 +138,7 @@ export default function App() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [currentView, setCurrentView] = useState<"today" | "future">("today");
   const [isAddingTask, setIsAddingTask] = useState(false);
-  const [lang, setLang] = useState<Lang>("zh");
+  const [lang, setLang] = useState<Lang>("en");
 
   // 读取本地存储的语言偏好
   useEffect(() => {

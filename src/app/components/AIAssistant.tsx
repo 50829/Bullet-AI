@@ -32,14 +32,17 @@ export function AIAssistant({
   t,
 }: AIAssistantProps) {
   const [text, setText] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    { role: "ai", text: t.aiGreeting },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<AIPlan | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
+
+  /* ---------- 语言切换时重新插入问候语 ---------- */
+  useEffect(() => {
+    setMessages([{ role: "ai", text: t.aiGreeting }]);
+  }, [t.aiGreeting]);
 
   /* ---------- 调后端 /api/ai ---------- */
   const handleSend = async () => {
@@ -64,9 +67,9 @@ export function AIAssistant({
     }
 
     const json = await res.json();
-    const { reply, plan } = json;
+    const { reply, plan: p } = json;
     if (reply) setMessages((prev) => [...prev, { role: "ai", text: reply }]);
-    if (plan && (plan.tasksDaily?.length || plan.tasksFuture?.length)) setPlan(plan);
+    if (p && (p.tasksDaily?.length || p.tasksFuture?.length)) setPlan(p);
     setLoading(false);
   };
 
@@ -81,7 +84,7 @@ export function AIAssistant({
         priority: "medium" as const,
         tags: [],
         startDate: null,
-        dueDate: new Date(), // 今日任务
+        dueDate: new Date(),
         isCompleted: false,
         createdAt: new Date(),
       })),
@@ -92,7 +95,7 @@ export function AIAssistant({
         priority: "medium" as const,
         tags: [],
         startDate: null,
-        dueDate: null, // 迁移列表
+        dueDate: null,
         isCompleted: false,
         createdAt: new Date(),
       })),
@@ -145,8 +148,12 @@ export function AIAssistant({
             </button>
           </div>
           <ul className="mt-2 text-xs text-black list-disc pl-5">
-          {plan.tasksDaily?.map((task, i) => <li key={`d-${i}`}>{t.todayPlanPrefix}{task.title}</li>)}
-          {plan.tasksFuture?.map((task, i) => <li key={`f-${i}`}>{t.futurePlanPrefix}{task.title}</li>)}
+            {plan.tasksDaily?.map((task, i) => (
+              <li key={`d-${i}`}>{t.todayPlanPrefix}{task.title}</li>
+            ))}
+            {plan.tasksFuture?.map((task, i) => (
+              <li key={`f-${i}`}>{t.futurePlanPrefix}{task.title}</li>
+            ))}
           </ul>
         </div>
       )}
