@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Task } from '../types';
 import { GripVertical, Trash2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface TaskItemProps {
   task: Task;
@@ -36,11 +37,11 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
   const [isEditing, setIsEditing] = useState(false);
   const [editedTask, setEditedTask] = useState({ ...task, description: task.description || '' });
   const [newTag, setNewTag] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
 
   /* ------------ 时间颜色规则 ------------ */
   const now = new Date();
 
-  // 开始时间字符串 & 颜色（永远绿色）
   const startTimeStr = useMemo(() => {
     if (!task.startDate) return '';
     return new Date(task.startDate).toLocaleTimeString('en-US', {
@@ -50,7 +51,6 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
     });
   }, [task.startDate]);
 
-  // 截止时间字符串 & 颜色
   const { dueTimeStr, dueColor } = useMemo(() => {
     if (!task.dueDate) return { dueTimeStr: '', dueColor: 'text-gray-500' };
     const str = new Date(task.dueDate).toLocaleTimeString('en-US', {
@@ -58,7 +58,6 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
       minute: '2-digit',
       hour12: true,
     });
-    // 逾期判断：未完成任务 && 现实时间已超 dueDate
     const isOver = !task.isCompleted && task.dueDate.getTime() < now.getTime();
     const color = isOver ? 'text-red-500' : 'text-blue-500';
     return { dueTimeStr: str, dueColor: color };
@@ -202,10 +201,10 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
           </div>
           <div className="flex justify-end space-x-2 mt-4">
             <button onClick={() => setIsEditing(false)} className="px-4 py-2 border rounded text-gray-600">
-            {t.cancel}
+              {t.cancel}
             </button>
             <button onClick={handleUpdate} className="px-4 py-2 bg-[var(--brand-color)] text-white rounded">
-            {t.updateTask}
+              {t.updateTask}
             </button>
           </div>
         </div>
@@ -214,60 +213,78 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`bg-gray-50 rounded-lg p-4 flex items-center space-x-4 border-l-4 ${priorityClasses[task.priority]} transition-shadow hover:shadow-md`}
-    >
-      {/* 拖拽把手 */}
-      <div {...attributes} {...listeners} className="cursor-grab text-gray-400">
-        <GripVertical size={20} />
-      </div>
-
-      {/* 勾选 */}
-      <input
-        type="checkbox"
-        checked={task.isCompleted}
-        onChange={() => onToggle(task.id)}
-        className="form-checkbox h-5 w-5 text-orange-500 rounded border-gray-300 focus:ring-orange-500"
-      />
-
-      {/* 内容 */}
-      <div className="flex-grow" onDoubleClick={() => setIsEditing(true)}>
-        <p className={`font-medium ${task.isCompleted ? 'line-through text-gray-400' : ''}`}>
-          {task.title}
-        </p>
-        {task.description && (
-          <p className={`text-sm ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-600'}`}>
-            {task.description}
-          </p>
-        )}
-        <div className="flex space-x-2 mt-1">
-          {task.tags.map((tag) => (
-            <span key={tag} className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* 时间区域 */}
-      <div className="text-sm text-gray-500">
-        {/* 开始时间 —— 永远绿色 */}
-        {startTimeStr && <span className="text-green-500">{startTimeStr}</span>}
-        {startTimeStr && dueTimeStr && <span className="mx-1">-</span>}
-        {/* 截止时间 —— 逾期红 / 未逾期橙 */}
-        {dueTimeStr && <span className={dueColor}>{dueTimeStr}</span>}
-      </div>
-
-      {/* 删除 */}
-      <button
-        type="button"
-        onClick={() => onDelete(task.id)}
-        className="text-gray-400 hover:text-red-500 transition-colors"
+    <>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`bg-gray-50 rounded-lg p-4 flex items-center space-x-4 border-l-4 ${priorityClasses[task.priority]} transition-shadow hover:shadow-md`}
       >
-        <Trash2 size={18} />
-      </button>
-    </div>
+        {/* 拖拽把手 */}
+        <div {...attributes} {...listeners} className="cursor-grab text-gray-400">
+          <GripVertical size={20} />
+        </div>
+
+        {/* 勾选 */}
+        <input
+          type="checkbox"
+          checked={task.isCompleted}
+          onChange={() => onToggle(task.id)}
+          className="form-checkbox h-5 w-5 text-orange-500 rounded border-gray-300 focus:ring-orange-500"
+        />
+
+        {/* 内容 */}
+        <div className="flex-grow" onDoubleClick={() => setIsEditing(true)}>
+          <p className={`font-medium ${task.isCompleted ? 'line-through text-gray-400' : ''}`}>
+            {task.title}
+          </p>
+          {task.description && (
+            <p className={`text-sm ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-600'}`}>
+              {task.description}
+            </p>
+          )}
+          <div className="flex space-x-2 mt-1">
+            {task.tags.map((tag) => (
+              <span key={tag} className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* 时间区域 */}
+        <div className="text-sm text-gray-500">
+          {startTimeStr && <span className="text-green-500">{startTimeStr}</span>}
+          {startTimeStr && dueTimeStr && <span className="mx-1">-</span>}
+          {dueTimeStr && <span className={dueColor}>{dueTimeStr}</span>}
+        </div>
+
+        {/* 删除按钮 */}
+        <button
+          type="button"
+          onClick={() => setShowConfirm(true)}
+          className="text-gray-400 hover:text-red-500 transition-colors"
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
+
+      {/* 确认删除面板 */}
+      <ConfirmDialog
+        open={showConfirm}
+        title={
+          <>
+            {t.deleteConfirm}
+            <span className="block mt-1 text-sm text-gray-500">“{task.title}”</span>
+          </>
+        }
+        onConfirm={() => {
+          onDelete(task.id);
+          setShowConfirm(false);
+        }}
+        onCancel={() => setShowConfirm(false)}
+        confirmText={t.delete}
+        cancelText={t.cancel}
+      />
+    </>
   );
 }

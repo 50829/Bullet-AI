@@ -72,6 +72,8 @@ const I18N: Record<Lang, I18nShape> = {
     todayPlanPrefix: "今日：",
     futurePlanPrefix: "未来：",
     aiPlaceholder: "例如：明天下午3点提醒我开会",
+    deleteConfirm: "确认删除",
+    delete: "删除",
   },
   en: {
     today: "Today",
@@ -131,6 +133,8 @@ const I18N: Record<Lang, I18nShape> = {
     todayPlanPrefix: "Today: ",
     futurePlanPrefix: "Future: ",
     aiPlaceholder: "e.g. Remind me to have a meeting at 3pm tomorrow",
+    deleteConfirm: "Delete this task?",
+    delete: "Delete",
   },
 };
 
