@@ -27,7 +27,7 @@ export const ConfirmDialog: FC<Props> = ({
         className="absolute inset-0 bg-black/50"
         onClick={onCancel}
       />
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
+      <div className="relative bg-[#E5E5E5] rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
 
         <div className="flex gap-3 justify-end">
