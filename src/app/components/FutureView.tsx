@@ -44,14 +44,14 @@ export function FutureView({
       priority: partial.priority || 'medium',
       tags: partial.tags || [],
       startDate: partial.startDate || null,
-      dueDate: null,
+      // 使用面板中输入的时间，如果为空，则依然为 null
+      dueDate: partial.dueDate || null,
       isCompleted: false,
       createdAt: new Date(),
     };
     setTasks([...tasks, task]);
     setIsAdding(false);
   };
-
   /* 把任务移动到选中日期 */
   const handleMoveTask = (taskId: string) => {
     if (!selectedDate) return;

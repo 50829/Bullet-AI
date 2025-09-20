@@ -128,6 +128,7 @@ export function TodayView({
                           onDelete={handleDelete}
                           onUpdate={handleUpdate}
                           t={t}
+                          defaultDate={new Date()}
                         />
                       </div>
                       {/* 迁移按钮 */}

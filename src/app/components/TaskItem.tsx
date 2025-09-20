@@ -12,6 +12,7 @@ interface TaskItemProps {
   onDelete: (id: string) => void;
   onUpdate: (id: string, updatedTask: Task) => void;
   t: Record<string, string>;
+  defaultDate?: Date | null;
 }
 
 const priorityClasses = {
@@ -20,7 +21,7 @@ const priorityClasses = {
   high: 'border-l-red-500',
 };
 
-export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProps) {
+export function TaskItem({ task, onToggle, onDelete, onUpdate, t, defaultDate}: TaskItemProps) {
   const {
     attributes,
     listeners,
@@ -94,10 +95,14 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
   };
 
   // 把 hh:mm 或空串 转成 Date 或 null
-  const parse = (time: string): Date | null => {
-    if (!time) return null;      // 用户清空 → null
+  const parse = (time: string, baseDate?: Date | null): Date | null => {
+    if (!time) return null;
     const [h, m] = time.split(':').map(Number);
-    const newDate = new Date();
+    
+    // 优先使用任务自身的日期。如果任务没日期(迁移列表)，则用 defaultDate (日历选中日期)。
+    // 如果都没有，才退回至今天。
+    const newDate = baseDate ? new Date(baseDate) : (defaultDate ? new Date(defaultDate) : new Date());
+
     newDate.setHours(h, m, 0, 0);
     return newDate;
   };
@@ -122,6 +127,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
               type="text"
               className="w-full border rounded p-2"
               value={editedTask.title}
+              // 修正：这里应该是更新 title
               onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
               maxLength={50}
             />
@@ -133,6 +139,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
             <textarea
               className="w-full border rounded p-2"
               value={editedTask.description || ''}
+              // 修正：这里应该是更新 description
               onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
             />
           </div>
@@ -207,8 +214,9 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
                   type="time"
                   className="w-full border rounded p-2"
                   value={fmt(editedTask.startDate)}   // 空 → 输入框留空
+                  // 修正：这是更新 startDate 的正确位置
                   onChange={(e) =>
-                    setEditedTask({ ...editedTask, startDate: parse(e.target.value) })
+                    setEditedTask({ ...editedTask, startDate: parse(e.target.value, editedTask.startDate) })
                   }
                 />
               </div>
@@ -218,8 +226,9 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
                   type="time"
                   className="w-full border rounded p-2"
                   value={fmt(editedTask.dueDate)}     // 空 → 输入框留空
+                  // 修正：这是更新 dueDate 的正确位置
                   onChange={(e) =>
-                    setEditedTask({ ...editedTask, dueDate: parse(e.target.value) })
+                    setEditedTask({ ...editedTask, dueDate: parse(e.target.value, editedTask.dueDate) })
                   }
                 />
               </div>
