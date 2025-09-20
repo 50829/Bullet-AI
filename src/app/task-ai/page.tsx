@@ -164,7 +164,7 @@ export default function App() {
     priority: "medium",
     tags: [],
     startDate: null,
-    dueDate: new Date(),
+    dueDate: null,
     isCompleted: false,
   });
   const [newTag, setNewTag] = useState("");
@@ -303,31 +303,58 @@ export default function App() {
   /* -------- 核心功能函数 -------- */
   const handleAddTask = () => {
     if (!newTask.title) return;
+
+    // 这个函数是为 "今日视图" 的添加按钮服务的
+    const today = new Date();
+    let finalDueDate: Date; // 对于今日任务，它一定有截止日期
+
+    if (newTask.dueDate) { // Case 1: 用户在弹窗中选择了具体时间
+      const pickedTime = new Date(newTask.dueDate);
+      // 将用户选择的时间应用到今天的日期上
+      today.setHours(pickedTime.getHours(), pickedTime.getMinutes(), 0, 0);
+      finalDueDate = today;
+    } else { // Case 2: 用户没有选择时间
+      // 默认为今天的 "全天" 任务，使用 00:00 作为约定
+      today.setHours(0, 0, 0, 0);
+      finalDueDate = today;
+    }
+    
+    // 同样地处理开始时间
+    let finalStartDate: Date | null = null;
+    if (newTask.startDate) {
+        const startDate = new Date();
+        const pickedTime = new Date(newTask.startDate);
+        startDate.setHours(pickedTime.getHours(), pickedTime.getMinutes(), 0, 0);
+        finalStartDate = startDate;
+    }
+
     const task: Task = {
       id: Date.now().toString(),
       title: newTask.title || "",
       description: newTask.description,
       priority: newTask.priority || "medium",
       tags: newTask.tags || [],
-      startDate: newTask.startDate || null,
-      dueDate: newTask.dueDate,
+      startDate: finalStartDate,
+      dueDate: finalDueDate, // 确保 dueDate 被正确赋值
       isCompleted: false,
       createdAt: new Date(),
     };
+
     setTasks((prev) => [...prev, task]);
     setIsAddingTask(false);
+    
+    // 重置表单状态，以便下次添加
     setNewTask({
       title: "",
       description: "",
       priority: "medium",
       tags: [],
       startDate: null,
-      dueDate: new Date(),
+      dueDate: null,
       isCompleted: false,
     });
     setNewTag("");
   };
-
   const handleUpdateTask = (updatedTask: Task) => {
     setTasks((ts) =>
       ts.map((t) => (t.id === updatedTask.id ? updatedTask : t))
@@ -352,7 +379,15 @@ export default function App() {
   };
 
   const setTime = (time: string, isStart: boolean) => {
-    if (!time) return;
+    // 允许用户清空时间输入框
+    if (!time) {
+      if (isStart) {
+        setNewTask({ ...newTask, startDate: null });
+      } else {
+        setNewTask({ ...newTask, dueDate: null });
+      }
+      return;
+    }
     const [hours, minutes] = time.split(":").map(Number);
     const newDate = new Date();
     newDate.setHours(hours, minutes, 0, 0);

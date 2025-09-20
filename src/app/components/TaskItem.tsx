@@ -39,12 +39,17 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
   const [newTag, setNewTag] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
 
-  /* ------------ 展示用时间字符串 ------------ */
+  /* ------------ 展示用时间字符串 (已修改) ------------ */
   const now = new Date();
 
   const startTimeStr = useMemo(() => {
     if (!task.startDate) return '';
-    return new Date(task.startDate).toLocaleTimeString('en-US', {
+    const startDate = new Date(task.startDate);
+    // 如果时间是 00:00，则不显示
+    if (startDate.getHours() === 0 && startDate.getMinutes() === 0) {
+      return '';
+    }
+    return startDate.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
@@ -53,14 +58,30 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
 
   const { dueTimeStr, dueColor } = useMemo(() => {
     if (!task.dueDate) return { dueTimeStr: '', dueColor: 'text-gray-500' };
-    const str = new Date(task.dueDate).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    });
-    const isOver = !task.isCompleted && task.dueDate.getTime() < now.getTime();
+    
+    const dueDate = new Date(task.dueDate);
+    let isOver = false;
+    let timeStr = '';
+
+    // 检查是否为 "全天" 任务 (时间为 00:00)
+    if (dueDate.getHours() === 0 && dueDate.getMinutes() === 0) {
+      timeStr = ''; // 不显示时间
+      // 对于全天任务，只有当整个日期都过去后才算逾期
+      const endOfDay = new Date(dueDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      isOver = !task.isCompleted && endOfDay.getTime() < now.getTime();
+    } else {
+      // 对于有具体时间的任务，按原逻辑处理
+      timeStr = dueDate.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+      isOver = !task.isCompleted && dueDate.getTime() < now.getTime();
+    }
+    
     const color = isOver ? 'text-red-500' : 'text-blue-500';
-    return { dueTimeStr: str, dueColor: color };
+    return { dueTimeStr: timeStr, dueColor: color };
   }, [task.dueDate, task.isCompleted, now]);
 
   /* ------------ 编辑相关 ------------ */
@@ -74,7 +95,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t }: TaskItemProp
 
   // 把 hh:mm 或空串 转成 Date 或 null
   const parse = (time: string): Date | null => {
-    if (!time) return null;          // 用户清空 → null
+    if (!time) return null;      // 用户清空 → null
     const [h, m] = time.split(':').map(Number);
     const newDate = new Date();
     newDate.setHours(h, m, 0, 0);
