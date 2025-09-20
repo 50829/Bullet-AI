@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -137,13 +138,18 @@ export default function BulletAILandingPage() {
       <header className="sticky top-0 z-50 bg-[#F8F5F2]/80 backdrop-blur-sm shadow-sm">
         <div className="container mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2 text-xl font-bold">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gray-300">
-              <BookIcon className="h-4 w-4 text-gray-700"/>
-            </div>
-            <span>BulletAI</span>
-          </a>
-
+          <Link href="#" className="flex items-center gap-2 text-xl font-bold">
+  <div className="relative h-7 w-7">
+    <Image
+      src="/logo.png" // 确保 public/images/logo.png 存在此图片
+      alt="BulletAI Logo"
+      fill
+      sizes="28px" // 告诉 Next.js 图片的预期尺寸
+      style={{ objectFit: 'contain' }} // 保持图片比例
+    />
+  </div>
+  <span>BulletAI</span>
+</Link>
           {/* 桌面导航 */}
           <nav className="hidden items-center gap-6 md:flex">
             <a href="#features" className="text-sm text-gray-600 hover:text-black">{t.navFeatures}</a>
@@ -333,12 +339,18 @@ export default function BulletAILandingPage() {
       <footer className="bg-[#1E2023] text-gray-400">
         <div className="container mx-auto max-w-6xl px-4 py-8">
           <div className="flex flex-col items-center justify-between border-b border-gray-700 pb-6 md:flex-row">
-            <a href="#" className="flex items-center gap-2 text-xl font-bold text-white">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gray-500">
-                <BookIcon className="h-4 w-4 text-gray-200"/>
-              </div>
-              <span>BulletAI</span>
-            </a>
+          <Link href="#" className="flex items-center gap-2 text-xl font-bold text-white">
+  <div className="relative h-7 w-7">
+    <Image
+      src="/logo.png" // 确保 public/images/logo.png 存在此图片
+      alt="BulletAI Logo"
+      fill
+      sizes="28px" // 告诉 Next.js 图片的预期尺寸
+      style={{ objectFit: 'contain' }} // 保持图片比例
+    />
+  </div>
+  <span>BulletAI</span>
+</Link>
             <div className="mt-4 flex gap-6 md:mt-0">
               <a href="#" className="text-sm hover:text-white">{t.footerPolicy}</a>
               <a href="#" className="text-sm hover:text-white">{t.footerTerms}</a>
