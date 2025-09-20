@@ -195,7 +195,7 @@ export default function BulletAILandingPage() {
     <h1 className="text-5xl font-extrabold tracking-tight md:text-6xl">
       {t.heroTitle}
     </h1>
-    <div className="mt-4 inline-block rounded-lg bg-[#C8B5A6] px-4 py-2 text-5xl font-extrabold text-white md:text-6xl">
+    <div className=" mt-4 inline-block rounded-lg bg-[#C8B5A6] px-8 py-2 text-5xl font-extrabold text-white md:text-6xl">
       {t.heroHighlight}
     </div>
 
