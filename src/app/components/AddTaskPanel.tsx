@@ -15,25 +15,19 @@ export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
     priority: 'medium',
     tags: [],
     startDate: null,
-    dueDate: null,   // 未来视图默认 null
+    dueDate: null,   // 始终为 null
     isCompleted: false,
   });
   const [newTag, setNewTag] = useState('');
 
-  const getTimeString = (d: Date | null) =>
-    d ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
-
-  const setTime = (time: string, isStart: boolean) => {
-    if (!time) return;
-    const [h, m] = time.split(':').map(Number);
-    const date = new Date();
-    date.setHours(h, m, 0, 0);
-    setNewTask(p => ({ ...p, [isStart ? 'startDate' : 'dueDate']: date }));
-  };
-
   const handleConfirm = () => {
     if (!newTask.title?.trim()) return;
-    onConfirm(newTask);
+    // 🔥 强制将 dueDate 和 startDate 都设置为 null
+    onConfirm({ 
+      ...newTask, 
+      dueDate: null,
+      startDate: null 
+    });
   };
 
   return (
@@ -116,30 +110,7 @@ export function AddTaskPanel({ onClose, onConfirm, t }: Props) {
             </div>
           </div>
 
-          {/* 时间（开始/截止）*/}
-          <div>
-            <label className="block text-sm font-medium">{t.timeSetting}</label>
-            <div className="flex space-x-4">
-              <div className="flex-1">
-                <label className="block text-xs">{t.startTime}</label>
-                <input
-                  type="time"
-                  className="w-full border rounded p-2"
-                  value={getTimeString(newTask.startDate)}
-                  onChange={e => setTime(e.target.value, true)}
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs">{t.endTime}</label>
-                <input
-                  type="time"
-                  className="w-full border rounded p-2"
-                  value={getTimeString(newTask.dueDate)}
-                  onChange={e => setTime(e.target.value, false)}
-                />
-              </div>
-            </div>
-          </div>
+          {/* 🔥 移除时间设置部分 */}
 
           {/* 按钮区 */}
           <div className="flex justify-end space-x-2 mt-4">

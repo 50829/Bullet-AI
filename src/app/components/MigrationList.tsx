@@ -78,7 +78,7 @@ export function MigrationList({
         onDelete={handleDelete}
         onUpdate={handleUpdate}
         t={t}
-        defaultDate={selectedDate} 
+        
       />
     </div>
 

@@ -43,9 +43,8 @@ export function FutureView({
       description: partial.description,
       priority: partial.priority || 'medium',
       tags: partial.tags || [],
-      startDate: partial.startDate || null,
-      // 使用面板中输入的时间，如果为空，则依然为 null
-      dueDate: partial.dueDate || null,
+      startDate: null,  // 🔥 始终为 null
+      dueDate: null,    // 🔥 始终为 null
       isCompleted: false,
       createdAt: new Date(),
     };

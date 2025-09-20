@@ -108,7 +108,13 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t, defaultDate}: 
   };
 
   const handleUpdate = () => {
-    onUpdate(task.id, editedTask);
+    // 🔥 关键修改：如果是迁移列表中的任务，保持 dueDate 为 null
+    const shouldKeepInMigration = !task.dueDate; // 原来就在迁移列表的任务
+    const finalTask = shouldKeepInMigration 
+      ? { ...editedTask, dueDate: null, startDate: null }  // 保持在迁移列表
+      : editedTask; // 否则保持原有逻辑
+    
+    onUpdate(task.id, finalTask);
     setIsEditing(false);
   };
 
@@ -127,7 +133,6 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t, defaultDate}: 
               type="text"
               className="w-full border rounded p-2"
               value={editedTask.title}
-              // 修正：这里应该是更新 title
               onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
               maxLength={50}
             />
@@ -139,7 +144,6 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t, defaultDate}: 
             <textarea
               className="w-full border rounded p-2"
               value={editedTask.description || ''}
-              // 修正：这里应该是更新 description
               onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
             />
           </div>
@@ -204,36 +208,36 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t, defaultDate}: 
             </div>
           </div>
 
-          {/* 时间设置：开始 / 截止 */}
-          <div>
-            <label className="block text-sm font-medium">{t.timeSetting}</label>
-            <div className="flex space-x-4">
-              <div className="flex-1">
-                <label className="block text-xs">{t.startTime}</label>
-                <input
-                  type="time"
-                  className="w-full border rounded p-2"
-                  value={fmt(editedTask.startDate)}   // 空 → 输入框留空
-                  // 修正：这是更新 startDate 的正确位置
-                  onChange={(e) =>
-                    setEditedTask({ ...editedTask, startDate: parse(e.target.value, editedTask.startDate) })
-                  }
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs">{t.endTime}</label>
-                <input
-                  type="time"
-                  className="w-full border rounded p-2"
-                  value={fmt(editedTask.dueDate)}     // 空 → 输入框留空
-                  // 修正：这是更新 dueDate 的正确位置
-                  onChange={(e) =>
-                    setEditedTask({ ...editedTask, dueDate: parse(e.target.value, editedTask.dueDate) })
-                  }
-                />
+          {/* 🔥 只有当任务已经有 dueDate 时才显示时间设置（即已安排到具体日期的任务） */}
+          {task.dueDate && (
+            <div>
+              <label className="block text-sm font-medium">{t.timeSetting}</label>
+              <div className="flex space-x-4">
+                <div className="flex-1">
+                  <label className="block text-xs">{t.startTime}</label>
+                  <input
+                    type="time"
+                    className="w-full border rounded p-2"
+                    value={fmt(editedTask.startDate)}
+                    onChange={(e) =>
+                      setEditedTask({ ...editedTask, startDate: parse(e.target.value, editedTask.startDate) })
+                    }
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs">{t.endTime}</label>
+                  <input
+                    type="time"
+                    className="w-full border rounded p-2"
+                    value={fmt(editedTask.dueDate)}
+                    onChange={(e) =>
+                      setEditedTask({ ...editedTask, dueDate: parse(e.target.value, editedTask.dueDate) })
+                    }
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="flex justify-end space-x-2 mt-4">
             <button onClick={() => setIsEditing(false)} className="px-4 py-2 border rounded text-gray-600">
