@@ -1,4 +1,3 @@
-// src/components/MigrationList.tsx
 import { Task } from '../types';
 import { TaskItem } from './TaskItem';
 import {
@@ -68,30 +67,46 @@ export function MigrationList({
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={migrationTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-2 p-4">
-              {migrationTasks.map((task) => (
-  <div key={task.id} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-    {/* 主内容占满剩余空间 */}
-    <div className="flex-1">
-      <TaskItem
-        task={task}
-        onToggle={handleToggle}
-        onDelete={handleDelete}
-        onUpdate={handleUpdate}
-        t={t}
-        
-      />
-    </div>
-
-    {/* 固定按钮，不再挤压宽度 */}
-    <button
-      onClick={() => onMove(task.id)}
-      disabled={!selectedDate}
-      className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg
-        bg-[var(--brand-color)] text-white
-        shadow-md hover:shadow-lg active:brightness-95
-        disabled:opacity-50 disabled:cursor-not-allowed
-        transition-all duration-200"
-    >
+                {migrationTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="bg-gray-100 p-2 rounded"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <TaskItem
+                          task={task}
+                          onToggle={handleToggle}
+                          onDelete={handleDelete}
+                          onUpdate={handleUpdate}
+                          t={t}
+                        />
+                      </div>
+                      {/* 迁回按钮 - 桌面端在右侧 */}
+                      <button
+                        onClick={() => onMove(task.id)}
+                        disabled={!selectedDate}
+                        className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg
+                          bg-[var(--brand-color)] text-white whitespace-nowrap
+                          shadow-md hover:shadow-lg active:brightness-95
+                          disabled:opacity-50 disabled:cursor-not-allowed
+                          transition-all duration-200
+                          hidden sm:block"
+                      >
+                        {t.migrateMoveBtn}
+                      </button>
+                    </div>
+                    {/* 迁回按钮 - 移动端在下方 */}
+                    <button
+                      onClick={() => onMove(task.id)}
+                      disabled={!selectedDate}
+                      className="w-full mt-2 px-3 py-1.5 text-sm font-semibold rounded-lg
+                        bg-[var(--brand-color)] text-white whitespace-nowrap
+                        shadow-md hover:shadow-lg active:brightness-95
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        transition-all duration-200
+                        sm:hidden"
+                    >
                       {t.migrateMoveBtn}
                     </button>
                   </div>
