@@ -99,12 +99,12 @@ export function Calendar({
 
           return (
             <div
-              key={day.toString()}
-              onClick={() => onDateSelect?.(day)}
-              className={`p-2 rounded-lg cursor-pointer flex flex-col items-center justify-start h-24 border transition
-                ${isSelected ? 'bg-[#F9F7F1] border-[#c9b8a1]' : isToday(day) ? 'bg-blue-100 border-blue-200' : 'hover:bg-gray-50'}
-              `}
-            >
+  key={day.toString()}
+  onClick={() => onDateSelect?.(day)}
+  className={`p-2 rounded-lg cursor-pointer flex flex-col items-center justify-start aspect-square border transition
+    ${isSelected ? 'bg-[#F9F7F1] border-[#c9b8a1]' : isToday(day) ? 'bg-blue-100 border-blue-200' : 'hover:bg-gray-50'}
+  `}
+>
               <span
                 className={`${
                   isToday(day) ? 'font-bold text-blue-600' : ''
