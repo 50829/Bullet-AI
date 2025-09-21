@@ -53,10 +53,22 @@ export function ScheduledTasks({
     setTasks(tasks.map((t) => (t.id === id ? updatedTask : t)));
   };
 
-  /* ---- 迁回今日（dueDate 改为今天）---- */
+  /* ---- 迁回今日（设置为今日但不设置具体时间）---- */
   const handleMoveToToday = (id: string) => {
+    // 🔥 修改：设置为今日日期但不设置具体时间（保持在今日任务视图中）
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 设置为今日的开始时间，但不设置具体小时分钟
+    
     setTasks(
-      tasks.map((t) => (t.id === id ? { ...t, dueDate: new Date() } : t))
+      tasks.map((t) => 
+        t.id === id 
+          ? { 
+              ...t, 
+              dueDate: today, // 设置为今日日期，确保在今日任务视图中显示
+              // 不设置具体时间，保持全天任务状态
+            } 
+          : t
+      )
     );
   };
 
