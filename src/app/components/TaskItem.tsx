@@ -32,6 +32,8 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t, defaultDate}: 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    // 关键：禁用浏览器默认的触摸行为
+    touchAction: 'none'
   };
 
   const [isEditing, setIsEditing] = useState(false);
