@@ -1,4 +1,3 @@
-// src/components/ScheduledTasks.tsx
 import { Task } from '../types';
 import { TaskItem } from './TaskItem';
 import {
@@ -100,24 +99,38 @@ export function ScheduledTasks({
               {dayTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between bg-gray-100 p-2 rounded"
+                  className="bg-gray-100 p-2 rounded"
                 >
-                  <div className="flex-1">
-                    <TaskItem
-                      task={task}
-                      onToggle={handleToggle}
-                      onDelete={handleDelete}
-                      onUpdate={handleUpdate}
-                      t={t}
-                    />
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <TaskItem
+                        task={task}
+                        onToggle={handleToggle}
+                        onDelete={handleDelete}
+                        onUpdate={handleUpdate}
+                        t={t}
+                      />
+                    </div>
+                    {/* 迁回今日按钮 - 桌面端在右侧 */}
+                    <button
+                      onClick={() => handleMoveToToday(task.id)}
+                      className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg
+                        bg-[var(--brand-color)] text-white whitespace-nowrap
+                        shadow-md hover:shadow-lg active:brightness-95
+                        transition-all duration-200
+                        hidden sm:block"
+                    >
+                      {t.scheduledMoveTodayBtn}
+                    </button>
                   </div>
-                  {/* 迁回今日按钮 */}
+                  {/* 迁回今日按钮 - 移动端在下方 */}
                   <button
                     onClick={() => handleMoveToToday(task.id)}
-                    className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg shrink-0
-                      bg-[var(--brand-color)] text-white
+                    className="w-full mt-2 px-3 py-1.5 text-sm font-semibold rounded-lg
+                      bg-[var(--brand-color)] text-white whitespace-nowrap
                       shadow-md hover:shadow-lg active:brightness-95
-                      transition-all duration-200"
+                      transition-all duration-200
+                      sm:hidden"
                   >
                     {t.scheduledMoveTodayBtn}
                   </button>

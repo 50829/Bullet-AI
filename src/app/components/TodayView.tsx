@@ -1,4 +1,3 @@
-// src/components/TodayView.tsx
 import { Task } from '../types';
 import { TaskStats } from './TaskStats';
 import { AIAssistant } from './AIAssistant';
@@ -119,25 +118,39 @@ export function TodayView({
                   {todayTasks.map((task) => (
                     <div
                       key={task.id}
-                      className="flex items-center justify-between bg-gray-100 p-2 rounded"
+                      className="bg-gray-100 p-2 rounded"
                     >
-                      <div className="flex-1">
-                        <TaskItem
-                          task={task}
-                          onToggle={handleToggle}
-                          onDelete={handleDelete}
-                          onUpdate={handleUpdate}
-                          t={t}
-                          defaultDate={new Date()}
-                        />
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <TaskItem
+                            task={task}
+                            onToggle={handleToggle}
+                            onDelete={handleDelete}
+                            onUpdate={handleUpdate}
+                            t={t}
+                            defaultDate={new Date()}
+                          />
+                        </div>
+                        {/* 迁移按钮 - 桌面端在右侧 */}
+                        <button
+                          onClick={() => handleMigrate(task.id)}
+                          className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg
+                            bg-[var(--brand-color)] text-white whitespace-nowrap
+                            shadow-md hover:shadow-lg active:brightness-95
+                            transition-all duration-200
+                            hidden sm:block"
+                        >
+                          {t.migrateBtn}
+                        </button>
                       </div>
-                      {/* 迁移按钮 */}
+                      {/* 迁移按钮 - 移动端在下方 */}
                       <button
                         onClick={() => handleMigrate(task.id)}
-                        className="ml-3 px-3 py-1.5 text-sm font-semibold rounded-lg shrink-0
-                          bg-[var(--brand-color)] text-white
+                        className="w-full mt-2 px-3 py-1.5 text-sm font-semibold rounded-lg
+                          bg-[var(--brand-color)] text-white whitespace-nowrap
                           shadow-md hover:shadow-lg active:brightness-95
-                          transition-all duration-200"
+                          transition-all duration-200
+                          sm:hidden"
                       >
                         {t.migrateBtn}
                       </button>
