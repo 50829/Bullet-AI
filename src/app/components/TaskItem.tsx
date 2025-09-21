@@ -1,4 +1,3 @@
-// src/components/TaskItem.tsx
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Task } from '../types';
@@ -117,6 +116,15 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t, defaultDate}: 
     onUpdate(task.id, finalTask);
     setIsEditing(false);
   };
+
+  // 时间显示组件
+  const TimeDisplay = () => (
+    <div className="text-sm text-gray-500">
+      {startTimeStr && <span className="text-green-500">{startTimeStr}</span>}
+      {startTimeStr && dueTimeStr && <span className="mx-1">-</span>}
+      {dueTimeStr && <span className={dueColor}>{dueTimeStr}</span>}
+    </div>
+  );
 
   if (isEditing) {
     return (
@@ -258,7 +266,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t, defaultDate}: 
       <div
         ref={setNodeRef}
         style={style}
-        className={`bg-gray-50 rounded-lg p-4 flex items-center space-x-4 border-l-4 ${priorityClasses[task.priority]} transition-shadow hover:shadow-md`}
+        className={`bg-gray-50 rounded-lg p-4 flex flex-wrap items-center gap-3 border-l-4 ${priorityClasses[task.priority]} transition-shadow hover:shadow-md`}
       >
         {/* 拖拽把手 */}
         <div {...attributes} {...listeners} className="cursor-grab text-gray-400">
@@ -274,7 +282,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t, defaultDate}: 
         />
 
         {/* 内容区 */}
-        <div className="flex-grow" onDoubleClick={() => setIsEditing(true)}>
+        <div className="flex-grow min-w-0" onDoubleClick={() => setIsEditing(true)}>
           <p className={`font-medium ${task.isCompleted ? 'line-through text-gray-400' : ''}`}>
             {task.title}
           </p>
@@ -283,20 +291,25 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t, defaultDate}: 
               {task.description}
             </p>
           )}
-          <div className="flex space-x-2 mt-1">
+          
+          {/* 标签区域 */}
+          <div className="flex flex-wrap gap-2 mt-1">
             {task.tags.map((tag) => (
               <span key={tag} className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
                 {tag}
               </span>
             ))}
           </div>
+
+          {/* 时间显示 - 移动端在标签下方 */}
+          <div className="sm:hidden mt-2">
+            <TimeDisplay />
+          </div>
         </div>
 
-        {/* 时间展示：只有真正设置了时间才渲染 */}
-        <div className="text-sm text-gray-500">
-          {startTimeStr && <span className="text-green-500">{startTimeStr}</span>}
-          {startTimeStr && dueTimeStr && <span className="mx-1">-</span>}
-          {dueTimeStr && <span className={dueColor}>{dueTimeStr}</span>}
+        {/* 时间展示 - 桌面端在右侧 */}
+        <div className="hidden sm:block text-sm text-gray-500">
+          <TimeDisplay />
         </div>
 
         {/* 删除按钮 */}
