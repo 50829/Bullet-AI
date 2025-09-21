@@ -95,7 +95,7 @@ export function TaskItem({ task, onToggle, onDelete, onUpdate, t, defaultDate}: 
 
   // 把 hh:mm 或空串 转成 Date 或 null
   const parse = (time: string, baseDate?: Date | null): Date | null => {
-    if (!time) return null;
+    if (!time) return null; // 🔥 关键修改：不设置默认时间
     const [h, m] = time.split(':').map(Number);
     
     // 优先使用任务自身的日期。如果任务没日期(迁移列表)，则用 defaultDate (日历选中日期)。

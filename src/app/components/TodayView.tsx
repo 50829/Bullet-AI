@@ -40,11 +40,24 @@ export function TodayView({
   const now = new Date();
   const overdueCount = useMemo(
     () =>
-      tasks.filter(
-        (t) =>
-          !t.isCompleted && t.dueDate && t.dueDate.getTime() < now.getTime()
-      ).length,
-    [tasks, now]
+      tasks.filter((t) => {
+        // 只统计今日任务
+        const isTodayTask = todayTasks.some(todayTask => todayTask.id === t.id);
+        if (!isTodayTask) return false;
+        
+        if (t.isCompleted) return false;
+        if (!t.dueDate) return false; // 🔥 没有截止时间的任务不算逾期
+        
+        const dueDate = new Date(t.dueDate);
+        // 对于 00:00 的任务，按整天计算
+        if (dueDate.getHours() === 0 && dueDate.getMinutes() === 0) {
+          const endOfDay = new Date(dueDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          return endOfDay.getTime() < now.getTime();
+        }
+        return dueDate.getTime() < now.getTime();
+      }).length,
+    [tasks, todayTasks, now]
   );
   const completedCount = todayTasks.filter((t) => t.isCompleted).length;
 
@@ -128,7 +141,8 @@ export function TodayView({
                             onDelete={handleDelete}
                             onUpdate={handleUpdate}
                             t={t}
-                            defaultDate={new Date()}
+                            // 🔥 关键修改：不设置默认时间
+                            defaultDate={null}
                           />
                         </div>
                         {/* 迁移按钮 - 桌面端在右侧 */}
