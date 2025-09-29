@@ -1,4 +1,28 @@
-
+// -----------------------------------------------------------------------------
+// page.tsx - Complete Landing Page for BulletAI (Final Version 3)
+// -----------------------------------------------------------------------------
+// Changes:
+// 1. Navbar default text color is now white.
+// 2. Testimonial rows are now independent, each showing all testimonials.
+// 3. FAQ section is wider with even larger fonts.
+// 4. Pricing section has larger fonts and wider, rectangular cards.
+// 5. Testimonials font size increased, auto-scrolling with hover slow effect.
+// 6. Testimonials now have slower default speed, and slow down further on hover.
+// 7. Removed hover effect from testimonials.
+// 8. Fixed testimonial initialization to be fully filled.
+// 9. Added bilingual support with default English and toggle functionality.
+// 10. Adjusted pricing section subtitle font size and highlighted title.
+// 11. Fixed pricing section title to support both languages.
+// 12. Reduced font size of pricing amount.
+// 13. Added language toggle to mobile menu.
+// 14. Fixed pricing title HTML rendering.
+// 15. Added smooth scrolling to navigation links.
+// 16. Added orange highlight to "Pricing Plans" in English.
+// 17. Added navigation to login page.
+// 18. Added orange highlight to "Pricing Plans" in English.
+// 19. Added navigation to login page for "Start Free" button.
+// 20. Added fade-in animations for elements as they come into view.
+// -----------------------------------------------------------------------------
 "use client";
 
 import { useState, useEffect, type FC, type SVGProps } from 'react';
@@ -437,43 +461,69 @@ const Header = ({ lang, setLang }: { lang: 'en' | 'zh'; setLang: (lang: 'en' | '
 };
 
 // -----------------------------------------------------------------------------
+// Animation Hook
+// -----------------------------------------------------------------------------
+const useScrollAnimation = () => {
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-fadeInUp');
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    const elements = document.querySelectorAll('.fade-element');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => {
+      elements.forEach((el) => observer.unobserve(el));
+    };
+  }, []);
+};
+
+// -----------------------------------------------------------------------------
 // Section 2: Hero
 // -----------------------------------------------------------------------------
 const Hero = ({ lang }: { lang: 'en' | 'zh' }) => {
   const t = content[lang];
   const router = useRouter();
+  useScrollAnimation();
 
   return (
     <section id="hero" className="bg-gray-900 text-white text-center pt-20 pb-32">
       <div className="container mx-auto px-6">
-        <div className="inline-flex items-center bg-gray-800 border border-gray-700 rounded-full px-4 py-1 mb-6">
+        <div className="inline-flex items-center bg-gray-800 border border-gray-700 rounded-full px-4 py-1 mb-6 fade-element opacity-0">
           <Sparkles className="w-4 h-4 text-orange-400 mr-2" />
           <span className="text-sm font-medium">{t.hero.tagline}</span>
         </div>
-        <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-4">
+        <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-4 fade-element opacity-0">
           {t.hero.title}
           <br />
           <span className="text-orange-400">{t.hero.titleHighlight}</span>
         </h1>
-        <p className="max-w-2xl mx-auto text-lg text-gray-300 mb-10">
+        <p className="max-w-2xl mx-auto text-lg text-gray-300 mb-10 fade-element opacity-0">
           {t.hero.description}
         </p>
         <button 
           onClick={() => router.push('/login')}
-          className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-transform transform hover:scale-105"
+          className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-transform transform hover:scale-105 fade-element opacity-0"
         >
           {t.hero.cta}
         </button>
         <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-          <div>
+          <div className="fade-element opacity-0">
             <p className="text-4xl font-bold text-orange-400">{t.hero.stats.users}</p>
             <p className="text-gray-400">{t.hero.statsLabels.users}</p>
           </div>
-          <div>
+          <div className="fade-element opacity-0">
             <p className="text-4xl font-bold text-orange-400">{t.hero.stats.tasks}</p>
             <p className="text-gray-400">{t.hero.statsLabels.tasks}</p>
           </div>
-          <div>
+          <div className="fade-element opacity-0">
             <p className="text-4xl font-bold text-orange-400">{t.hero.stats.regions}</p>
             <p className="text-gray-400">{t.hero.statsLabels.regions}</p>
           </div>
@@ -488,16 +538,21 @@ const Hero = ({ lang }: { lang: 'en' | 'zh' }) => {
 // -----------------------------------------------------------------------------
 const Features = ({ lang }: { lang: 'en' | 'zh' }) => {
   const t = content[lang];
+  useScrollAnimation();
 
   return (
     <section id="features" className="py-20 bg-white">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 fade-element opacity-0">
           <h2 className="text-4xl font-bold text-gray-800">{t.features.title}</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {t.features.items.map((feature, index) => (
-            <div key={index} className="bg-gray-50 rounded-2xl p-8 flex flex-col md:flex-row items-start space-y-6 md:space-y-0 md:space-x-8">
+            <div 
+              key={index} 
+              className="bg-gray-50 rounded-2xl p-8 flex flex-col md:flex-row items-start space-y-6 md:space-y-0 md:space-x-8 fade-element opacity-0"
+              style={{ transitionDelay: `${index * 100}ms` }}
+            >
               <div className="flex-shrink-0">
                 <IconWrapper icon={feature.icon} className="bg-orange-100 !mb-0"/>
               </div>
@@ -521,15 +576,20 @@ const Features = ({ lang }: { lang: 'en' | 'zh' }) => {
 // -----------------------------------------------------------------------------
 const HowItWorks = ({ lang }: { lang: 'en' | 'zh' }) => {
   const t = content[lang];
+  useScrollAnimation();
 
   return (
     <section className="py-20 bg-gray-50">
       <div className="container mx-auto px-6 text-center">
-        <h2 className="text-4xl font-bold text-gray-800 mb-4">{t.howItWorks.title}</h2>
-        <p className="text-lg text-gray-600 mb-16">{t.howItWorks.subtitle}</p>
+        <h2 className="text-4xl font-bold text-gray-800 mb-4 fade-element opacity-0">{t.howItWorks.title}</h2>
+        <p className="text-lg text-gray-600 mb-16 fade-element opacity-0">{t.howItWorks.subtitle}</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto">
-          {t.howItWorks.steps.map((item) => (
-            <div key={item.step} className="flex flex-col items-center">
+          {t.howItWorks.steps.map((item, index) => (
+            <div 
+              key={index} 
+              className="flex flex-col items-center fade-element opacity-0"
+              style={{ transitionDelay: `${index * 100}ms` }}
+            >
               <div className="relative mb-6">
                 <IconWrapper icon={item.icon} className="bg-white border-2 border-gray-100" />
                 <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center">{item.step}</span>
@@ -550,13 +610,14 @@ const HowItWorks = ({ lang }: { lang: 'en' | 'zh' }) => {
 const Pricing = ({ lang }: { lang: 'en' | 'zh' }) => {
   const t = content[lang];
   const router = useRouter();
+  useScrollAnimation();
 
   return (
     <section id="pricing" className="bg-gray-900 text-white py-20">
       {/* Container is now wider */}
       <div className="container mx-auto px-6 max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="text-center lg:text-left">
+          <div className="text-center lg:text-left fade-element opacity-0">
             {/* Fonts are larger */}
             <h2 
               className="text-6xl font-bold mb-4"
@@ -570,7 +631,7 @@ const Pricing = ({ lang }: { lang: 'en' | 'zh' }) => {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             {/* Free Plan - now wider/taller, not square */}
-            <div className="bg-gray-800 p-8 rounded-xl flex flex-col h-[450px]">
+            <div className="bg-gray-800 p-8 rounded-xl flex flex-col h-[450px] fade-element opacity-0">
               <h3 className="text-3xl font-bold mb-6">{t.pricing.free.title}</h3>
               <ul className="space-y-3 text-lg flex-grow">
                 {t.pricing.free.features.map((feature, i) => (
@@ -585,7 +646,7 @@ const Pricing = ({ lang }: { lang: 'en' | 'zh' }) => {
               </button>
             </div>
             {/* Paid Plan - now wider/taller, not square */}
-            <div className="bg-gray-800 p-8 rounded-xl border-2 border-orange-500 flex flex-col h-[450px]">
+            <div className="bg-gray-800 p-8 rounded-xl border-2 border-orange-500 flex flex-col h-[450px] fade-element opacity-0">
               <h3 className="text-3xl font-bold">{t.pricing.paid.title}</h3>
               <p className="text-4xl font-bold my-4">{t.pricing.paid.price}</p>
               <p className="text-lg text-gray-400 flex-grow">{t.pricing.paid.description}</p>
@@ -620,6 +681,7 @@ const TestimonialCard = ({ testimonial, lang }: { testimonial: typeof content['e
 
 const Testimonials = ({ lang }: { lang: 'en' | 'zh' }) => {
   const t = content[lang];
+  useScrollAnimation();
 
   return (
     <>
@@ -629,9 +691,24 @@ const Testimonials = ({ lang }: { lang: 'en' | 'zh' }) => {
         .scrolling-wrapper { animation: scroll 60s linear infinite; }
         /* Reverse animation for second row */
         .scrolling-wrapper.reverse { animation-direction: reverse; }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeInUp {
+          animation: fadeInUp 0.8s ease-out forwards;
+        }
       `}</style>
       <section className="py-20 bg-white overflow-hidden">
-        <div className="container mx-auto px-6 text-center mb-16">
+        <div className="container mx-auto px-6 text-center mb-16 fade-element opacity-0">
             <h2 className="text-4xl font-bold text-gray-800">{t.testimonials.title}</h2>
         </div>
         <div className="relative flex flex-col gap-8">
@@ -663,19 +740,25 @@ const Testimonials = ({ lang }: { lang: 'en' | 'zh' }) => {
 // -----------------------------------------------------------------------------
 const FAQ = ({ lang }: { lang: 'en' | 'zh' }) => {
   const t = content[lang];
+  useScrollAnimation();
 
   return (
     <section id="resources" className="py-20 bg-gray-50">
       {/* Container is now even wider (max-w-6xl), reducing side whitespace */}
       <div className="container mx-auto px-6 max-w-6xl">
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 fade-element opacity-0">
           {/* Fonts are larger */}
           <h2 className="text-5xl md:text-6xl font-bold text-gray-800">{t.faq.title}</h2>
           <p className="text-2xl text-gray-600 mt-4">{t.faq.subtitle}</p>
         </div>
         <div className="space-y-4">
           {t.faq.items.map((item, index) => (
-            <details key={index} className="group bg-white p-8 rounded-lg border border-gray-200" name="faq">
+            <details 
+              key={index} 
+              className="group bg-white p-8 rounded-lg border border-gray-200 fade-element opacity-0"
+              name="faq"
+              style={{ transitionDelay: `${index * 50}ms` }}
+            >
               <summary className="flex justify-between items-center cursor-pointer list-none">
                 <span className="font-semibold text-2xl text-gray-800">{item.question}</span>
                 <span className="text-gray-500 transform transition-transform duration-300 group-open:rotate-180"><ChevronDown/></span>
@@ -695,10 +778,11 @@ const FAQ = ({ lang }: { lang: 'en' | 'zh' }) => {
 const FinalCTA = ({ lang }: { lang: 'en' | 'zh' }) => {
   const t = content[lang];
   const router = useRouter();
+  useScrollAnimation();
 
   return (
     <section className="bg-orange-500 text-white">
-      <div className="container mx-auto px-6 py-20 text-center">
+      <div className="container mx-auto px-6 py-20 text-center fade-element opacity-0">
         <h2 className="text-4xl font-bold mb-4">{t.finalCta.title}</h2>
         <p className="text-lg opacity-90 mb-8">{t.finalCta.subtitle}</p>
         <button 
@@ -725,19 +809,20 @@ const FinalCTA = ({ lang }: { lang: 'en' | 'zh' }) => {
 const Footer = ({ lang }: { lang: 'en' | 'zh' }) => {
   const t = content[lang];
   const router = useRouter();
+  useScrollAnimation();
 
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="container mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-            <div className="md:col-span-2 mb-6 md:mb-0">
+            <div className="md:col-span-2 mb-6 md:mb-0 fade-element opacity-0">
                 <div className="flex items-center space-x-2 mb-4">
                   <BookMarked className="w-7 h-7 text-orange-400" />
                   <span className="text-xl font-bold text-white">BulletAI</span>
                 </div>
                 <p className="text-gray-400 pr-8">{t.footer.company}</p>
             </div>
-            <div>
+            <div className="fade-element opacity-0">
                 <h4 className="font-semibold text-white mb-4">{t.footer.product.title}</h4>
                 <ul className="space-y-3">
                     {t.footer.product.items.map((item, i) => (
@@ -747,7 +832,7 @@ const Footer = ({ lang }: { lang: 'en' | 'zh' }) => {
                     ))}
                 </ul>
             </div>
-            <div>
+            <div className="fade-element opacity-0">
                 <h4 className="font-semibold text-white mb-4">{t.footer.companySection.title}</h4>
                 <ul className="space-y-3">
                     {t.footer.companySection.items.map((item, i) => (
@@ -757,7 +842,7 @@ const Footer = ({ lang }: { lang: 'en' | 'zh' }) => {
                     ))}
                 </ul>
             </div>
-            <div>
+            <div className="fade-element opacity-0">
                 <h4 className="font-semibold text-white mb-4">{t.footer.support.title}</h4>
                 <ul className="space-y-3">
                     {t.footer.support.items.map((item, i) => (
@@ -768,7 +853,7 @@ const Footer = ({ lang }: { lang: 'en' | 'zh' }) => {
                 </ul>
             </div>
         </div>
-        <div className="mt-16 pt-8 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500">
+        <div className="mt-16 pt-8 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500 fade-element opacity-0">
             <p>{t.footer.copyright}</p>
             <div className="flex space-x-6 mt-4 sm:mt-0">
                 {t.footer.legal.map((item, i) => (

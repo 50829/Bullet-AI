@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BulletAI",
+  title: "BulletAI: Your AI Focus & Energy Partner",
   description: "Your AI Focus & Energy Partner",
 };
 
