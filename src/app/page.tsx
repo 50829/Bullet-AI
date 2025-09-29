@@ -22,6 +22,11 @@
 // 18. Added orange highlight to "Pricing Plans" in English.
 // 19. Added navigation to login page for "Start Free" button.
 // 20. Added fade-in animations for elements as they come into view.
+// 21. Updated Features section with alternating layout and new button style.
+// 22. Added navigation to login page for "Start Building" button.
+// 23. Increased font sizes in Features section.
+// 24. Fixed "Start Building" button hover effect.
+// 25. Fixed text position change on hover.
 // -----------------------------------------------------------------------------
 "use client";
 
@@ -534,10 +539,11 @@ const Hero = ({ lang }: { lang: 'en' | 'zh' }) => {
 };
 
 // -----------------------------------------------------------------------------
-// Section 3: Features
+// Section 3: Features (MODIFIED)
 // -----------------------------------------------------------------------------
 const Features = ({ lang }: { lang: 'en' | 'zh' }) => {
   const t = content[lang];
+  const router = useRouter();
   useScrollAnimation();
 
   return (
@@ -546,22 +552,37 @@ const Features = ({ lang }: { lang: 'en' | 'zh' }) => {
         <div className="text-center mb-16 fade-element opacity-0">
           <h2 className="text-4xl font-bold text-gray-800">{t.features.title}</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        <div className="space-y-20">
           {t.features.items.map((feature, index) => (
             <div 
               key={index} 
-              className="bg-gray-50 rounded-2xl p-8 flex flex-col md:flex-row items-start space-y-6 md:space-y-0 md:space-x-8 fade-element opacity-0"
+              className={`flex flex-col md:flex-row items-center gap-12 ${
+                index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
+              } fade-element opacity-0`}
               style={{ transitionDelay: `${index * 100}ms` }}
             >
-              <div className="flex-shrink-0">
-                <IconWrapper icon={feature.icon} className="bg-orange-100 !mb-0"/>
+              {/* Content Column */}
+              <div className="md:w-1/2">
+                <div className="flex flex-col items-start">
+                  <div className="flex items-center justify-center w-16 h-16 bg-orange-100 rounded-xl mb-6">
+                    <feature.icon className="w-8 h-8 text-orange-500" />
+                  </div>
+                  <h3 className="text-3xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+                  <p className="text-lg text-gray-600 mb-5">{feature.description}</p>
+                  <button
+                    onClick={() => router.push('/login')}
+                    className="bg-black text-white font-bold py-3 px-6 rounded-full border-2 border-transparent hover:bg-white hover:text-orange-500 hover:border-black transition-all duration-300"
+                  >
+                    {t.features.cta}
+                  </button>
+                </div>
               </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-600 mb-5">{feature.description}</p>
-                <a href="#" className="font-semibold text-orange-500 hover:text-orange-600 transition-colors">
-                  {t.features.cta}
-                </a>
+              
+              {/* Placeholder for Image */}
+              <div className="md:w-1/2 flex justify-center">
+                <div className="bg-gray-200 border-2 border-dashed rounded-xl w-full h-64 md:h-80 flex items-center justify-center text-gray-500">
+                  {feature.title} Image
+                </div>
               </div>
             </div>
           ))}
