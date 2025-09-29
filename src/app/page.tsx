@@ -1,27 +1,4 @@
-// -----------------------------------------------------------------------------
-// page.tsx - Complete Landing Page for BulletAI (Final Version 3)
-// -----------------------------------------------------------------------------
-// Changes:
-// 1. Navbar default text color is now white.
-// 2. Testimonial rows are now independent, each showing all testimonials.
-// 3. FAQ section is wider with even larger fonts.
-// 4. Pricing section has larger fonts and wider, rectangular cards.
-// 5. Testimonials font size increased, auto-scrolling with hover slow effect.
-// 6. Testimonials now have slower default speed, and slow down further on hover.
-// 7. Removed hover effect from testimonials.
-// 8. Fixed testimonial initialization to be fully filled.
-// 9. Added bilingual support with default English and toggle functionality.
-// 10. Adjusted pricing section subtitle font size and highlighted title.
-// 11. Fixed pricing section title to support both languages.
-// 12. Reduced font size of pricing amount.
-// 13. Added language toggle to mobile menu.
-// 14. Fixed pricing title HTML rendering.
-// 15. Added smooth scrolling to navigation links.
-// 16. Added orange highlight to "Pricing Plans" in English.
-// 17. Added navigation to login page.
-// 18. Added orange highlight to "Pricing Plans" in English.
-// 19. Added navigation to login page for "Start Free" button.
-// -----------------------------------------------------------------------------
+
 "use client";
 
 import { useState, useEffect, type FC, type SVGProps } from 'react';
@@ -585,7 +562,7 @@ const Pricing = ({ lang }: { lang: 'en' | 'zh' }) => {
               className="text-6xl font-bold mb-4"
               dangerouslySetInnerHTML={{
                 __html: lang === 'en' 
-                  ? 'Pricing Plans That Scale With You' 
+                  ? '<span class="text-orange-400">Pricing Plans</span> That Scale With You' 
                   : '适合各种需求的<span class="text-orange-400">定价方案</span>'
               }}
             />
