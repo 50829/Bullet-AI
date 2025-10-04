@@ -27,6 +27,9 @@
 // 23. Increased font sizes in Features section.
 // 24. Fixed "Start Building" button hover effect.
 // 25. Fixed text position change on hover.
+// 26. Updated hero title to "每一个灵魂，都值得被记录" with highlighted "灵魂" and "记录"
+// 27. Updated English hero title to "Every soul deserves to be recorded"
+// 28. Updated product descriptions to reflect "second brain" concept
 // -----------------------------------------------------------------------------
 "use client";
 
@@ -64,10 +67,10 @@ const content = {
       language: "中文",
     },
     hero: {
-      tagline: "AI-Powered Bullet Journal System",
-      title: "Clearer Thinking,",
-      titleHighlight: "Better Efficiency",
-      description: "BulletAI combines the structured thinking of classic bullet journaling with AI assistance to create a personalized planning and recording system. From daily tasks to long-term goals, intelligently plan every step.",
+      tagline: "Your Second Brain System",
+      title: "Every soul deserves to be recorded,",
+      titleHighlight: "connecting past and future",
+      description: "BulletAI serves as your second brain, helping you plan your future, record beautiful memories, and complete your life story. It connects your history with your aspirations, making every moment meaningful.",
       stats: {
         users: "30,000+",
         tasks: "5M+",
@@ -81,12 +84,12 @@ const content = {
       cta: "Start for Free →",
     },
     features: {
-      title: "Complete Digital Bullet Journal Solution",
+      title: "Complete Second Brain Solution",
       items: [
         { 
           icon: BrainCircuit, 
           title: "AI Assistant", 
-          description: "Tell BulletAI your ideas and it will transform them into a fully functional bullet journal system—complete with all necessary components, pages, processes, and features." 
+          description: "Tell BulletAI your ideas and it will transform them into a fully functional system—complete with all necessary components, pages, processes, and features to serve as your second brain." 
         },
         { 
           icon: PenTool, 
@@ -113,11 +116,11 @@ const content = {
     },
     howItWorks: {
       title: "How It Works",
-      subtitle: "Three Steps to Start Your Intelligent Planning Journey",
+      subtitle: "Three Steps to Start Your Second Brain Journey",
       steps: [
-        { step: "01", icon: Rocket, title: "Create Your Digital Bullet Journal", description: "Choose a template or start from scratch, set personal preferences and goals." },
+        { step: "01", icon: Rocket, title: "Create Your Digital System", description: "Choose a template or start from scratch, set personal preferences and goals." },
         { step: "02", icon: Cpu, title: "AI Assistant Learns Your Patterns", description: "After a few days of use, AI begins to understand your work habits and priorities." },
-        { step: "03", icon: Target, title: "Enjoy an Intelligent Planning Experience", description: "Receive personalized suggestions, automated task management, and focus on what truly matters." },
+        { step: "03", icon: Target, title: "Enjoy an Intelligent Experience", description: "Receive personalized suggestions, automated task management, and focus on what truly matters." },
       ],
     },
     pricing: {
@@ -149,8 +152,8 @@ const content = {
       subtitle: "Everything you need to know about BulletAI",
       items: [
         { 
-          question: "What is the Bullet Journal System?", 
-          answer: "The Bullet Journal System is a methodology created by Ryder Carroll. It's a personal organization system that combines a task manager, notebook, diary, and planner. BulletAI digitizes this classic system with AI enhancement." 
+          question: "What is BulletAI?", 
+          answer: "BulletAI is your second brain system that combines structured thinking with AI assistance. It helps you plan your future, record beautiful memories, and complete your life story by connecting your history with your aspirations." 
         },
         { 
           question: "What can the AI assistant do for me?", 
@@ -175,8 +178,8 @@ const content = {
       ],
     },
     finalCta: {
-      title: "Ready to Start Your Intelligent Planning Journey?",
-      subtitle: "Join 30,000+ users experiencing AI-powered bullet journaling",
+      title: "Ready to Start Your Second Brain Journey?",
+      subtitle: "Join 30,000+ users experiencing AI-powered planning",
       cta: "Start for Free →",
       benefits: [
         "30-day free trial",
@@ -185,7 +188,7 @@ const content = {
       ]
     },
     footer: {
-      company: "AI-powered bullet journal system, clearer thinking, better efficiency.",
+      company: "Your second brain system, connecting past and future.",
       product: { title: "Product", items: ["Features", "Pricing", "Changelog"] },
       companySection: { title: "Company", items: ["About Us", "Join Us", "Blog"] },
       support: { title: "Support", items: ["Help Center", "Community", "Contact Us"] },
@@ -201,10 +204,10 @@ const content = {
       language: "EN",
     },
     hero: {
-      tagline: "AI驱动的子弹笔记系统",
-      title: "让思维更清晰,",
-      titleHighlight: "让效率更出众",
-      description: "BulletAI 结合经典子弹笔记的结构化思维与AI智能助手，为您打造个性化的规划与记录系统。从日常任务到长远目标，智能规划每一步。",
+      tagline: "AI驱动的第二大脑系统",
+      title: "每一个<span class='text-orange-400'>灵魂</span>，",
+      titleHighlight: "都值得被<span class='text-orange-400'>记录</span>",
+      description: "BulletAI作为人的第二大脑，帮助您规划未来、记录美好回忆，同时也在完成自己的人生传记。它将历史与未来链接起来，让每一刻都有意义。",
       stats: {
         users: "30,000+",
         tasks: "500万+",
@@ -218,12 +221,12 @@ const content = {
       cta: "免费开始使用 →",
     },
     features: {
-      title: "完整的数字化子弹笔记解决方案",
+      title: "完整的第二大脑解决方案",
       items: [
         { 
           icon: BrainCircuit, 
           title: "AI 智能助手", 
-          description: "告诉BulletAI您的想法，它会将其转化为一个功能完备的子弹笔记系统——包含所有必要的组件、页面、流程和功能。" 
+          description: "告诉BulletAI您的想法，它会将其转化为一个功能完备的系统——包含所有必要的组件、页面、流程和功能，作为您的第二大脑。" 
         },
         { 
           icon: PenTool, 
@@ -250,9 +253,9 @@ const content = {
     },
     howItWorks: {
       title: "工作原理",
-      subtitle: "三步开始您的智能规划之旅",
+      subtitle: "三步开始您的第二大脑之旅",
       steps: [
-        { step: "01", icon: Rocket, title: "创建您的数字子弹笔记", description: "选择模板或从空白开始，设置个人偏好和目标。" },
+        { step: "01", icon: Rocket, title: "创建您的数字系统", description: "选择模板或从空白开始，设置个人偏好和目标。" },
         { step: "02", icon: Cpu, title: "AI助手学习您的模式", description: "使用几天后，AI开始理解您的工作习惯和优先级。" },
         { step: "03", icon: Target, title: "享受智能化的规划体验", description: "获得个性化建议，自动化任务管理，专注于真正重要的事情。" },
       ],
@@ -286,8 +289,8 @@ const content = {
       subtitle: "关于BulletAI的一切疑问",
       items: [
         { 
-          question: "什么是子弹笔记系统?", 
-          answer: "子弹笔记系统是一种由 Ryder Carroll 创建的方法论。它是一种集成了任务管理器、笔记本、日记和计划书的个人组织系统。BulletAI 将这一经典系统数字化并用 AI 进行了增强。" 
+          question: "什么是BulletAI?", 
+          answer: "BulletAI是您的第二大脑系统，它将结构化思维与AI智能助手相结合。它帮助您规划未来、记录美好回忆，同时也在完成自己的人生传记，将历史与未来链接起来。" 
         },
         { 
           question: "AI助手具体能帮我做什么?", 
@@ -312,8 +315,8 @@ const content = {
       ],
     },
     finalCta: {
-      title: "准备开始您的智能规划之旅？",
-      subtitle: "加入 30,000+ 用户，体验AI驱动的子弹笔记系统",
+      title: "准备开始您的第二大脑之旅？",
+      subtitle: "加入 30,000+ 用户，体验AI驱动的规划系统",
       cta: "免费开始使用 →",
       benefits: [
         "30天免费试用",
@@ -322,7 +325,7 @@ const content = {
       ]
     },
     footer: {
-      company: "AI驱动的子弹笔记系统，让思维更清晰，让效率更出众。",
+      company: "您的第二大脑系统，将历史与未来链接起来。",
       product: { title: "产品", items: ["功能特色", "定价方案", "更新日志"] },
       companySection: { title: "公司", items: ["关于我们", "加入我们", "博客"] },
       support: { title: "支持", items: ["帮助中心", "社区论坛", "联系我们"] },
@@ -506,9 +509,19 @@ const Hero = ({ lang }: { lang: 'en' | 'zh' }) => {
           <span className="text-sm font-medium">{t.hero.tagline}</span>
         </div>
         <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-4 fade-element opacity-0">
-          {t.hero.title}
-          <br />
-          <span className="text-orange-400">{t.hero.titleHighlight}</span>
+          {lang === 'en' ? (
+            <>
+              {t.hero.title}
+              <br />
+              <span className="text-orange-400">{t.hero.titleHighlight}</span>
+            </>
+          ) : (
+            // Updated Chinese title with highlighted words
+            <>
+              每一个<span className="text-orange-400">灵魂</span>，
+              都值得被<span className="text-orange-400">记录</span>
+            </>
+          )}
         </h1>
         <p className="max-w-2xl mx-auto text-lg text-gray-300 mb-10 fade-element opacity-0">
           {t.hero.description}
