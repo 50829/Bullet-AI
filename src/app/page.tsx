@@ -86,7 +86,7 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
   return (
     <section className={`min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 via-white to-orange-100 p-4 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="flex flex-col items-center max-w-4xl w-full">
-        <div className={`bg-white/80 backdrop-blur-sm p-4 rounded-2xl shadow-md mb-6 transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <div className={`bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200 mb-6 transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
           <Sparkles className="h-10 w-10 text-gray-700" />
         </div>
         <h1 className={`text-7xl md:text-8xl font-bold text-gray-800 tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>BulletAI</h1>
@@ -445,7 +445,7 @@ const Footer = () => {
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center text-gray-600">
         <div className={`flex flex-col items-center sm:items-start transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="flex items-center gap-3">
-            <div className="bg-white/80 backdrop-blur-sm p-2 rounded-lg shadow-sm">
+            <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
                 <Sparkles className="h-6 w-6 text-gray-700"/>
             </div>
             <span className="font-bold text-xl">BulletAI</span>
