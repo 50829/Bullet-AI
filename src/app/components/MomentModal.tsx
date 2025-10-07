@@ -20,44 +20,114 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   if (!isOpen) return null;
 
+  // 上传图片并返回临时可访问URL和文件路径
   const handleUpload = async () => {
     if (!imageFile) return null;
-    const fileName = `${Date.now()}-${imageFile.name}`;
-    const { error } = await supabase.storage
-      .from("moments")
-      .upload(fileName, imageFile);
 
-    if (error) {
-      console.error("图片上传失败:", error);
+    // 获取当前用户（createClientComponentClient 能获取到 session）
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userErr) {
+      console.error("获取用户信息错误:", userErr);
+    }
+    const user = userData?.user;
+    if (!user) {
+      alert("请先登录");
       return null;
     }
-    const { data: publicUrl } = supabase.storage
+
+    const timestamp = Date.now();
+    const ext = imageFile.name.split(".").pop() || "jpg";
+    const fileName = `${timestamp}.${ext}`;
+    const filePath = `${user.id}/${fileName}`; // 存到用户目录下
+
+    // 上传到私有 bucket moments
+    const { error: uploadError } = await supabase.storage
       .from("moments")
-      .getPublicUrl(fileName);
-    return publicUrl.publicUrl;
+      .upload(filePath, imageFile, { cacheControl: "3600", upsert: false });
+
+    if (uploadError) {
+      console.error("图片上传失败:", uploadError);
+      alert("图片上传失败，请重试");
+      return null;
+    }
+
+    // 生成带过期时间的签名URL（用于立刻显示）
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from("moments")
+      .createSignedUrl(filePath, 60 * 60 * 24); // 1 天
+
+    if (signedError || !signedData) {
+      console.error("生成签名URL失败:", signedError);
+      return { publicUrl: null, path: filePath };
+    }
+
+    return { publicUrl: signedData.signedUrl as string, path: filePath };
   };
 
+  // 提交新时刻
   const handleSubmit = async () => {
-    if (!content.trim()) return;
+    if (!content.trim()) {
+      alert("内容不能为空");
+      return;
+    }
     setLoading(true);
 
-    const imageUrl = await handleUpload();
+    try {
+      // 再次获取用户，确保 session 可用
+      const { data: userData, error: userErr } = await supabase.auth.getUser();
+      if (userErr) {
+        console.error("getUser 错误:", userErr);
+      }
+      const user = userData?.user;
+      if (!user) {
+        alert("请先登录");
+        setLoading(false);
+        return;
+      }
 
-    const { error } = await supabase.from("moments").insert({
-      content,
-      event_type: eventType,
-      location,
-      image_url: imageUrl,
-      tags: ["生活"],
-    });
+      // 只有在有文件时才上传
+      let imageUrl: string | null = null;
+      let imagePath: string | null = null;
+      if (imageFile) {
+        const uploaded = await handleUpload();
+        imageUrl = uploaded?.publicUrl ?? null;
+        imagePath = uploaded?.path ?? null;
+      }
 
-    setLoading(false);
-    if (error) {
-      console.error("保存失败:", error);
+      // 构建插入 payload（务必包含 user_id）
+      const payload = {
+        user_id: user.id,
+        content,
+        event_type: eventType,
+        location,
+        image_url: imageUrl,
+        image_path: imagePath, // 推荐存 path，以便后续生成临时签名 URL（不会长期失效）
+        tags: ["生活"],
+      };
+
+      console.log("插入 payload:", payload);
+
+      const { data, error } = await supabase.from("moments").insert([payload]);
+
+      console.log("insert 返回:", { data, error });
+
+      if (error) {
+        // 打印更多信息以便调试（Supabase 在前端有时只返回 {}）
+        console.error("保存失败（详细）:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        alert("发布失败，请重试");
+      } else {
+        onSuccess();
+        onClose();
+        setContent("");
+        setEventType("");
+        setLocation("");
+        setImageFile(null);
+      }
+    } catch (err) {
+      console.error("提交错误:", err);
       alert("发布失败，请重试");
-    } else {
-      onSuccess();
-      onClose();
+    } finally {
+      setLoading(false);
     }
   };
 
