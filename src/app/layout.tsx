@@ -1,35 +1,30 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-// import BackToHome from "../components/BackToHome";
+// src/app/layout.tsx
+import './globals.css';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import { Sidebar } from './components/layout/Sidebar'; // Using '@/' alias for cleaner imports
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "BulletAI: Your AI Focus & Energy Partner",
-  description: "Your AI Focus & Energy Partner",
+  title: 'BulletAI - Record Your Soul',
+  description: '每一个灵魂，都值得被记录',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {/* <BackToHome /> */}
-        {children}
+      <body className={inter.className}>
+        <div className="flex h-screen bg-gray-50 font-sans">
+          <Sidebar />
+          <main className="flex-1 p-8 overflow-y-auto">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );

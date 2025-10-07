@@ -80,7 +80,8 @@ export default function LoginPage() {
       if (error) {
         setMessage(language === "en" ? `Login failed: ${error.message}` : `登录失败：${error.message}`);
       } else {
-        window.location.href = "/task-ai";
+        // 密码登录成功后跳转到 main 页面
+        router.push("/main");
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -104,6 +105,7 @@ export default function LoginPage() {
       setLoading(false);
       setMessage(error.message);
     }
+    // 注意：OAuth 登录不会返回到当前函数，而是重定向到回调页面
   };
 
   return (

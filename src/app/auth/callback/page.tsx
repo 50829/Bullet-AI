@@ -16,54 +16,54 @@ export default function AuthCallback() {
 
     const run = async () => {
       try {
-        // 从 URL 中获取 token 和 type
+        // 检查 URL 参数
         const url = new URL(window.location.href);
-        const token = url.searchParams.get("token");
-        const type = url.searchParams.get("type") || "email";
-        const email = url.searchParams.get("email"); // 假设邮箱通过 URL 传递
-
-        if (token && email) {
-          // 验证 OTP
-          const { data: { session }, error } = await supabase.auth.verifyOtp({
-            email,
-            token,
-            type: type as "email",
-          });
-          if (error) {
-            console.error("verifyOtp error:", error.message);
-            setMsg(`验证失败：${error.message}`);
-            return;
-          }
-          if (session) {
-            setMsg("登录成功，正在跳转…");
-            router.replace("/task-ai");
-            return;
-          }
+        const error_description = url.searchParams.get("error_description");
+        
+        // 如果有错误参数，说明认证失败
+        if (error_description) {
+          setMsg(`登录失败：${decodeURIComponent(error_description)}`);
+          return;
         }
 
-        // 尝试获取已有会话
+        // 检查是否有会话
         const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
           console.error("getSession error:", error.message);
-          setMsg("未获取到会话，正在跳转…");
+          setMsg(`获取会话失败：${error.message}`);
+          return;
         }
-        if (!session) {
-          setMsg("未获取到会话，请重试");
+
+        if (session) {
+          // 会话存在，跳转到 main 页面
+          setMsg("登录成功，正在跳转…");
+          router.replace("/main");
+        } else {
+          // 没有会话，可能需要重定向到登录页
+          setMsg("未获取到会话，正在跳转到登录页…");
+          setTimeout(() => {
+            router.replace("/login");
+          }, 2000);
         }
       } catch (e) {
         const errorMsg = e instanceof Error ? e.message : String(e);
         console.error("Auth callback exception:", errorMsg);
         setMsg(`处理登录时出现问题：${errorMsg}`);
-      } finally {
-        router.replace("/task-ai");
+        setTimeout(() => {
+          router.replace("/login");
+        }, 3000);
       }
     };
+
     run();
   }, [router]);
 
   return (
-  <div className="min-h-screen flex items-center justify-center bg-[var(--surface-soft)]">
-      <div className="bg-white rounded-2xl shadow p-6 text-gray-700">{msg}</div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-orange-100">
+      <div className="bg-white rounded-2xl shadow-lg p-8 text-center w-full max-w-md mx-4 border border-orange-200">
+        <p className="text-gray-700">{msg}</p>
+      </div>
     </div>
   );
 }
