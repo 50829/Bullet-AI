@@ -20,11 +20,9 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   if (!isOpen) return null;
 
-  // 上传图片并返回临时可访问URL和文件路径
   const handleUpload = async () => {
     if (!imageFile) return null;
 
-    // 获取当前用户（createClientComponentClient 能获取到 session）
     const { data: userData, error: userErr } = await supabase.auth.getUser();
     if (userErr) {
       console.error("获取用户信息错误:", userErr);
@@ -38,9 +36,8 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
     const timestamp = Date.now();
     const ext = imageFile.name.split(".").pop() || "jpg";
     const fileName = `${timestamp}.${ext}`;
-    const filePath = `${user.id}/${fileName}`; // 存到用户目录下
+    const filePath = `${user.id}/${fileName}`;
 
-    // 上传到私有 bucket moments
     const { error: uploadError } = await supabase.storage
       .from("moments")
       .upload(filePath, imageFile, { cacheControl: "3600", upsert: false });
@@ -51,10 +48,9 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
       return null;
     }
 
-    // 生成带过期时间的签名URL（用于立刻显示）
     const { data: signedData, error: signedError } = await supabase.storage
       .from("moments")
-      .createSignedUrl(filePath, 60 * 60 * 24); // 1 天
+      .createSignedUrl(filePath, 60 * 60 * 24);
 
     if (signedError || !signedData) {
       console.error("生成签名URL失败:", signedError);
@@ -64,7 +60,6 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
     return { publicUrl: signedData.signedUrl as string, path: filePath };
   };
 
-  // 提交新时刻
   const handleSubmit = async () => {
     if (!content.trim()) {
       alert("内容不能为空");
@@ -73,7 +68,6 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
     setLoading(true);
 
     try {
-      // 再次获取用户，确保 session 可用
       const { data: userData, error: userErr } = await supabase.auth.getUser();
       if (userErr) {
         console.error("getUser 错误:", userErr);
@@ -85,7 +79,6 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
         return;
       }
 
-      // 只有在有文件时才上传
       let imageUrl: string | null = null;
       let imagePath: string | null = null;
       if (imageFile) {
@@ -94,15 +87,15 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
         imagePath = uploaded?.path ?? null;
       }
 
-      // 构建插入 payload（务必包含 user_id）
+      // 移除默认的 "生活" 标签
       const payload = {
         user_id: user.id,
         content,
         event_type: eventType,
         location,
         image_url: imageUrl,
-        image_path: imagePath, // 推荐存 path，以便后续生成临时签名 URL（不会长期失效）
-        tags: ["生活"],
+        image_path: imagePath,
+        tags: [], // 改为空数组
       };
 
       console.log("插入 payload:", payload);
@@ -112,7 +105,6 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
       console.log("insert 返回:", { data, error });
 
       if (error) {
-        // 打印更多信息以便调试（Supabase 在前端有时只返回 {}）
         console.error("保存失败（详细）:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
         alert("发布失败，请重试");
       } else {

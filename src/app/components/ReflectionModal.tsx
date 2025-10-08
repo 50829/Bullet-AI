@@ -1,3 +1,4 @@
+// src/app/components/ReflectionModal.tsx
 "use client";
 import React, { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
@@ -21,42 +22,104 @@ export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   if (!isOpen) return null;
 
+  // 上传图片并返回临时可访问 URL 和文件路径（image_path）
   const handleUpload = async () => {
     if (!imageFile) return null;
-    const fileName = `${Date.now()}-${imageFile.name}`;
-    const { data, error } = await supabase.storage
-      .from("reflections")
-      .upload(fileName, imageFile);
-    if (error) {
-      console.error("上传失败:", error);
+
+    // 获取当前用户（createClientComponentClient 已配置好 session）
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+    if (!user) {
+      alert("请先登录再上传图片");
       return null;
     }
-    const { data: publicUrl } = supabase.storage
+
+    // 使用安全的文件名： userId / timestamp.ext
+    const ext = (imageFile.name.split(".").pop() || "jpg").replace(/\?.*$/,'');
+    const safeFileName = `${Date.now()}.${ext}`; // 不使用原始文件名，避免中文/空格/特殊字符
+    const filePath = `${user.id}/${safeFileName}`; // e.g. <uuid>/169xxx.jpg
+
+    // 上传到 reflections 桶（建议桶为私有）
+    const { error: uploadError } = await supabase.storage
       .from("reflections")
-      .getPublicUrl(fileName);
-    return publicUrl.publicUrl;
+      .upload(filePath, imageFile, { upsert: false });
+
+    if (uploadError) {
+      console.error("图片上传失败:", uploadError);
+      alert("图片上传失败，请重试");
+      return null;
+    }
+
+    // 生成临时签名 URL（例如 24 小时）
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from("reflections")
+      .createSignedUrl(filePath, 60 * 60 * 24);
+
+    if (signedError || !signedData) {
+      console.error("生成签名 URL 失败:", signedError);
+      // 即使签名失败，也返回 path（可在后续尝试重新生成）
+      return { publicUrl: null, path: filePath };
+    }
+
+    return { publicUrl: signedData.signedUrl as string, path: filePath };
   };
 
+  // 提交新感悟
   const handleSubmit = async () => {
-    if (!content.trim()) return alert("请填写感悟内容");
+    if (!content.trim()) {
+      alert("请填写感悟内容");
+      return;
+    }
     setLoading(true);
-    const imageUrl = await handleUpload();
 
-    const { error } = await supabase.from("reflections").insert({
-      content,
-      source,
-      source_type: sourceType,
-      location,
-      image_url: imageUrl,
-    });
+    try {
+      // 确保用户已登录
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (!user) {
+        alert("请先登录！");
+        setLoading(false);
+        return;
+      }
 
-    setLoading(false);
-    if (error) {
-      console.error(error);
-      alert("发布失败，请重试");
-    } else {
-      onSuccess();
-      onClose();
+      // 上传图片（如果有）
+      let imageUrl: string | null = null;
+      let imagePath: string | null = null;
+      if (imageFile) {
+        const uploaded = await handleUpload();
+        imageUrl = uploaded?.publicUrl ?? null; // 用于立即预览
+        imagePath = uploaded?.path ?? null; // 存库用于之后生成签名 URL
+      }
+
+      // 插入记录（务必包含 user_id）
+      const { error } = await supabase.from("reflections").insert({
+        user_id: user.id,
+        content,
+        source,
+        source_type: sourceType,
+        location,
+        image_url: imageUrl,
+        image_path: imagePath,
+      });
+
+      setLoading(false);
+      if (error) {
+        console.error("写入 reflections 失败:", error);
+        alert("发布失败，请重试");
+      } else {
+        onSuccess();
+        onClose();
+        // 重置表单
+        setContent("");
+        setSource("");
+        setSourceType("");
+        setLocation("");
+        setImageFile(null);
+      }
+    } catch (err) {
+      console.error("提交错误:", err);
+      alert("发布异常，请稍后重试");
+      setLoading(false);
     }
   };
 
@@ -115,8 +178,8 @@ export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
           <Button variant="secondary" onClick={onClose}>
             取消
           </Button>
-          <Button 
-            onClick={handleSubmit} 
+          <Button
+            onClick={handleSubmit}
             className={loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}
           >
             {loading ? "发布中..." : "发布"}
