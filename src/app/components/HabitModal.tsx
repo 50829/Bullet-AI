@@ -1,3 +1,4 @@
+// HabitModal.tsx - 修复版本
 "use client";
 import React, { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
@@ -62,7 +63,7 @@ export const HabitModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl transform transition-transform duration-200">
         <h2 className="text-2xl font-bold mb-4">新建习惯</h2>
 
         <label className="block text-sm text-gray-600 mb-1">习惯名称 *</label>
@@ -119,10 +120,16 @@ export const HabitModal = ({ isOpen, onClose, onSuccess }: Props) => {
         </div>
 
         <div className="flex justify-end mt-6 space-x-3">
-          <Button variant="secondary" onClick={onClose}>取消</Button>
+          <Button 
+            variant="secondary" 
+            onClick={onClose}
+            className="min-w-[60px] h-10"
+          >
+            取消
+          </Button>
           <Button 
             onClick={handleSubmit} 
-            className={loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}
+            className={`min-w-[60px] h-10 ${loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}`}
           >
             {loading ? "发布中..." : "发布"}
           </Button>

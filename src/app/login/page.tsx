@@ -202,7 +202,7 @@ export default function LoginPage() {
           </a>
         </p>
 
-        {message && <p className="text-sm text-red-500 mt-4">{message}</p>}
+        {message && <p className="text-sm text-orange-400 mt-4">{message}</p>}
       </div>
     </main>
   );

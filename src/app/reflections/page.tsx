@@ -170,7 +170,7 @@ export default function ReflectionsPage() {
     setFilteredReflections(reflections);
   };
 
-  if (loading) return <div className="text-center py-8">加载中...</div>;
+  if (loading) return <div className="text-center py-8">思考即将开始...</div>;
 
   return (
 <div className="min-h-screen p-4">
@@ -222,9 +222,9 @@ export default function ReflectionsPage() {
               <Button 
                 variant="secondary"
                 onClick={resetSearch}
-                className="w-full"
+                className="w-full bg-white text-gray-900 border border-orange-200 hover:bg-orange-50 hover:border-orange-300"
               >
-                重置
+                返回
               </Button>
             </div>
           </div>
@@ -266,7 +266,7 @@ export default function ReflectionsPage() {
                   <div className="flex justify-end mt-2 space-x-3 text-gray-400">
                     <Trash2
                       size={18}
-                      className="cursor-pointer hover:text-red-500"
+                      className="cursor-pointer hover:text-orange-400"
                       onClick={() => {
                         setSelectedReflection(reflection);
                         setShowConfirm(true);

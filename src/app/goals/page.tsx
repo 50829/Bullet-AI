@@ -108,7 +108,7 @@ export default function GoalsPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`py-2 px-1 font-medium transition-colors duration-200 ${activeTab === tab ? 'border-b-2 border-red-500 text-red-600' : 'text-gray-500 hover:text-gray-800'}`}
+              className={`py-2 px-1 font-medium transition-colors duration-200 ${activeTab === tab ? 'border-b-2 border-orange-400 text-orange-400' : 'text-gray-500 hover:text-gray-800'}`}
             >
               {tab}
             </button>
@@ -128,7 +128,7 @@ export default function GoalsPage() {
                     <div className="flex space-x-3 text-gray-400">
                       <Trash2 
                         size={18} 
-                        className="cursor-pointer hover:text-red-500" 
+                        className="cursor-pointer hover:text-orange-400" 
                         onClick={() => {
                           setSelectedItem({ type: 'goal', id: goal.id });
                           setShowConfirm(true);
@@ -153,7 +153,7 @@ export default function GoalsPage() {
                     <div className="flex space-x-3 text-gray-400">
                       <Trash2 
                         size={18} 
-                        className="cursor-pointer hover:text-red-500" 
+                        className="cursor-pointer hover:text-orange-400" 
                         onClick={() => {
                           setSelectedItem({ type: 'goal', id: goal.id });
                           setShowConfirm(true);
@@ -186,7 +186,7 @@ export default function GoalsPage() {
                     <div className="flex space-x-3 text-gray-400">
                       <Trash2 
                         size={18} 
-                        className="cursor-pointer hover:text-red-500" 
+                        className="cursor-pointer hover:text-orange-400" 
                         onClick={() => {
                           setSelectedItem({ type: 'habit', id: habit.id });
                           setShowConfirm(true);

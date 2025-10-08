@@ -25,7 +25,7 @@ const NavItem = ({ page, icon, label }: NavItemProps) => {
   return (
     <li
       className={`flex items-center p-3 my-2 cursor-pointer rounded-lg transition-colors ${
-        isActive ? 'bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 text-red-600 shadow-lg border border-orange-200' : 'text-gray-600 hover:bg-gradient-to-br hover:from-blue-100/50 hover:via-white/50 hover:to-orange-100/50 hover:shadow-sm'
+        isActive ? 'bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 text-orange-400 shadow-lg border border-orange-200' : 'text-gray-600 hover:bg-gradient-to-br hover:from-blue-100/50 hover:via-white/50 hover:to-orange-100/50 hover:shadow-sm'
       }`}
       onClick={handleClick}
     >
