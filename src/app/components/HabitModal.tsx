@@ -22,13 +22,24 @@ export const HabitModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   const handleSubmit = async () => {
     if (!name.trim()) return alert("请填写习惯名称");
+
     setLoading(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+    if (!user) {
+      alert("请先登录");
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from("habits").insert({
+      user_id: user.id,
       name,
       description,
       frequency,
       color,
     });
+
     setLoading(false);
     if (error) {
       console.error(error);
@@ -36,6 +47,8 @@ export const HabitModal = ({ isOpen, onClose, onSuccess }: Props) => {
     } else {
       onSuccess();
       onClose();
+      setName("");
+      setDescription("");
     }
   };
 
@@ -72,7 +85,7 @@ export const HabitModal = ({ isOpen, onClose, onSuccess }: Props) => {
             <select
               value={frequency}
               onChange={(e) => setFrequency(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400"
+              className="w-full border border-gray-300 rounded-lg p-2"
             >
               <option>每日</option>
               <option>每周</option>
@@ -85,7 +98,7 @@ export const HabitModal = ({ isOpen, onClose, onSuccess }: Props) => {
             <select
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400"
+              className="w-full border border-gray-300 rounded-lg p-2"
             >
               <option>蓝色</option>
               <option>红色</option>
@@ -106,9 +119,7 @@ export const HabitModal = ({ isOpen, onClose, onSuccess }: Props) => {
         </div>
 
         <div className="flex justify-end mt-6 space-x-3">
-          <Button variant="secondary" onClick={onClose}>
-            取消
-          </Button>
+          <Button variant="secondary" onClick={onClose}>取消</Button>
           <Button 
             onClick={handleSubmit} 
             className={loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}

@@ -1,3 +1,4 @@
+// src/app/moments/page.tsx
 "use client";
 import React, { useState, useEffect } from "react";
 import { Card } from "../components/ui/Card";
@@ -30,7 +31,7 @@ export default function MomentsPage() {
   
   // 搜索相关状态
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchType, setSearchType] = useState<"text" | "event" | "location">("text");
+  const [searchType, setSearchType] = useState<"text" | "event" | "location" | "inspiration">("text");
 
   const fetchMoments = async () => {
     setLoading(true);
@@ -104,6 +105,11 @@ export default function MomentsPage() {
             moment.location.toLowerCase().includes(searchTerm.toLowerCase())
           );
           break;
+        case "inspiration":
+          results = results.filter(moment => 
+            moment.content.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+          break;
       }
     }
     
@@ -174,19 +180,20 @@ export default function MomentsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">搜索类型</label>
             <select
               value={searchType}
-              onChange={(e) => setSearchType(e.target.value as "text" | "event" | "location")}
+              onChange={(e) => setSearchType(e.target.value as "text" | "event" | "location" | "inspiration")}
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="text">文本</option>
               <option value="event">事件/标签</option>
               <option value="location">地点</option>
+              <option value="inspiration">灵感来源</option>
             </select>
           </div>
           
           <div className="md:col-span-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">搜索内容</label>
             <Input
-              placeholder={`输入${searchType === "event" ? "事件或标签" : searchType === "location" ? "地点" : "内容"}...`}
+              placeholder={`输入${searchType === "event" ? "事件或标签" : searchType === "location" ? "地点" : searchType === "inspiration" ? "灵感来源" : "内容"}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -213,9 +220,9 @@ export default function MomentsPage() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredMoments.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-500 col-span-2">
             {searchTerm ? "没有找到匹配的时刻记录" : "暂无时刻记录，点击上方按钮记录第一个时刻吧！"}
           </div>
         ) : (

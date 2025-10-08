@@ -5,7 +5,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Tag } from "../components/ui/Tag";
-import { Edit, Trash2 } from "lucide-react";
+import { Search, Edit, Trash2 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { ReflectionModal } from "../components/ReflectionModal";
 
@@ -23,8 +23,13 @@ type Reflection = {
 
 export default function ReflectionsPage() {
   const [reflections, setReflections] = useState<Reflection[]>([]);
+  const [filteredReflections, setFilteredReflections] = useState<Reflection[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // 搜索相关状态
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchType, setSearchType] = useState<"text" | "event" | "location" | "inspiration">("text");
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -82,6 +87,7 @@ export default function ReflectionsPage() {
     );
 
     setReflections(withUrls);
+    setFilteredReflections(withUrls);
     setLoading(false);
   };
 
@@ -118,6 +124,47 @@ export default function ReflectionsPage() {
     fetchReflections();
   }, []);
 
+  // 执行搜索
+  const performSearch = () => {
+    let results = [...reflections];
+    
+    if (searchTerm.trim()) {
+      switch (searchType) {
+        case "text":
+          results = results.filter(reflection => 
+            reflection.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (reflection.source_type?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+          );
+          break;
+        case "event":
+          results = results.filter(reflection => 
+            (reflection.source_type?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+            (reflection.source?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+          );
+          break;
+        case "location":
+          results = results.filter(reflection => 
+            (reflection.location?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+          );
+          break;
+        case "inspiration":
+          results = results.filter(reflection => 
+            reflection.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (reflection.source?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+          );
+          break;
+      }
+    }
+    
+    setFilteredReflections(results);
+  };
+
+  // 重置搜索
+  const resetSearch = () => {
+    setSearchTerm("");
+    setFilteredReflections(reflections);
+  };
+
   if (loading) return <div className="text-center py-8">加载中...</div>;
 
   return (
@@ -130,17 +177,60 @@ export default function ReflectionsPage() {
         <Button onClick={() => setIsModalOpen(true)}>+ 记录新感悟</Button>
       </div>
 
-      <div className="mb-6">
-        <Input placeholder="搜索感悟..." />
+      {/* 搜索区域 */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">搜索类型</label>
+            <select
+              value={searchType}
+              onChange={(e) => setSearchType(e.target.value as "text" | "event" | "location" | "inspiration")}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="text">文本</option>
+              <option value="event">事件/标签</option>
+              <option value="location">地点</option>
+              <option value="inspiration">灵感来源</option>
+            </select>
+          </div>
+          
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">搜索内容</label>
+            <Input
+              placeholder={`输入${searchType === "event" ? "事件或标签" : searchType === "location" ? "地点" : searchType === "inspiration" ? "灵感来源" : "内容"}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <div className="md:col-span-2">
+            <Button 
+              onClick={performSearch}
+              className="w-full flex items-center justify-center"
+            >
+              <Search size={16} className="mr-1" /> 搜索
+            </Button>
+          </div>
+          
+          <div className="md:col-span-2">
+            <Button 
+              variant="secondary"
+              onClick={resetSearch}
+              className="w-full"
+            >
+              重置
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {reflections.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            暂无感悟记录，点击上方按钮记录第一个感悟吧！
+        {filteredReflections.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 col-span-2">
+            {searchTerm ? "没有找到匹配的感悟记录" : "暂无感悟记录，点击上方按钮记录第一个感悟吧！"}
           </div>
         ) : (
-          reflections.map((reflection) => (
+          filteredReflections.map((reflection) => (
             <Card key={reflection.id}>
               <div className="flex justify-between items-start">
                 <div>

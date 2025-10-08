@@ -22,13 +22,25 @@ export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   const handleSubmit = async () => {
     if (!title.trim()) return alert("请填写目标标题");
+
     setLoading(true);
+
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+    if (!user) {
+      alert("请先登录");
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from("goals").insert({
+      user_id: user.id,
       title,
       description,
       type,
       priority,
     });
+
     setLoading(false);
     if (error) {
       console.error(error);
@@ -36,6 +48,8 @@ export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
     } else {
       onSuccess();
       onClose();
+      setTitle("");
+      setDescription("");
     }
   };
 
@@ -64,7 +78,7 @@ export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-red-400"
+              className="w-full border border-gray-300 rounded-lg p-2"
             >
               <option>今日待办</option>
               <option>近期目标</option>
@@ -76,7 +90,7 @@ export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-red-400"
+              className="w-full border border-gray-300 rounded-lg p-2"
             >
               <option>高</option>
               <option>中</option>
@@ -86,9 +100,7 @@ export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
         </div>
 
         <div className="flex justify-end mt-6 space-x-3">
-          <Button variant="secondary" onClick={onClose}>
-            取消
-          </Button>
+          <Button variant="secondary" onClick={onClose}>取消</Button>
           <Button 
             onClick={handleSubmit} 
             className={loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}
