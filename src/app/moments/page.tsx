@@ -185,7 +185,7 @@ export default function MomentsPage() {
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="text">文本</option>
-                <option value="event">事件/标签</option>
+                <option value="event">事件</option>
                 <option value="location">地点</option>
                 <option value="inspiration">灵感来源</option>
               </select>
@@ -194,7 +194,7 @@ export default function MomentsPage() {
             <div className="md:col-span-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">搜索内容</label>
               <Input
-                placeholder={`输入${searchType === "event" ? "事件或标签" : searchType === "location" ? "地点" : searchType === "inspiration" ? "灵感来源" : "内容"}...`}
+                placeholder={`输入${searchType === "event" ? "事件" : searchType === "location" ? "地点" : searchType === "inspiration" ? "灵感来源" : "内容"}...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />

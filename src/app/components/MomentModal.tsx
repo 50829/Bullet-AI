@@ -180,7 +180,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
             onClick={handleSubmit} 
             className={`min-w-[60px] h-10 ${loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}`}
           >
-            {loading ? "发布中..." : "发布"}
+            {loading ? "记录中..." : "记录"}
           </Button>
         </div>
       </div>
