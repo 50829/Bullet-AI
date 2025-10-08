@@ -17,7 +17,6 @@ const LandingPage: NextPage = () => {
   });
 
   useEffect(() => {
-    // 依次显示各个部分，创造淡入效果
     const heroTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, hero: true })), 100);
     const featuresTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, features: true })), 300);
     const pricingTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, pricing: true })), 500);
@@ -50,7 +49,6 @@ const LandingPage: NextPage = () => {
 const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
   const router = useRouter();
   
-  // 滚动到功能区域
   const scrollToFeatures = () => {
     const featuresSection = document.getElementById('features-section');
     if (featuresSection) {
@@ -58,20 +56,18 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
     }
   };
 
-  // 跳转到登录页面
   const goToLogin = () => {
     router.push('/login');
   };
 
-  // Slogan动画效果
   const slogan = "每一个灵魂，都值得被记录";
   const [sloganVisible, setSloganVisible] = useState(false);
   const [buttonsVisible, setButtonsVisible] = useState(false);
 
   useEffect(() => {
     if (isVisible) {
-      const sloganTimer = setTimeout(() => setSloganVisible(true), 1000); // 延长延迟时间
-      const buttonsTimer = setTimeout(() => setButtonsVisible(true), 2000); // 延长延迟时间
+      const sloganTimer = setTimeout(() => setSloganVisible(true), 1000);
+      const buttonsTimer = setTimeout(() => setButtonsVisible(true), 2000);
       
       return () => {
         clearTimeout(sloganTimer);
@@ -144,10 +140,10 @@ const FeaturesSection = () => {
       ([entry]) => {
         if (entry.isIntersecting && !isVisible) {
           setIsVisible(true);
-          observer.disconnect(); // 只播放一次动画
+          observer.disconnect();
         }
       },
-      { threshold: 0.1 } // 当10%的元素可见时触发
+      { threshold: 0.1 }
     );
 
     if (sectionRef.current) {
@@ -165,49 +161,46 @@ const FeaturesSection = () => {
     {
       icon: <Camera className="h-7 w-7 text-gray-700" />,
       title: '我的时刻',
-      description: '像发朋友圈一样记录生活，让每一个珍贵时刻都有迹可循',
+      description: '记录日常点滴，珍藏生活瞬间的专属日记',
       items: [
-        '记录日常: 轻松记录文字与照片，分享生活瞬间',
-        '习惯打卡: 关联习惯，一键标记完成状态',
-        '地理位置: 记录您所在位置，让回忆更具体',
-        '事件标签: 自定义标签分类，快速查找',
-        '月度回顾: 自动归档，方便按月回顾',
-        'AI 帮写: AI 助手提供灵感，让写作更轻松',
-        '标签筛选: 通过标签快速找到特定主题',
+        '多媒体记录: 支持文字、图片、视频，让回忆更生动',
+        '智能标记: 自定义事件类型（如生活、工作、旅行）与地理位置',
+        '习惯打卡关联: 发布时刻时可关联“我的习惯”自动打卡',
+        '自由编辑: 随时删除或修改已发布的时刻',
+        '高效检索: 通过关键词或事件类型快速筛选回顾',
       ],
     },
     {
       icon: <Target className="h-7 w-7 text-gray-700" />,
-      title: '月度计划',
-      description: '设定清晰目标，追踪进度，管理每月成就',
+      title: '我的目标',
+      description: '清晰规划任务与梦想，从每日待办到长期目标',
       items: [
-        '设定目标: 为每月设定工作、学习、生活目标',
-        '进度追踪: 直观的进度条和完成度百分比',
-        'AI 灵思: AI 提供个性化目标建议',
+        '今日待办: 添加任务、设置优先级、标记完成状态',
+        '近期目标: 设定中期或长期目标并追踪进度',
+        '我的习惯: 创建习惯、设定频率、统计打卡次数',
+        '灵活管理: 随时编辑或删除任务、目标与习惯',
       ],
     },
     {
       icon: <Lightbulb className="h-7 w-7 text-gray-700" />,
       title: '我的感悟',
-      description: '记录思考洞察，追溯灵感来源，深化个人成长',
+      description: '沉淀灵感与思考，打造你的私人思想库',
       items: [
-        '记录思考: 随时记录所思所想，洞察顿悟',
-        '灵感溯源: 记住感悟的来源和产生过程',
-        '图片支持: 图文并茂呈现您的思考',
-        '事件标签: 便于整理和回顾特定主题',
-        '月度归档: 追溯思考脉络，见证成长',
-        'AI 帮写: 协助撰写和深化感悟内容',
-        '标签筛选: 聚焦特定类型的感悟',
+        '深度记录: 支持文字、图片、视频记录感悟',
+        '背景信息: 标注事件类型、灵感来源与地点',
+        '自由编辑: 所有感悟均可随时修改或删除',
+        '快速查找: 通过关键词搜索过往灵感',
       ],
     },
     {
       icon: <Bot className="h-7 w-7 text-gray-700" />,
-      title: 'AI 管家',
-      description: '您的专属智能助手，深度理解您，助力成长',
+      title: 'AI树洞',
+      description: '你的私密智能伙伴，懂你、陪你、启发你',
       items: [
-        '智能对话: AI 阅读您所有记录，形成全面理解',
-        '个性化建议: 提供高维度的个性化分析和建议',
-        '未来展望: 获取对未来规划的洞察和支持',
+        '个性化对话: 基于你所有记录进行深度理解与回应',
+        '情感支持: 以温暖、共情的方式倾听与陪伴',
+        '智能洞察: 回顾过往，提供成长视角与新思考',
+        '绝对私密: 所有数据仅限你与AI使用，安全无忧',
       ],
     },
   ];
@@ -217,14 +210,14 @@ const FeaturesSection = () => {
       <div className="max-w-6xl mx-auto">
         <div className={`text-center mb-16 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight">四大核心功能</h2>
-          <p className="mt-4 text-xl text-gray-600">全方位记录、规划、思考，让 AI 成为您的成长伙伴</p>
+          <p className="mt-4 text-xl text-gray-600">全方位记录、规划、思考，让 AI 成为你的成长伙伴</p>
         </div>
         <div className="flex flex-col gap-8">
           {features.map((feature, index) => (
             <div 
               key={feature.title}
               className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-              style={{ transitionDelay: `${index * 150}ms` }} // 增加延迟时间
+              style={{ transitionDelay: `${index * 150}ms` }}
             >
               <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg border border-orange-200 hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
                 <FeatureCard {...feature} />
@@ -237,7 +230,6 @@ const FeaturesSection = () => {
   );
 };
 
-// 功能卡片子组件
 const FeatureCard = ({ icon, title, description, items }: { icon: React.ReactNode; title: string; description: string; items: string[] }) => (
   <div className="bg-transparent p-0 rounded-2xl shadow-none">
     <div className="flex items-center gap-4 mb-4">
@@ -263,7 +255,7 @@ const FeatureCard = ({ icon, title, description, items }: { icon: React.ReactNod
   </div>
 );
 
-// 3. 定价方案区域（左侧标题，右侧卡片）
+// 3. 定价方案区域
 const PricingSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -273,10 +265,10 @@ const PricingSection = () => {
       ([entry]) => {
         if (entry.isIntersecting && !isVisible) {
           setIsVisible(true);
-          observer.disconnect(); // 只播放一次动画
+          observer.disconnect();
         }
       },
-      { threshold: 0.1 } // 当10%的元素可见时触发
+      { threshold: 0.1 }
     );
 
     if (sectionRef.current) {
@@ -293,14 +285,14 @@ const PricingSection = () => {
   const tier = {
     name: '免费开始',
     price: null,
-    description: '体验 BulletAI 的核心功能，开启您的记录之旅',
+    description: '体验 BulletAI 全部核心功能，开启你的成长之旅',
     features: [
-      '所有核心功能',
-      '无限日记和感悟记录',
-      '月度计划管理',
-      '基础 AI 助手支持',
-      '照片上传与存储',
-      '标签分类与筛选',
+      '我的时刻：完整记录与管理',
+      '我的目标：任务、目标与习惯追踪',
+      '我的感悟：灵感沉淀与回顾',
+      'AI树洞：私密智能对话与洞察',
+      '多媒体支持：文字、图片、视频',
+      '标签分类与关键词搜索',
     ],
     buttonText: '立即开始',
     isFeatured: true,
@@ -310,8 +302,8 @@ const PricingSection = () => {
     <section ref={sectionRef} className={`py-20 px-4 bg-gradient-to-br from-blue-100/50 via-white/50 to-orange-100/50 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className={`lg:col-span-1 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight">适合每个需求的定价方案</h2>
-          <p className="mt-4 text-xl text-gray-600">从免费开始，随着成长逐步升级，获得更强大的功能支持</p>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight">适合每个人的起点</h2>
+          <p className="mt-4 text-xl text-gray-600">无需付费，立即使用全部核心功能，开启属于你的记录与成长之旅</p>
         </div>
         <div className="lg:col-span-2 flex items-center justify-center">
           <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg border border-orange-200 w-full max-w-md hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
@@ -323,9 +315,8 @@ const PricingSection = () => {
   );
 };
 
-// 定价卡片子组件
-const PricingCard = ({ name, price, period, description, features, buttonText, isFeatured }: {
-  name: string; price: string | null; period?: string; description: string; features: string[]; buttonText: string; isFeatured: boolean;
+const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
+  name: string; description: string; features: string[]; buttonText: string; isFeatured: boolean;
 }) => {
   const router = useRouter();
 
@@ -334,7 +325,7 @@ const PricingCard = ({ name, price, period, description, features, buttonText, i
   };
 
   return (
-    <div className={`flex flex-col p-0 rounded-2xl shadow-none w-full ${isFeatured ? 'bg-transparent' : 'bg-slate-50/50'}`}>
+    <div className="flex flex-col p-0 rounded-2xl shadow-none w-full">
       <h3 className="text-4xl font-bold">{name}</h3>
       <p className="mt-2 text-gray-600">{description}</p>
       <ul className="mt-8 space-y-4 flex-grow">
@@ -349,7 +340,7 @@ const PricingCard = ({ name, price, period, description, features, buttonText, i
       </ul>
       <button 
         onClick={goToLogin}
-        className={`mt-8 w-full text-lg font-semibold py-4 px-4 rounded-full transition-all duration-500 ${isFeatured ? 'bg-gray-800 text-white hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800' : 'bg-gray-800 text-white hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800'} h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl`}
+        className="mt-8 w-full text-lg font-semibold py-4 px-4 rounded-full bg-gray-800 text-white hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800 transition-all duration-500 h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
       >
         {buttonText}
       </button>
@@ -367,10 +358,10 @@ const CallToActionSection = () => {
       ([entry]) => {
         if (entry.isIntersecting && !isVisible) {
           setIsVisible(true);
-          observer.disconnect(); // 只播放一次动画
+          observer.disconnect();
         }
       },
-      { threshold: 0.1 } // 当10%的元素可见时触发
+      { threshold: 0.1 }
     );
 
     if (sectionRef.current) {
@@ -418,10 +409,10 @@ const Footer = () => {
       ([entry]) => {
         if (entry.isIntersecting && !isVisible) {
           setIsVisible(true);
-          observer.disconnect(); // 只播放一次动画
+          observer.disconnect();
         }
       },
-      { threshold: 0.1 } // 当10%的元素可见时触发
+      { threshold: 0.1 }
     );
 
     if (sectionRef.current) {
@@ -435,7 +426,6 @@ const Footer = () => {
     };
   }, [isVisible]);
 
-  // 返回顶部功能
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -450,13 +440,12 @@ const Footer = () => {
             </div>
             <span className="font-bold text-xl">BulletAI</span>
           </div>
-          <p className="mt-2 text-sm text-center sm:text-left">© 2024 BulletAI. 每一个灵魂，都值得被记录</p>
+          <p className="mt-2 text-sm text-center sm:text-left">© 2025 BulletAI. 每一个灵魂，都值得被记录</p>
         </div>
         <div className={`mt-8 sm:mt-0 text-center sm:text-right transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <h4 className="font-semibold">联系我们</h4>
         </div>
       </div>
-      {/* “返回顶部”按钮 */}
       <button 
         onClick={scrollToTop}
         className="fixed bottom-10 right-10 bg-gray-800 text-white p-3 rounded-full shadow-lg hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800 transition-all duration-500 z-50 hover:-translate-y-1 hover:shadow-xl"

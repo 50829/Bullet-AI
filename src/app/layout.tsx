@@ -6,7 +6,7 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'BulletAI - Record Your Soul',
+  title: 'BulletAI - Your Private Recording Space',
   description: '每一个灵魂，都值得被记录',
 };
 
