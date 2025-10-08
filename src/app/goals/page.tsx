@@ -1,8 +1,9 @@
+// src/app/goals/page.tsx
 "use client";
 import React, { useEffect, useState } from "react";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { Edit, Trash2, CheckCircle } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { GoalModal } from "../components/GoalModal";
 import { HabitModal } from "../components/HabitModal";
@@ -33,6 +34,9 @@ export default function GoalsPage() {
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
+  
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<{ type: 'goal' | 'habit', id: number } | null>(null);
 
   const fetchData = async () => {
     const { data: userData } = await supabase.auth.getUser();
@@ -55,25 +59,30 @@ export default function GoalsPage() {
     setHabits(habitData || []);
   };
 
-  const handleDeleteGoal = async (id: number) => {
-    if (!confirm("确定要删除这个目标吗？")) return;
-    const { error } = await supabase.from("goals").delete().eq("id", id);
-    if (error) {
-      console.error("删除目标失败", error);
-      alert("删除失败");
-    } else {
-      fetchData();
-    }
-  };
+  const handleDelete = async () => {
+    if (!selectedItem) return;
 
-  const handleDeleteHabit = async (id: number) => {
-    if (!confirm("确定要删除这个习惯吗？")) return;
-    const { error } = await supabase.from("habits").delete().eq("id", id);
-    if (error) {
-      console.error("删除习惯失败", error);
-      alert("删除失败");
-    } else {
+    try {
+      if (selectedItem.type === 'goal') {
+        const { error } = await supabase.from("goals").delete().eq("id", selectedItem.id);
+        if (error) {
+          console.error("删除目标失败", error);
+          alert("删除失败");
+        }
+      } else {
+        const { error } = await supabase.from("habits").delete().eq("id", selectedItem.id);
+        if (error) {
+          console.error("删除习惯失败", error);
+          alert("删除失败");
+        }
+      }
+      
+      setShowConfirm(false);
+      setSelectedItem(null);
       fetchData();
+    } catch (err) {
+      console.error("删除异常:", err);
+      alert("删除失败，请稍后重试");
     }
   };
 
@@ -116,8 +125,14 @@ export default function GoalsPage() {
                     <p className="text-sm text-gray-500">{goal.description}</p>
                   </div>
                   <div className="flex space-x-3 text-gray-400">
-                    <Edit size={18} className="cursor-pointer hover:text-gray-600" />
-                    <Trash2 size={18} className="cursor-pointer hover:text-red-500" onClick={() => handleDeleteGoal(goal.id)} />
+                    <Trash2 
+                      size={18} 
+                      className="cursor-pointer hover:text-red-500" 
+                      onClick={() => {
+                        setSelectedItem({ type: 'goal', id: goal.id });
+                        setShowConfirm(true);
+                      }} 
+                    />
                   </div>
                 </div>
               </Card>
@@ -135,8 +150,14 @@ export default function GoalsPage() {
                     <p className="text-sm text-gray-500">{goal.description}</p>
                   </div>
                   <div className="flex space-x-3 text-gray-400">
-                    <Edit size={18} />
-                    <Trash2 size={18} className="cursor-pointer hover:text-red-500" onClick={() => handleDeleteGoal(goal.id)} />
+                    <Trash2 
+                      size={18} 
+                      className="cursor-pointer hover:text-red-500" 
+                      onClick={() => {
+                        setSelectedItem({ type: 'goal', id: goal.id });
+                        setShowConfirm(true);
+                      }} 
+                    />
                   </div>
                 </div>
               </Card>
@@ -158,13 +179,18 @@ export default function GoalsPage() {
                     </div>
                     <p className="text-gray-500 mb-3">{habit.description}</p>
                     <div className="flex items-center text-green-600">
-                      <CheckCircle size={16} />
                       <span className="ml-2 text-sm">已打卡 0 次</span>
                     </div>
                   </div>
                   <div className="flex space-x-3 text-gray-400">
-                    <Edit size={18} className="cursor-pointer hover:text-gray-600" />
-                    <Trash2 size={18} className="cursor-pointer hover:text-red-500" onClick={() => handleDeleteHabit(habit.id)} />
+                    <Trash2 
+                      size={18} 
+                      className="cursor-pointer hover:text-red-500" 
+                      onClick={() => {
+                        setSelectedItem({ type: 'habit', id: habit.id });
+                        setShowConfirm(true);
+                      }} 
+                    />
                   </div>
                 </div>
               </Card>
@@ -184,6 +210,37 @@ export default function GoalsPage() {
         onClose={() => setIsHabitModalOpen(false)}
         onSuccess={fetchData}
       />
+
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <h2 className="text-lg font-semibold mb-4 text-center">
+              确认删除这条{selectedItem?.type === 'goal' ? '目标' : '习惯'}吗？
+            </h2>
+            <p className="text-gray-600 text-sm mb-4 text-center">
+              删除后无法恢复。
+            </p>
+            <div className="flex justify-center space-x-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowConfirm(false);
+                  setSelectedItem(null);
+                }}
+              >
+                取消
+              </Button>
+              <Button
+                variant="primary"
+                className="bg-red-500 hover:bg-red-600 text-white"
+                onClick={handleDelete}
+              >
+                确认删除
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

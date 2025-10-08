@@ -5,7 +5,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Tag } from "../components/ui/Tag";
-import { Search, Edit, Trash2 } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { ReflectionModal } from "../components/ReflectionModal";
 
@@ -16,8 +16,8 @@ type Reflection = {
   source: string | null;
   source_type: string | null;
   location: string | null;
-  image_url: string | null; // 用于展示（签名 URL）
-  image_path: string | null; // 存在 DB，用于删除和重新生成签名 URL
+  image_url: string | null;
+  image_path: string | null;
   date?: string;
 };
 
@@ -26,6 +26,8 @@ export default function ReflectionsPage() {
   const [filteredReflections, setFilteredReflections] = useState<Reflection[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
   
   // 搜索相关状态
   const [searchTerm, setSearchTerm] = useState("");
@@ -91,32 +93,35 @@ export default function ReflectionsPage() {
     setLoading(false);
   };
 
-  const handleDelete = async (reflection: Reflection) => {
-    const confirmed = window.confirm("确定要删除这条感悟吗？");
-    if (!confirmed) return;
+  const handleDelete = async () => {
+    if (!selectedReflection) return;
 
-    // 先删除图片（如果有）
-    if (reflection.image_path) {
-      const { error: storageError } = await supabase.storage
-        .from("reflections")
-        .remove([reflection.image_path]);
-      if (storageError) {
-        console.error("删除图片失败:", storageError);
+    try {
+      // 先删除图片（如果有）
+      if (selectedReflection.image_path) {
+        const { error: storageError } = await supabase.storage
+          .from("reflections")
+          .remove([selectedReflection.image_path]);
+        if (storageError) console.error("删除图片失败:", storageError);
       }
-    }
 
-    // 删除数据库记录
-    const { error } = await supabase
-      .from("reflections")
-      .delete()
-      .eq("id", reflection.id);
+      // 删除数据库记录
+      const { error } = await supabase
+        .from("reflections")
+        .delete()
+        .eq("id", selectedReflection.id);
 
-    if (error) {
-      console.error("删除感悟失败:", error);
-      alert("删除失败，请重试");
-    } else {
-      alert("删除成功");
-      fetchReflections();
+      if (error) {
+        console.error("删除感悟失败:", error);
+        alert("删除失败，请重试");
+      } else {
+        setShowConfirm(false);
+        setSelectedReflection(null);
+        fetchReflections(); // 重新获取数据
+      }
+    } catch (err) {
+      console.error("删除异常:", err);
+      alert("删除失败，请稍后重试");
     }
   };
 
@@ -257,16 +262,14 @@ export default function ReflectionsPage() {
                   )}
                 </div>
 
-                <div className="flex space-x-3 text-gray-400">
-                  <Edit
-                    size={18}
-                    className="cursor-pointer hover:text-gray-600"
-                    onClick={() => alert("编辑功能待开发")}
-                  />
+                <div className="flex justify-end mt-2 space-x-3 text-gray-400">
                   <Trash2
                     size={18}
                     className="cursor-pointer hover:text-red-500"
-                    onClick={() => handleDelete(reflection)}
+                    onClick={() => {
+                      setSelectedReflection(reflection);
+                      setShowConfirm(true);
+                    }}
                   />
                 </div>
               </div>
@@ -280,6 +283,37 @@ export default function ReflectionsPage() {
         onClose={() => setIsModalOpen(false)}
         onSuccess={fetchReflections}
       />
+
+      {showConfirm && selectedReflection && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <h2 className="text-lg font-semibold mb-4 text-center">
+              确认删除这条感悟吗？
+            </h2>
+            <p className="text-gray-600 text-sm mb-4 text-center">
+              删除后无法恢复。
+            </p>
+            <div className="flex justify-center space-x-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowConfirm(false);
+                  setSelectedReflection(null);
+                }}
+              >
+                取消
+              </Button>
+              <Button
+                variant="primary"
+                className="bg-red-500 hover:bg-red-600 text-white"
+                onClick={handleDelete}
+              >
+                确认删除
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
