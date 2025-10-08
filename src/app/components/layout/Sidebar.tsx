@@ -1,8 +1,9 @@
+// src/components/layout/Sidebar.tsx
 "use client"; // This component needs to be a Client Component
 
 import React from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Heart, Target, MessageSquare, BrainCircuit } from 'lucide-react';
+import { Heart, Target, MessageSquare, BrainCircuit, Sparkles } from 'lucide-react';
 
 type NavItemProps = {
   page: string;
@@ -24,7 +25,7 @@ const NavItem = ({ page, icon, label }: NavItemProps) => {
   return (
     <li
       className={`flex items-center p-3 my-2 cursor-pointer rounded-lg transition-colors ${
-        isActive ? 'bg-red-100 text-red-600' : 'text-gray-600 hover:bg-gray-100'
+        isActive ? 'bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 text-red-600 shadow-lg border border-orange-200' : 'text-gray-600 hover:bg-gradient-to-br hover:from-blue-100/50 hover:via-white/50 hover:to-orange-100/50 hover:shadow-sm'
       }`}
       onClick={handleClick}
     >
@@ -43,10 +44,10 @@ export const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 p-4 flex flex-col shrink-0">
+    <aside className="w-64 bg-gradient-to-b from-blue-100/80 via-white/80 to-orange-100/80 border-r border-orange-200 p-4 flex flex-col shrink-0 shadow-lg">
       <div className="flex items-center mb-8">
-        <div className="bg-red-500 p-2 rounded-full">
-          <Heart size={24} className="text-white" />
+        <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
+          <Sparkles size={24} className="text-gray-700" />
         </div>
         <h1 className="ml-3 text-xl font-bold text-gray-800">BulletAI</h1>
       </div>
@@ -57,7 +58,7 @@ export const Sidebar = () => {
           ))}
         </ul>
       </nav>
-      <div className="mt-auto text-xs text-gray-400">
+      <div className="mt-auto text-xs text-gray-500">
         每一个灵魂，都值得被记录
       </div>
     </aside>

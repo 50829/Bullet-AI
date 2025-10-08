@@ -173,147 +173,149 @@ export default function ReflectionsPage() {
   if (loading) return <div className="text-center py-8">加载中...</div>;
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-800">我的感悟</h2>
-          <p className="text-gray-500 mt-1">记录生活中的灵感与思考</p>
+<div className="min-h-screen p-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-800">我的感悟</h2>
+            <p className="text-gray-500 mt-1">记录生活中的灵感与思考</p>
+          </div>
+          <Button onClick={() => setIsModalOpen(true)}>+ 记录新感悟</Button>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>+ 记录新感悟</Button>
-      </div>
 
-      {/* 搜索区域 */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">搜索类型</label>
-            <select
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value as "text" | "event" | "location" | "inspiration")}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="text">文本</option>
-              <option value="event">事件/标签</option>
-              <option value="location">地点</option>
-              <option value="inspiration">灵感来源</option>
-            </select>
-          </div>
-          
-          <div className="md:col-span-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">搜索内容</label>
-            <Input
-              placeholder={`输入${searchType === "event" ? "事件或标签" : searchType === "location" ? "地点" : searchType === "inspiration" ? "灵感来源" : "内容"}...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <div className="md:col-span-2">
-            <Button 
-              onClick={performSearch}
-              className="w-full flex items-center justify-center"
-            >
-              <Search size={16} className="mr-1" /> 搜索
-            </Button>
-          </div>
-          
-          <div className="md:col-span-2">
-            <Button 
-              variant="secondary"
-              onClick={resetSearch}
-              className="w-full"
-            >
-              重置
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredReflections.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 col-span-2">
-            {searchTerm ? "没有找到匹配的感悟记录" : "暂无感悟记录，点击上方按钮记录第一个感悟吧！"}
-          </div>
-        ) : (
-          filteredReflections.map((reflection) => (
-            <Card key={reflection.id}>
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm text-gray-400 mb-2">{reflection.date}</p>
-                  <p className="text-gray-700 mb-4">{reflection.content}</p>
-
-                  {reflection.image_url && (
-                    <img
-                      src={reflection.image_url}
-                      alt="感悟图片"
-                      className="w-full rounded-lg mb-4 object-cover"
-                    />
-                  )}
-
-                  <div className="flex items-center space-x-2">
-                    {reflection.source_type && <Tag>{reflection.source_type}</Tag>}
-                    {reflection.source && (
-                      <span className="text-sm text-gray-500">{reflection.source}</span>
-                    )}
-                  </div>
-
-                  {reflection.location && (
-                    <p className="text-sm text-gray-400 mt-2">地点：{reflection.location}</p>
-                  )}
-                </div>
-
-                <div className="flex justify-end mt-2 space-x-3 text-gray-400">
-                  <Trash2
-                    size={18}
-                    className="cursor-pointer hover:text-red-500"
-                    onClick={() => {
-                      setSelectedReflection(reflection);
-                      setShowConfirm(true);
-                    }}
-                  />
-                </div>
-              </div>
-            </Card>
-          ))
-        )}
-      </div>
-
-      <ReflectionModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchReflections}
-      />
-
-      {showConfirm && selectedReflection && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-            <h2 className="text-lg font-semibold mb-4 text-center">
-              确认删除这条感悟吗？
-            </h2>
-            <p className="text-gray-600 text-sm mb-4 text-center">
-              删除后无法恢复。
-            </p>
-            <div className="flex justify-center space-x-3">
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setShowConfirm(false);
-                  setSelectedReflection(null);
-                }}
+        {/* 搜索区域 */}
+        <div className="mb-6 p-4 bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-orange-200">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">搜索类型</label>
+              <select
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value as "text" | "event" | "location" | "inspiration")}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
-                取消
+                <option value="text">文本</option>
+                <option value="event">事件/标签</option>
+                <option value="location">地点</option>
+                <option value="inspiration">灵感来源</option>
+              </select>
+            </div>
+            
+            <div className="md:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">搜索内容</label>
+              <Input
+                placeholder={`输入${searchType === "event" ? "事件或标签" : searchType === "location" ? "地点" : searchType === "inspiration" ? "灵感来源" : "内容"}...`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div className="md:col-span-2">
+              <Button 
+                onClick={performSearch}
+                className="w-full flex items-center justify-center"
+              >
+                <Search size={16} className="mr-1" /> 搜索
               </Button>
-              <Button
-                variant="primary"
-                className="bg-red-500 hover:bg-red-600 text-white"
-                onClick={handleDelete}
+            </div>
+            
+            <div className="md:col-span-2">
+              <Button 
+                variant="secondary"
+                onClick={resetSearch}
+                className="w-full"
               >
-                确认删除
+                重置
               </Button>
             </div>
           </div>
         </div>
-      )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredReflections.length === 0 ? (
+            <div className="text-center py-12 text-gray-500 col-span-2">
+              {searchTerm ? "没有找到匹配的感悟记录" : "暂无感悟记录，点击上方按钮记录第一个感悟吧！"}
+            </div>
+          ) : (
+            filteredReflections.map((reflection) => (
+              <Card key={reflection.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-gray-400 mb-2">{reflection.date}</p>
+                    <p className="text-gray-700 mb-4">{reflection.content}</p>
+
+                    {reflection.image_url && (
+                      <img
+                        src={reflection.image_url}
+                        alt="感悟图片"
+                        className="w-full rounded-lg mb-4 object-cover"
+                      />
+                    )}
+
+                    <div className="flex items-center space-x-2">
+                      {reflection.source_type && <Tag>{reflection.source_type}</Tag>}
+                      {reflection.source && (
+                        <span className="text-sm text-gray-500">{reflection.source}</span>
+                      )}
+                    </div>
+
+                    {reflection.location && (
+                      <p className="text-sm text-gray-400 mt-2">地点：{reflection.location}</p>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end mt-2 space-x-3 text-gray-400">
+                    <Trash2
+                      size={18}
+                      className="cursor-pointer hover:text-red-500"
+                      onClick={() => {
+                        setSelectedReflection(reflection);
+                        setShowConfirm(true);
+                      }}
+                    />
+                  </div>
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
+
+        <ReflectionModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={fetchReflections}
+        />
+
+        {showConfirm && selectedReflection && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full">
+              <h2 className="text-lg font-semibold mb-4 text-center">
+                确认删除这条感悟吗？
+              </h2>
+              <p className="text-gray-600 text-sm mb-4 text-center">
+                删除后无法恢复。
+              </p>
+              <div className="flex justify-center space-x-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowConfirm(false);
+                    setSelectedReflection(null);
+                  }}
+                >
+                  取消
+                </Button>
+                <Button
+                  variant="primary"
+                  className="bg-red-500 hover:bg-red-600 text-white"
+                  onClick={handleDelete}
+                >
+                  确认删除
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
