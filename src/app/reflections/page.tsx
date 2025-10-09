@@ -32,6 +32,7 @@ export default function ReflectionsPage() {
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState<SearchType>("text");
+  const [showSearch, setShowSearch] = useState(false); // 新增状态控制搜索栏显示
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -125,9 +126,10 @@ export default function ReflectionsPage() {
     setFilteredReflections(results);
   };
 
-  const resetSearch = () => {
+  const clearSearch = () => {
     setSearchTerm("");
-    setFilteredReflections(reflections);
+    setSearchType("text"); // 重置搜索类型为默认值
+    setFilteredReflections(reflections); // 显示全部帖子
   };
 
   const handleDelete = async () => {
@@ -164,45 +166,73 @@ export default function ReflectionsPage() {
   return (
     <div className="min-h-screen p-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        {/* 标题和按钮行 */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h2 className="text-3xl font-bold text-gray-800">我的感悟</h2>
             <p className="text-gray-500 mt-1">记录生活中的灵感与思考</p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)}>+ 记录新感悟</Button>
-        </div>
-
-        {/* 搜索区同上 */}
-        <div className="mb-6 p-4 bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-orange-200">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">搜索类型</label>
-              <select 
-                value={searchType} 
-                onChange={(e) => setSearchType(e.target.value as SearchType)} 
-                className="w-full p-2 border border-gray-300 rounded-md"
-              >
-                <option value="text">文本</option>
-                <option value="event">事件</option>
-                <option value="location">地点</option>
-                <option value="inspiration">灵感来源</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">搜索内容</label>
-              <Input placeholder="搜索..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-
-            <div className="md:col-span-2">
-              <Button onClick={performSearch} className="w-full flex items-center justify-center"><Search size={16} className="mr-1" /> 搜索</Button>
-            </div>
-
-            <div className="md:col-span-2">
-              <Button variant="secondary" onClick={resetSearch} className="w-full">返回</Button>
-            </div>
+          <div className="flex items-center gap-3">
+            {/* 搜索按钮 */}
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSearch(!showSearch)}
+              className="flex items-center gap-1"
+            >
+              <Search size={16} /> 
+              {showSearch ? '折叠搜索栏' : '搜索'}
+            </Button>
+            <Button onClick={() => setIsModalOpen(true)}>+ 记录新感悟</Button>
           </div>
         </div>
+
+        {/* 搜索栏 - 条件渲染，只有在showSearch为true时才显示 */}
+        {showSearch && (
+          <div className="mb-6 p-4 bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-orange-200">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+              <div className="md:col-span-2">
+                <select 
+                  value={searchType} 
+                  onChange={(e) => setSearchType(e.target.value as SearchType)} 
+                  className="w-full p-2 border border-gray-300 rounded-md h-10"
+                >
+                  <option value="text">文本</option>
+                  <option value="event">事件</option>
+                  <option value="location">地点</option>
+                  <option value="inspiration">灵感来源</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-6">
+                <Input 
+                  placeholder="选择搜索类型，再输入搜索内容~" 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)} 
+                  className="w-full h-10"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <Button 
+                  onClick={performSearch} 
+                  className="w-full flex items-center justify-center h-10"
+                >
+                  <Search size={16} className="mr-1" /> 搜索
+                </Button>
+              </div>
+
+              <div className="md:col-span-2">
+                <Button 
+                  variant="secondary" 
+                  onClick={clearSearch} 
+                  className="w-full h-10"
+                >
+                  清空
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredReflections.length === 0 ? (
