@@ -81,59 +81,74 @@ export default function AICompanionPage() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold text-gray-800">AI树洞</h2>
-        <p className="text-gray-500 mt-1">基于你的记录，与你深入对话</p>
-      </div>
-      
-      <div className="flex-1 flex flex-col justify-between bg-white rounded-lg p-4 border border-gray-100">
-        {/* 聊天历史 */}
-        <div className="flex-1 overflow-y-auto space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
-            >
-              <div
-                className={`inline-block p-4 rounded-xl max-w-xl ${
-                  message.role === 'user'
-                    ? 'bg-blue-100 text-gray-800'
-                    : 'bg-purple-50 text-gray-700'
-                }`}
-              >
-                <p className="leading-relaxed">{message.content}</p>
-              </div>
+    <div className="min-h-screen flex flex-col">
+      {/* 固定的头部区域 - 毛玻璃圆角矩形模块 */}
+      <div className="sticky top-0 z-20 py-4 px-4">
+        <div className="max-w-6xl mx-auto bg-gradient-to-br from-blue-100/70 via-white/70 to-orange-100/70 rounded-3xl shadow-lg border border-orange-200 backdrop-blur-md">
+          {/* 标题行 */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-800">AI树洞</h2>
+              <p className="text-gray-500 mt-1">基于你的记录，与你深入对话</p>
             </div>
-          ))}
-          {isLoading && (
-            <div className="mb-4 text-left">
-              <div className="bg-purple-50 p-4 rounded-xl max-w-xl">
-                <p className="text-gray-700">思考中...</p>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
-        
-        {/* 输入区域 */}
-        <div className="mt-4">
-          <div className="flex items-center bg-gray-100 rounded-lg p-2">
-            <input 
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="输入你的想法..."
-              className="flex-1 bg-transparent px-2 focus:outline-none text-gray-700"
-              disabled={isLoading}
-            />
-            <button 
-              onClick={sendMessage}
-              disabled={isLoading || !input.trim()}
-              className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
-            >
-              <Send size={20} />
-            </button>
+      </div>
+
+      {/* 聊天内容区域 - 直接撑开页面，使用浏览器滚动 */}
+      <div className="flex-1">
+        <div className="p-4 pt-0"> {/* 移除顶部padding，因为头部已固定 */}
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-col justify-between bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-orange-200 p-4 min-h-[calc(100vh-120px)]">
+              {/* 聊天历史 */}
+              <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
+                  >
+                    <div
+                      className={`inline-block p-4 rounded-xl max-w-xl ${
+                        message.role === 'user'
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                          : 'bg-gradient-to-r from-orange-200 to-yellow-100 text-gray-800'
+                      }`}
+                    >
+                      <p className="leading-relaxed">{message.content}</p>
+                    </div>
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="mb-4 text-left">
+                    <div className="bg-gradient-to-r from-orange-200 to-yellow-100 p-4 rounded-xl max-w-xl">
+                      <p className="text-gray-800">思考中...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* 输入区域 */}
+              <div className="mt-4">
+                <div className="flex items-center bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-orange-200">
+                  <input 
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="输入你的想法..."
+                    className="flex-1 bg-transparent px-2 focus:outline-none text-gray-700"
+                    disabled={isLoading}
+                  />
+                  <button 
+                    onClick={sendMessage}
+                    disabled={isLoading || !input.trim()}
+                    className="p-2 rounded-lg bg-gradient-to-r from-orange-400 to-red-500 text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    <Send size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
