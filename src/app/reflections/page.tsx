@@ -1,6 +1,5 @@
-// src/app/reflections/page.tsx
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -13,13 +12,16 @@ type Reflection = {
   id: number;
   created_at: string;
   content: string;
-  source: string | null;
-  source_type: string | null;
-  location: string | null;
-  image_url: string | null;
-  image_path: string | null;
+  source?: string | null;
+  source_type?: string | null;
+  location?: string | null;
+  image_url?: string | null;
+  image_path?: string | null;
   date?: string;
 };
+
+// 定义搜索类型
+type SearchType = "text" | "event" | "location" | "inspiration";
 
 export default function ReflectionsPage() {
   const [reflections, setReflections] = useState<Reflection[]>([]);
@@ -28,10 +30,8 @@ export default function ReflectionsPage() {
   const [loading, setLoading] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
-  
-  // 搜索相关状态
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchType, setSearchType] = useState<"text" | "event" | "location" | "inspiration">("text");
+  const [searchType, setSearchType] = useState<SearchType>("text");
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -49,7 +49,6 @@ export default function ReflectionsPage() {
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) {
-      console.warn("未登录用户");
       setLoading(false);
       return;
     }
@@ -66,7 +65,6 @@ export default function ReflectionsPage() {
       return;
     }
 
-    // 为有 image_path 的记录生成签名 URL（并发）
     const withUrls = await Promise.all(
       (data || []).map(async (item: Reflection) => {
         let signedUrl: string | null = item.image_url ?? null;
@@ -74,11 +72,7 @@ export default function ReflectionsPage() {
           const { data: urlData, error: urlErr } = await supabase.storage
             .from("reflections")
             .createSignedUrl(item.image_path, 60 * 60); // 1 小时
-          if (!urlErr) {
-            signedUrl = urlData?.signedUrl ?? null;
-          } else {
-            console.error("生成签名URL失败:", urlErr);
-          }
+          if (!urlErr && urlData) signedUrl = urlData.signedUrl ?? null;
         }
         return {
           ...item,
@@ -93,11 +87,52 @@ export default function ReflectionsPage() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    fetchReflections();
+    const interval = setInterval(fetchReflections, 50 * 60 * 1000); // 每50分钟刷新签名
+    return () => clearInterval(interval);
+  }, []);
+
+  const performSearch = () => {
+    let results = [...reflections];
+    if (searchTerm.trim()) {
+      switch (searchType) {
+        case "text":
+          results = results.filter(r =>
+            r.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (r.source_type?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+          );
+          break;
+        case "event":
+          results = results.filter(r =>
+            (r.source_type?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+            (r.source?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+          );
+          break;
+        case "location":
+          results = results.filter(r =>
+            (r.location?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+          );
+          break;
+        case "inspiration":
+          results = results.filter(r =>
+            r.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (r.source?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+          );
+          break;
+      }
+    }
+    setFilteredReflections(results);
+  };
+
+  const resetSearch = () => {
+    setSearchTerm("");
+    setFilteredReflections(reflections);
+  };
+
   const handleDelete = async () => {
     if (!selectedReflection) return;
-
     try {
-      // 先删除图片（如果有）
       if (selectedReflection.image_path) {
         const { error: storageError } = await supabase.storage
           .from("reflections")
@@ -105,7 +140,6 @@ export default function ReflectionsPage() {
         if (storageError) console.error("删除图片失败:", storageError);
       }
 
-      // 删除数据库记录
       const { error } = await supabase
         .from("reflections")
         .delete()
@@ -117,7 +151,7 @@ export default function ReflectionsPage() {
       } else {
         setShowConfirm(false);
         setSelectedReflection(null);
-        fetchReflections(); // 重新获取数据
+        fetchReflections();
       }
     } catch (err) {
       console.error("删除异常:", err);
@@ -125,55 +159,10 @@ export default function ReflectionsPage() {
     }
   };
 
-  useEffect(() => {
-    fetchReflections();
-  }, []);
-
-  // 执行搜索
-  const performSearch = () => {
-    let results = [...reflections];
-    
-    if (searchTerm.trim()) {
-      switch (searchType) {
-        case "text":
-          results = results.filter(reflection => 
-            reflection.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (reflection.source_type?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-          );
-          break;
-        case "event":
-          results = results.filter(reflection => 
-            (reflection.source_type?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
-            (reflection.source?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-          );
-          break;
-        case "location":
-          results = results.filter(reflection => 
-            (reflection.location?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-          );
-          break;
-        case "inspiration":
-          results = results.filter(reflection => 
-            reflection.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (reflection.source?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-          );
-          break;
-      }
-    }
-    
-    setFilteredReflections(results);
-  };
-
-  // 重置搜索
-  const resetSearch = () => {
-    setSearchTerm("");
-    setFilteredReflections(reflections);
-  };
-
   if (loading) return <div className="text-center py-8">思考即将开始...</div>;
 
   return (
-<div className="min-h-screen p-4">
+    <div className="min-h-screen p-4">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -183,15 +172,15 @@ export default function ReflectionsPage() {
           <Button onClick={() => setIsModalOpen(true)}>+ 记录新感悟</Button>
         </div>
 
-        {/* 搜索区域 */}
+        {/* 搜索区同上 */}
         <div className="mb-6 p-4 bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-orange-200">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">搜索类型</label>
-              <select
-                value={searchType}
-                onChange={(e) => setSearchType(e.target.value as "text" | "event" | "location" | "inspiration")}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              <select 
+                value={searchType} 
+                onChange={(e) => setSearchType(e.target.value as SearchType)} 
+                className="w-full p-2 border border-gray-300 rounded-md"
               >
                 <option value="text">文本</option>
                 <option value="event">事件</option>
@@ -199,33 +188,18 @@ export default function ReflectionsPage() {
                 <option value="inspiration">灵感来源</option>
               </select>
             </div>
-            
+
             <div className="md:col-span-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">搜索内容</label>
-              <Input
-                placeholder={`输入${searchType === "event" ? "事件" : searchType === "location" ? "地点" : searchType === "inspiration" ? "灵感来源" : "内容"}...`}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              <Input placeholder="搜索..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
-            
+
             <div className="md:col-span-2">
-              <Button 
-                onClick={performSearch}
-                className="w-full flex items-center justify-center"
-              >
-                <Search size={16} className="mr-1" /> 搜索
-              </Button>
+              <Button onClick={performSearch} className="w-full flex items-center justify-center"><Search size={16} className="mr-1" /> 搜索</Button>
             </div>
-            
+
             <div className="md:col-span-2">
-              <Button 
-                variant="secondary"
-                onClick={resetSearch}
-                className="w-full bg-white text-gray-900 border border-orange-200 hover:bg-orange-50 hover:border-orange-300"
-              >
-                返回
-              </Button>
+              <Button variant="secondary" onClick={resetSearch} className="w-full">返回</Button>
             </div>
           </div>
         </div>
@@ -244,34 +218,19 @@ export default function ReflectionsPage() {
                     <p className="text-gray-700 mb-4">{reflection.content}</p>
 
                     {reflection.image_url && (
-                      <img
-                        src={reflection.image_url}
-                        alt="感悟图片"
-                        className="w-full rounded-lg mb-4 object-cover"
-                      />
+                      <img src={reflection.image_url} alt="感悟图片" className="w-full rounded-lg mb-4 object-cover" />
                     )}
 
                     <div className="flex items-center space-x-2">
                       {reflection.source_type && <Tag>{reflection.source_type}</Tag>}
-                      {reflection.source && (
-                        <span className="text-sm text-gray-500">{reflection.source}</span>
-                      )}
+                      {reflection.source && <span className="text-sm text-gray-500">{reflection.source}</span>}
                     </div>
 
-                    {reflection.location && (
-                      <p className="text-sm text-gray-400 mt-2">地点：{reflection.location}</p>
-                    )}
+                    {reflection.location && <p className="text-sm text-gray-400 mt-2">地点：{reflection.location}</p>}
                   </div>
 
                   <div className="flex justify-end mt-2 space-x-3 text-gray-400">
-                    <Trash2
-                      size={18}
-                      className="cursor-pointer hover:text-orange-400"
-                      onClick={() => {
-                        setSelectedReflection(reflection);
-                        setShowConfirm(true);
-                      }}
-                    />
+                    <Trash2 size={18} className="cursor-pointer hover:text-orange-400" onClick={() => { setSelectedReflection(reflection); setShowConfirm(true); }} />
                   </div>
                 </div>
               </Card>
@@ -279,38 +238,16 @@ export default function ReflectionsPage() {
           )}
         </div>
 
-        <ReflectionModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSuccess={fetchReflections}
-        />
+        <ReflectionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={fetchReflections} />
 
         {showConfirm && selectedReflection && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
             <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full">
-              <h2 className="text-lg font-semibold mb-4 text-center">
-                确认删除这条感悟吗？
-              </h2>
-              <p className="text-gray-600 text-sm mb-4 text-center">
-                删除后无法恢复。
-              </p>
+              <h2 className="text-lg font-semibold mb-4 text-center">确认删除这条感悟吗？</h2>
+              <p className="text-gray-600 text-sm mb-4 text-center">删除后无法恢复。</p>
               <div className="flex justify-center space-x-3">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setShowConfirm(false);
-                    setSelectedReflection(null);
-                  }}
-                >
-                  取消
-                </Button>
-                <Button
-                  variant="primary"
-                  className="bg-red-500 hover:bg-red-600 text-white"
-                  onClick={handleDelete}
-                >
-                  确认删除
-                </Button>
+                <Button variant="secondary" onClick={() => { setShowConfirm(false); setSelectedReflection(null); }}>取消</Button>
+                <Button variant="primary" className="bg-red-500 hover:bg-red-600 text-white" onClick={handleDelete}>确认删除</Button>
               </div>
             </div>
           </div>
