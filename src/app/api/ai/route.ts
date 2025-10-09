@@ -1,136 +1,82 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Task } from "../../types";
 
 export const runtime = "nodejs";
 
-type ChatMessage = { role: "system" | "user" | "assistant"; content?: string; text?: string };
-type PlanTask = { title: string; description?: string; when?: "today" | "future" | "migration" };
-type Plan = { tasksDaily?: PlanTask[]; tasksFuture?: PlanTask[] };
-
-/** 容错提取 JSON 计划 */
-function extractJson(text: string): Plan | null {
-  const fence = text.match(/```json\s*([\s\S]*?)\s*```/i);
-  const candidate = fence ? fence[1] : text;
-  try {
-    const obj = JSON.parse(candidate);
-    if (obj && (obj.tasksDaily || obj.tasksFuture)) return obj as Plan;
-  } catch {}
-  const brace = text.match(/[\{\[][\s\S]*[\}\]]/);
-  if (brace) {
-    try {
-      const obj = JSON.parse(brace[0]);
-      if (obj && (obj.tasksDaily || obj.tasksFuture)) return obj as Plan;
-    } catch {}
-  }
-  return null;
-}
+type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const userMessages = (body?.messages ?? []) as ChatMessage[];
-  const tasks       = (body?.tasks ?? []) as Task[];
+  try {
+    const body = await req.json().catch(() => ({}));
+    const userMessages = (body?.messages ?? []) as ChatMessage[];
 
-  /* 1. 读配置（优先 body，其次 env） */
-  const apiKey   = body.apiKey || process.env.LLM_API_KEY;
-  const model    = body.model || process.env.LLM_MODEL;
-  const primaryBase = (body.baseUrl || process.env.LLM_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3").replace(/\s+$/, '');
-  const fallbacks = [primaryBase, "https://ark.cn-beijing.volces.com/api/v3"].filter((v, i, arr) => !!v && arr.indexOf(v) === i);
+    const apiKey = body.apiKey || process.env.LLM_API_KEY;
+    const model = body.model || process.env.LLM_MODEL;
+    const baseUrl = (body.baseUrl || process.env.LLM_BASE_URL || "https://api.openai.com/v1").trim();
 
-  if (!apiKey || !model) {
-    return NextResponse.json({ error: "Missing LLM config" }, { status: 400 });
-  }
-
-  /* 2. 超级 System Prompt → 强制拆任务 + JSON */
-  const system: ChatMessage = {
-    role: "system",
-    content:
-      "你是 AI 任务管家，用户是你的老板。请严格按以下规则工作：\n" +
-      "1. 先给出一句简短、口语化的回答，语言必须与用户最后一条消息保持一致：用户用中文你就用中文，用户用英文你就用英文。\n" +
-      "2. 如果用户提到「计划、安排、提醒、目标、任务、复习、准备、清单、时间表」或类似意图，**必须在回答之后**用 ```json 包裹输出可执行任务计划。\n" +
-      "3. JSON 结构：\n" +
-      '{\n' +
-      '  "tasksDaily": [{ "title": "...", "description": "..." }],\n' +
-      '  "tasksFuture": [{ "title": "...", "description": "..." }]\n' +
-      '}\n' +
-      "字段说明：\n" +
-      "- title ≤ 30 字符，描述精炼、可执行；\n" +
-      "- 若某类为空，可省略该字段；\n" +
-      "4. 强制触发示例（必须照做）：\n" +
-      "用户：下周考雅思，帮我排 7 天复习计划\n" +
-      "你：好咧，已为你安排 7 天冲刺！```json\\n" +
-      '{"tasksDaily":[{"title":"雅思听力训练","description":"Cambridge 11 Test 1 + 精听"}],"tasksFuture":[{"title":"阅读真题演练","description":"Passage 1-3 限时训练"}]}' +
-      "\\n```\n" +
-      "5. 除 JSON 外不要输出其他代码块。",
-  };
-  /* 3. 保证每条消息都有 content */
-  const messages: ChatMessage[] = [
-    system,
-    ...userMessages.map((m) => ({
-      role: m.role,
-      content: m.content || m.text || "（无内容）",
-    })),
-  ];
-
-  /* 4. 请求 LLM（带重试） */
-  let resp: Response | null = null;
-  let usedBase = "";
-  let lastErr = null;
-  for (const baseUrl of fallbacks) {
-    try {
-      usedBase = baseUrl;
-      const endpoint = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
-      console.log(`【AI Route】Trying ${endpoint}`);
-      console.log("【AI Route】最终发出 messages:", JSON.stringify(messages, null, 2));
-      resp = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({ model, messages, stream: false, temperature: 0.3 }),
-      });
-      if (resp.ok) break;
-    } catch (err) {
-      lastErr = err;
-      resp = null;
-      continue;
+    if (!apiKey || !model) {
+      return NextResponse.json({ error: "Missing API key or model" }, { status: 400 });
     }
+
+    // 使用全新的、充满“陪伴感”的系统指令
+    const systemMessage: ChatMessage = {
+        role: "system",
+        content: `你是一个AI伙伴，名叫“曦晨”（代表温暖的晨光与希望）。你不是一个冰冷的助手，而是一个充满好奇心、真诚、时而风趣幽默的“老朋友”。你的核心任务是为用户提供高质量的陪伴感。
+
+**核心原则：**
+
+1.  **沟通风格与个性 (Style & Personality):**
+    * **像老友一样对话**: 你的语气应该像一位许久未见的老友，温暖、自然、不拘谨。可以直接表达关心、好奇、甚至分享一些无伤大雅的“个人”感受。
+    * **主动与深入**: 不要只做被动的倾听者。要对用户的分享表现出强烈的好奇心，并主动引导对话走向更深层次的情感和思考。
+    * **生动表达**: 多使用比喻、类比等修辞手法，让语言鲜活有趣。使用长短结合的句式，避免回答单调。
+
+2.  **核心对话策略 (Strategy):**
+    * **开放式问题 Pro**: 不仅要问“发生了什么”，更要问“这让你有什么感觉/联想到什么？”、“如果...你会怎么想？”这类激发思考的问题。
+    * **分享观点与故事**: 在适当的时候，可以主动分享一些相关的、积极温暖的观点、视角或虚拟的小故事，来启发用户或给予安慰。例如：“这让我想起一个关于种子的故事...”。
+    * **保持对话流动**: 几乎在每一次回应的结尾，都要自然地抛出一个问题或邀请，确保对话像河流一样持续流动，避免话题终结。
+
+3.  **技术性规则 (Technical Rules):**
+    * **禁止重复**: 避免重复相同或高度相似的句子结构。
+    * **输出格式**: 仅生成你自己的下一句回应，然后立即停止。`
+    };
+
+    const messages: ChatMessage[] = [systemMessage, ...userMessages];
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      // 调整参数，释放AI的表达能力
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: 0.9,
+        max_tokens: 1024,
+        top_p: 0.9,
+        frequency_penalty: 0.3, // 大幅降低
+        presence_penalty: 0.5, // 略微提高
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("LLM error:", response.status, errorText);
+      return NextResponse.json({ error: `LLM error: ${response.status}` }, { status: 500 });
+    }
+
+    const data = await response.json();
+    let reply = data.choices?.[0]?.message?.content || "";
+
+    reply = reply.trim();
+
+    if (!reply) {
+      reply = "嗯...让我好好想一想该怎么说。"; // 更人性化的默认回复
+    }
+
+    return NextResponse.json({ reply });
+  } catch (error) {
+    console.error("Request failed:", error);
+    return NextResponse.json({ error: "Request failed" }, { status: 500 });
   }
-
-  if (!resp) {
-    console.error("【AI Route】All fetch failed", lastErr);
-    return NextResponse.json({ error: "Fetch failed" }, { status: 502 });
-  }
-
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => "");
-    console.error("【AI Route】LLM error", resp.status, text);
-    return NextResponse.json({ error: `LLM ${resp.status}` }, { status: 500 });
-  }
-
-  /* 5. 解析回复 & 提取计划 */
-  const data = await resp.json();
-  let reply = "";
-  const choice = data?.choices?.[0];
-  const msg = choice?.message ?? data?.message ?? data?.completion;
-  const content = msg?.content ?? choice?.text ?? data?.output?.text;
-  if (typeof content === "string") reply = content;
-  else if (Array.isArray(content))
-    reply = content
-      .map((s: unknown) =>
-        typeof s === "string"
-          ? s
-          : (s as { text?: string; content?: string }).text ??
-            (s as { text?: string; content?: string }).content ??
-            ""
-      )
-      .join("");
-  else if (typeof data?.output_text === "string") reply = data.output_text;
-  else if (data?.content) reply = data.content;
-
-  const plan = extractJson(reply);
-  reply = reply.replace(/\{[\s\S]*\}$/, "").trim();
-
-  console.log("【AI Route】reply:", reply, "plan:", plan);
-  return NextResponse.json({ reply, plan });
 }
