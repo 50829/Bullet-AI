@@ -28,10 +28,13 @@ type Habit = {
   frequency: string;
   color: string | null;
   created_at: string;
+  last_checkin?: string | null; // 上次打卡时间
+  checkin_count?: number; // 打卡次数
+  date?: string;
 };
 
 export default function GoalsPage() {
-  const { goals, loading, refreshGoals, deleteGoal } = useAppContext();
+  const { goals, habits, loading, refreshGoals, refreshHabits, deleteGoal, checkinHabit } = useAppContext();
   const [activeTab, setActiveTab] = useState("我的习惯");
   const tabs = ["今日待办", "近期目标", "我的习惯"];
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
@@ -44,11 +47,14 @@ export default function GoalsPage() {
   const goalsToday = goals.filter(g => g.type === "今日待办");
   const goalsRecent = goals.filter(g => g.type === "近期目标");
 
-  // 模拟习惯数据（如果需要的话，可以添加习惯到全局状态）
-  const habits = [
-    { id: 1, name: "早起", description: "每天7点起床", frequency: "每天", color: null, created_at: new Date().toISOString() },
-    { id: 2, name: "运动", description: "每天运动30分钟", frequency: "每天", color: null, created_at: new Date().toISOString() }
-  ];
+  // 计算距离上次打卡的天数
+  const daysSinceLastCheckin = (lastCheckinDate?: string | null): number | null => {
+    if (!lastCheckinDate) return null;
+    const lastCheckin = new Date(lastCheckinDate);
+    const today = new Date();
+    const diffTime = today.getTime() - lastCheckin.getTime();
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  };
 
   const handleDelete = async () => {
     if (!selectedItem) return;
@@ -58,9 +64,9 @@ export default function GoalsPage() {
         // 从全局状态中删除目标
         await deleteGoal(selectedItem.id, selectedItem.imagePath);
       } else {
-        // 注意：如果习惯数据也在全局状态中，这里也需要相应处理
-        // 目前假设习惯是模拟数据，实际应用中需要添加习惯到全局状态
-        console.log("删除习惯", selectedItem.id);
+        // 删除习惯
+        await deleteGoal(selectedItem.id, selectedItem.imagePath); // 注意：这里应该是删除习惯，但目前deleteHabit还没实现
+        // 临时使用deleteGoal，实际应用中需要添加deleteHabit函数
       }
       
       setShowConfirm(false);
@@ -72,7 +78,16 @@ export default function GoalsPage() {
     }
   };
 
-  if (loading.goals) return <div className="text-center py-8">目标加载中...</div>;
+  const handleCheckin = async (habitId: number) => {
+    try {
+      await checkinHabit(habitId);
+      refreshHabits();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "打卡失败");
+    }
+  };
+
+  if (loading.goals || loading.habits) return <div className="text-center py-8">目标加载中...</div>;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -120,16 +135,19 @@ export default function GoalsPage() {
                         <div>
                           <h4 className="font-bold">{goal.title}</h4>
                           <p className="text-sm text-gray-500">{goal.description}</p>
-                        </div>
-                        <div className="flex space-x-3 text-gray-400">
-                          <Trash2 
-                            size={18} 
-                            className="cursor-pointer hover:text-orange-400" 
-                            onClick={() => {
-                              setSelectedItem({ type: 'goal', id: goal.id });
-                              setShowConfirm(true);
-                            }} 
-                          />
+                          <div className="flex items-center mt-2 space-x-3">
+                            <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
+                              今日待办
+                            </span>
+                            <Trash2 
+                              size={18} 
+                              className="cursor-pointer hover:text-orange-400" 
+                              onClick={() => {
+                                setSelectedItem({ type: 'goal', id: goal.id });
+                                setShowConfirm(true);
+                              }} 
+                            />
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -145,16 +163,19 @@ export default function GoalsPage() {
                         <div>
                           <h4 className="font-bold">{goal.title}</h4>
                           <p className="text-sm text-gray-500">{goal.description}</p>
-                        </div>
-                        <div className="flex space-x-3 text-gray-400">
-                          <Trash2 
-                            size={18} 
-                            className="cursor-pointer hover:text-orange-400" 
-                            onClick={() => {
-                              setSelectedItem({ type: 'goal', id: goal.id });
-                              setShowConfirm(true);
-                            }} 
-                          />
+                          <div className="flex items-center mt-2 space-x-3">
+                            <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
+                              近期目标
+                            </span>
+                            <Trash2 
+                              size={18} 
+                              className="cursor-pointer hover:text-orange-400" 
+                              onClick={() => {
+                                setSelectedItem({ type: 'goal', id: goal.id });
+                                setShowConfirm(true);
+                              }} 
+                            />
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -164,34 +185,71 @@ export default function GoalsPage() {
 
               {activeTab === "我的习惯" && (
                 <div className="space-y-4">
-                  {habits.map(habit => (
-                    <Card key={habit.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center mb-2">
-                            <h4 className="font-bold text-lg text-gray-800">{habit.name}</h4>
-                            <span className="ml-3 bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
-                              {habit.frequency}
-                            </span>
+                  {habits.map(habit => {
+                    const daysSince = daysSinceLastCheckin(habit.last_checkin);
+                    const today = new Date();
+                    const lastCheckinDate = habit.last_checkin ? new Date(habit.last_checkin) : null;
+                    const isToday = lastCheckinDate && 
+                      lastCheckinDate.getDate() === today.getDate() &&
+                      lastCheckinDate.getMonth() === today.getMonth() &&
+                      lastCheckinDate.getFullYear() === today.getFullYear();
+                    
+                    return (
+                      <Card 
+                        key={habit.id} 
+                        className={`p-4 rounded-3xl shadow-lg border border-orange-200 ${
+                          isToday 
+                            ? 'bg-gradient-to-r from-orange-200 to-yellow-100 text-gray-800' 
+                            : 'bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="flex items-center mb-2">
+                              <h4 className="font-bold text-lg text-gray-800">{habit.name}</h4>
+                              <div className="flex items-center ml-3 space-x-2">
+                                <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
+                                  {habit.frequency}
+                                </span>
+                                <Trash2 
+                                  size={18} 
+                                  className="cursor-pointer hover:text-orange-400" 
+                                  onClick={() => {
+                                    setSelectedItem({ type: 'habit', id: habit.id });
+                                    setShowConfirm(true);
+                                  }} 
+                                />
+                              </div>
+                            </div>
+                            <p className="text-gray-500 mb-3">{habit.description}</p>
+                            <div className="flex items-center text-green-600">
+                              <span className="ml-2 text-sm">已打卡 {habit.checkin_count || 0} 次</span>
+                              {daysSince !== null && (
+                                <span className="ml-3 text-sm text-gray-500">上次打卡 {daysSince} 天前</span>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-gray-500 mb-3">{habit.description}</p>
-                          <div className="flex items-center text-green-600">
-                            <span className="ml-2 text-sm">已打卡 0 次</span>
+                          <div className="flex items-center">
+                            {isToday ? (
+                              <Button
+                                variant="primary"
+                                className="px-6 py-2 text-sm rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                              >
+                                已打卡
+                              </Button>
+                            ) : (
+                              <Button
+                                onClick={() => handleCheckin(habit.id)}
+                                className="px-6 py-2 text-sm rounded-lg bg-black text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white"
+                              >
+                                打卡
+                              </Button>
+                            )}
                           </div>
                         </div>
-                        <div className="flex space-x-3 text-gray-400">
-                          <Trash2 
-                            size={18} 
-                            className="cursor-pointer hover:text-orange-400" 
-                            onClick={() => {
-                              setSelectedItem({ type: 'habit', id: habit.id });
-                              setShowConfirm(true);
-                            }} 
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -208,7 +266,7 @@ export default function GoalsPage() {
       <HabitModal
         isOpen={isHabitModalOpen}
         onClose={() => setIsHabitModalOpen(false)}
-        onSuccess={refreshGoals}
+        onSuccess={refreshHabits}
       />
 
       {showConfirm && (

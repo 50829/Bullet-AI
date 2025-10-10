@@ -44,28 +44,47 @@ type Goal = {
   priority?: string;
 };
 
+type Habit = {
+  id: number;
+  name: string;
+  description: string | null;
+  frequency: string;
+  color: string | null;
+  created_at: string;
+  last_checkin?: string | null; // 上次打卡时间
+  checkin_count?: number; // 打卡次数
+  date?: string;
+};
+
 // 定义上下文类型
 interface AppContextType {
   moments: Moment[];
   reflections: Reflection[];
   goals: Goal[];
+  habits: Habit[];
   loading: {
     moments: boolean;
     reflections: boolean;
     goals: boolean;
+    habits: boolean;
   };
   refreshMoments: () => Promise<void>;
   refreshReflections: () => Promise<void>;
   refreshGoals: () => Promise<void>;
+  refreshHabits: () => Promise<void>;
   addMoment: (moment: Moment) => void;
   addReflection: (reflection: Reflection) => void;
   addGoal: (goal: Goal) => void;
+  addHabit: (habit: Habit) => void;
   updateMoment: (id: number, updates: Partial<Moment>) => void;
   updateReflection: (id: number, updates: Partial<Reflection>) => void;
   updateGoal: (id: number, updates: Partial<Goal>) => void;
+  updateHabit: (id: number, updates: Partial<Habit>) => void;
   deleteMoment: (id: number, imagePath?: string | null) => Promise<void>;
   deleteReflection: (id: number, imagePath?: string | null) => Promise<void>;
   deleteGoal: (id: number, imagePath?: string | null) => Promise<void>;
+  deleteHabit: (id: number, imagePath?: string | null) => Promise<void>;
+  checkinHabit: (id: number) => Promise<void>;
 }
 
 // 创建上下文
@@ -76,11 +95,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [moments, setMoments] = useState<Moment[]>([]);
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [habits, setHabits] = useState<Habit[]>([]);
   
   const [loading, setLoading] = useState({
     moments: true,
     reflections: true,
     goals: true,
+    habits: true,
   });
 
   // 格式化日期函数
@@ -93,6 +114,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  // 计算距离上次打卡的天数
+  const daysSinceLastCheckin = (lastCheckinDate?: string | null): number | null => {
+    if (!lastCheckinDate) return null;
+    const lastCheckin = new Date(lastCheckinDate);
+    const today = new Date();
+    const diffTime = today.getTime() - lastCheckin.getTime();
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   };
 
   // 获取 Moments 数据
@@ -227,13 +257,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setLoading(prev => ({ ...prev, goals: false }));
   };
 
+  // 获取 Habits 数据
+  const fetchHabits = async () => {
+    setLoading(prev => ({ ...prev, habits: true }));
+    const userResponse = await supabase.auth.getUser();
+    const user = userResponse.data?.user;
+    if (!user) {
+      setLoading(prev => ({ ...prev, habits: false }));
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("habits")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("获取习惯失败:", error);
+      setLoading(prev => ({ ...prev, habits: false }));
+      return;
+    }
+
+    const formattedData = (data || []).map((item: Habit) => ({
+      ...item,
+      date: formatDate(item.created_at),
+    }));
+
+    setHabits(formattedData);
+    setLoading(prev => ({ ...prev, habits: false }));
+  };
+
   // 初始化加载所有数据
   useEffect(() => {
     const loadAllData = async () => {
       await Promise.all([
         fetchMoments(),
         fetchReflections(),
-        fetchGoals()
+        fetchGoals(),
+        fetchHabits()
       ]);
     };
     
@@ -244,6 +306,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       fetchMoments();
       fetchReflections();
       fetchGoals();
+      fetchHabits();
     }, 50 * 60 * 1000); // 每 50 分钟刷新一次签名 URL
     
     return () => clearInterval(interval);
@@ -262,6 +325,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await fetchGoals();
   };
 
+  const refreshHabits = async () => {
+    await fetchHabits();
+  };
+
   // 更新函数
   const updateMoment = (id: number, updates: Partial<Moment>) => {
     setMoments(prev => prev.map(moment => 
@@ -278,6 +345,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateGoal = (id: number, updates: Partial<Goal>) => {
     setGoals(prev => prev.map(goal => 
       goal.id === id ? { ...goal, ...updates } : goal
+    ));
+  };
+
+  const updateHabit = (id: number, updates: Partial<Habit>) => {
+    setHabits(prev => prev.map(habit => 
+      habit.id === id ? { ...habit, ...updates } : habit
     ));
   };
 
@@ -381,6 +454,90 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setGoals(prev => prev.filter(goal => goal.id !== id));
   };
 
+  const deleteHabit = async (id: number, imagePath?: string | null) => {
+    // 如果有图片路径，先删除图片
+    if (imagePath) {
+      try {
+        const { error: storageError } = await supabase.storage
+          .from("habits")
+          .remove([imagePath]);
+        if (storageError) console.error("删除图片失败:", storageError);
+      } catch (err) {
+        console.error("删除图片异常:", err);
+      }
+    }
+
+    // 从数据库删除
+    try {
+      const { error: dbError } = await supabase
+        .from("habits")
+        .delete()
+        .eq("id", id);
+
+      if (dbError) {
+        console.error("删除习惯失败:", dbError);
+        throw new Error("删除习惯失败");
+      }
+    } catch (err) {
+      console.error("删除异常:", err);
+      throw new Error("删除失败");
+    }
+
+    // 从全局状态中删除
+    setHabits(prev => prev.filter(habit => habit.id !== id));
+  };
+
+  // 打卡功能
+  const checkinHabit = async (id: number) => {
+    try {
+      // 检查是否今天已经打卡
+      const habit = habits.find(h => h.id === id);
+      if (habit && habit.last_checkin) {
+        const lastCheckinDate = new Date(habit.last_checkin);
+        const today = new Date();
+        if (
+          lastCheckinDate.getDate() === today.getDate() &&
+          lastCheckinDate.getMonth() === today.getMonth() &&
+          lastCheckinDate.getFullYear() === today.getFullYear()
+        ) {
+          throw new Error("今天已经打卡过了");
+        }
+      }
+
+      // 获取当前打卡次数
+      const currentHabit = habits.find(h => h.id === id);
+      const currentCount = currentHabit?.checkin_count || 0;
+      
+      // 更新数据库
+      const { error: dbError } = await supabase
+        .from("habits")
+        .update({
+          last_checkin: new Date().toISOString(),
+          checkin_count: currentCount + 1
+        })
+        .eq("id", id);
+
+      if (dbError) {
+        console.error("打卡失败:", dbError);
+        throw new Error(`打卡失败: ${dbError.message}`);
+      }
+
+      // 更新全局状态
+      setHabits(prev => prev.map(habit => 
+        habit.id === id 
+          ? { 
+              ...habit, 
+              last_checkin: new Date().toISOString(),
+              checkin_count: currentCount + 1
+            } 
+          : habit
+      ));
+    } catch (err) {
+      console.error("打卡异常:", err);
+      throw new Error(err instanceof Error ? err.message : "打卡失败");
+    }
+  };
+
   // 添加函数
   const addMoment = (moment: Moment) => {
     setMoments(prev => [moment, ...prev]);
@@ -394,25 +551,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setGoals(prev => [goal, ...prev]);
   };
 
+  const addHabit = (habit: Habit) => {
+    setHabits(prev => [habit, ...prev]);
+  };
+
   return (
     <AppContext.Provider
       value={{
         moments,
         reflections,
         goals,
+        habits,
         loading,
         refreshMoments,
         refreshReflections,
         refreshGoals,
+        refreshHabits,
         addMoment,
         addReflection,
         addGoal,
+        addHabit,
         updateMoment,
         updateReflection,
         updateGoal,
+        updateHabit,
         deleteMoment,
         deleteReflection,
         deleteGoal,
+        deleteHabit,
+        checkinHabit,
       }}
     >
       {children}
