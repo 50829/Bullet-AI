@@ -1,17 +1,18 @@
 // src/components/layout/Sidebar.tsx
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Heart, Target, MessageSquare, BrainCircuit, Sparkles, Calendar } from 'lucide-react';
+import { Heart, Target, MessageSquare, BrainCircuit, Sparkles, Calendar, Menu, X } from 'lucide-react';
 
 type NavItemProps = {
   page: string;
   icon: React.ReactNode;
   label: string;
+  onClick?: () => void; // 添加可选的 onClick 属性
 };
 
-const NavItem = ({ page, icon, label }: NavItemProps) => {
+const NavItem = ({ page, icon, label, onClick }: NavItemProps) => {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -22,6 +23,9 @@ const NavItem = ({ page, icon, label }: NavItemProps) => {
 
   const handleClick = () => {
     router.push(`/main?page=${page}`);
+    if (onClick) {
+      onClick(); // 调用传入的 onClick 回调
+    }
   };
 
   return (
@@ -38,6 +42,9 @@ const NavItem = ({ page, icon, label }: NavItemProps) => {
 };
 
 export const Sidebar = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
   const navItems = [
     { page: 'monthly-recommendation', label: '月度推荐', icon: <Calendar size={20} /> },
     { page: 'moments', label: '我的时刻', icon: <Heart size={20} /> },
@@ -46,8 +53,87 @@ export const Sidebar = () => {
     { page: 'ai-companion', label: 'AI树洞', icon: <MessageSquare size={20} /> },
   ];
 
+  // 检测屏幕尺寸
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // 768px 以下为移动端
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+
+  // 在移动端默认关闭侧边栏
+  useEffect(() => {
+    if (isMobile) {
+      setIsSidebarOpen(false);
+    }
+  }, [isMobile]);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  // 移动端覆盖在主页面上方的侧边栏
+  if (isMobile) {
+    return (
+      <>
+        {/* 移动端菜单按钮 */}
+        <button
+          onClick={toggleSidebar}
+          className="fixed top-4 left-4 z-50 p-2 bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-lg shadow-lg border border-orange-200 lg:hidden"
+          aria-label="切换菜单"
+        >
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+
+        {/* 移动端侧边栏覆盖层 */}
+        {isSidebarOpen && (
+          <>
+            {/* 遮罩层 */}
+            <div 
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              onClick={toggleSidebar}
+            />
+            
+            {/* 侧边栏内容 */}
+            <aside className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-blue-100/80 via-white/80 to-orange-100/80 border-r border-orange-200 p-4 flex flex-col z-50 shadow-lg lg:hidden transform translate-x-0 transition-transform duration-300 ease-in-out">
+              <div className="flex items-center mb-8">
+                <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
+                  <Sparkles size={24} className="text-gray-700" />
+                </div>
+                <h1 className="ml-3 text-xl font-bold text-gray-800">BulletAI</h1>
+              </div>
+              <nav className="flex-1">
+                <ul>
+                  {navItems.map((item) => (
+                    <NavItem 
+                      key={item.page} 
+                      page={item.page} 
+                      icon={item.icon} 
+                      label={item.label} 
+                      onClick={() => setIsSidebarOpen(false)} // 点击后关闭侧边栏
+                    />
+                  ))}
+                </ul>
+              </nav>
+              <div className="text-xs text-gray-500">
+                每一个灵魂，都值得被记录
+              </div>
+            </aside>
+          </>
+        )}
+      </>
+    );
+  }
+
+  // 桌面端正常显示的侧边栏
   return (
-    <aside className="w-64 bg-gradient-to-b from-blue-100/80 via-white/80 to-orange-100/80 border-r border-orange-200 p-4 flex flex-col shrink-0 shadow-lg">
+    <aside className="w-64 bg-gradient-to-b from-blue-100/80 via-white/80 to-orange-100/80 border-r border-orange-200 p-4 flex flex-col shrink-0 shadow-lg hidden lg:block">
       <div className="flex items-center mb-8">
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
           <Sparkles size={24} className="text-gray-700" />

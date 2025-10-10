@@ -4,7 +4,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Tag } from "../components/ui/Tag";
-import { Search, MapPin, Trash2 } from "lucide-react";
+import { Search, MapPin, Trash2, Menu } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { MomentModal } from "../components/MomentModal";
 
@@ -33,6 +33,21 @@ export default function MomentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState<SearchType>("text");
   const [showSearch, setShowSearch] = useState(false); // 新增状态控制搜索栏显示
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 检测屏幕尺寸
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -177,7 +192,7 @@ export default function MomentsPage() {
               <h2 className="text-3xl font-bold text-gray-800">我的时刻</h2>
               <p className="text-gray-500 mt-1">珍藏每一个值得记录的瞬间</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               {/* 搜索按钮 */}
               <Button 
                 variant="outline" 
@@ -194,8 +209,8 @@ export default function MomentsPage() {
           {/* 搜索栏 - 条件渲染 */}
           {showSearch && (
             <div className="p-4 border-t border-orange-200/50">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                <div className="md:col-span-2">
+              <div className="grid grid-cols-1 gap-3">
+                <div>
                   <select 
                     value={searchType} 
                     onChange={(e) => setSearchType(e.target.value as SearchType)} 
@@ -207,7 +222,7 @@ export default function MomentsPage() {
                   </select>
                 </div>
 
-                <div className="md:col-span-6">
+                <div>
                   <Input 
                     placeholder="选择搜索类型，再输入搜索内容~" 
                     value={searchTerm} 
@@ -216,20 +231,17 @@ export default function MomentsPage() {
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="flex gap-2">
                   <Button 
                     onClick={performSearch} 
-                    className="w-full flex items-center justify-center h-10"
+                    className="flex-1 flex items-center justify-center h-10"
                   >
                     <Search size={16} className="mr-1" /> 搜索
                   </Button>
-                </div>
-
-                <div className="md:col-span-2">
                   <Button 
                     variant="secondary" 
                     onClick={clearSearch} 
-                    className="w-full h-10"
+                    className="flex-1 h-10"
                   >
                     清空
                   </Button>
@@ -242,55 +254,60 @@ export default function MomentsPage() {
 
       {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
       <div className="flex-1">
-        <div className="p-4 pt-0"> {/* 移除顶部padding，因为头部已固定 */}
+        <div className="p-4 pt-0">
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 gap-6"> {/* 修改为单列布局 */}
+            <div className="space-y-6">
               {filteredMoments.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 col-span-2">
+                <div className="text-center py-12 text-gray-500">
                   {searchTerm ? "没有找到匹配的时刻记录" : "暂无时刻记录，点击上方按钮记录第一个时刻吧！"}
                 </div>
               ) : (
                 filteredMoments.map((moment) => (
-                  <Card key={moment.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200 w-[36rem] mx-auto">
-  <div className="flex flex-col gap-4">
-    {/* 文字区域 */}
-    <div className="min-w-0">
-      <div className="flex justify-between items-start">
-        <p className="text-lg text-gray-400 mb-2">{moment.date}</p>
-        <div className="flex justify-end mt-2 space-x-3 text-gray-400">
-          <Trash2 size={18} className="cursor-pointer hover:text-orange-400" onClick={() => { setSelectedMoment(moment); setShowConfirm(true); }} />
-        </div>
-      </div>
-      
-      <p className="text-xl text-gray-700 mb-4 whitespace-pre-line">{moment.content}</p>
-    </div>
-    
-    {/* 图片区域 - 放在文字下方 */}
-    {moment.image_url && (
-      <div className="flex justify-center">
-        <img 
-          src={moment.image_url} 
-          alt="时刻图片" 
-          className="w-144 h-144 rounded-lg object-cover" 
-        />
-      </div>
-    )}
-    
-    {/* 标签区域 - 放在图片下方 */}
-    {(moment.tags?.length > 0 || moment.event_type || moment.location) && (
-      <div className="flex flex-wrap gap-2">
-        {(moment.tags ?? []).map((tag, i) => <Tag key={i}>{tag}</Tag>)}
-        {moment.event_type && <Tag>{moment.event_type}</Tag>}
-        {moment.location && (
-          <Tag>
-            <MapPin size={14} className="inline mr-1" />
-            {moment.location}
-          </Tag>
-        )}
-      </div>
-    )}
+                  <Card 
+                    key={moment.id} 
+                    className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200 w-full max-w-3xl mx-auto"
+                  >
+                    <div className="flex flex-col gap-4">
+                      {/* 文字区域 */}
+                      <div className="min-w-0">
+                      <div className="flex justify-between items-start">
+  <p className="text-lg text-gray-400 mb-2">{moment.date}</p>
+  <div className="flex justify-end mt-2 space-x-3 text-gray-400">
+    <Trash2 size={18} className="cursor-pointer hover:text-orange-400" onClick={() => { setSelectedMoment(moment); setShowConfirm(true); }} />
   </div>
-</Card>
+</div>
+                        
+                        <p className="text-xl text-gray-700 mt-2 whitespace-pre-line">
+                          {moment.content}
+                        </p>
+                      </div>
+                      
+                      {/* 图片区域 - 放在文字下方 */}
+                      {moment.image_url && (
+                        <div className="flex justify-center">
+                          <img 
+                            src={moment.image_url} 
+                            alt="时刻图片" 
+                            className="w-full max-w-md h-auto rounded-lg object-cover" 
+                          />
+                        </div>
+                      )}
+                      
+                      {/* 标签区域 - 放在图片下方 */}
+                      {(moment.tags?.length > 0 || moment.event_type || moment.location) && (
+                        <div className="flex flex-wrap gap-2">
+                          {(moment.tags ?? []).map((tag, i) => <Tag key={i}>{tag}</Tag>)}
+                          {moment.event_type && <Tag>{moment.event_type}</Tag>}
+                          {moment.location && (
+                            <Tag>
+                              <MapPin size={14} className="inline mr-1" />
+                              {moment.location}
+                            </Tag>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
                 ))
               )}
             </div>
@@ -302,7 +319,7 @@ export default function MomentsPage() {
 
       {showConfirm && selectedMoment && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full">
+          <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full mx-4">
             <h2 className="text-lg font-semibold mb-4 text-center">确认删除这条时刻吗？</h2>
             <p className="text-gray-600 text-sm mb-4 text-center">删除后无法恢复。</p>
             <div className="flex justify-center space-x-3">

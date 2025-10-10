@@ -32,6 +32,21 @@ export default function ReflectionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState<SearchType>("text");
   const [showSearch, setShowSearch] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 检测屏幕尺寸
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -183,7 +198,7 @@ export default function ReflectionsPage() {
               <h2 className="text-3xl font-bold text-gray-800">我的感悟</h2>
               <p className="text-gray-500 mt-1">记录生活中的灵感与思考</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               {/* 搜索按钮 */}
               <Button 
                 variant="outline" 
@@ -200,8 +215,8 @@ export default function ReflectionsPage() {
           {/* 搜索栏 - 条件渲染 */}
           {showSearch && (
             <div className="p-4 border-t border-orange-200/50">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                <div className="md:col-span-2">
+              <div className="grid grid-cols-1 gap-3">
+                <div>
                   <select 
                     value={searchType} 
                     onChange={(e) => setSearchType(e.target.value as SearchType)} 
@@ -214,7 +229,7 @@ export default function ReflectionsPage() {
                   </select>
                 </div>
 
-                <div className="md:col-span-6">
+                <div>
                   <Input 
                     placeholder="选择搜索类型，再输入搜索内容~" 
                     value={searchTerm} 
@@ -223,20 +238,17 @@ export default function ReflectionsPage() {
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="flex gap-2">
                   <Button 
                     onClick={performSearch} 
-                    className="w-full flex items-center justify-center h-10"
+                    className="flex-1 flex items-center justify-center h-10"
                   >
                     <Search size={16} className="mr-1" /> 搜索
                   </Button>
-                </div>
-
-                <div className="md:col-span-2">
                   <Button 
                     variant="secondary" 
                     onClick={clearSearch} 
-                    className="w-full h-10"
+                    className="flex-1 h-10"
                   >
                     清空
                   </Button>
@@ -251,14 +263,17 @@ export default function ReflectionsPage() {
       <div className="flex-1">
         <div className="p-4 pt-0"> {/* 移除顶部padding，因为头部已固定 */}
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 gap-6"> {/* 修改为单列布局 */}
+            <div className="space-y-6">
               {filteredReflections.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 col-span-2">
+                <div className="text-center py-12 text-gray-500">
                   {searchTerm ? "没有找到匹配的感悟记录" : "暂无感悟记录，点击上方按钮记录第一个感悟吧！"}
                 </div>
               ) : (
                 filteredReflections.map((reflection) => (
-                  <Card key={reflection.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200 w-[36rem] mx-auto"> {/* 固定宽度 w-[36rem] */}
+                  <Card 
+                    key={reflection.id} 
+                    className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200 w-full max-w-3xl mx-auto"
+                  >
                     <div className="flex flex-col gap-4"> {/* 垂直布局 */}
                       {/* 文字区域 */}
                       <div className="min-w-0">
@@ -283,7 +298,7 @@ export default function ReflectionsPage() {
                           <img 
                             src={reflection.image_url} 
                             alt="感悟图片" 
-                            className="w-144 h-144 rounded-lg object-cover" 
+                            className="w-full max-w-md h-auto rounded-lg object-cover" 
                           />
                         </div>
                       )}
@@ -314,7 +329,7 @@ export default function ReflectionsPage() {
 
       {showConfirm && selectedReflection && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full">
+          <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full mx-4">
             <h2 className="text-lg font-semibold mb-4 text-center">确认删除这条感悟吗？</h2>
             <p className="text-gray-600 text-sm mb-4 text-center">删除后无法恢复。</p>
             <div className="flex justify-center space-x-3">
