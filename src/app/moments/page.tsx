@@ -1,3 +1,4 @@
+// app/moments/page.tsx
 "use client";
 import React, { useEffect, useState } from "react";
 import { Card } from "../components/ui/Card";
@@ -5,8 +6,8 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Tag } from "../components/ui/Tag";
 import { Search, MapPin, Trash2, Menu } from "lucide-react";
-import { supabase } from "../../lib/supabaseClient";
 import { MomentModal } from "../components/MomentModal";
+import { useAppContext } from "../../context/AppContext";
 
 type Moment = {
   id: number;
@@ -14,20 +15,19 @@ type Moment = {
   content: string;
   event_type: string;
   location: string;
-  image_url?: string | null; // 运行时签名 URL
-  image_path?: string | null; // 存库
+  image_url?: string | null;
+  image_path?: string | null;
   tags?: string[];
   date?: string;
 };
 
 // 定义搜索类型
-type SearchType = "text" | "event" | "location"; // 移除了 inspiration
+type SearchType = "text" | "event" | "location";
 
 export default function MomentsPage() {
-  const [moments, setMoments] = useState<Moment[]>([]);
+  const { moments, loading, refreshMoments, deleteMoment } = useAppContext();
   const [filteredMoments, setFilteredMoments] = useState<Moment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,66 +49,10 @@ export default function MomentsPage() {
     };
   }, []);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("zh-CN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  // 拉取 DB 记录并为每个有 image_path 的条目生成签名 URL
-  const fetchMoments = async () => {
-    setLoading(true);
-    const userResponse = await supabase.auth.getUser();
-    const user = userResponse.data?.user;
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("moments")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("获取时刻失败:", error);
-      setLoading(false);
-      return;
-    }
-
-    const withUrls = await Promise.all(
-      (data || []).map(async (item: Moment) => {
-        let signedUrl: string | null = null;
-        if (item.image_path) {
-          const result = await supabase.storage
-            .from("moments")
-            .createSignedUrl(item.image_path, 60 * 60); // 1 小时
-          if (!result.error && result.data) signedUrl = result.data.signedUrl ?? null;
-        }
-        return {
-          ...item,
-          image_url: signedUrl,
-          date: formatDate(item.created_at),
-        };
-      })
-    );
-
-    setMoments(withUrls);
-    setFilteredMoments(withUrls);
-    setLoading(false);
-  };
-
+  // 初始过滤
   useEffect(() => {
-    fetchMoments();
-    const interval = setInterval(fetchMoments, 50 * 60 * 1000); // 每 50 分钟刷新签名 URL
-    return () => clearInterval(interval);
-  }, []);
+    setFilteredMoments(moments);
+  }, [moments]);
 
   const performSearch = () => {
     let results = [...moments];
@@ -145,7 +89,7 @@ export default function MomentsPage() {
   const handleAddMoment = () => setIsModalOpen(true);
   const handleModalClose = () => setIsModalOpen(false);
   const handleModalSuccess = () => {
-    fetchMoments();
+    refreshMoments();
     setIsModalOpen(false);
   };
 
@@ -153,33 +97,17 @@ export default function MomentsPage() {
     if (!selectedMoment) return;
 
     try {
-      if (selectedMoment.image_path) {
-        const { error: storageError } = await supabase.storage
-          .from("moments")
-          .remove([selectedMoment.image_path]);
-        if (storageError) console.error("删除图片失败:", storageError);
-      }
-
-      const { error: dbError } = await supabase
-        .from("moments")
-        .delete()
-        .eq("id", selectedMoment.id);
-
-      if (dbError) {
-        console.error("删除时刻失败:", dbError);
-        alert("删除失败，请重试");
-      } else {
-        setShowConfirm(false);
-        setSelectedMoment(null);
-        fetchMoments();
-      }
+      // 使用全局状态中的删除函数
+      await deleteMoment(selectedMoment.id, selectedMoment.image_path);
+      setShowConfirm(false);
+      setSelectedMoment(null);
     } catch (err) {
       console.error("删除异常:", err);
       alert("删除失败，请稍后重试");
     }
   };
 
-  if (loading) return <div className="text-center py-8">记忆生成中...</div>;
+  if (loading.moments) return <div className="text-center py-8">记忆生成中...</div>;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -270,12 +198,12 @@ export default function MomentsPage() {
                     <div className="flex flex-col gap-4">
                       {/* 文字区域 */}
                       <div className="min-w-0">
-                      <div className="flex justify-between items-start">
-  <p className="text-lg text-gray-400 mb-2">{moment.date}</p>
-  <div className="flex justify-end mt-2 space-x-3 text-gray-400">
-    <Trash2 size={18} className="cursor-pointer hover:text-orange-400" onClick={() => { setSelectedMoment(moment); setShowConfirm(true); }} />
-  </div>
-</div>
+                        <div className="flex justify-between items-start">
+                          <p className="text-lg text-gray-400 mb-2">{moment.date}</p>
+                          <div className="flex justify-end mt-2 space-x-3 text-gray-400">
+                            <Trash2 size={18} className="cursor-pointer hover:text-orange-400" onClick={() => { setSelectedMoment(moment); setShowConfirm(true); }} />
+                          </div>
+                        </div>
                         
                         <p className="text-xl text-gray-700 mt-2 whitespace-pre-line">
                           {moment.content}

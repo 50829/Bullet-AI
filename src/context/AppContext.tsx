@@ -40,6 +40,8 @@ type Goal = {
   image_url?: string | null;
   image_path?: string | null;
   date?: string;
+  type: string; // 添加 type 字段
+  priority?: string;
 };
 
 // 定义上下文类型
@@ -61,9 +63,9 @@ interface AppContextType {
   updateMoment: (id: number, updates: Partial<Moment>) => void;
   updateReflection: (id: number, updates: Partial<Reflection>) => void;
   updateGoal: (id: number, updates: Partial<Goal>) => void;
-  deleteMoment: (id: number) => void;
-  deleteReflection: (id: number) => void;
-  deleteGoal: (id: number) => void;
+  deleteMoment: (id: number, imagePath?: string | null) => Promise<void>;
+  deleteReflection: (id: number, imagePath?: string | null) => Promise<void>;
+  deleteGoal: (id: number, imagePath?: string | null) => Promise<void>;
 }
 
 // 创建上下文
@@ -280,15 +282,102 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // 删除函数
-  const deleteMoment = (id: number) => {
+  const deleteMoment = async (id: number, imagePath?: string | null) => {
+    // 如果有图片路径，先删除图片
+    if (imagePath) {
+      try {
+        const { error: storageError } = await supabase.storage
+          .from("moments")
+          .remove([imagePath]);
+        if (storageError) console.error("删除图片失败:", storageError);
+      } catch (err) {
+        console.error("删除图片异常:", err);
+      }
+    }
+
+    // 从数据库删除
+    try {
+      const { error: dbError } = await supabase
+        .from("moments")
+        .delete()
+        .eq("id", id);
+
+      if (dbError) {
+        console.error("删除时刻失败:", dbError);
+        throw new Error("删除时刻失败");
+      }
+    } catch (err) {
+      console.error("删除异常:", err);
+      throw new Error("删除失败");
+    }
+
+    // 从全局状态中删除
     setMoments(prev => prev.filter(moment => moment.id !== id));
   };
 
-  const deleteReflection = (id: number) => {
+  const deleteReflection = async (id: number, imagePath?: string | null) => {
+    // 如果有图片路径，先删除图片
+    if (imagePath) {
+      try {
+        const { error: storageError } = await supabase.storage
+          .from("reflections")
+          .remove([imagePath]);
+        if (storageError) console.error("删除图片失败:", storageError);
+      } catch (err) {
+        console.error("删除图片异常:", err);
+      }
+    }
+
+    // 从数据库删除
+    try {
+      const { error: dbError } = await supabase
+        .from("reflections")
+        .delete()
+        .eq("id", id);
+
+      if (dbError) {
+        console.error("删除感悟失败:", dbError);
+        throw new Error("删除感悟失败");
+      }
+    } catch (err) {
+      console.error("删除异常:", err);
+      throw new Error("删除失败");
+    }
+
+    // 从全局状态中删除
     setReflections(prev => prev.filter(reflection => reflection.id !== id));
   };
 
-  const deleteGoal = (id: number) => {
+  const deleteGoal = async (id: number, imagePath?: string | null) => {
+    // 如果有图片路径，先删除图片
+    if (imagePath) {
+      try {
+        const { error: storageError } = await supabase.storage
+          .from("goals")
+          .remove([imagePath]);
+        if (storageError) console.error("删除图片失败:", storageError);
+      } catch (err) {
+        console.error("删除图片异常:", err);
+      }
+    }
+
+    // 从数据库删除
+    try {
+      const { error: dbError } = await supabase
+        .from("goals")
+        .delete()
+        .eq("id", id);
+
+      if (dbError) {
+        console.error("删除目标失败:", dbError);
+        throw new Error("删除目标失败");
+      }
+    } catch (err) {
+      console.error("删除异常:", err);
+      throw new Error("删除失败");
+    }
+
+    // 从全局状态中删除
     setGoals(prev => prev.filter(goal => goal.id !== id));
   };
 

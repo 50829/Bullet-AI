@@ -1,3 +1,4 @@
+// app/reflections/page.tsx
 "use client";
 import React, { useEffect, useState } from "react";
 import { Card } from "../components/ui/Card";
@@ -5,8 +6,8 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Tag } from "../components/ui/Tag";
 import { Search, MapPin, Trash2 } from "lucide-react";
-import { supabase } from "../../lib/supabaseClient";
 import { ReflectionModal } from "../components/ReflectionModal";
+import { useAppContext } from "../../context/AppContext";
 
 type Reflection = {
   id: number;
@@ -23,10 +24,9 @@ type Reflection = {
 type SearchType = "text" | "event" | "location" | "inspiration";
 
 export default function ReflectionsPage() {
-  const [reflections, setReflections] = useState<Reflection[]>([]);
+  const { reflections, loading, refreshReflections, deleteReflection } = useAppContext();
   const [filteredReflections, setFilteredReflections] = useState<Reflection[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,68 +48,10 @@ export default function ReflectionsPage() {
     };
   }, []);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("zh-CN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const fetchReflections = async () => {
-    setLoading(true);
-    const userResponse = await supabase.auth.getUser();
-    const user = userResponse.data?.user;
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("reflections")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("获取感悟失败:", error);
-      setLoading(false);
-      return;
-    }
-
-    const withUrls = await Promise.all(
-      (data || []).map(async (item: Reflection) => {
-        let signedUrl: string | null = item.image_url ?? null;
-        if (!signedUrl && item.image_path) {
-          const result = await supabase.storage
-            .from("reflections")
-            .createSignedUrl(item.image_path, 60 * 60);
-          
-          if (!result.error && result.data) {
-            signedUrl = result.data.signedUrl;
-          }
-        }
-        return {
-          ...item,
-          image_url: signedUrl,
-          date: formatDate(item.created_at),
-        };
-      })
-    );
-
-    setReflections(withUrls);
-    setFilteredReflections(withUrls);
-    setLoading(false);
-  };
-
+  // 初始过滤
   useEffect(() => {
-    fetchReflections();
-    const interval = setInterval(fetchReflections, 50 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+    setFilteredReflections(reflections);
+  }, [reflections]);
 
   const performSearch = () => {
     let results = [...reflections];
@@ -152,40 +94,24 @@ export default function ReflectionsPage() {
   const handleAddReflection = () => setIsModalOpen(true);
   const handleModalClose = () => setIsModalOpen(false);
   const handleModalSuccess = () => {
-    fetchReflections();
+    refreshReflections();
     setIsModalOpen(false);
   };
 
   const handleDelete = async () => {
     if (!selectedReflection) return;
     try {
-      if (selectedReflection.image_path) {
-        const { error: storageError } = await supabase.storage
-          .from("reflections")
-          .remove([selectedReflection.image_path]);
-        if (storageError) console.error("删除图片失败:", storageError);
-      }
-
-      const { error } = await supabase
-        .from("reflections")
-        .delete()
-        .eq("id", selectedReflection.id);
-
-      if (error) {
-        console.error("删除感悟失败:", error);
-        alert("删除失败，请重试");
-      } else {
-        setShowConfirm(false);
-        setSelectedReflection(null);
-        fetchReflections();
-      }
+      // 使用全局状态中的删除函数
+      await deleteReflection(selectedReflection.id, selectedReflection.image_path);
+      setShowConfirm(false);
+      setSelectedReflection(null);
     } catch (err) {
       console.error("删除异常:", err);
       alert("删除失败，请稍后重试");
     }
   };
 
-  if (loading) return <div className="text-center py-8">思考即将开始...</div>;
+  if (loading.reflections) return <div className="text-center py-8">思考即将开始...</div>;
 
   return (
     <div className="min-h-screen flex flex-col">
