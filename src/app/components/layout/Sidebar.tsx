@@ -1,9 +1,9 @@
 // src/components/layout/Sidebar.tsx
-"use client"; // This component needs to be a Client Component
+"use client";
 
 import React from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Heart, Target, MessageSquare, BrainCircuit, Sparkles } from 'lucide-react';
+import { Heart, Target, MessageSquare, BrainCircuit, Sparkles, Calendar } from 'lucide-react'; // 添加 Calendar 图标
 
 type NavItemProps = {
   page: string;
@@ -37,6 +37,7 @@ const NavItem = ({ page, icon, label }: NavItemProps) => {
 
 export const Sidebar = () => {
   const navItems = [
+    { page: 'monthly-recommendation', label: '月度推荐', icon: <Calendar size={20} /> }, // 更新图标
     { page: 'moments', label: '我的时刻', icon: <Heart size={20} /> },
     { page: 'goals', label: '我的目标', icon: <Target size={20} /> },
     { page: 'reflections', label: '我的感悟', icon: <BrainCircuit size={20} /> },

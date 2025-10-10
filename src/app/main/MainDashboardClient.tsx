@@ -1,3 +1,4 @@
+// app/main/page.tsx
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -8,9 +9,12 @@ import MomentsPage from '../moments/page';
 import GoalsPage from '../goals/page';
 import ReflectionsPage from '../reflections/page';
 import AICompanionPage from '../ai-companion/page';
+import MonthlyRecommendationPage from '../monthly-recommendation/page'; // 新增导入
 
 function InnerPage({ activePage }: { activePage: string }) {
   switch (activePage) {
+    case 'monthly-recommendation': // 新增路由
+      return <MonthlyRecommendationPage />;
     case 'goals':
       return <GoalsPage />;
     case 'reflections':
@@ -26,10 +30,10 @@ function InnerPage({ activePage }: { activePage: string }) {
 export default function MainDashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activePage, setActivePage] = useState('moments');
+  const [activePage, setActivePage] = useState('monthly-recommendation');
 
   useEffect(() => {
-    const page = searchParams.get('page') || 'moments';
+    const page = searchParams.get('page') || 'monthly-recommendation';
     if (page !== activePage) setActivePage(page);
   }, [searchParams, activePage]);
 
