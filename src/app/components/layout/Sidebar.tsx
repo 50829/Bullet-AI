@@ -82,14 +82,16 @@ export const Sidebar = () => {
   if (isMobile) {
     return (
       <>
-        {/* 移动端菜单按钮 */}
-        <button
-          onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-2 bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-lg shadow-lg border border-orange-200 lg:hidden"
-          aria-label="切换菜单"
-        >
-          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {/* 移动端菜单按钮 - 放在左下角，当侧边栏展开时隐藏 */}
+        {!isSidebarOpen && (
+          <button
+            onClick={toggleSidebar}
+            className="fixed bottom-4 left-4 z-50 p-3 bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-full shadow-lg border border-orange-200 lg:hidden"
+            aria-label="切换菜单"
+          >
+            <Menu size={24} />
+          </button>
+        )}
 
         {/* 移动端侧边栏覆盖层 */}
         {isSidebarOpen && (
@@ -102,11 +104,12 @@ export const Sidebar = () => {
             
             {/* 侧边栏内容 */}
             <aside className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-blue-100/80 via-white/80 to-orange-100/80 border-r border-orange-200 p-4 flex flex-col z-50 shadow-lg lg:hidden transform translate-x-0 transition-transform duration-300 ease-in-out">
-              <div className="flex items-center mb-8">
+              <div className="flex flex-col items-center mb-8">
                 <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
                   <Sparkles size={24} className="text-gray-700" />
                 </div>
-                <h1 className="ml-3 text-xl font-bold text-gray-800">BulletAI</h1>
+                <h1 className="text-2xl font-bold text-gray-800 mt-2">BulletAI</h1>
+                <p className="text-sm text-gray-500 mt-1">每一个灵魂，都值得被记录</p>
               </div>
               <nav className="flex-1">
                 <ul>
@@ -121,9 +124,6 @@ export const Sidebar = () => {
                   ))}
                 </ul>
               </nav>
-              <div className="text-xs text-gray-500">
-                每一个灵魂，都值得被记录
-              </div>
             </aside>
           </>
         )}
@@ -134,11 +134,12 @@ export const Sidebar = () => {
   // 桌面端正常显示的侧边栏
   return (
     <aside className="w-64 bg-gradient-to-b from-blue-100/80 via-white/80 to-orange-100/80 border-r border-orange-200 p-4 flex flex-col shrink-0 shadow-lg hidden lg:block">
-      <div className="flex items-center mb-8">
+      <div className="flex flex-col items-center mb-8">
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
           <Sparkles size={24} className="text-gray-700" />
         </div>
-        <h1 className="ml-3 text-xl font-bold text-gray-800">BulletAI</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mt-2">BulletAI</h1>
+        <p className="text-sm text-gray-500 mt-1">每一个灵魂，都值得被记录</p>
       </div>
       <nav>
         <ul>
@@ -147,9 +148,6 @@ export const Sidebar = () => {
           ))}
         </ul>
       </nav>
-      <div className="mt-auto text-xs text-gray-500">
-        每一个灵魂，都值得被记录
-      </div>
     </aside>
   );
 };
