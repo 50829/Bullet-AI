@@ -1,3 +1,4 @@
+// src/components/ReflectionModal.tsx
 "use client";
 import React, { useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
@@ -77,7 +78,12 @@ export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
         <h2 className="text-2xl font-bold mb-4">记录新感悟</h2>
 
         <label className="block text-sm text-gray-600 mb-1">内容 *</label>
-        <Textarea placeholder="记录你的思考和感悟..." value={content} onChange={(e) => setContent(e.target.value)} />
+        <Textarea 
+          placeholder="记录你的思考和感悟..." 
+          value={content} 
+          onChange={(e) => setContent(e.target.value)} 
+          className="min-h-[120px] h-auto"
+        />
 
         <label className="block text-sm text-gray-600 mt-4 mb-1">灵感来源</label>
         <Input placeholder="是什么触发了这个想法？" value={source} onChange={(e) => setSource(e.target.value)} />
