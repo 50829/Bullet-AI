@@ -32,21 +32,36 @@ const LandingPage: NextPage = () => {
     };
   }, []);
 
+  // 添加一个 ref 来引用页面顶部
+  const topRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTop = () => {
+    if (topRef.current) {
+      topRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className="bg-gradient-to-br from-blue-100 via-white to-orange-100 text-gray-800 font-sans min-h-screen">
-      <main>
-        <HeroSection isVisible={isVisible.hero} />
-        <FeaturesSection />
-        <PricingSection />
-        <CallToActionSection />
-      </main>
-      <Footer />
+    // 1. 固定背景层
+    <div className="relative h-screen overflow-hidden bg-gradient-to-br from-blue-100 via-white to-orange-100">
+      {/* 2. 滚动内容层 */}
+      <div className="absolute inset-0 overflow-y-auto">
+        {/* 在内容最顶部添加一个空 div 作为滚动目标 */}
+        <div ref={topRef} />
+        <main>
+          <HeroSection isVisible={isVisible.hero} scrollToTop={scrollToTop} /> {/* 传递函数到 HeroSection */}
+          <FeaturesSection />
+          <PricingSection />
+          <CallToActionSection />
+        </main>
+        <Footer scrollToTop={scrollToTop} /> {/* 传递函数到 Footer */}
+      </div>
     </div>
   );
 };
 
-// 1. 顶部英雄区域
-const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
+// 1. 顶部英雄区域 - 移除背景类，因为背景由父级提供
+const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToTop: () => void }) => {
   const router = useRouter();
   
   const scrollToFeatures = () => {
@@ -80,7 +95,7 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
   }, [isVisible]);
 
   return (
-    <section className={`min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 via-white to-orange-100 p-4 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+    <section className={`min-h-screen flex flex-col items-center justify-center p-4 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="flex flex-col items-center max-w-4xl w-full">
         <div className={`bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200 mb-6 transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
           <Sparkles className="h-10 w-10 text-gray-700" />
@@ -123,14 +138,15 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
           </button>
         </div>
       </div>
-      <div className="absolute bottom-10 animate-bounce">
+      {/* 修改点击事件，调用传递下来的 scrollToTop 函数 */}
+      <div className="absolute bottom-10 animate-bounce" onClick={scrollToTop} style={{ cursor: 'pointer' }}>
         <ArrowDown className="h-6 w-6 text-gray-500" />
       </div>
     </section>
   );
 };
 
-// 2. 四大核心功能区域
+// 2. 四大核心功能区域 - 移除背景类
 const FeaturesSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -255,7 +271,7 @@ const FeatureCard = ({ icon, title, description, items }: { icon: React.ReactNod
   </div>
 );
 
-// 3. 定价方案区域
+// 3. 定价方案区域 - 移除背景类
 const PricingSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -299,7 +315,7 @@ const PricingSection = () => {
   };
 
   return (
-    <section ref={sectionRef} className={`py-20 px-4 bg-gradient-to-br from-blue-100/50 via-white/50 to-orange-100/50 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+    <section ref={sectionRef} className={`py-20 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className={`lg:col-span-1 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight">适合每个人的起点</h2>
@@ -348,7 +364,7 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
   );
 };
 
-// 4. 最终行动号召区域
+// 4. 最终行动号召区域 - 移除背景类
 const CallToActionSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -399,8 +415,8 @@ const CallToActionSection = () => {
   );
 };
 
-// Footer 组件
-const Footer = () => {
+// Footer 组件 - 移除背景类
+const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -426,9 +442,10 @@ const Footer = () => {
     };
   }, [isVisible]);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  // scrollToTop 现在通过 props 从父组件接收
+  // const scrollToTop = () => {
+  //   window.scrollTo({ top: 0, behavior: 'smooth' });
+  // };
   
   return (
     <footer ref={sectionRef} className={`relative py-12 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
@@ -447,7 +464,7 @@ const Footer = () => {
         </div>
       </div>
       <button 
-        onClick={scrollToTop}
+        onClick={scrollToTop} // 使用从父组件传递下来的函数
         className="fixed bottom-10 right-10 bg-gray-800 text-white p-3 rounded-full shadow-lg hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800 transition-all duration-500 z-50 hover:-translate-y-1 hover:shadow-xl"
         aria-label="返回顶部"
       >
