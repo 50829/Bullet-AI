@@ -1,341 +1,168 @@
 // app/monthly-recommendation/page.tsx
-import Image from 'next/image';
+"use client";
+
+import { useState } from 'react';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Tag } from '../components/ui/Tag';
+import { MapPin, Music, BookOpen, Quote } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const MonthlyRecommendationPage = () => {
   const router = useRouter();
 
-  const handleBackToMain = () => {
-    router.push('/main?page=moments');
+  // 月度推荐数据
+  const monthlyData = {
+    hero: {
+      image: "/logo.png",
+      caption: "六月，是毕业的季节，也是告别与启程的季节。愿你前程似锦，归来仍是少年。",
+      date: "2024年6月"
+    },
+    music: {
+      title: "不说再见",
+      artist: "好妹妹乐队",
+      album: "不说再见",
+      duration: "4:32"
+    },
+    quote: {
+      text: "我们总以为，是生活欠我们一个满意，其实，是我们欠生活一个努力。",
+      author: "— 佚名"
+    },
+    book: {
+      title: "《围城》",
+      author: "钱钟书",
+      description: "婚姻是座围城，城外的人想进去，城里的人想出来。一本关于生活、婚姻与人性的深刻剖析。",
+      tags: ["经典", "文学", "人生哲理"]
+    }
   };
 
   return (
-    <>
-      <div className="page-container">
-        <header className="page-header">
-          <h1 className="header-title">月度推荐</h1>
-          <button 
-            className="menu-icon"
-            onClick={() => router.push('/main?page=moments')}
-            aria-label="返回首页"
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M3 12H21"
-                stroke="#333"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M3 6H21"
-                stroke="#333"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M3 18H21"
-                stroke="#333"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </header>
-
-        <main className="content-wrapper">
-          {/* Section 1: Hero Image & Caption */}
-          <section className="card-section">
-            <div className="image-container">
-              <Image
-                src="/logo.png" // 修正：不需要 /public/ 前缀
-                alt="Winding road in lush green mountains"
-                width={800}
-                height={450}
-                style={{ width: '100%', height: 'auto', display: 'block' }}
-                priority
-              />
+    <div className="min-h-screen flex flex-col">
+      {/* 固定的头部区域 - 毛玻璃圆角矩形模块 */}
+      <div className="sticky top-0 z-20 py-4 px-4">
+        <div className="max-w-6xl mx-auto bg-gradient-to-br from-blue-100/70 via-white/70 to-orange-100/70 rounded-3xl shadow-lg border border-orange-200 backdrop-blur-md">
+          {/* 标题和按钮行 */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-800">月度推荐</h2>
+              <p className="text-gray-500 mt-1">每月精选，与你分享美好</p>
             </div>
-            <p className="caption-text">
-              六月，是毕业的季节，也是告别与启程的季节。愿你前程似锦，归来仍是少年。
-            </p>
-          </section>
-
-          {/* Section 2: Music Player */}
-          <section className="music-section">
-            <div className="vinyl-container">
-              <div className="vinyl-image-wrapper">
-                <Image
-                  src="/logo.png" // 使用相同的 logo.png
-                  alt="Concert crowd"
-                  fill
-                  style={{ objectFit: 'cover' }}
-                />
-              </div>
-              <div className="vinyl-center"></div>
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => {}}
+                className="flex items-center gap-1"
+              >
+                <Quote size={16} /> 
+                往期回顾
+              </Button>
             </div>
-            <div className="song-info">
-              <div>
-                <p className="song-title">不说再见</p>
-                <p className="song-artist">好妹妹乐队</p>
-              </div>
-              <div className="play-button">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M8 5V19L19 12L8 5Z" />
-                </svg>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 3: Quote */}
-          <section className="quote-section">
-            <p className="quote-text">
-              我们总以为，是生活欠我们一个满意，其实，是我们欠生活一个努力。
-            </p>
-            <p className="quote-author">— 佚名</p>
-          </section>
-
-          {/* Section 4: Book Recommendation */}
-          <section className="card-section">
-            <div className="book-card">
-              <p className="book-card-subtitle">本月推荐书籍</p>
-              <h2 className="book-title">《围城》</h2>
-              <p className="book-author">钱钟书</p>
-              <p className="book-description">
-                婚姻是座围城，城外的人想进去，城里的人想出来。一本关于生活、婚姻与人性的深刻剖析。
-              </p>
-            </div>
-          </section>
-        </main>
-
-        <footer className="page-footer">
-          <p>— END —</p>
-        </footer>
+          </div>
+        </div>
       </div>
 
-      <style jsx>{`
-        /* 保持原有的样式，可以添加一些交互样式 */
-        .menu-icon {
-          cursor: pointer;
-          transition: opacity 0.2s;
-        }
-        
-        .menu-icon:hover {
-          opacity: 0.7;
-        }
-        
-        .play-button {
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .play-button:hover {
-          background-color: #f0f0f0;
-          transform: scale(1.05);
-        }
-        
-        /* 其他样式保持不变 */
-        .page-container {
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 20px;
-          font-family: 'Source Han Serif CN', 'Noto Serif SC', serif;
-          color: #333;
-          background-color: #fff;
-        }
+      {/* 内容区域 */}
+      <div className="flex-1">
+        <div className="p-4 pt-0">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 gap-6">
+              {/* Hero Section */}
+              <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200">
+                <div className="relative w-full h-64 rounded-2xl overflow-hidden mb-4">
+                  <Image
+                    src={monthlyData.hero.image}
+                    alt="月度推荐封面"
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    priority
+                  />
+                </div>
+                <p className="text-center text-lg text-gray-700 font-medium">
+                  {monthlyData.hero.caption}
+                </p>
+                <p className="text-center text-sm text-gray-500 mt-2">
+                  {monthlyData.hero.date}
+                </p>
+              </Card>
 
-        .page-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 20px 0;
-        }
+              {/* Music Recommendation */}
+              <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200">
+                <div className="flex items-center gap-4 mb-4">
+                  <Music className="text-orange-500" size={24} />
+                  <h3 className="text-xl font-semibold text-gray-800">音乐推荐</h3>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-orange-200 to-blue-200 flex items-center justify-center">
+                    <Image
+                      src={monthlyData.hero.image}
+                      alt="专辑封面"
+                      width={80}
+                      height={80}
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-semibold text-gray-800">{monthlyData.music.title}</h4>
+                    <p className="text-gray-600">{monthlyData.music.artist}</p>
+                    <p className="text-sm text-gray-500">{monthlyData.music.album} • {monthlyData.music.duration}</p>
+                  </div>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Music size={16} />
+                    播放
+                  </Button>
+                </div>
+              </Card>
 
-        .header-title {
-          font-size: 1.2rem;
-          font-weight: normal;
-          letter-spacing: 2px;
-        }
+              {/* Quote Section */}
+              <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200">
+                <div className="flex items-center gap-4 mb-4">
+                  <Quote className="text-orange-500" size={24} />
+                  <h3 className="text-xl font-semibold text-gray-800">每日一言</h3>
+                </div>
+                <blockquote className="text-center">
+                  <p className="text-xl font-medium text-gray-800 italic mb-4">
+                    {`"${monthlyData.quote.text}"`}
+                  </p>
+                  <p className="text-gray-600">
+                    {monthlyData.quote.author}
+                  </p>
+                </blockquote>
+              </Card>
 
-        .content-wrapper {
-          display: flex;
-          flex-direction: column;
-          gap: 4rem;
-        }
-
-        .card-section {
-          width: 100%;
-          margin: 2rem 0;
-        }
-
-        .image-container {
-          border-radius: 8px;
-          overflow: hidden;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        .caption-text {
-          text-align: center;
-          padding: 2rem 1rem;
-          font-size: 0.95rem;
-          color: #555;
-          line-height: 1.8;
-        }
-
-        .music-section {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 1.5rem;
-          margin: 3rem 0;
-        }
-
-        .vinyl-container {
-          position: relative;
-          width: 250px;
-          height: 250px;
-        }
-
-        .vinyl-image-wrapper {
-          width: 100%;
-          height: 100%;
-          border-radius: 50%;
-          overflow: hidden;
-          position: relative;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-        
-        .vinyl-center {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 70px;
-          height: 70px;
-          background-color: #fff;
-          border-radius: 50%;
-          border: 10px solid #000;
-        }
-
-        .song-info {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          width: 250px;
-        }
-        .song-title {
-          font-size: 1.1rem;
-          font-weight: bold;
-          margin: 0;
-        }
-        .song-artist {
-          font-size: 0.9rem;
-          color: #666;
-          margin: 4px 0 0;
-        }
-        .play-button {
-          width: 40px;
-          height: 40px;
-          border: 1px solid #ccc;
-          border-radius: 50%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          color: #333;
-          transition: background-color 0.2s;
-        }
-        .play-button:hover {
-          background-color: #f0f0f0;
-        }
-        .play-button svg {
-          margin-left: 3px;
-        }
-        
-        .quote-section {
-          text-align: center;
-          padding: 3rem 1rem;
-          margin: 2rem 0;
-          border-top: 1px solid #eee;
-          border-bottom: 1px solid #eee;
-        }
-        .quote-text {
-          font-size: 1.5rem;
-          font-weight: bold;
-          line-height: 1.6;
-          margin-bottom: 1.5rem;
-        }
-        .quote-author {
-          font-size: 1rem;
-          color: #777;
-        }
-        
-        .book-card {
-          background-color: #f9f9f9;
-          padding: 2.5rem;
-          border-radius: 8px;
-          text-align: center;
-        }
-        .book-card-subtitle {
-          font-size: 0.9rem;
-          color: #888;
-          margin-bottom: 1rem;
-        }
-        .book-title {
-          font-size: 1.8rem;
-          margin: 0.5rem 0;
-        }
-        .book-author {
-          font-size: 1rem;
-          color: #666;
-          margin-bottom: 2rem;
-        }
-        .book-description {
-          font-size: 1rem;
-          line-height: 1.8;
-          color: #444;
-        }
-
-        .page-footer {
-          text-align: center;
-          padding: 4rem 0 2rem;
-          color: #aaa;
-          letter-spacing: 2px;
-          font-size: 0.9rem;
-        }
-
-        @media (max-width: 640px) {
-          .page-container {
-            padding: 15px;
-          }
-          .content-wrapper {
-            gap: 2.5rem;
-          }
-          .quote-text {
-            font-size: 1.2rem;
-          }
-          .book-card {
-            padding: 1.5rem;
-          }
-          .book-title {
-            font-size: 1.5rem;
-          }
-        }
-      `}</style>
-    </>
+              {/* Book Recommendation */}
+              <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200">
+                <div className="flex items-center gap-4 mb-4">
+                  <BookOpen className="text-orange-500" size={24} />
+                  <h3 className="text-xl font-semibold text-gray-800">书籍推荐</h3>
+                </div>
+                <div className="flex gap-6">
+                  <div className="relative w-24 h-32 rounded-lg overflow-hidden bg-gradient-to-br from-orange-100 to-blue-100 flex items-center justify-center">
+                    <Image
+                      src={monthlyData.hero.image}
+                      alt="书籍封面"
+                      width={96}
+                      height={128}
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-xl font-semibold text-gray-800 mb-2">{monthlyData.book.title}</h4>
+                    <p className="text-gray-600 mb-3">{monthlyData.book.author}</p>
+                    <p className="text-gray-700 mb-4">{monthlyData.book.description}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {monthlyData.book.tags.map((tag, index) => (
+                        <Tag key={index}>{tag}</Tag>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
