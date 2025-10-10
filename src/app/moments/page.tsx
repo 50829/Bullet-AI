@@ -244,42 +244,53 @@ export default function MomentsPage() {
       <div className="flex-1">
         <div className="p-4 pt-0"> {/* 移除顶部padding，因为头部已固定 */}
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6"> {/* 修改为单列布局 */}
               {filteredMoments.length === 0 ? (
                 <div className="text-center py-12 text-gray-500 col-span-2">
                   {searchTerm ? "没有找到匹配的时刻记录" : "暂无时刻记录，点击上方按钮记录第一个时刻吧！"}
                 </div>
               ) : (
                 filteredMoments.map((moment) => (
-                  <Card key={moment.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-sm text-gray-400 mb-2">{moment.date}</p>
-                        <p className="text-lg text-gray-700 mb-4">{moment.content}</p>
-
-                        {moment.image_url ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-                            <img src={moment.image_url} alt="时刻图片" className="w-full rounded-lg object-cover aspect-square" />
-                          </div>
-                        ) : null}
-
-                        <div className="flex flex-wrap gap-2">
-                          {(moment.tags ?? []).map((tag, i) => <Tag key={i}>{tag}</Tag>)}
-                          {moment.event_type && <Tag>{moment.event_type}</Tag>}
-                          {moment.location && (
-                            <Tag>
-                              <MapPin size={14} className="inline mr-1" />
-                              {moment.location}
-                            </Tag>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end mt-2 space-x-3 text-gray-400">
-                        <Trash2 size={18} className="cursor-pointer hover:text-orange-400" onClick={() => { setSelectedMoment(moment); setShowConfirm(true); }} />
-                      </div>
-                    </div>
-                  </Card>
+                  <Card key={moment.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200 w-[36rem] mx-auto">
+  <div className="flex flex-col gap-4">
+    {/* 文字区域 */}
+    <div className="min-w-0">
+      <div className="flex justify-between items-start">
+        <p className="text-lg text-gray-400 mb-2">{moment.date}</p>
+        <div className="flex justify-end mt-2 space-x-3 text-gray-400">
+          <Trash2 size={18} className="cursor-pointer hover:text-orange-400" onClick={() => { setSelectedMoment(moment); setShowConfirm(true); }} />
+        </div>
+      </div>
+      
+      <p className="text-xl text-gray-700 mb-4 whitespace-pre-line">{moment.content}</p>
+    </div>
+    
+    {/* 图片区域 - 放在文字下方 */}
+    {moment.image_url && (
+      <div className="flex justify-center">
+        <img 
+          src={moment.image_url} 
+          alt="时刻图片" 
+          className="w-144 h-144 rounded-lg object-cover" 
+        />
+      </div>
+    )}
+    
+    {/* 标签区域 - 放在图片下方 */}
+    {(moment.tags?.length > 0 || moment.event_type || moment.location) && (
+      <div className="flex flex-wrap gap-2">
+        {(moment.tags ?? []).map((tag, i) => <Tag key={i}>{tag}</Tag>)}
+        {moment.event_type && <Tag>{moment.event_type}</Tag>}
+        {moment.location && (
+          <Tag>
+            <MapPin size={14} className="inline mr-1" />
+            {moment.location}
+          </Tag>
+        )}
+      </div>
+    )}
+  </div>
+</Card>
                 ))
               )}
             </div>

@@ -98,7 +98,12 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
         <h2 className="text-2xl font-bold mb-4">记录新时刻</h2>
 
         <label className="block text-sm text-gray-600 mb-1">内容</label>
-        <Textarea placeholder="记录这一刻的感受..." value={content} onChange={(e) => setContent(e.target.value)} />
+        <Textarea 
+  placeholder="记录这一刻的感受..." 
+  value={content} 
+  onChange={(e) => setContent(e.target.value)} 
+  className="min-h-[120px] h-auto" // 或者使用固定的行数如 rows={6}
+/>
 
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div>

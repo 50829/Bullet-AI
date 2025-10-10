@@ -4,7 +4,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Tag } from "../components/ui/Tag";
-import { Search, Trash2 } from "lucide-react";
+import { Search, MapPin, Trash2 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { ReflectionModal } from "../components/ReflectionModal";
 
@@ -134,6 +134,13 @@ export default function ReflectionsPage() {
     setFilteredReflections(reflections);
   };
 
+  const handleAddReflection = () => setIsModalOpen(true);
+  const handleModalClose = () => setIsModalOpen(false);
+  const handleModalSuccess = () => {
+    fetchReflections();
+    setIsModalOpen(false);
+  };
+
   const handleDelete = async () => {
     if (!selectedReflection) return;
     try {
@@ -186,7 +193,7 @@ export default function ReflectionsPage() {
                 <Search size={16} /> 
                 {showSearch ? '折叠搜索栏' : '搜索'}
               </Button>
-              <Button onClick={() => setIsModalOpen(true)}>+ 记录新感悟</Button>
+              <Button onClick={handleAddReflection}>+ 记录新感悟</Button>
             </div>
           </div>
 
@@ -244,34 +251,55 @@ export default function ReflectionsPage() {
       <div className="flex-1">
         <div className="p-4 pt-0"> {/* 移除顶部padding，因为头部已固定 */}
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6"> {/* 修改为单列布局 */}
               {filteredReflections.length === 0 ? (
                 <div className="text-center py-12 text-gray-500 col-span-2">
                   {searchTerm ? "没有找到匹配的感悟记录" : "暂无感悟记录，点击上方按钮记录第一个感悟吧！"}
                 </div>
               ) : (
                 filteredReflections.map((reflection) => (
-                  <Card key={reflection.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-sm text-gray-400 mb-2">{reflection.date}</p>
-                        <p className="text-gray-700 mb-4">{reflection.content}</p>
-
-                        {reflection.image_url && (
-                          <img src={reflection.image_url} alt="感悟图片" className="w-full rounded-lg mb-4 object-cover" />
-                        )}
-
-                        <div className="flex items-center space-x-2">
-                          {reflection.source_type && <Tag>{reflection.source_type}</Tag>}
-                          {reflection.source && <span className="text-sm text-gray-500">{reflection.source}</span>}
+                  <Card key={reflection.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200 w-[36rem] mx-auto"> {/* 固定宽度 w-[36rem] */}
+                    <div className="flex flex-col gap-4"> {/* 垂直布局 */}
+                      {/* 文字区域 */}
+                      <div className="min-w-0">
+                        <div className="flex justify-between items-start">
+                          <p className="text-lg text-gray-400 mb-2">{reflection.date}</p>
+                          <div className="flex justify-end mt-2 space-x-3 text-gray-400">
+                            <Trash2 size={18} className="cursor-pointer hover:text-orange-400" onClick={() => { setSelectedReflection(reflection); setShowConfirm(true); }} />
+                          </div>
                         </div>
-
-                        {reflection.location && <p className="text-sm text-gray-400 mt-2">地点：{reflection.location}</p>}
+                        
+                        <p className="text-xl text-gray-700 mb-4 whitespace-pre-line">{reflection.content}</p> {/* 增大字体并添加换行支持 */}
+                        
+                        {/* 灵感来源 - 灰色斜体显示在文本下方 */}
+                        {reflection.source && (
+                          <p className="text-gray-500 italic mb-4">------ {reflection.source}</p>
+                        )}
                       </div>
-
-                      <div className="flex justify-end mt-2 space-x-3 text-gray-400">
-                        <Trash2 size={18} className="cursor-pointer hover:text-orange-400" onClick={() => { setSelectedReflection(reflection); setShowConfirm(true); }} />
-                      </div>
+                      
+                      {/* 图片区域 - 放在文字下方 */}
+                      {reflection.image_url && (
+                        <div className="flex justify-center">
+                          <img 
+                            src={reflection.image_url} 
+                            alt="感悟图片" 
+                            className="w-144 h-144 rounded-lg object-cover" 
+                          />
+                        </div>
+                      )}
+                      
+                      {/* 标签区域 - 放在图片下方 */}
+                      {(reflection.source_type || reflection.location) && (
+                        <div className="flex flex-wrap gap-2">
+                          {reflection.source_type && <Tag>{reflection.source_type}</Tag>}
+                          {reflection.location && (
+                            <Tag>
+                              <MapPin size={14} className="inline mr-1" />
+                              {reflection.location}
+                            </Tag>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </Card>
                 ))
@@ -282,7 +310,7 @@ export default function ReflectionsPage() {
       </div>
 
       {/* 模态框和确认对话框 */}
-      <ReflectionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={fetchReflections} />
+      <ReflectionModal isOpen={isModalOpen} onClose={handleModalClose} onSuccess={handleModalSuccess} />
 
       {showConfirm && selectedReflection && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
