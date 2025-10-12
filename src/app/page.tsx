@@ -149,11 +149,6 @@ const content = {
       title: "Ready to Start Your Intelligent Planning Journey?",
       subtitle: "Join 30,000+ users experiencing AI-powered bullet journaling",
       cta: "Start for Free →",
-      benefits: [
-        "30-day free trial",
-        "No credit card required",
-        "Cancel anytime"
-      ]
     },
     footer: {
       company: "AI-powered bullet journal system, clearer thinking, better efficiency.",
@@ -543,65 +538,9 @@ const HowItWorks = ({ lang }: { lang: 'en' | 'zh' }) => {
     </section>
   );
 };
-
-// -----------------------------------------------------------------------------
-// Section 5: Pricing (MODIFIED)
-// -----------------------------------------------------------------------------
-const Pricing = ({ lang }: { lang: 'en' | 'zh' }) => {
-  const t = content[lang];
-  const router = useRouter();
-
-  return (
-    <section id="pricing" className="bg-gray-900 text-white py-20">
-      {/* Container is now wider */}
-      <div className="container mx-auto px-6 max-w-6xl">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="text-center lg:text-left">
-            {/* Fonts are larger */}
-            <h2 
-              className="text-6xl font-bold mb-4"
-              dangerouslySetInnerHTML={{
-                __html: lang === 'en' 
-                  ? '<span class="text-orange-400">Pricing Plans</span> That Scale With You' 
-                  : '适合各种需求的<span class="text-orange-400">定价方案</span>'
-              }}
-            />
-            <p className="text-xl text-gray-400">{t.pricing.subtitle}</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            {/* Free Plan - now wider/taller, not square */}
-            <div className="bg-gray-800 p-8 rounded-xl flex flex-col h-[450px]">
-              <h3 className="text-3xl font-bold mb-6">{t.pricing.free.title}</h3>
-              <ul className="space-y-3 text-lg flex-grow">
-                {t.pricing.free.features.map((feature, i) => (
-                  <li key={i} className="flex items-center"><Check className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" /><span>{feature}</span></li>
-                ))}
-              </ul>
-              <button 
-                onClick={() => router.push('/login')}
-                className="w-full bg-white text-gray-900 font-bold py-2.5 px-6 rounded-full text-lg hover:bg-gray-200 transition-colors mt-4"
-              >
-                {t.pricing.free.cta}
-              </button>
-            </div>
-            {/* Paid Plan - now wider/taller, not square */}
-            <div className="bg-gray-800 p-8 rounded-xl border-2 border-orange-500 flex flex-col h-[450px]">
-              <h3 className="text-3xl font-bold">{t.pricing.paid.title}</h3>
-              <p className="text-4xl font-bold my-4">{t.pricing.paid.price}</p>
-              <p className="text-lg text-gray-400 flex-grow">{t.pricing.paid.description}</p>
-              <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 px-6 rounded-full text-lg transition-colors mt-4">
-                {t.pricing.paid.cta}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
   
 // -----------------------------------------------------------------------------
-// Section 6: Testimonials (MODIFIED)
+// Section 5: Testimonials (MODIFIED)
 // -----------------------------------------------------------------------------
 const TestimonialCard = ({ testimonial, lang }: { testimonial: typeof content['en']['testimonials']['items'][0]; lang: 'en' | 'zh' }) => (
     <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 w-[350px] md:w-[400px] flex-shrink-0 mx-4">
@@ -659,7 +598,7 @@ const Testimonials = ({ lang }: { lang: 'en' | 'zh' }) => {
 };
 
 // -----------------------------------------------------------------------------
-// Section 7: FAQ (MODIFIED)
+// Section 6: FAQ (MODIFIED)
 // -----------------------------------------------------------------------------
 const FAQ = ({ lang }: { lang: 'en' | 'zh' }) => {
   const t = content[lang];
@@ -690,7 +629,7 @@ const FAQ = ({ lang }: { lang: 'en' | 'zh' }) => {
 };
   
 // -----------------------------------------------------------------------------
-// Section 8: Final Call-to-Action
+// Section 7: Final Call-to-Action
 // -----------------------------------------------------------------------------
 const FinalCTA = ({ lang }: { lang: 'en' | 'zh' }) => {
   const t = content[lang];
@@ -707,13 +646,6 @@ const FinalCTA = ({ lang }: { lang: 'en' | 'zh' }) => {
         >
           {t.finalCta.cta}
         </button>
-        <div className="mt-8 flex justify-center items-center space-x-6 text-sm">
-          {t.finalCta.benefits.map((benefit, i) => (
-            <span key={i} className="flex items-center">
-              <Check className="w-4 h-4 mr-1.5" /> {benefit}
-            </span>
-          ))}
-        </div>
       </div>
     </section>
   );
@@ -796,7 +728,6 @@ export default function LandingPage() {
         <Hero lang={lang} />
         <Features lang={lang} />
         <HowItWorks lang={lang} />
-        <Pricing lang={lang} />
         <Testimonials lang={lang} />
         <FAQ lang={lang} />
         <FinalCTA lang={lang} />
