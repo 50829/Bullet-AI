@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { Trash2 } from "lucide-react";
+import { Trash2, ArrowUpDown } from "lucide-react";
 import { GoalModal } from "../components/GoalModal";
 import { HabitModal } from "../components/HabitModal";
 import { useAppContext } from "../../context/AppContext";
@@ -34,7 +34,7 @@ type Habit = {
 };
 
 export default function GoalsPage() {
-  const { goals, habits, loading, refreshGoals, refreshHabits, deleteGoal, checkinHabit } = useAppContext();
+  const { goals, habits, loading, refreshGoals, refreshHabits, deleteGoal, updateGoal, checkinHabit } = useAppContext();
   const [activeTab, setActiveTab] = useState("我的习惯");
   const tabs = ["今日待办", "近期目标", "我的习惯"];
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
@@ -64,30 +64,69 @@ export default function GoalsPage() {
         // 从全局状态中删除目标
         await deleteGoal(selectedItem.id, selectedItem.imagePath);
       } else {
-        // 删除习惯
-        await deleteGoal(selectedItem.id, selectedItem.imagePath); // 注意：这里应该是删除习惯，但目前deleteHabit还没实现
+        // 注意：这里应该是删除习惯，但目前deleteHabit还没实现
         // 临时使用deleteGoal，实际应用中需要添加deleteHabit函数
+        // 如果你有deleteHabit，请替换下面的调用
+        // await deleteHabit(selectedItem.id); 
+        console.error("删除习惯功能尚未实现");
+        alert("删除习惯功能尚未实现");
+        return; // 提前返回，不执行刷新
       }
       
       setShowConfirm(false);
       setSelectedItem(null);
-      refreshGoals(); // 刷新数据
+      refreshGoals(); // 刷新数据 - 删除操作后可能需要刷新以确保状态同步
     } catch (err) {
       console.error("删除异常:", err);
       alert("删除失败，请稍后重试");
     }
   };
 
+  // 修改 handleMoveGoal，移除 refreshGoals 调用，依赖乐观更新
+  const handleMoveGoal = async (goalId: number, currentType: string) => {
+    console.log(`[Page DEBUG] 开始移动目标 ID: ${goalId}, 从 "${currentType}" 到 "${currentType === "今日待办" ? "近期目标" : "今日待办"}"`);
+    
+    const newType = currentType === "今日待办" ? "近期目标" : "今日待办";
+    try {
+        console.log(`[Page DEBUG] 调用 updateGoal 更新目标 ${goalId} 的类型为 "${newType}"...`);
+        await updateGoal(goalId, { type: newType });
+        console.log(`[Page DEBUG] updateGoal 调用成功`);
+
+        // --- 移除 refreshGoals 调用 ---
+        // console.log(`[Page DEBUG] 调用 refreshGoals 刷新数据...`);
+        // await refreshGoals(); // 等待刷新完成
+        // console.log(`[Page DEBUG] refreshGoals 完成。`);
+
+        // --- 添加成功提示 ---
+        console.log(`[Page SUCCESS] 目标 ${goalId} 类型已更新为 "${newType}"，UI 已更新。`);
+        // 可以选择性地添加一个短暂的成功提示
+        // alert(`目标已成功移动到 "${newType}"`); // 如果你想显示提示
+
+    } catch (error) {
+        console.error("[Page ERROR] 移动目标失败:", error);
+        alert("移动失败，操作已回滚，请检查控制台日志或稍后重试");
+    }
+  };
+
   const handleCheckin = async (habitId: number) => {
     try {
       await checkinHabit(habitId);
-      refreshHabits();
+      // checkinHabit 内部已实现乐观更新，通常不需要再次刷新 habits
+      // refreshHabits(); 
     } catch (err) {
       alert(err instanceof Error ? err.message : "打卡失败");
     }
   };
 
   if (loading.goals || loading.habits) return <div className="text-center py-8">目标加载中...</div>;
+
+  // 在渲染前打印当前状态，用于调试
+  console.log("--- [Page RENDER DEBUG] 当前渲染状态 ---");
+  console.log("Active Tab:", activeTab);
+  console.log("Goals Today Count:", goalsToday.length);
+  console.log("Goals Recent Count:", goalsRecent.length);
+  console.log("Goals Array:", goals);
+  console.log("------------------------------------");
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -135,19 +174,24 @@ export default function GoalsPage() {
                         <div>
                           <h4 className="font-bold">{goal.title}</h4>
                           <p className="text-sm text-gray-500">{goal.description}</p>
-                          <div className="flex items-center mt-2 space-x-3">
-                            <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
-                              今日待办
-                            </span>
-                            <Trash2 
-                              size={18} 
-                              className="cursor-pointer hover:text-orange-400" 
-                              onClick={() => {
-                                setSelectedItem({ type: 'goal', id: goal.id });
-                                setShowConfirm(true);
-                              }} 
-                            />
-                          </div>
+                        </div>
+                        <div className="flex space-x-3 text-gray-400">
+                          {/* 将 ArrowUpDown 图标包装在 button 中以使其可点击 */}
+                          <button
+                            type="button"
+                            className="cursor-pointer hover:text-orange-400 focus:outline-none"
+                            onClick={() => handleMoveGoal(goal.id, goal.type)} // 将 onClick 添加到 button 上
+                          >
+                            <ArrowUpDown size={18} />
+                          </button>
+                          <Trash2 
+                            size={18} 
+                            className="cursor-pointer hover:text-orange-400" 
+                            onClick={() => {
+                              setSelectedItem({ type: 'goal', id: goal.id });
+                              setShowConfirm(true);
+                            }} 
+                          />
                         </div>
                       </div>
                     </Card>
@@ -163,19 +207,24 @@ export default function GoalsPage() {
                         <div>
                           <h4 className="font-bold">{goal.title}</h4>
                           <p className="text-sm text-gray-500">{goal.description}</p>
-                          <div className="flex items-center mt-2 space-x-3">
-                            <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
-                              近期目标
-                            </span>
-                            <Trash2 
-                              size={18} 
-                              className="cursor-pointer hover:text-orange-400" 
-                              onClick={() => {
-                                setSelectedItem({ type: 'goal', id: goal.id });
-                                setShowConfirm(true);
-                              }} 
-                            />
-                          </div>
+                        </div>
+                        <div className="flex space-x-3 text-gray-400">
+                          {/* 将 ArrowUpDown 图标包装在 button 中以使其可点击 */}
+                          <button
+                            type="button"
+                            className="cursor-pointer hover:text-orange-400 focus:outline-none"
+                            onClick={() => handleMoveGoal(goal.id, goal.type)} // 将 onClick 添加到 button 上
+                          >
+                            <ArrowUpDown size={18} />
+                          </button>
+                          <Trash2 
+                            size={18} 
+                            className="cursor-pointer hover:text-orange-400" 
+                            onClick={() => {
+                              setSelectedItem({ type: 'goal', id: goal.id });
+                              setShowConfirm(true);
+                            }} 
+                          />
                         </div>
                       </div>
                     </Card>
