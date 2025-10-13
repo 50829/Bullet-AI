@@ -1,82 +1,166 @@
-import { NextRequest, NextResponse } from "next/server";
+// src/app/api/ai/route.ts - 修改版 2
+import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
+interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
 
-type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
+interface PlanTask {
+  title: string;
+  description: string;
+}
 
-export async function POST(req: NextRequest) {
+interface InternalPlan {
+  tasksDaily: PlanTask[];
+  tasksFuture: PlanTask[];
+}
+
+interface FrontendPlan {
+  daily: PlanTask[];
+  future: PlanTask[];
+}
+
+function extractJson(text: string): InternalPlan | null {
   try {
-    const body = await req.json().catch(() => ({}));
-    const userMessages = (body?.messages ?? []) as ChatMessage[];
-
-    const apiKey = body.apiKey || process.env.LLM_API_KEY;
-    const model = body.model || process.env.LLM_MODEL;
-    const baseUrl = (body.baseUrl || process.env.LLM_BASE_URL || "https://api.openai.com/v1").trim();
-
-    if (!apiKey || !model) {
-      return NextResponse.json({ error: "Missing API key or model" }, { status: 400 });
+    const jsonMatch = text.match(/```json([\s\S]*?)```/);
+    if (jsonMatch && jsonMatch[1]) {
+      return JSON.parse(jsonMatch[1].trim());
     }
+    return null;
+  } catch (e) {
+    console.error("[AI Route] JSON 解析失败：", e);
+    return null;
+  }
+}
 
-    // 使用全新的、充满“陪伴感”的系统指令
-    const systemMessage: ChatMessage = {
-        role: "system",
-        content: `你是一个AI伙伴，名叫“曦晨”（代表温暖的晨光与希望）。你不是一个冰冷的助手，而是一个充满好奇心、真诚、时而风趣幽默的“老朋友”。你的核心任务是为用户提供高质量的陪伴感。
+function convertPlanForFrontend(plan: InternalPlan): FrontendPlan {
+  return {
+    daily: plan.tasksDaily || [],
+    future: plan.tasksFuture || [],
+  };
+}
 
-**核心原则：**
-
-1.  **沟通风格与个性 (Style & Personality):**
-    * **像老友一样对话**: 你的语气应该像一位许久未见的老友，温暖、自然、不拘谨。可以直接表达关心、好奇、甚至分享一些无伤大雅的“个人”感受。
-    * **主动与深入**: 不要只做被动的倾听者。要对用户的分享表现出强烈的好奇心，并主动引导对话走向更深层次的情感和思考。
-    * **生动表达**: 多使用比喻、类比等修辞手法，让语言鲜活有趣。使用长短结合的句式，避免回答单调。
-
-2.  **核心对话策略 (Strategy):**
-    * **开放式问题 Pro**: 不仅要问“发生了什么”，更要问“这让你有什么感觉/联想到什么？”、“如果...你会怎么想？”这类激发思考的问题。
-    * **分享观点与故事**: 在适当的时候，可以主动分享一些相关的、积极温暖的观点、视角或虚拟的小故事，来启发用户或给予安慰。例如：“这让我想起一个关于种子的故事...”。
-    * **保持对话流动**: 几乎在每一次回应的结尾，都要自然地抛出一个问题或邀请，确保对话像河流一样持续流动，避免话题终结。
-
-3.  **技术性规则 (Technical Rules):**
-    * **禁止重复**: 避免重复相同或高度相似的句子结构。
-    * **输出格式**: 仅生成你自己的下一句回应，然后立即停止。`
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    // ✅ 修改：只从前端获取 messages 数组，不再接收 apiKey
+    const { messages: userMessages } = body as {
+      messages: ChatMessage[];
     };
 
-    const messages: ChatMessage[] = [systemMessage, ...userMessages];
+    // 从环境变量获取配置
+    const apiKey = process.env.LLM_API_KEY;
+    const model = process.env.LLM_MODEL || "doubao-seed-1-6-flash-250715"; // 使用环境变量中的模型名
+    let baseUrl = process.env.LLM_BASE_URL;
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    if (!apiKey) {
+      console.error("[AI Route] 未设置 LLM_API_KEY 环境变量");
+      return NextResponse.json({ error: "服务器配置错误：未设置 API Key" }, { status: 500 });
+    }
+    if (!baseUrl) {
+      console.error("[AI Route] 未设置 LLM_BASE_URL 环境变量");
+      return NextResponse.json({ error: "服务器配置错误：未设置 API Base URL" }, { status: 500 });
+    }
+
+    // 确保 baseUrl 不以 / 结尾
+    if (baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1);
+    }
+
+    // System Prompt - 强化计划生成指令和 JSON 格式
+    const system: ChatMessage = {
+      role: "system",
+      content:
+        "你是 AI 任务管家，用户是你的老板。请严格遵守以下规则：\n" +
+        "1. 回答必须简短、口语化，且使用与用户相同的语言。\n" +
+        "2. **核心规则：每当用户表达任何关于规划、安排、组织、管理时间、设定目标、执行任务、学习复习、准备工作、创建清单或制定时间表的需求时，你都必须在回复文本之后，立即提供一个结构化的任务计划。**\n" +
+        "3. **计划格式：必须使用 ```json 包裹一个 JSON 对象，该对象包含 'tasksDaily' 和 'tasksFuture' 两个数组。**\n" +
+        "4. JSON 结构和含义：\n" +
+        '{\n' +
+        '  "tasksDaily": [{ "title": "每日任务标题 (≤30字符)", "description": "任务描述" }], // 适用于“今日待办”或“今天”、“明天”、“这周”等短期内可完成的任务\n' +
+        '  "tasksFuture": [{ "title": "未来任务标题 (≤30字符)", "description": "任务描述" }]  // 适用于“近期目标”、“下个月”、“本季度”等中长期目标\n' +
+        '}\n' +
+        "5. title 最多 30 个字符；description 应精炼、可执行；若无对应任务，对应数组可为空 []。\n" +
+        "6. **绝对重要：JSON 格式必须完全正确，不能有任何语法错误，且必须严格按照上述结构。**\n" +
+        "7. **绝对重要：必须生成 JSON，即使用户没有明确要求，只要涉及规划意图就必须生成。**\n" +
+        "8. **示例（仅作格式参考，实际需根据用户具体请求生成）：\n" +
+        "用户：下周考雅思，帮我排 7 天复习计划\n" +
+        "你：好咧，已为你安排 7 天冲刺！\n" +
+        "```json\n" +
+        '{\n' +
+        '  "tasksDaily": [\n' +
+        '    { "title": "雅思听力训练", "description": "Cambridge 11 Test 1 + 精听" },\n' +
+        '    { "title": "雅思阅读训练", "description": "Cambridge 11 Test 2 Reading" }\n' +
+        '  ],\n' +
+        '  "tasksFuture": [\n' +
+        '    { "title": "口语模拟考试", "description": "找搭档进行全真模拟" },\n' +
+        '    { "title": "作文批改", "description": "提交一篇大作文给老师批改" }\n' +
+        '  ]\n' +
+        '}\n' +
+        "```\n" +
+        "**请务必严格遵循以上所有规则。**",
+    };
+
+    // 将 system message 放在第一位，然后是用户发送的最新消息
+    // 注意：现在前端只发送最新的 user message，所以这里是 [system, user_message]
+    const messages: ChatMessage[] = [system, ...userMessages];
+
+    const endpoint = `${baseUrl}/chat/completions`;
+
+    const resp = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // 使用环境变量中的 API Key
         Authorization: `Bearer ${apiKey}`,
       },
-      // 调整参数，释放AI的表达能力
       body: JSON.stringify({
         model,
-        messages,
-        temperature: 0.9,
-        max_tokens: 1024,
-        top_p: 0.9,
-        frequency_penalty: 0.3, // 大幅降低
-        presence_penalty: 0.5, // 略微提高
+        messages, // 传递 [system_message, user_message]
+        temperature: 0.5, // 可选：稍微提高创造性
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("LLM error:", response.status, errorText);
-      return NextResponse.json({ error: `LLM error: ${response.status}` }, { status: 500 });
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      console.error("豆包 API 调用失败:", errorText);
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        console.error("豆包 API 详细错误信息:", errorJson);
+        if (errorJson.base_resp && errorJson.base_resp.status_code === 1004) {
+          return NextResponse.json({ error: `API 认证失败: ${errorJson.base_resp.status_msg}` }, { status: resp.status });
+        }
+      } catch (e) {
+        console.error("解析错误信息失败:", e);
+      }
+      
+      return NextResponse.json({ error: `AI 调用失败: ${errorText}` }, { status: resp.status });
     }
 
-    const data = await response.json();
-    let reply = data.choices?.[0]?.message?.content || "";
+    const data = await resp.json();
+    console.log("豆包 API 响应:", data);
 
-    reply = reply.trim();
+    // 提取 AI 的回复内容
+    let reply: string = data.choices?.[0]?.message?.content || "";
 
-    if (!reply) {
-      reply = "嗯...让我好好想一想该怎么说。"; // 更人性化的默认回复
-    }
+    // 🧠 提取 JSON 计划
+    const internalPlan = extractJson(reply);
 
-    return NextResponse.json({ reply });
-  } catch (error) {
-    console.error("Request failed:", error);
-    return NextResponse.json({ error: "Request failed" }, { status: 500 });
+    // 🧼 去掉 JSON 内容，保留纯文本回复
+    reply = reply.replace(/```json[\s\S]*?```/, "").trim();
+
+    // 转换计划格式以适配前端
+    const frontendPlan = internalPlan ? convertPlanForFrontend(internalPlan) : undefined;
+
+    // 返回纯文本回复和解析出的计划（如果有的话）
+    return NextResponse.json({
+      reply,
+      plan: frontendPlan, // 这个 plan 可以被前端用来“一键添加到目标”
+    });
+  } catch (err) {
+    console.error("[AI Route] 发生错误：", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

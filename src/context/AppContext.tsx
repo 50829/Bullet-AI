@@ -76,10 +76,10 @@ interface AppContextType {
   addReflection: (reflection: Reflection) => void;
   addGoal: (goal: Goal) => void;
   addHabit: (habit: Habit) => void;
-  updateMoment: (id: number, updates: Partial<Moment>) => Promise<void>;
-  updateReflection: (id: number, updates: Partial<Reflection>) => Promise<void>;
-  updateGoal: (id: number, updates: Partial<Goal>) => Promise<void>;
-  updateHabit: (id: number, updates: Partial<Habit>) => Promise<void>;
+  updateMoment: (id: number, updates: Partial<Moment>) => void;
+  updateReflection: (id: number, updates: Partial<Reflection>) => void;
+  updateGoal: (id: number, updates: Partial<Goal>) => Promise<void>; // 更新为 Promise<void>
+  updateHabit: (id: number, updates: Partial<Habit>) => void;
   deleteMoment: (id: number, imagePath?: string | null) => Promise<void>;
   deleteReflection: (id: number, imagePath?: string | null) => Promise<void>;
   deleteGoal: (id: number, imagePath?: string | null) => Promise<void>;
@@ -329,285 +329,196 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await fetchHabits();
   };
 
-  // --- 乐观更新的 Update 函数 ---
-
-  const updateMoment = async (id: number, updates: Partial<Moment>) => {
-    // 保存原始状态用于回滚
-    const originalMoments = [...moments];
-    const momentToUpdate = originalMoments.find(moment => moment.id === id);
-    if (!momentToUpdate) {
-      console.error(`未找到 ID 为 ${id} 的时刻进行更新`);
-      throw new Error("时刻不存在");
-    }
-
-    // 乐观更新前端状态
-    const updatedMoment = { ...momentToUpdate, ...updates };
-    setMoments(prev => prev.map(moment => moment.id === id ? updatedMoment : moment));
-
-    try {
-      const userResponse = await supabase.auth.getUser();
-      const user = userResponse.data?.user;
-      if (!user) throw new Error("用户未登录");
-
-      const { error } = await supabase
-        .from("moments")
-        .update(updates)
-        .eq("id", id)
-        .eq("user_id", user.id);
-
-      if (error) {
-        console.error("更新时刻失败:", error);
-        // 回滚前端状态
-        setMoments(originalMoments);
-        throw error;
-      }
-    } catch (err) {
-      console.error("更新时刻失败:", err);
-      // 状态已在 catch 中回滚
-      throw err;
-    }
+  // 更新函数 - 修改 updateGoal 使其异步并与 Supabase 交互，添加日志
+  const updateMoment = (id: number, updates: Partial<Moment>) => {
+    setMoments(prev => prev.map(moment => 
+      moment.id === id ? { ...moment, ...updates } : moment
+    ));
   };
 
-  const updateReflection = async (id: number, updates: Partial<Reflection>) => {
-    const originalReflections = [...reflections];
-    const reflectionToUpdate = originalReflections.find(reflection => reflection.id === id);
-    if (!reflectionToUpdate) {
-      console.error(`未找到 ID 为 ${id} 的感悟进行更新`);
-      throw new Error("感悟不存在");
-    }
-
-    const updatedReflection = { ...reflectionToUpdate, ...updates };
-    setReflections(prev => prev.map(reflection => reflection.id === id ? updatedReflection : reflection));
-
-    try {
-      const userResponse = await supabase.auth.getUser();
-      const user = userResponse.data?.user;
-      if (!user) throw new Error("用户未登录");
-
-      const { error } = await supabase
-        .from("reflections")
-        .update(updates)
-        .eq("id", id)
-        .eq("user_id", user.id);
-
-      if (error) {
-        console.error("更新感悟失败:", error);
-        setReflections(originalReflections);
-        throw error;
-      }
-    } catch (err) {
-      console.error("更新感悟失败:", err);
-      throw err;
-    }
+  const updateReflection = (id: number, updates: Partial<Reflection>) => {
+    setReflections(prev => prev.map(reflection => 
+      reflection.id === id ? { ...reflection, ...updates } : reflection
+    ));
   };
 
+  // 修改 updateGoal 函数 - 添加日志
   const updateGoal = async (id: number, updates: Partial<Goal>) => {
-    const originalGoals = [...goals];
-    const goalToUpdate = originalGoals.find(goal => goal.id === id);
-    if (!goalToUpdate) {
-      console.error(`未找到 ID 为 ${id} 的目标进行更新`);
-      throw new Error("目标不存在");
-    }
+    console.log(`[AppContext DEBUG] 开始更新目标 ${id}，更新内容:`, updates);
+    
+    // 1. 先更新前端状态，提供即时反馈
+    setGoals(prev => prev.map(goal => 
+      goal.id === id ? { ...goal, ...updates } : goal
+    ));
+    console.log(`[AppContext DEBUG] 前端状态已更新，当前 goals 状态:`, goals);
 
-    const updatedGoal = { ...goalToUpdate, ...updates };
-    setGoals(prev => prev.map(goal => goal.id === id ? updatedGoal : goal));
-
+    // 2. 尝试更新 Supabase 数据库
     try {
       const userResponse = await supabase.auth.getUser();
       const user = userResponse.data?.user;
-      if (!user) throw new Error("用户未登录");
+      if (!user) {
+        throw new Error("用户未登录，无法更新目标");
+      }
 
-      const { error } = await supabase
+      console.log(`[AppContext DEBUG] 向 Supabase 发送更新请求，目标 ID: ${id}, 更新内容:`, updates);
+      const { data: dbData, error: dbError } = await supabase
         .from("goals")
-        .update(updates)
-        .eq("id", id)
-        .eq("user_id", user.id);
+        .update(updates) // 更新指定字段
+        .eq("id", id)     // 通过 ID 匹配目标
+        .eq("user_id", user.id); // 确保只能更新自己的目标
 
-      if (error) {
-        console.error("更新目标失败:", error);
-        setGoals(originalGoals);
-        throw error;
+      if (dbError) {
+        console.error("[AppContext ERROR] 更新数据库失败:", dbError);
+        throw new Error(`更新数据库失败: ${dbError.message}`);
       }
+
+      console.log(`[AppContext SUCCESS] 目标 ${id} 数据库更新成功，返回数据:`, dbData);
     } catch (err) {
-      console.error("更新目标失败:", err);
-      throw err;
+      console.error("[AppContext ERROR] 更新目标失败:", err);
+      throw err; // 抛出错误，让调用者 (handleMoveGoal) 能够捕获
     }
   };
 
-  const updateHabit = async (id: number, updates: Partial<Habit>) => {
-    const originalHabits = [...habits];
-    const habitToUpdate = originalHabits.find(habit => habit.id === id);
-    if (!habitToUpdate) {
-      console.error(`未找到 ID 为 ${id} 的习惯进行更新`);
-      throw new Error("习惯不存在");
-    }
-
-    const updatedHabit = { ...habitToUpdate, ...updates };
-    setHabits(prev => prev.map(habit => habit.id === id ? updatedHabit : habit));
-
-    try {
-      const userResponse = await supabase.auth.getUser();
-      const user = userResponse.data?.user;
-      if (!user) throw new Error("用户未登录");
-
-      const { error } = await supabase
-        .from("habits")
-        .update(updates)
-        .eq("id", id)
-        .eq("user_id", user.id);
-
-      if (error) {
-        console.error("更新习惯失败:", error);
-        setHabits(originalHabits);
-        throw error;
-      }
-    } catch (err) {
-      console.error("更新习惯失败:", err);
-      throw err;
-    }
+  const updateHabit = (id: number, updates: Partial<Habit>) => {
+    setHabits(prev => prev.map(habit => 
+      habit.id === id ? { ...habit, ...updates } : habit
+    ));
   };
 
-  // --- 乐观更新的 Delete 函数 ---
-
+  // 删除函数
   const deleteMoment = async (id: number, imagePath?: string | null) => {
-    // 保存原始状态用于回滚
-    const originalMoments = [...moments];
-    // 乐观更新：立即从前端状态中移除
-    setMoments(prev => prev.filter(moment => moment.id !== id));
-
-    try {
-      // 如果有图片路径，先删除图片
-      if (imagePath) {
+    // 如果有图片路径，先删除图片
+    if (imagePath) {
+      try {
         const { error: storageError } = await supabase.storage
           .from("moments")
           .remove([imagePath]);
         if (storageError) console.error("删除图片失败:", storageError);
+      } catch (err) {
+        console.error("删除图片异常:", err);
       }
+    }
 
-      // 从数据库删除
-      const userResponse = await supabase.auth.getUser();
-      const user = userResponse.data?.user;
-      if (!user) throw new Error("用户未登录");
-
+    // 从数据库删除
+    try {
       const { error: dbError } = await supabase
         .from("moments")
         .delete()
-        .eq("id", id)
-        .eq("user_id", user.id);
+        .eq("id", id);
 
       if (dbError) {
         console.error("删除时刻失败:", dbError);
-        // 回滚前端状态
-        setMoments(originalMoments);
-        throw dbError;
+        throw new Error("删除时刻失败");
       }
     } catch (err) {
-      console.error("删除时刻失败:", err);
-      // 状态已在 catch 中回滚
-      throw err;
+      console.error("删除异常:", err);
+      throw new Error("删除失败");
     }
+
+    // 从全局状态中删除
+    setMoments(prev => prev.filter(moment => moment.id !== id));
   };
 
   const deleteReflection = async (id: number, imagePath?: string | null) => {
-    const originalReflections = [...reflections];
-    setReflections(prev => prev.filter(reflection => reflection.id !== id));
-
-    try {
-      if (imagePath) {
+    // 如果有图片路径，先删除图片
+    if (imagePath) {
+      try {
         const { error: storageError } = await supabase.storage
           .from("reflections")
           .remove([imagePath]);
         if (storageError) console.error("删除图片失败:", storageError);
+      } catch (err) {
+        console.error("删除图片异常:", err);
       }
+    }
 
-      const userResponse = await supabase.auth.getUser();
-      const user = userResponse.data?.user;
-      if (!user) throw new Error("用户未登录");
-
+    // 从数据库删除
+    try {
       const { error: dbError } = await supabase
         .from("reflections")
         .delete()
-        .eq("id", id)
-        .eq("user_id", user.id);
+        .eq("id", id);
 
       if (dbError) {
         console.error("删除感悟失败:", dbError);
-        setReflections(originalReflections);
-        throw dbError;
+        throw new Error("删除感悟失败");
       }
     } catch (err) {
-      console.error("删除感悟失败:", err);
-      throw err;
+      console.error("删除异常:", err);
+      throw new Error("删除失败");
     }
+
+    // 从全局状态中删除
+    setReflections(prev => prev.filter(reflection => reflection.id !== id));
   };
 
   const deleteGoal = async (id: number, imagePath?: string | null) => {
-    const originalGoals = [...goals];
-    setGoals(prev => prev.filter(goal => goal.id !== id));
-
-    try {
-      if (imagePath) {
+    // 如果有图片路径，先删除图片
+    if (imagePath) {
+      try {
         const { error: storageError } = await supabase.storage
           .from("goals")
           .remove([imagePath]);
         if (storageError) console.error("删除图片失败:", storageError);
+      } catch (err) {
+        console.error("删除图片异常:", err);
       }
+    }
 
-      const userResponse = await supabase.auth.getUser();
-      const user = userResponse.data?.user;
-      if (!user) throw new Error("用户未登录");
-
+    // 从数据库删除
+    try {
       const { error: dbError } = await supabase
         .from("goals")
         .delete()
-        .eq("id", id)
-        .eq("user_id", user.id);
+        .eq("id", id);
 
       if (dbError) {
         console.error("删除目标失败:", dbError);
-        setGoals(originalGoals);
-        throw dbError;
+        throw new Error("删除目标失败");
       }
     } catch (err) {
-      console.error("删除目标失败:", err);
-      throw err;
+      console.error("删除异常:", err);
+      throw new Error("删除失败");
     }
+
+    // 从全局状态中删除
+    setGoals(prev => prev.filter(goal => goal.id !== id));
   };
 
   const deleteHabit = async (id: number, imagePath?: string | null) => {
-    const originalHabits = [...habits];
-    setHabits(prev => prev.filter(habit => habit.id !== id));
-
-    try {
-      if (imagePath) {
+    // 如果有图片路径，先删除图片
+    if (imagePath) {
+      try {
         const { error: storageError } = await supabase.storage
           .from("habits")
           .remove([imagePath]);
         if (storageError) console.error("删除图片失败:", storageError);
+      } catch (err) {
+        console.error("删除图片异常:", err);
       }
+    }
 
-      const userResponse = await supabase.auth.getUser();
-      const user = userResponse.data?.user;
-      if (!user) throw new Error("用户未登录");
-
+    // 从数据库删除
+    try {
       const { error: dbError } = await supabase
         .from("habits")
         .delete()
-        .eq("id", id)
-        .eq("user_id", user.id);
+        .eq("id", id);
 
       if (dbError) {
         console.error("删除习惯失败:", dbError);
-        setHabits(originalHabits);
-        throw dbError;
+        throw new Error("删除习惯失败");
       }
     } catch (err) {
-      console.error("删除习惯失败:", err);
-      throw err;
+      console.error("删除异常:", err);
+      throw new Error("删除失败");
     }
+
+    // 从全局状态中删除
+    setHabits(prev => prev.filter(habit => habit.id !== id));
   };
 
-  // 打卡功能 (保持原有逻辑，因为它是更新操作)
+  // 打卡功能
   const checkinHabit = async (id: number) => {
     try {
       // 检查是否今天已经打卡
@@ -628,14 +539,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const currentHabit = habits.find(h => h.id === id);
       const currentCount = currentHabit?.checkin_count || 0;
       
-      // 乐观更新前端状态
-      const updatedHabit = {
-        ...currentHabit!,
-        last_checkin: new Date().toISOString(),
-        checkin_count: currentCount + 1
-      };
-      setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h));
-
       // 更新数据库
       const { error: dbError } = await supabase
         .from("habits")
@@ -647,11 +550,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       if (dbError) {
         console.error("打卡失败:", dbError);
-        // 回滚前端状态
-        setHabits(prev => prev.map(h => h.id === id ? currentHabit! : h));
         throw new Error(`打卡失败: ${dbError.message}`);
       }
 
+      // 更新全局状态
+      setHabits(prev => prev.map(habit => 
+        habit.id === id 
+          ? { 
+              ...habit, 
+              last_checkin: new Date().toISOString(),
+              checkin_count: currentCount + 1
+            } 
+          : habit
+      ));
     } catch (err) {
       console.error("打卡异常:", err);
       throw new Error(err instanceof Error ? err.message : "打卡失败");
@@ -693,7 +604,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addHabit,
         updateMoment,
         updateReflection,
-        updateGoal,
+        updateGoal, // 使用修改后的函数
         updateHabit,
         deleteMoment,
         deleteReflection,
