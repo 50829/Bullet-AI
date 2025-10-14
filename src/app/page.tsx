@@ -2,9 +2,10 @@
 "use client";
 
 import type { NextPage } from 'next';
-import { Sparkles, ArrowDown, Camera, Target, Lightbulb, Bot, Check, ArrowRight, ArrowUp } from 'lucide-react';
+import { Sparkles, ArrowDown, Camera, Target, Lightbulb, Bot, Check, ArrowRight, ArrowUp, Globe } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from './context/LanguageContext';
 
 // 主页面组件
 const LandingPage: NextPage = () => {
@@ -63,6 +64,7 @@ const LandingPage: NextPage = () => {
 // 1. 顶部英雄区域 - 移除背景类，因为背景由父级提供
 const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToTop: () => void }) => {
   const router = useRouter();
+  const { language, setLanguage, t } = useLanguage();
   
   const scrollToFeatures = () => {
     const featuresSection = document.getElementById('features-section');
@@ -75,7 +77,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
     router.push('/login');
   };
 
-  const slogan = "每一个灵魂，都值得被记录";
+  const slogan = t("slogan");
   const [sloganVisible, setSloganVisible] = useState(false);
   const [buttonsVisible, setButtonsVisible] = useState(false);
 
@@ -119,7 +121,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
               ))}
             </div>
           ) : (
-            <p className="text-2xl md:text-3xl text-gray-600 opacity-0">每一个灵魂，都值得被记录</p>
+            <p className="text-2xl md:text-3xl text-gray-600 opacity-0">{t("slogan")}</p>
           )}
         </div>
         
@@ -128,13 +130,40 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
             onClick={goToLogin}
             className="bg-gray-800 text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800 transition-all duration-500 text-lg min-w-[200px] h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
           >
-            开始记录
+            {t("getStarted")}
           </button>
           <button 
             onClick={scrollToFeatures}
             className="bg-white text-gray-800 font-semibold py-4 px-10 rounded-full shadow-lg transition-all duration-500 text-lg min-w-[200px] h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
           >
-            了解更多
+            {t("learnMore")}
+          </button>
+        </div>
+        
+        {/* 语言切换按钮 - 放在按钮下方 */}
+        <div className={`mt-6 flex items-center space-x-4 transition-all duration-1000 ${buttonsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+          <button
+            onClick={() => setLanguage("en")}
+            className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${
+              language === "en" 
+                ? "bg-amber-500 text-white" 
+                : "text-gray-500 hover:text-amber-500"
+            }`}
+          >
+            <Globe className="w-4 h-4" />
+            <span className="text-sm">EN</span>
+          </button>
+          <span className="text-gray-400">|</span>
+          <button
+            onClick={() => setLanguage("zh")}
+            className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${
+              language === "zh" 
+                ? "bg-amber-500 text-white" 
+                : "text-gray-500 hover:text-amber-500"
+            }`}
+          >
+            <Globe className="w-4 h-4" />
+            <span className="text-sm">中文</span>
           </button>
         </div>
       </div>
@@ -150,6 +179,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
 const FeaturesSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -176,47 +206,47 @@ const FeaturesSection = () => {
   const features = [
     {
       icon: <Camera className="h-7 w-7 text-gray-700" />,
-      title: '我的时刻',
-      description: '记录日常点滴，珍藏生活瞬间的专属日记',
+      title: t("moments"),
+      description: t("momentsDescription"),
       items: [
-        '多媒体记录: 支持文字、图片、视频，让回忆更生动',
-        '智能标记: 自定义事件类型（如生活、工作、旅行）与地理位置',
-        '习惯打卡关联: 发布时刻时可关联“我的习惯”自动打卡',
-        '自由编辑: 随时删除或修改已发布的时刻',
-        '高效检索: 通过关键词或事件类型快速筛选回顾',
+        t("momentsItems[0]"),
+        t("momentsItems[1]"),
+        t("momentsItems[2]"),
+        t("momentsItems[3]"),
+        t("momentsItems[4]"),
       ],
     },
     {
       icon: <Target className="h-7 w-7 text-gray-700" />,
-      title: '我的目标',
-      description: '清晰规划任务与梦想，从每日待办到长期目标',
+      title: t("goals"),
+      description: t("goalsDescription"),
       items: [
-        '今日待办: 添加任务、设置优先级、标记完成状态',
-        '近期目标: 设定中期或长期目标并追踪进度',
-        '我的习惯: 创建习惯、设定频率、统计打卡次数',
-        '灵活管理: 随时编辑或删除任务、目标与习惯',
+        t("goalsItems[0]"),
+        t("goalsItems[1]"),
+        t("goalsItems[2]"),
+        t("goalsItems[3]"),
       ],
     },
     {
       icon: <Lightbulb className="h-7 w-7 text-gray-700" />,
-      title: '我的感悟',
-      description: '沉淀灵感与思考，打造你的私人思想库',
+      title: t("insights"),
+      description: t("insightsDescription"),
       items: [
-        '深度记录: 支持文字、图片、视频记录感悟',
-        '背景信息: 标注事件类型、灵感来源与地点',
-        '自由编辑: 所有感悟均可随时修改或删除',
-        '快速查找: 通过关键词搜索过往灵感',
+        t("insightsItems[0]"),
+        t("insightsItems[1]"),
+        t("insightsItems[2]"),
+        t("insightsItems[3]"),
       ],
     },
     {
       icon: <Bot className="h-7 w-7 text-gray-700" />,
-      title: 'AI树洞',
-      description: '你的私密智能伙伴，懂你、陪你、启发你',
+      title: t("aiCave"),
+      description: t("aiCaveDescription"),
       items: [
-        '个性化对话: 基于你所有记录进行深度理解与回应',
-        '情感支持: 以温暖、共情的方式倾听与陪伴',
-        '智能洞察: 回顾过往，提供成长视角与新思考',
-        '绝对私密: 所有数据仅限你与AI使用，安全无忧',
+        t("aiCaveItems[0]"),
+        t("aiCaveItems[1]"),
+        t("aiCaveItems[2]"),
+        t("aiCaveItems[3]"),
       ],
     },
   ];
@@ -225,8 +255,8 @@ const FeaturesSection = () => {
     <section id="features-section" ref={sectionRef} className={`py-20 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-6xl mx-auto">
         <div className={`text-center mb-16 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight">四大核心功能</h2>
-          <p className="mt-4 text-xl text-gray-600">全方位记录、规划、思考，让 AI 成为你的成长伙伴</p>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight">{t("coreFeatures")}</h2>
+          <p className="mt-4 text-xl text-gray-600">{t("featuresDescription")}</p>
         </div>
         <div className="flex flex-col gap-8">
           {features.map((feature, index) => (
@@ -246,35 +276,39 @@ const FeaturesSection = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, description, items }: { icon: React.ReactNode; title: string; description: string; items: string[] }) => (
-  <div className="bg-transparent p-0 rounded-2xl shadow-none">
-    <div className="flex items-center gap-4 mb-4">
-      <div className="bg-slate-100 p-3 rounded-full">
-        {icon}
+const FeatureCard = ({ icon, title, description, items }: { icon: React.ReactNode; title: string; description: string; items: string[] }) => {
+  const { t } = useLanguage();
+  return (
+    <div className="bg-transparent p-0 rounded-2xl shadow-none">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="bg-slate-100 p-3 rounded-full">
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-2xl font-bold">{title}</h3>
+          <p className="text-gray-500">{description}</p>
+        </div>
       </div>
-      <div>
-        <h3 className="text-2xl font-bold">{title}</h3>
-        <p className="text-gray-500">{description}</p>
-      </div>
+      <ul className="mt-6 space-y-3">
+        {items.map((item, index) => {
+          const parts = item.split(':');
+          return (
+            <li key={index} className="flex items-start">
+              <span className="font-semibold">{parts[0]}:</span>
+              {parts.length > 1 && ` ${parts[1]}`}
+            </li>
+          );
+        })}
+      </ul>
     </div>
-    <ul className="mt-6 space-y-3">
-      {items.map((item, index) => {
-        const parts = item.split(':');
-        return (
-          <li key={index} className="flex items-start">
-            <span className="font-semibold">{parts[0]}:</span>
-            {parts.length > 1 && ` ${parts[1]}`}
-          </li>
-        );
-      })}
-    </ul>
-  </div>
-);
+  );
+};
 
 // 3. 定价方案区域 - 移除背景类
 const PricingSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -299,18 +333,18 @@ const PricingSection = () => {
   }, [isVisible]);
 
   const tier = {
-    name: '免费开始',
+    name: t("freeStart"),
     price: null,
-    description: '体验 BulletAI 全部核心功能，开启你的成长之旅',
+    description: t("pricingDescription"),
     features: [
-      '我的时刻：完整记录与管理',
-      '我的目标：任务、目标与习惯追踪',
-      '我的感悟：灵感沉淀与回顾',
-      'AI树洞：私密智能对话与洞察',
-      '多媒体支持：文字、图片、视频',
-      '标签分类与关键词搜索',
+      t("pricingFeatures[0]"),
+      t("pricingFeatures[1]"),
+      t("pricingFeatures[2]"),
+      t("pricingFeatures[3]"),
+      t("pricingFeatures[4]"),
+      t("pricingFeatures[5]"),
     ],
-    buttonText: '立即开始',
+    buttonText: t("getStarted"),
     isFeatured: true,
   };
 
@@ -318,8 +352,8 @@ const PricingSection = () => {
     <section ref={sectionRef} className={`py-20 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className={`lg:col-span-1 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight">适合每个人的起点</h2>
-          <p className="mt-4 text-xl text-gray-600">无需付费，立即使用全部核心功能，开启属于你的记录与成长之旅</p>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight">{t("suitableForEveryone")}</h2>
+          <p className="mt-4 text-xl text-gray-600">{t("pricingDescription")}</p>
         </div>
         <div className="lg:col-span-2 flex items-center justify-center">
           <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg border border-orange-200 w-full max-w-md hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
@@ -335,6 +369,7 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
   name: string; description: string; features: string[]; buttonText: string; isFeatured: boolean;
 }) => {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const goToLogin = () => {
     router.push('/login');
@@ -368,6 +403,7 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
 const CallToActionSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -401,13 +437,13 @@ const CallToActionSection = () => {
     <section ref={sectionRef} className={`py-24 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-4xl mx-auto">
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-12 rounded-3xl text-center shadow-lg border border-orange-200 hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight">开始记录您的故事</h2>
-          <p className="mt-4 text-xl text-gray-600">让每一个想法、每一次成长、每一刻感动都被珍藏</p>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight">{t("startYourStory")}</h2>
+          <p className="mt-4 text-xl text-gray-600">{t("storyDescription")}</p>
           <button 
             onClick={goToLogin}
             className="mt-12 bg-gray-800 text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800 transition-all duration-500 inline-flex items-center gap-2 text-lg h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
           >
-            立即开始 <ArrowRight className="h-5 w-5" />
+            {t("startNow")} <ArrowRight className="h-5 w-5" />
           </button>
         </div>
       </div>
@@ -419,6 +455,7 @@ const CallToActionSection = () => {
 const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -442,11 +479,6 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
     };
   }, [isVisible]);
 
-  // scrollToTop 现在通过 props 从父组件接收
-  // const scrollToTop = () => {
-  //   window.scrollTo({ top: 0, behavior: 'smooth' });
-  // };
-  
   return (
     <footer ref={sectionRef} className={`relative py-12 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center text-gray-600">
@@ -457,10 +489,10 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
             </div>
             <span className="font-bold text-xl">BulletAI</span>
           </div>
-          <p className="mt-2 text-sm text-center sm:text-left">© 2025 BulletAI. 每一个灵魂，都值得被记录</p>
+          <p className="mt-2 text-sm text-center sm:text-left">{t("copyright")}</p>
         </div>
         <div className={`mt-8 sm:mt-0 text-center sm:text-right transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <h4 className="font-semibold">联系我们</h4>
+          <h4 className="font-semibold">{t("contactUs")}</h4>
         </div>
       </div>
       <button 

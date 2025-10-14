@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
+import { useLanguage } from '../context/LanguageContext';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,7 +24,7 @@ export default function RegisterPage() {
 
     // 检查密码是否一致
     if (password !== confirmPassword) {
-      setMessage("两次输入的密码不一致，请重新输入");
+      setMessage(t("passwordMismatch"));
       setLoading(false);
       return;
     }
@@ -66,35 +68,35 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-orange-100 text-gray-800">
       <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg p-8 text-center w-full max-w-md mx-4 border border-orange-200">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">注册 BulletAI</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">{t("registerTitle")}</h1>
         <form onSubmit={handleRegister} className="space-y-3 mb-6 text-left">
-          <label className="block text-sm text-gray-700">邮箱</label>
+          <label className="block text-sm text-gray-700">{t("setEmail")}</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-800"
-            placeholder="you@example.com"
+            placeholder={t("confirmEmailPlaceholder")}
             disabled={loading}
             required
           />
-          <label className="block text-sm text-gray-700">设置密码</label>
+          <label className="block text-sm text-gray-700">{t("setPassword")}</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={`w-full border ${password && !isPasswordMatch ? 'border-red-500' : 'border-gray-300'} rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-800`}
-            placeholder="请输入密码"
+            placeholder={t("setPasswordPlaceholder")}
             disabled={loading}
             required
           />
-          <label className="block text-sm text-gray-700">确认密码</label>
+          <label className="block text-sm text-gray-700">{t("confirmPassword")}</label>
           <input
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             className={`w-full border ${confirmPassword && !isPasswordMatch ? 'border-red-500' : 'border-gray-300'} rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-800`}
-            placeholder="请再次输入密码"
+            placeholder={t("confirmPasswordPlaceholder")}
             disabled={loading}
             required
           />
@@ -106,14 +108,14 @@ export default function RegisterPage() {
                   <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
-                  密码不匹配
+                  {t("passwordMismatch")}
                 </span>
               ) : (
                 <span className="text-xs text-green-500 flex items-center">
                   <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  密码匹配
+                  {t("passwordMatch")}
                 </span>
               )}
             </div>
@@ -123,13 +125,13 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full mt-4 px-4 py-2.5 rounded-xl bg-black text-white font-bold border-2 border-transparent hover:bg-white hover:text-amber-500 hover:border-black transition-all duration-300"
           >
-            {loading ? "注册中…" : "注册"}
+            {loading ? t("registering") : t("register")}
           </button>
         </form>
         <p className="text-sm">
-          已有账号？{" "}
+          {t("alreadyAccount")}{" "}
           <a href="/login" className="text-amber-500 hover:underline">
-            去登录
+            {t("learnMore")} {/* 重用“去登录”的翻译 */}
           </a>
         </p>
         {message && <p className="text-sm text-red-500 mt-4">{message}</p>}

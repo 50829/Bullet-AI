@@ -20,10 +20,10 @@ const MonthlyRecommendationPage = () => {
       date: "2024年6月"
     },
     music: {
-      title: "不说再见",
-      artist: "好妹妹乐队",
-      album: "不说再见",
-      duration: "4:32"
+      title: "ten",
+      artist: "Fred Again../Jozzy",
+      album: "ten",
+      duration: "3:01"
     },
     quote: {
       text: "我们总以为，是生活欠我们一个满意，其实，是我们欠生活一个努力。",
@@ -95,7 +95,7 @@ const MonthlyRecommendationPage = () => {
                 <div className="flex items-center gap-4">
                   <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-orange-200 to-blue-200 flex items-center justify-center">
                     <Image
-                      src={monthlyData.hero.image}
+                      src="/music.jpg"
                       alt="专辑封面"
                       width={80}
                       height={80}

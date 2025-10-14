@@ -1,66 +1,17 @@
-// LoginPage.tsx
+// app/login/page.tsx
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../../lib/supabaseClient";
-import { Globe } from "lucide-react";
-
-const translations = {
-  loginTitle: {
-    en: "Login to BulletAI",
-    zh: "登录 BulletAI",
-  },
-  emailLabel: {
-    en: "Email",
-    zh: "邮箱",
-  },
-  passwordLabel: {
-    en: "Password",
-    zh: "密码",
-  },
-  emailPlaceholder: {
-    en: "you@example.com",
-    zh: "you@example.com",
-  },
-  passwordPlaceholder: {
-    en: "Enter your password",
-    zh: "请输入密码",
-  },
-  login: {
-    en: "Login",
-    zh: "登录",
-  },
-  loggingIn: {
-    en: "Logging in…",
-    zh: "登录中…",
-  },
-  or: {
-    en: "or",
-    zh: "或",
-  },
-  githubLogin: {
-    en: "Login with GitHub",
-    zh: "使用 GitHub 登录",
-  },
-  googleLogin: {
-    en: "Login with Google",
-    zh: "使用 Google 登录",
-  },
-  registerTip: {
-    en: "No account? Register here",
-    zh: "没有账号？去注册",
-  },
-};
+import { supabase } from "../../lib/supabaseClient"; // 更新路径
+import { useLanguage } from '../context/LanguageContext'; // 更新路径
 
 export default function LoginPage() {
   const router = useRouter();
+  const { language, t } = useLanguage(); // 从 LanguageContext 获取状态和翻译函数，移除了 setLanguage
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [language, setLanguage] = useState<"en" | "zh">("en");
-
-  const t = (key: keyof typeof translations) => translations[key][language];
 
   const getOrigin = () =>
     typeof window !== "undefined"
@@ -70,7 +21,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setMessage(language === "en" ? "Enter email and password" : "请输入邮箱和密码");
+      setMessage(t("passwordMismatch")); // 重用注册页的错误信息
       return;
     }
     setLoading(true);
@@ -78,14 +29,14 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        setMessage(language === "en" ? `Login failed: ${error.message}` : `登录失败：${error.message}`);
+        setMessage(`登录失败：${error.message}`);
       } else {
         // 密码登录成功后跳转到 main 页面
         router.push("/main");
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      setMessage(language === "en" ? `Error: ${errorMsg}` : `错误：${errorMsg}`);
+      setMessage(`错误：${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -111,28 +62,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-orange-100 text-gray-800 relative">
       <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg p-8 text-center w-full max-w-md mx-4 border border-orange-200">
-        {/* 语言切换 */}
-        <div className="flex justify-center mb-6">
-          <button
-            onClick={() => setLanguage("en")}
-            className={`flex items-center space-x-1 hover:text-amber-500 transition-colors mr-4 ${
-              language === "en" ? "text-amber-500" : "text-gray-500"
-            }`}
-          >
-            <Globe className="w-5 h-5" />
-            <span>EN</span>
-          </button>
-          <button
-            onClick={() => setLanguage("zh")}
-            className={`flex items-center space-x-1 hover:text-amber-500 transition-colors ${
-              language === "zh" ? "text-amber-500" : "text-gray-500"
-            }`}
-          >
-            <Globe className="w-5 h-5" />
-            <span>中文</span>
-          </button>
-        </div>
-
+        {/* 移除了语言切换按钮 */}
         <h1 className="text-3xl font-bold text-gray-800 mb-6">{t("loginTitle")}</h1>
 
         {/* Google 登录 */}
