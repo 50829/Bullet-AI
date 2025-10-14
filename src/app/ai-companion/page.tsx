@@ -1,6 +1,8 @@
+// app/ai-companion/page.tsx
 "use client";
 import React, { useState } from 'react';
 import { Send } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 
 type Message = {
   id: string;
@@ -9,11 +11,12 @@ type Message = {
 };
 
 export default function AICompanionPage() {
+  const { t } = useLanguage(); // 获取翻译函数
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: '你好！我是你的AI树洞，基于你记录的所有时刻、感悟和目标，我会陪你深入聊天，倾听你的心声。有什么想和我分享的吗？🔮'
+      content: t("aiCaveGreeting") || '你好！我是你的AI树洞，基于你记录的所有时刻、感悟和目标，我会陪你深入聊天，倾听你的心声。有什么想和我分享的吗？🔮'
     }
   ]);
   const [input, setInput] = useState('');
@@ -65,7 +68,7 @@ export default function AICompanionPage() {
       const errorMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: '抱歉，出了点问题，请稍后再试。'
+        content: t("aiError") || '抱歉，出了点问题，请稍后再试。'
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
@@ -88,8 +91,8 @@ export default function AICompanionPage() {
           {/* 标题行 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
             <div>
-              <h2 className="text-3xl font-bold text-gray-800">AI树洞</h2>
-              <p className="text-gray-500 mt-1">基于你的记录，与你深入对话</p>
+              <h2 className="text-3xl font-bold text-gray-800">{t("aiCaveTitle") || "AI树洞"}</h2>
+              <p className="text-gray-500 mt-1">{t("aiCaveDescription") || "基于你的记录，与你深入对话"}</p>
             </div>
           </div>
         </div>
@@ -121,7 +124,7 @@ export default function AICompanionPage() {
                 {isLoading && (
                   <div className="mb-4 text-left">
                     <div className="bg-gradient-to-r from-orange-200 to-yellow-100 p-4 rounded-xl max-w-xl">
-                      <p className="text-gray-800">思考中...</p>
+                      <p className="text-gray-800">{t("aiThinking") || "思考中..."}</p>
                     </div>
                   </div>
                 )}
@@ -135,7 +138,7 @@ export default function AICompanionPage() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="输入你的想法..."
+                    placeholder={t("aiInputPlaceholder") || "输入你的想法..."}
                     className="flex-1 bg-transparent px-2 focus:outline-none text-gray-700"
                     disabled={isLoading}
                   />

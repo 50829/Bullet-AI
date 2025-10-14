@@ -1,4 +1,4 @@
-// app/goals/page.tsx - 完整版
+// app/goals/page.tsx
 "use client";
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient"; // 添加 Supabase 客户端导入
@@ -8,6 +8,7 @@ import { Trash2, ArrowUpDown } from "lucide-react";
 import { GoalModal } from "../components/GoalModal";
 import { HabitModal } from "../components/HabitModal";
 import { useAppContext } from "../../context/AppContext";
+import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 
 type Goal = {
   id: number;
@@ -47,8 +48,9 @@ type Message = {
 
 export default function GoalsPage() {
   const { goals, habits, loading, refreshGoals, refreshHabits, deleteGoal, updateGoal, checkinHabit } = useAppContext();
-  const [activeTab, setActiveTab] = useState("我的习惯");
-  const tabs = ["今日待办", "近期目标", "我的习惯"];
+  const { t } = useLanguage(); // 获取翻译函数
+  const [activeTab, setActiveTab] = useState("myHabits");
+  const tabs = ["todayTasks", "recentGoals", "myHabits"];
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
   const [isAIPlanningOpen, setIsAIPlanningOpen] = useState(false);
@@ -61,14 +63,14 @@ export default function GoalsPage() {
     {
       id: '1',
       role: 'assistant',
-      content: '你好！我是你的AI规划助手。请告诉我你想完成什么目标，我会帮你拆解成可执行的任务列表。🎯',
+      content: t("aiPlanningGreeting") || '你好！我是你的AI规划助手。请告诉我你想完成什么目标，我会帮你拆解成可执行的任务列表。🎯',
       planData: null // 初始化时 planData 为 null
     }
   ]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  // 过滤目标和习惯
+  // 过滤目标和习惯 - 修复：使用原始的中文类型值
   const goalsToday = goals.filter(g => g.type === "今日待办");
   const goalsRecent = goals.filter(g => g.type === "近期目标");
 
@@ -92,9 +94,8 @@ export default function GoalsPage() {
         // 注意：这里应该是删除习惯，但目前deleteHabit还没实现
         // 临时使用deleteGoal，实际应用中需要添加deleteHabit函数
         // 如果你有deleteHabit，请替换下面的调用
-        // await deleteHabit(selectedItem.id); 
         console.error("删除习惯功能尚未实现");
-        alert("删除习惯功能尚未实现");
+        alert(t("deleteHabitNotImplemented") || "删除习惯功能尚未实现");
         return; // 提前返回，不执行刷新
       }
       
@@ -103,7 +104,7 @@ export default function GoalsPage() {
       refreshGoals(); // 刷新数据 - 删除操作后可能需要刷新以确保状态同步
     } catch (err) {
       console.error("删除异常:", err);
-      alert("删除失败，请稍后重试");
+      alert(t("deleteFailed") || "删除失败，请稍后重试");
     }
   };
 
@@ -129,7 +130,7 @@ export default function GoalsPage() {
 
     } catch (error) {
         console.error("[Page ERROR] 移动目标失败:", error);
-        alert("移动失败，操作已回滚，请检查控制台日志或稍后重试");
+        alert(t("moveFailed") || "移动失败，操作已回滚，请检查控制台日志或稍后重试");
     }
   };
 
@@ -139,7 +140,7 @@ export default function GoalsPage() {
       // checkinHabit 内部已实现乐观更新，通常不需要再次刷新 habits
       // refreshHabits(); 
     } catch (err) {
-      alert(err instanceof Error ? err.message : "打卡失败");
+      alert(err instanceof Error ? err.message : t("checkinFailed") || "打卡失败");
     }
   };
 
@@ -199,7 +200,7 @@ export default function GoalsPage() {
       const errorMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: '抱歉，出了点问题，请稍后再试。',
+        content: t("aiError") || '抱歉，出了点问题，请稍后再试。',
         planData: null
       };
       setAiMessages(prev => [...prev, errorMessage]);
@@ -223,7 +224,7 @@ export default function GoalsPage() {
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) {
-      alert("请先登录");
+      alert(t("pleaseLogin") || "请先登录");
       return;
     }
 
@@ -240,7 +241,7 @@ export default function GoalsPage() {
 
       if (error) {
         console.error("添加今日待办失败:", error);
-        alert(`添加任务 "${title}" 失败，请重试`);
+        alert(`${t("addFailed")} "${title}" ${t("retry")}` || `添加任务 "${title}" 失败，请重试`);
         return; // 遇到错误时停止
       }
     }
@@ -258,17 +259,17 @@ export default function GoalsPage() {
 
       if (error) {
         console.error("添加近期目标失败:", error);
-        alert(`添加目标 "${title}" 失败，请重试`);
+        alert(`${t("addFailed")} "${title}" ${t("retry")}` || `添加目标 "${title}" 失败，请重试`);
         return; // 遇到错误时停止
       }
     }
     
-    alert(`成功添加 ${daily.length + future.length} 个任务/目标！`);
+    alert(`${t("addSuccess")} ${daily.length + future.length} ${t("tasksAdded")}!`);
     refreshGoals(); // 刷新目标列表
   };
 
 
-  if (loading.goals || loading.habits) return <div className="text-center py-8">目标加载中...</div>;
+  if (loading.goals || loading.habits) return <div className="text-center py-8">{t("loadingGoals") || "目标加载中..."}</div>;
 
   // 在渲染前打印当前状态，用于调试
   console.log("--- [Page RENDER DEBUG] 当前渲染状态 ---");
@@ -286,18 +287,18 @@ export default function GoalsPage() {
           {/* 标题和按钮行 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
             <div>
-              <h2 className="text-3xl font-bold text-gray-800">我的目标</h2>
-              <p className="text-gray-500 mt-1">规划未来，成就更好的自己</p>
+              <h2 className="text-3xl font-bold text-gray-800">{t("myGoals") || "我的目标"}</h2>
+              <p className="text-gray-500 mt-1">{t("planForFuture") || "规划未来，成就更好的自己"}</p>
             </div>
             <div className="flex space-x-3">
               <Button 
                 variant="secondary" 
                 onClick={() => setIsAIPlanningOpen(true)}
               >
-                AI智能规划
+                {t("aiPlanning") || "AI智能规划"}
               </Button>
-              <Button onClick={() => activeTab === "我的习惯" ? setIsHabitModalOpen(true) : setIsGoalModalOpen(true)}>
-                + 新建{activeTab === "我的习惯" ? "习惯" : "目标"}
+              <Button onClick={() => activeTab === "myHabits" ? setIsHabitModalOpen(true) : setIsGoalModalOpen(true)}>
+                + {t("new")} {activeTab === "myHabits" ? t("habit") : t("goal")}
               </Button>
             </div>
           </div>
@@ -311,7 +312,7 @@ export default function GoalsPage() {
                   onClick={() => setActiveTab(tab)}
                   className={`py-2 px-1 font-medium transition-colors duration-200 ${activeTab === tab ? 'border-b-2 border-orange-400 text-orange-400' : 'text-gray-500 hover:text-gray-800'}`}
                 >
-                  {tab}
+                  {t(tab) || tab}
                 </button>
               ))}
             </div>
@@ -324,7 +325,7 @@ export default function GoalsPage() {
         <div className="p-4 pt-0"> {/* 移除顶部padding，因为头部已固定 */}
           <div className="max-w-6xl mx-auto">
             <div>
-              {activeTab === "今日待办" && (
+              {activeTab === "todayTasks" && (
                 <div className="space-y-4">
                   {goalsToday.map(goal => (
                     <Card key={goal.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200">
@@ -357,7 +358,7 @@ export default function GoalsPage() {
                 </div>
               )}
 
-              {activeTab === "近期目标" && (
+              {activeTab === "recentGoals" && (
                 <div className="space-y-4">
                   {goalsRecent.map(goal => (
                     <Card key={goal.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200">
@@ -390,7 +391,7 @@ export default function GoalsPage() {
                 </div>
               )}
 
-              {activeTab === "我的习惯" && (
+              {activeTab === "myHabits" && (
                 <div className="space-y-4">
                   {habits.map(habit => {
                     const daysSince = daysSinceLastCheckin(habit.last_checkin);
@@ -416,7 +417,7 @@ export default function GoalsPage() {
                               <h4 className="font-bold text-lg text-gray-800">{habit.name}</h4>
                               <div className="flex items-center ml-3 space-x-2">
                                 <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
-                                  {habit.frequency}
+                                  {t(habit.frequency) || habit.frequency}
                                 </span>
                                 <Trash2 
                                   size={18} 
@@ -430,9 +431,9 @@ export default function GoalsPage() {
                             </div>
                             <p className="text-gray-500 mb-3">{habit.description}</p>
                             <div className="flex items-center text-green-600">
-                              <span className="ml-2 text-sm">已打卡 {habit.checkin_count || 0} 次</span>
+                              <span className="ml-2 text-sm">{t("checkinCount")} {habit.checkin_count || 0} {t("times")}</span>
                               {daysSince !== null && (
-                                <span className="ml-3 text-sm text-gray-500">上次打卡 {daysSince} 天前</span>
+                                <span className="ml-3 text-sm text-gray-500">{t("lastCheckin")} {daysSince} {t("daysAgo")}</span>
                               )}
                             </div>
                           </div>
@@ -442,14 +443,14 @@ export default function GoalsPage() {
                                 variant="primary"
                                 className="px-6 py-2 text-sm rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white"
                               >
-                                已打卡
+                                {t("checkedIn") || "已打卡"}
                               </Button>
                             ) : (
                               <Button
                                 onClick={() => handleCheckin(habit.id)}
                                 className="px-6 py-2 text-sm rounded-lg bg-black text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white"
                               >
-                                打卡
+                                {t("checkin") || "打卡"}
                               </Button>
                             )}
                           </div>
@@ -470,7 +471,7 @@ export default function GoalsPage() {
           <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-orange-200 w-full max-w-2xl h-[600px] flex flex-col">
             <div className="p-4 border-b border-orange-200">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">AI智能规划</h3>
+                <h3 className="text-xl font-bold text-gray-800">{t("aiPlanning") || "AI智能规划"}</h3>
                 <button 
                   onClick={() => {
                     setIsAIPlanningOpen(false);
@@ -478,7 +479,7 @@ export default function GoalsPage() {
                       {
                         id: '1',
                         role: 'assistant',
-                        content: '你好！我是你的AI规划助手。请告诉我你想完成什么目标，我会帮你拆解成可执行的任务列表。🎯',
+                        content: t("aiPlanningGreeting") || '你好！我是你的AI规划助手。请告诉我你想完成什么目标，我会帮你拆解成可执行的任务列表。🎯',
                         planData: null
                       }
                     ]);
@@ -510,12 +511,12 @@ export default function GoalsPage() {
                     {/* ✅ 新增：如果存在 planData，则渲染结构化的计划内容 */}
                     {message.planData && (
                       <div className="mt-3 p-3 bg-white/30 rounded-lg">
-                        <h4 className="font-semibold text-sm mb-2">📋 AI生成的计划：</h4>
+                        <h4 className="font-semibold text-sm mb-2">{t("aiGeneratedPlan") || "📋 AI生成的计划："}</h4>
                         
                         {/* 今日待办 */}
                         {message.planData.daily && message.planData.daily.length > 0 && (
                           <div className="mb-3">
-                            <h5 className="font-medium text-xs text-gray-600 mb-1">今日待办 ({message.planData.daily.length})</h5>
+                            <h5 className="font-medium text-xs text-gray-600 mb-1">{t("todayTasks")} ({message.planData.daily.length})</h5>
                             <ul className="text-xs space-y-1">
                               {message.planData.daily.map((task, index) => (
                                 <li key={index} className="flex">
@@ -530,7 +531,7 @@ export default function GoalsPage() {
                         {/* 近期目标 */}
                         {message.planData.future && message.planData.future.length > 0 && (
                           <div>
-                            <h5 className="font-medium text-xs text-gray-600 mb-1">近期目标 ({message.planData.future.length})</h5>
+                            <h5 className="font-medium text-xs text-gray-600 mb-1">{t("recentGoals")} ({message.planData.future.length})</h5>
                             <ul className="text-xs space-y-1">
                               {message.planData.future.map((task, index) => (
                                 <li key={index} className="flex">
@@ -550,7 +551,7 @@ export default function GoalsPage() {
                         onClick={() => addTasksFromAIReply(message.planData)}
                         className="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600"
                       >
-                        一键添加到目标
+                        {t("addTasksToGoals") || "一键添加到目标"}
                       </button>
                     )}
                   </div>
@@ -559,7 +560,7 @@ export default function GoalsPage() {
               {aiLoading && (
                 <div className="mb-4 text-left">
                   <div className="bg-gradient-to-r from-orange-200 to-yellow-100 p-4 rounded-xl max-w-full">
-                    <p className="text-gray-800">AI正在思考中...</p>
+                    <p className="text-gray-800">{t("aiThinking") || "AI正在思考中..."}</p>
                   </div>
                 </div>
               )}
@@ -573,7 +574,7 @@ export default function GoalsPage() {
                   value={aiInput}
                   onChange={(e) => setAiInput(e.target.value)}
                   onKeyPress={handleAiKeyPress}
-                  placeholder="输入你想完成的事情..."
+                  placeholder={t("aiInputPlaceholder") || "输入你想完成的事情..."}
                   className="flex-1 bg-transparent px-2 focus:outline-none text-gray-700"
                   disabled={aiLoading}
                 />
@@ -609,10 +610,10 @@ export default function GoalsPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full">
             <h2 className="text-lg font-semibold mb-4 text-center">
-              确认删除这条{selectedItem?.type === 'goal' ? '目标' : '习惯'}吗？
+              {t("confirmDelete")} {selectedItem?.type === 'goal' ? t("goal") : t("habit")}{t("questionMark") || "吗？"}
             </h2>
             <p className="text-gray-600 text-sm mb-4 text-center">
-              删除后无法恢复。
+              {t("cannotRecover") || "删除后无法恢复。"}
             </p>
             <div className="flex justify-center space-x-3">
               <Button
@@ -622,14 +623,14 @@ export default function GoalsPage() {
                   setSelectedItem(null);
                 }}
               >
-                取消
+                {t("cancel") || "取消"}
               </Button>
               <Button
                 variant="primary"
                 className="bg-red-500 hover:bg-red-600 text-white"
                 onClick={handleDelete}
               >
-                确认删除
+                {t("confirm") || "确认删除"}
               </Button>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { Tag } from "../components/ui/Tag";
 import { Search, MapPin, Trash2, Menu } from "lucide-react";
 import { MomentModal } from "../components/MomentModal";
 import { useAppContext } from "../../context/AppContext";
+import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 
 type Moment = {
   id: number;
@@ -26,6 +27,7 @@ type SearchType = "text" | "event" | "location";
 
 export default function MomentsPage() {
   const { moments, loading, refreshMoments, deleteMoment } = useAppContext();
+  const { t } = useLanguage(); // 获取翻译函数
   const [filteredMoments, setFilteredMoments] = useState<Moment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -107,7 +109,7 @@ export default function MomentsPage() {
     }
   };
 
-  if (loading.moments) return <div className="text-center py-8">记忆生成中...</div>;
+  if (loading.moments) return <div className="text-center py-8">{t("loading.moments") || "记忆生成中..."}</div>;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -117,8 +119,8 @@ export default function MomentsPage() {
           {/* 标题和按钮行 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
             <div>
-              <h2 className="text-3xl font-bold text-gray-800">我的时刻</h2>
-              <p className="text-gray-500 mt-1">珍藏每一个值得记录的瞬间</p>
+              <h2 className="text-3xl font-bold text-gray-800">{t("moments") || "我的时刻"}</h2>
+              <p className="text-gray-500 mt-1">{t("momentsDescription") || "珍藏每一个值得记录的瞬间"}</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               {/* 搜索按钮 */}
@@ -128,9 +130,9 @@ export default function MomentsPage() {
                 className="flex items-center gap-1"
               >
                 <Search size={16} /> 
-                {showSearch ? '折叠搜索栏' : '搜索'}
+                {showSearch ? t("collapseSearch") || '折叠搜索栏' : t("search") || '搜索'}
               </Button>
-              <Button onClick={handleAddMoment}>+ 记录新时刻</Button>
+              <Button onClick={handleAddMoment}>{t("addNewMoment") || '+ 记录新时刻'}</Button>
             </div>
           </div>
 
@@ -144,15 +146,15 @@ export default function MomentsPage() {
                     onChange={(e) => setSearchType(e.target.value as SearchType)} 
                     className="w-full p-2 border border-gray-300 rounded-md h-10"
                   >
-                    <option value="text">文本</option>
-                    <option value="event">事件</option>
-                    <option value="location">地点</option>
+                    <option value="text">{t("text") || "文本"}</option>
+                    <option value="event">{t("event") || "事件"}</option>
+                    <option value="location">{t("location") || "地点"}</option>
                   </select>
                 </div>
 
                 <div>
                   <Input 
-                    placeholder="选择搜索类型，再输入搜索内容~" 
+                    placeholder={t("searchPlaceholder") || "选择搜索类型，再输入搜索内容~"} 
                     value={searchTerm} 
                     onChange={(e) => setSearchTerm(e.target.value)} 
                     className="w-full h-10"
@@ -164,14 +166,14 @@ export default function MomentsPage() {
                     onClick={performSearch} 
                     className="flex-1 flex items-center justify-center h-10"
                   >
-                    <Search size={16} className="mr-1" /> 搜索
+                    <Search size={16} className="mr-1" /> {t("search") || "搜索"}
                   </Button>
                   <Button 
                     variant="secondary" 
                     onClick={clearSearch} 
                     className="flex-1 h-10"
                   >
-                    清空
+                    {t("clear") || "清空"}
                   </Button>
                 </div>
               </div>
@@ -187,7 +189,7 @@ export default function MomentsPage() {
             <div className="space-y-6">
               {filteredMoments.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
-                  {searchTerm ? "没有找到匹配的时刻记录" : "暂无时刻记录，点击上方按钮记录第一个时刻吧！"}
+                  {searchTerm ? t("noMatches") || "没有找到匹配的时刻记录" : t("noRecords") || "暂无时刻记录，点击上方按钮记录第一个时刻吧！"}
                 </div>
               ) : (
                 filteredMoments.map((moment) => (
@@ -248,11 +250,11 @@ export default function MomentsPage() {
       {showConfirm && selectedMoment && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full mx-4">
-            <h2 className="text-lg font-semibold mb-4 text-center">确认删除这条时刻吗？</h2>
-            <p className="text-gray-600 text-sm mb-4 text-center">删除后无法恢复。</p>
+            <h2 className="text-lg font-semibold mb-4 text-center">{t("confirmDelete") || "确认删除这条时刻吗？"}</h2>
+            <p className="text-gray-600 text-sm mb-4 text-center">{t("cannotRecover") || "删除后无法恢复。"}</p>
             <div className="flex justify-center space-x-3">
-              <Button variant="secondary" onClick={() => { setShowConfirm(false); setSelectedMoment(null); }}>取消</Button>
-              <Button variant="primary" className="bg-red-500 hover:bg-red-600 text-white" onClick={handleDelete}>确认删除</Button>
+              <Button variant="secondary" onClick={() => { setShowConfirm(false); setSelectedMoment(null); }}>{t("cancel") || "取消"}</Button>
+              <Button variant="primary" className="bg-red-500 hover:bg-red-600 text-white" onClick={handleDelete}>{t("confirm") || "确认删除"}</Button>
             </div>
           </div>
         </div>

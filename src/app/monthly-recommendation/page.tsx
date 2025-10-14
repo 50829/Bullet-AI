@@ -8,16 +8,18 @@ import { Tag } from '../components/ui/Tag';
 import { MapPin, Music, BookOpen, Quote } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 
 const MonthlyRecommendationPage = () => {
+  const { t } = useLanguage(); // 获取翻译函数
   const router = useRouter();
 
   // 月度推荐数据
   const monthlyData = {
     hero: {
-      image: "/logo.png",
-      caption: "六月，是毕业的季节，也是告别与启程的季节。愿你前程似锦，归来仍是少年。",
-      date: "2024年6月"
+      image: "/logo.jpg",
+      caption: "BulletAI上线啦",
+      date: "2025年10月"
     },
     music: {
       title: "ten",
@@ -45,8 +47,8 @@ const MonthlyRecommendationPage = () => {
           {/* 标题和按钮行 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
             <div>
-              <h2 className="text-3xl font-bold text-gray-800">月度推荐</h2>
-              <p className="text-gray-500 mt-1">每月精选，与你分享美好</p>
+              <h2 className="text-3xl font-bold text-gray-800">{t("monthlyRecommendation") || "月度推荐"}</h2>
+              <p className="text-gray-500 mt-1">{t("monthlyHighlights") || "每月精选，与你分享美好"}</p>
             </div>
             <div className="flex items-center gap-3">
               <Button 
@@ -55,7 +57,7 @@ const MonthlyRecommendationPage = () => {
                 className="flex items-center gap-1"
               >
                 <Quote size={16} /> 
-                往期回顾
+                {t("pastReviews") || "往期回顾"}
               </Button>
             </div>
           </div>
@@ -71,7 +73,7 @@ const MonthlyRecommendationPage = () => {
               <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200">
                 <div className="relative w-full h-64 rounded-2xl overflow-hidden mb-4">
                   <Image
-                    src={monthlyData.hero.image}
+                    src="/logo.jpg"
                     alt="月度推荐封面"
                     fill
                     style={{ objectFit: 'cover' }}
@@ -90,7 +92,7 @@ const MonthlyRecommendationPage = () => {
               <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200">
                 <div className="flex items-center gap-4 mb-4">
                   <Music className="text-orange-500" size={24} />
-                  <h3 className="text-xl font-semibold text-gray-800">音乐推荐</h3>
+                  <h3 className="text-xl font-semibold text-gray-800">{t("musicRecommendation") || "音乐推荐"}</h3>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-orange-200 to-blue-200 flex items-center justify-center">
@@ -109,7 +111,7 @@ const MonthlyRecommendationPage = () => {
                   </div>
                   <Button variant="outline" className="flex items-center gap-2">
                     <Music size={16} />
-                    播放
+                    {t("play") || "播放"}
                   </Button>
                 </div>
               </Card>
@@ -118,7 +120,7 @@ const MonthlyRecommendationPage = () => {
               <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200">
                 <div className="flex items-center gap-4 mb-4">
                   <Quote className="text-orange-500" size={24} />
-                  <h3 className="text-xl font-semibold text-gray-800">每日一言</h3>
+                  <h3 className="text-xl font-semibold text-gray-800">{t("dailyQuote") || "每日一言"}</h3>
                 </div>
                 <blockquote className="text-center">
                   <p className="text-xl font-medium text-gray-800 italic mb-4">
@@ -134,12 +136,12 @@ const MonthlyRecommendationPage = () => {
               <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200">
                 <div className="flex items-center gap-4 mb-4">
                   <BookOpen className="text-orange-500" size={24} />
-                  <h3 className="text-xl font-semibold text-gray-800">书籍推荐</h3>
+                  <h3 className="text-xl font-semibold text-gray-800">{t("bookRecommendation") || "书籍推荐"}</h3>
                 </div>
                 <div className="flex gap-6">
                   <div className="relative w-24 h-32 rounded-lg overflow-hidden bg-gradient-to-br from-orange-100 to-blue-100 flex items-center justify-center">
                     <Image
-                      src={monthlyData.hero.image}
+                      src="/book.png"
                       alt="书籍封面"
                       width={96}
                       height={128}

@@ -8,6 +8,7 @@ import { Tag } from "../components/ui/Tag";
 import { Search, MapPin, Trash2 } from "lucide-react";
 import { ReflectionModal } from "../components/ReflectionModal";
 import { useAppContext } from "../../context/AppContext";
+import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 
 type Reflection = {
   id: number;
@@ -25,6 +26,7 @@ type SearchType = "text" | "event" | "location" | "inspiration";
 
 export default function ReflectionsPage() {
   const { reflections, loading, refreshReflections, deleteReflection } = useAppContext();
+  const { t } = useLanguage(); // 获取翻译函数
   const [filteredReflections, setFilteredReflections] = useState<Reflection[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -111,7 +113,7 @@ export default function ReflectionsPage() {
     }
   };
 
-  if (loading.reflections) return <div className="text-center py-8">思考即将开始...</div>;
+  if (loading.reflections) return <div className="text-center py-8">{t("loading.reflections") || "思考即将开始..."}</div>;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -121,8 +123,8 @@ export default function ReflectionsPage() {
           {/* 标题和按钮行 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
             <div>
-              <h2 className="text-3xl font-bold text-gray-800">我的感悟</h2>
-              <p className="text-gray-500 mt-1">记录生活中的灵感与思考</p>
+              <h2 className="text-3xl font-bold text-gray-800">{t("insights") || "我的感悟"}</h2>
+              <p className="text-gray-500 mt-1">{t("insightsDescription") || "记录生活中的灵感与思考"}</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               {/* 搜索按钮 */}
@@ -132,9 +134,9 @@ export default function ReflectionsPage() {
                 className="flex items-center gap-1"
               >
                 <Search size={16} /> 
-                {showSearch ? '折叠搜索栏' : '搜索'}
+                {showSearch ? t("collapseSearch") || '折叠搜索栏' : t("search") || '搜索'}
               </Button>
-              <Button onClick={handleAddReflection}>+ 记录新感悟</Button>
+              <Button onClick={handleAddReflection}>{t("addNewReflection") || '+ 记录新感悟'}</Button>
             </div>
           </div>
 
@@ -148,16 +150,16 @@ export default function ReflectionsPage() {
                     onChange={(e) => setSearchType(e.target.value as SearchType)} 
                     className="w-full p-2 border border-gray-300 rounded-md h-10"
                   >
-                    <option value="text">文本</option>
-                    <option value="event">事件</option>
-                    <option value="location">地点</option>
-                    <option value="inspiration">灵感来源</option>
+                    <option value="text">{t("text") || "文本"}</option>
+                    <option value="event">{t("event") || "事件"}</option>
+                    <option value="location">{t("location") || "地点"}</option>
+                    <option value="inspiration">{t("inspiration") || "灵感来源"}</option>
                   </select>
                 </div>
 
                 <div>
                   <Input 
-                    placeholder="选择搜索类型，再输入搜索内容~" 
+                    placeholder={t("searchPlaceholder") || "选择搜索类型，再输入搜索内容~"} 
                     value={searchTerm} 
                     onChange={(e) => setSearchTerm(e.target.value)} 
                     className="w-full h-10"
@@ -169,14 +171,14 @@ export default function ReflectionsPage() {
                     onClick={performSearch} 
                     className="flex-1 flex items-center justify-center h-10"
                   >
-                    <Search size={16} className="mr-1" /> 搜索
+                    <Search size={16} className="mr-1" /> {t("search") || "搜索"}
                   </Button>
                   <Button 
                     variant="secondary" 
                     onClick={clearSearch} 
                     className="flex-1 h-10"
                   >
-                    清空
+                    {t("clear") || "清空"}
                   </Button>
                 </div>
               </div>
@@ -192,7 +194,7 @@ export default function ReflectionsPage() {
             <div className="space-y-6">
               {filteredReflections.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
-                  {searchTerm ? "没有找到匹配的感悟记录" : "暂无感悟记录，点击上方按钮记录第一个感悟吧！"}
+                  {searchTerm ? t("noMatches") || "没有找到匹配的感悟记录" : t("noRecords") || "暂无感悟记录，点击上方按钮记录第一个感悟吧！"}
                 </div>
               ) : (
                 filteredReflections.map((reflection) => (
@@ -256,11 +258,11 @@ export default function ReflectionsPage() {
       {showConfirm && selectedReflection && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full mx-4">
-            <h2 className="text-lg font-semibold mb-4 text-center">确认删除这条感悟吗？</h2>
-            <p className="text-gray-600 text-sm mb-4 text-center">删除后无法恢复。</p>
+            <h2 className="text-lg font-semibold mb-4 text-center">{t("confirmDelete") || "确认删除这条感悟吗？"}</h2>
+            <p className="text-gray-600 text-sm mb-4 text-center">{t("cannotRecover") || "删除后无法恢复。"}</p>
             <div className="flex justify-center space-x-3">
-              <Button variant="secondary" onClick={() => { setShowConfirm(false); setSelectedReflection(null); }}>取消</Button>
-              <Button variant="primary" className="bg-red-500 hover:bg-red-600 text-white" onClick={handleDelete}>确认删除</Button>
+              <Button variant="secondary" onClick={() => { setShowConfirm(false); setSelectedReflection(null); }}>{t("cancel") || "取消"}</Button>
+              <Button variant="primary" className="bg-red-500 hover:bg-red-600 text-white" onClick={handleDelete}>{t("confirm") || "确认删除"}</Button>
             </div>
           </div>
         </div>

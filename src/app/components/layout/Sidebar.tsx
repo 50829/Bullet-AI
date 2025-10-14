@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Heart, Target, MessageSquare, BrainCircuit, Sparkles, Calendar, Menu, X } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext'; // 添加语言Hook
 
 type NavItemProps = {
   page: string;
@@ -16,6 +17,7 @@ const NavItem = ({ page, icon, label, onClick }: NavItemProps) => {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLanguage(); // 获取翻译函数
   
   // 修复：当没有page参数时，默认为monthly-recommendation
   const currentActivePage = searchParams.get('page') || 'monthly-recommendation';
@@ -44,13 +46,14 @@ const NavItem = ({ page, icon, label, onClick }: NavItemProps) => {
 export const Sidebar = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { t } = useLanguage(); // 获取翻译函数
   
   const navItems = [
-    { page: 'monthly-recommendation', label: '月度推荐', icon: <Calendar size={20} /> },
-    { page: 'moments', label: '我的时刻', icon: <Heart size={20} /> },
-    { page: 'goals', label: '我的目标', icon: <Target size={20} /> },
-    { page: 'reflections', label: '我的感悟', icon: <BrainCircuit size={20} /> },
-    { page: 'ai-companion', label: 'AI树洞', icon: <MessageSquare size={20} /> },
+    { page: 'monthly-recommendation', label: t("monthlyRecommendationNav") || '月度推荐', icon: <Calendar size={20} /> },
+    { page: 'moments', label: t("myMomentsNav") || '我的时刻', icon: <Heart size={20} /> },
+    { page: 'goals', label: t("myGoalsNav") || '我的目标', icon: <Target size={20} /> },
+    { page: 'reflections', label: t("myReflectionsNav") || '我的感悟', icon: <BrainCircuit size={20} /> },
+    { page: 'ai-companion', label: t("aiCaveNav") || 'AI树洞', icon: <MessageSquare size={20} /> },
   ];
 
   // 检测屏幕尺寸
@@ -87,7 +90,7 @@ export const Sidebar = () => {
           <button
             onClick={toggleSidebar}
             className="fixed bottom-4 left-4 z-50 p-3 bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-full shadow-lg border border-orange-200 lg:hidden"
-            aria-label="切换菜单"
+            aria-label={t("toggleMenu") || "切换菜单"}
           >
             <Menu size={24} />
           </button>
