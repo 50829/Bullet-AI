@@ -471,7 +471,7 @@ const translations: Record<string, TranslationValue> = {
     zh: "目标加载中...",
   },
   checkedIn: {
-    en: "Checked in",
+    en: "Done!",
     zh: "已打卡",
   },
   checkin: {

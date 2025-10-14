@@ -48,7 +48,7 @@ type Message = {
 
 export default function GoalsPage() {
   const { goals, habits, loading, refreshGoals, refreshHabits, deleteGoal, updateGoal, checkinHabit } = useAppContext();
-  const { t } = useLanguage(); // 获取翻译函数
+  const { t, language } = useLanguage(); // 获取翻译函数和当前语言
   const [activeTab, setActiveTab] = useState("myHabits");
   const tabs = ["todayTasks", "recentGoals", "myHabits"];
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
@@ -57,6 +57,7 @@ export default function GoalsPage() {
   
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{ type: 'goal' | 'habit', id: number, imagePath?: string | null } | null>(null);
+  const [processedPlans, setProcessedPlans] = useState<Set<string>>(new Set());
 
   // AI智能规划相关状态
   const [aiMessages, setAiMessages] = useState<Message[]>([
@@ -174,7 +175,8 @@ export default function GoalsPage() {
               content: userMessage.content
             }
           ],
-          // purpose: 'planning' // purpose 字段已不再需要
+          purpose: 'planning', // 添加purpose字段，告诉AI返回计划
+          language: language, // 添加语言参数，让AI知道用什么语言回复
         }),
       });
 
@@ -221,7 +223,7 @@ export default function GoalsPage() {
     const { daily, future } = plan;
     
     // 获取当前用户信息
-    const { data: userData } = await supabase.auth.getUser();
+    const {  data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) {
       alert(t("pleaseLogin") || "请先登录");
@@ -545,10 +547,13 @@ export default function GoalsPage() {
                       </div>
                     )}
 
-                    {/* ✅ 修改：按钮现在直接使用 message.planData */}
-                    {message.planData && (
+                    {/* ✅ 修改：按钮现在直接使用 message.planData，并在点击后不再显示 */}
+                    {message.planData && !processedPlans.has(message.id) && (
                       <button
-                        onClick={() => addTasksFromAIReply(message.planData)}
+                        onClick={() => {
+                          addTasksFromAIReply(message.planData);
+                          setProcessedPlans(prev => new Set(prev).add(message.id)); // 标记此消息的计划已处理
+                        }}
                         className="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600"
                       >
                         {t("addTasksToGoals") || "一键添加到目标"}

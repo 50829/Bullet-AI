@@ -1,4 +1,4 @@
-// src/app/api/ai/route.ts - 修改版 2
+// src/app/api/ai/route.ts - 修改版 3
 import { NextResponse } from "next/server";
 
 interface ChatMessage {
@@ -44,9 +44,11 @@ function convertPlanForFrontend(plan: InternalPlan): FrontendPlan {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // ✅ 修改：只从前端获取 messages 数组，不再接收 apiKey
-    const { messages: userMessages } = body as {
+    // ✅ 修改：从前端获取 messages 数组、purpose 和 language
+    const { messages: userMessages, purpose, language } = body as {
       messages: ChatMessage[];
+      purpose?: string;
+      language?: string;
     };
 
     // 从环境变量获取配置
@@ -68,12 +70,17 @@ export async function POST(req: Request) {
         baseUrl = baseUrl.slice(0, -1);
     }
 
+    // 根据语言设置调整系统提示
+    const languageInstruction = language === 'en' 
+      ? "Please respond in English." 
+      : "请使用中文回复。";
+
     // System Prompt - 强化计划生成指令和 JSON 格式
     const system: ChatMessage = {
       role: "system",
       content:
         "你是 AI 任务管家，用户是你的老板。请严格遵守以下规则：\n" +
-        "1. 回答必须简短、口语化，且使用与用户相同的语言。\n" +
+        `1. 回答必须简短、口语化，且使用与用户相同的语言。${languageInstruction}\n` +
         "2. **核心规则：每当用户表达任何关于规划、安排、组织、管理时间、设定目标、执行任务、学习复习、准备工作、创建清单或制定时间表的需求时，你都必须在回复文本之后，立即提供一个结构化的任务计划。**\n" +
         "3. **计划格式：必须使用 ```json 包裹一个 JSON 对象，该对象包含 'tasksDaily' 和 'tasksFuture' 两个数组。**\n" +
         "4. JSON 结构和含义：\n" +
