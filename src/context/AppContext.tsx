@@ -385,22 +385,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     ));
   };
 
-  // 删除函数
+  // 删除函数 - 实现乐观更新
   const deleteMoment = async (id: number, imagePath?: string | null) => {
-    // 如果有图片路径，先删除图片
-    if (imagePath) {
-      try {
+    // 1. 先从全局状态中删除（乐观更新）
+    setMoments(prev => prev.filter(moment => moment.id !== id));
+
+    try {
+      // 2. 如果有图片路径，先删除图片
+      if (imagePath) {
         const { error: storageError } = await supabase.storage
           .from("moments")
           .remove([imagePath]);
         if (storageError) console.error("删除图片失败:", storageError);
-      } catch (err) {
-        console.error("删除图片异常:", err);
       }
-    }
 
-    // 从数据库删除
-    try {
+      // 3. 从数据库删除
       const { error: dbError } = await supabase
         .from("moments")
         .delete()
@@ -412,28 +411,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     } catch (err) {
       console.error("删除异常:", err);
+      // 如果删除失败，将数据恢复到状态中
+      refreshMoments(); // 或者重新获取数据
       throw new Error("删除失败");
     }
-
-    // 从全局状态中删除
-    setMoments(prev => prev.filter(moment => moment.id !== id));
   };
 
   const deleteReflection = async (id: number, imagePath?: string | null) => {
-    // 如果有图片路径，先删除图片
-    if (imagePath) {
-      try {
+    // 1. 先从全局状态中删除（乐观更新）
+    setReflections(prev => prev.filter(reflection => reflection.id !== id));
+
+    try {
+      // 2. 如果有图片路径，先删除图片
+      if (imagePath) {
         const { error: storageError } = await supabase.storage
           .from("reflections")
           .remove([imagePath]);
         if (storageError) console.error("删除图片失败:", storageError);
-      } catch (err) {
-        console.error("删除图片异常:", err);
       }
-    }
 
-    // 从数据库删除
-    try {
+      // 3. 从数据库删除
       const { error: dbError } = await supabase
         .from("reflections")
         .delete()
@@ -445,28 +442,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     } catch (err) {
       console.error("删除异常:", err);
+      // 如果删除失败，将数据恢复到状态中
+      refreshReflections(); // 或者重新获取数据
       throw new Error("删除失败");
     }
-
-    // 从全局状态中删除
-    setReflections(prev => prev.filter(reflection => reflection.id !== id));
   };
 
   const deleteGoal = async (id: number, imagePath?: string | null) => {
-    // 如果有图片路径，先删除图片
-    if (imagePath) {
-      try {
+    // 1. 先从全局状态中删除（乐观更新）
+    setGoals(prev => prev.filter(goal => goal.id !== id));
+
+    try {
+      // 2. 如果有图片路径，先删除图片
+      if (imagePath) {
         const { error: storageError } = await supabase.storage
           .from("goals")
           .remove([imagePath]);
         if (storageError) console.error("删除图片失败:", storageError);
-      } catch (err) {
-        console.error("删除图片异常:", err);
       }
-    }
 
-    // 从数据库删除
-    try {
+      // 3. 从数据库删除
       const { error: dbError } = await supabase
         .from("goals")
         .delete()
@@ -478,28 +473,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     } catch (err) {
       console.error("删除异常:", err);
+      // 如果删除失败，将数据恢复到状态中
+      refreshGoals(); // 或者重新获取数据
       throw new Error("删除失败");
     }
-
-    // 从全局状态中删除
-    setGoals(prev => prev.filter(goal => goal.id !== id));
   };
 
   const deleteHabit = async (id: number, imagePath?: string | null) => {
-    // 如果有图片路径，先删除图片
-    if (imagePath) {
-      try {
+    // 1. 先从全局状态中删除（乐观更新）
+    setHabits(prev => prev.filter(habit => habit.id !== id));
+
+    try {
+      // 2. 如果有图片路径，先删除图片
+      if (imagePath) {
         const { error: storageError } = await supabase.storage
           .from("habits")
           .remove([imagePath]);
         if (storageError) console.error("删除图片失败:", storageError);
-      } catch (err) {
-        console.error("删除图片异常:", err);
       }
-    }
 
-    // 从数据库删除
-    try {
+      // 3. 从数据库删除
       const { error: dbError } = await supabase
         .from("habits")
         .delete()
@@ -511,11 +504,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     } catch (err) {
       console.error("删除异常:", err);
+      // 如果删除失败，将数据恢复到状态中
+      refreshHabits(); // 或者重新获取数据
       throw new Error("删除失败");
     }
-
-    // 从全局状态中删除
-    setHabits(prev => prev.filter(habit => habit.id !== id));
   };
 
   // 打卡功能
@@ -539,7 +531,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const currentHabit = habits.find(h => h.id === id);
       const currentCount = currentHabit?.checkin_count || 0;
       
-      // 更新数据库
+      // 1. 先更新前端状态，提供即时反馈
+      setHabits(prev => prev.map(habit => 
+        habit.id === id 
+          ? { 
+              ...habit, 
+              last_checkin: new Date().toISOString(),
+              checkin_count: currentCount + 1
+            } 
+          : habit
+      ));
+
+      // 2. 更新数据库
       const { error: dbError } = await supabase
         .from("habits")
         .update({
@@ -552,19 +555,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         console.error("打卡失败:", dbError);
         throw new Error(`打卡失败: ${dbError.message}`);
       }
-
-      // 更新全局状态
-      setHabits(prev => prev.map(habit => 
-        habit.id === id 
-          ? { 
-              ...habit, 
-              last_checkin: new Date().toISOString(),
-              checkin_count: currentCount + 1
-            } 
-          : habit
-      ));
     } catch (err) {
       console.error("打卡异常:", err);
+      // 如果打卡失败，刷新数据以恢复状态
+      refreshHabits();
       throw new Error(err instanceof Error ? err.message : "打卡失败");
     }
   };

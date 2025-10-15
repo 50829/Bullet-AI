@@ -38,7 +38,8 @@ const NavItem = ({ page, icon, label, onClick }: NavItemProps) => {
       onClick={handleClick}
     >
       {icon}
-      <span className="ml-4 font-medium">{label}</span>
+      {/* 使用 suppressHydrationWarning 来处理语言相关的文本不匹配 */}
+      <span className="ml-4 font-medium" suppressHydrationWarning={true}>{label}</span>
     </li>
   );
 };
