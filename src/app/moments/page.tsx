@@ -31,7 +31,7 @@ export default function MomentsPage() {
   const [filteredMoments, setFilteredMoments] = useState<Moment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null);
+  const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null); // 用于存储要删除的moment
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState<SearchType>("text");
   const [showSearch, setShowSearch] = useState(false); // 新增状态控制搜索栏显示
@@ -95,17 +95,24 @@ export default function MomentsPage() {
     setIsModalOpen(false);
   };
 
+  // 修改 handleDelete 函数以实现即时关闭面板
   const handleDelete = async () => {
     if (!selectedMoment) return;
 
+    // --- 关键修改：立即关闭确认面板和清除选中项 ---
+    setShowConfirm(false);
+    const momentToDelete = selectedMoment; // 保存要删除的moment引用
+    setSelectedMoment(null); // 立即清除选中项
+
     try {
       // 使用全局状态中的删除函数
-      await deleteMoment(selectedMoment.id, selectedMoment.image_path);
-      setShowConfirm(false);
-      setSelectedMoment(null);
+      await deleteMoment(momentToDelete.id, momentToDelete.image_path);
+      // 乐观更新已完成，无需额外操作
     } catch (err) {
       console.error("删除异常:", err);
-      alert("删除失败，请稍后重试");
+      alert(t("deleteFailed") || "删除失败，请稍后重试");
+      // 如果删除失败，刷新数据以确保状态同步
+      refreshMoments();
     }
   };
 
@@ -247,14 +254,29 @@ export default function MomentsPage() {
 
       <MomentModal isOpen={isModalOpen} onClose={handleModalClose} onSuccess={handleModalSuccess} />
 
+      {/* 修改确认对话框 - 确保在 selectedMoment 存在时才渲染 */}
       {showConfirm && selectedMoment && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full mx-4">
             <h2 className="text-lg font-semibold mb-4 text-center">{t("confirmDelete") || "确认删除这条时刻吗？"}</h2>
             <p className="text-gray-600 text-sm mb-4 text-center">{t("cannotRecover") || "删除后无法恢复。"}</p>
             <div className="flex justify-center space-x-3">
-              <Button variant="secondary" onClick={() => { setShowConfirm(false); setSelectedMoment(null); }}>{t("cancel") || "取消"}</Button>
-              <Button variant="primary" className="bg-red-500 hover:bg-red-600 text-white" onClick={handleDelete}>{t("confirm") || "确认删除"}</Button>
+              <Button 
+                variant="secondary" 
+                onClick={() => { 
+                  setShowConfirm(false); 
+                  setSelectedMoment(null); // 点击取消也清除选中项
+                }}
+              >
+                {t("cancel") || "取消"}
+              </Button>
+              <Button 
+                variant="primary" 
+                className="bg-red-500 hover:bg-red-600 text-white" 
+                onClick={handleDelete} // 点击后立即关闭面板
+              >
+                {t("confirm") || "确认删除"}
+              </Button>
             </div>
           </div>
         </div>

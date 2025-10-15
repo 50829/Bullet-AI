@@ -30,7 +30,7 @@ export default function ReflectionsPage() {
   const [filteredReflections, setFilteredReflections] = useState<Reflection[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
+  const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null); // 用于存储要删除的reflection
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState<SearchType>("text");
   const [showSearch, setShowSearch] = useState(false);
@@ -100,16 +100,24 @@ export default function ReflectionsPage() {
     setIsModalOpen(false);
   };
 
+  // 修改 handleDelete 函数以实现即时关闭面板
   const handleDelete = async () => {
     if (!selectedReflection) return;
+
+    // --- 关键修改：立即关闭确认面板和清除选中项 ---
+    setShowConfirm(false);
+    const reflectionToDelete = selectedReflection; // 保存要删除的reflection引用
+    setSelectedReflection(null); // 立即清除选中项
+
     try {
       // 使用全局状态中的删除函数
-      await deleteReflection(selectedReflection.id, selectedReflection.image_path);
-      setShowConfirm(false);
-      setSelectedReflection(null);
+      await deleteReflection(reflectionToDelete.id, reflectionToDelete.image_path);
+      // 乐观更新已完成，无需额外操作
     } catch (err) {
       console.error("删除异常:", err);
-      alert("删除失败，请稍后重试");
+      alert(t("deleteFailed") || "删除失败，请稍后重试");
+      // 如果删除失败，刷新数据以确保状态同步
+      refreshReflections();
     }
   };
 
@@ -208,7 +216,14 @@ export default function ReflectionsPage() {
                         <div className="flex justify-between items-start">
                           <p className="text-lg text-gray-400 mb-2">{reflection.date}</p>
                           <div className="flex justify-end mt-2 space-x-3 text-gray-400">
-                            <Trash2 size={18} className="cursor-pointer hover:text-orange-400" onClick={() => { setSelectedReflection(reflection); setShowConfirm(true); }} />
+                            <Trash2 
+                              size={18} 
+                              className="cursor-pointer hover:text-orange-400" 
+                              onClick={() => { 
+                                setSelectedReflection(reflection); 
+                                setShowConfirm(true); 
+                              }} 
+                            />
                           </div>
                         </div>
                         
@@ -255,14 +270,29 @@ export default function ReflectionsPage() {
       {/* 模态框和确认对话框 */}
       <ReflectionModal isOpen={isModalOpen} onClose={handleModalClose} onSuccess={handleModalSuccess} />
 
+      {/* 修改确认对话框 - 确保在 selectedReflection 存在时才渲染 */}
       {showConfirm && selectedReflection && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full mx-4">
             <h2 className="text-lg font-semibold mb-4 text-center">{t("confirmDelete") || "确认删除这条感悟吗？"}</h2>
             <p className="text-gray-600 text-sm mb-4 text-center">{t("cannotRecover") || "删除后无法恢复。"}</p>
             <div className="flex justify-center space-x-3">
-              <Button variant="secondary" onClick={() => { setShowConfirm(false); setSelectedReflection(null); }}>{t("cancel") || "取消"}</Button>
-              <Button variant="primary" className="bg-red-500 hover:bg-red-600 text-white" onClick={handleDelete}>{t("confirm") || "确认删除"}</Button>
+              <Button 
+                variant="secondary" 
+                onClick={() => { 
+                  setShowConfirm(false); 
+                  setSelectedReflection(null); // 点击取消也清除选中项
+                }}
+              >
+                {t("cancel") || "取消"}
+              </Button>
+              <Button 
+                variant="primary" 
+                className="bg-red-500 hover:bg-red-600 text-white" 
+                onClick={handleDelete} // 点击后立即关闭面板
+              >
+                {t("confirm") || "确认删除"}
+              </Button>
             </div>
           </div>
         </div>
