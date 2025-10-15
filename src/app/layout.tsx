@@ -8,7 +8,7 @@ import { Suspense } from 'react';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'BulletAI - Your Private Recording Space',
+  title: 'BulletAI',
   description: '每一个灵魂，都值得被记录',
 };
 

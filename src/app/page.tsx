@@ -2,7 +2,7 @@
 "use client";
 
 import type { NextPage } from 'next';
-import { Sparkles, ArrowDown, Camera, Target, Lightbulb, Bot, Check, ArrowRight, ArrowUp, Globe } from 'lucide-react';
+import { Sparkles, Camera, Target, Lightbulb, Bot, Check, ArrowRight, ArrowUp, Globe } from 'lucide-react'; // Removed ArrowDown
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from './context/LanguageContext';
@@ -51,9 +51,12 @@ const LandingPage: NextPage = () => {
         <div ref={topRef} />
         <main>
           <HeroSection isVisible={isVisible.hero} scrollToTop={scrollToTop} /> {/* 传递函数到 HeroSection */}
-          <FeaturesSection />
-          <PricingSection />
-          <CallToActionSection />
+          {/* 将下面部分向上移动更多，并与 Hero 部分产生重叠效果 */}
+          <div className="-mt-40"> {/* Increased negative margin */}
+            <FeaturesSection />
+            <PricingSection />
+            <CallToActionSection />
+          </div>
         </main>
         <Footer scrollToTop={scrollToTop} /> {/* 传递函数到 Footer */}
       </div>
@@ -61,18 +64,11 @@ const LandingPage: NextPage = () => {
   );
 };
 
-// 1. 顶部英雄区域 - 移除背景类，因为背景由父级提供
+// 1. 顶部英雄区域 - 修改后的 HeroSection
 const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToTop: () => void }) => {
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
   
-  const scrollToFeatures = () => {
-    const featuresSection = document.getElementById('features-section');
-    if (featuresSection) {
-      featuresSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   const goToLogin = () => {
     router.push('/login');
   };
@@ -97,13 +93,51 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
   }, [isVisible]);
 
   return (
-    <section className={`min-h-screen flex flex-col items-center justify-center p-4 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-      <div className="flex flex-col items-center max-w-4xl w-full">
-        <div className={`bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200 mb-6 transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-          <Sparkles className="h-10 w-10 text-gray-700" />
+    // 减少最小高度，让内容更紧凑，并允许与其他部分重叠
+    <section className={`relative z-10 flex flex-col items-center justify-center p-4 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      {/* 保留 Logo 和标题在左上角 */}
+      <div className="absolute top-4 left-4 flex items-center gap-3 z-20">
+        <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
+          <Sparkles className="h-6 w-6 text-gray-700" />
         </div>
-        <h1 className={`text-7xl md:text-8xl font-bold text-gray-800 tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>BulletAI</h1>
+        <span className="text-xl font-bold text-gray-800">BulletAI</span>
+      </div>
+
+      {/* 保留语言切换在右上角 */}
+      <div className="absolute top-4 right-4 flex items-center space-x-2 z-20">
+        <button
+          onClick={() => setLanguage("en")}
+          className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
+            language === "en" 
+              ? "bg-amber-500 text-white" 
+              : "text-gray-500 hover:text-amber-500"
+          }`}
+        >
+          <Globe className="w-3 h-3" />
+          <span>EN</span>
+        </button>
+        <span className="text-gray-400 text-xs">|</span>
+        <button
+          onClick={() => setLanguage("zh")}
+          className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
+            language === "zh" 
+              ? "bg-amber-500 text-white" 
+              : "text-gray-500 hover:text-amber-500"
+          }`}
+        >
+          <Globe className="w-3 h-3" />
+          <span>中文</span>
+        </button>
+      </div>
+
+      {/* 内容容器 - 包含居中的大标题、Slogan 和按钮 */}
+      <div className="flex flex-col items-center justify-center w-full h-screen max-w-4xl mx-auto pt-16 pb-20"> {/* Added pt and pb for spacing with overlapping section */}
+        {/* 新增：原来的黑色大标题，居中放置 */}
+        <h1 className={`text-7xl md:text-8xl font-bold text-gray-800 tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+          BulletAI
+        </h1>
         
+        {/* Slogan 居中 */}
         <div className="mt-4 flex justify-center">
           {sloganVisible ? (
             <div className="text-2xl md:text-3xl text-gray-600 flex flex-wrap justify-center">
@@ -125,6 +159,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
           )}
         </div>
         
+        {/* 按钮居中 */}
         <div className={`mt-10 flex flex-col sm:flex-row gap-4 transition-all duration-1000 ${buttonsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <button 
             onClick={goToLogin}
@@ -132,50 +167,29 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
           >
             {t("getStarted")}
           </button>
-          <button 
-            onClick={scrollToFeatures}
-            className="bg-white text-gray-800 font-semibold py-4 px-10 rounded-full shadow-lg transition-all duration-500 text-lg min-w-[200px] h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
-          >
-            {t("learnMore")}
-          </button>
-        </div>
-        
-        {/* 语言切换按钮 - 放在按钮下方 */}
-        <div className={`mt-6 flex items-center space-x-4 transition-all duration-1000 ${buttonsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
-          <button
-            onClick={() => setLanguage("en")}
-            className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${
-              language === "en" 
-                ? "bg-amber-500 text-white" 
-                : "text-gray-500 hover:text-amber-500"
-            }`}
-          >
-            <Globe className="w-4 h-4" />
-            <span className="text-sm">EN</span>
-          </button>
-          <span className="text-gray-400">|</span>
-          <button
-            onClick={() => setLanguage("zh")}
-            className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${
-              language === "zh" 
-                ? "bg-amber-500 text-white" 
-                : "text-gray-500 hover:text-amber-500"
-            }`}
-          >
-            <Globe className="w-4 h-4" />
-            <span className="text-sm">中文</span>
-          </button>
+          {/* 移除了 "Learn More" 按钮 */}
         </div>
       </div>
-      {/* 修改点击事件，调用传递下来的 scrollToTop 函数 */}
-      <div className="absolute bottom-10 animate-bounce" onClick={scrollToTop} style={{ cursor: 'pointer' }}>
-        <ArrowDown className="h-6 w-6 text-gray-500" />
-      </div>
+      
+      {/* 移除了底部的跳动箭头 */}
+      
     </section>
   );
 };
 
 // 2. 四大核心功能区域 - 移除背景类
+// ... (FeaturesSection, FeatureCard 代码保持不变) ...
+
+// 3. 定价方案区域 - 移除背景类
+// ... (PricingSection, PricingCard 代码保持不变) ...
+
+// 4. 最终行动号召区域 - 移除背景类
+// ... (CallToActionSection 代码保持不变) ...
+
+// Footer 组件 - 移除背景类
+// ... (Footer 代码保持不变，除了 scrollToTop 的调用) ...
+
+// --- 以下部分保持不变 ---
 const FeaturesSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -496,7 +510,7 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
         </div>
       </div>
       <button 
-        onClick={scrollToTop} // 使用从父组件传递下来的函数
+        onClick={scrollToTop}
         className="fixed bottom-10 right-10 bg-gray-800 text-white p-3 rounded-full shadow-lg hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800 transition-all duration-500 z-50 hover:-translate-y-1 hover:shadow-xl"
         aria-label="返回顶部"
       >
