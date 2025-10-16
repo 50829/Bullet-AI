@@ -151,14 +151,6 @@ const translations: Record<string, TranslationValue> = {
       zh: "智能标记: 自定义事件类型（如生活、工作、旅行）与地理位置",
     },
     {
-      en: "Habit Check-in Association: Automatically check in 'My Habits' when posting moments",
-      zh: "习惯打卡关联: 发布时刻时可关联“我的习惯”自动打卡",
-    },
-    {
-      en: "Free Editing: Delete or modify published moments anytime",
-      zh: "自由编辑: 随时删除或修改已发布的时刻",
-    },
-    {
       en: "Efficient Retrieval: Quickly filter and review through keywords or event types",
       zh: "高效检索: 通过关键词或事件类型快速筛选回顾",
     },

@@ -1,17 +1,25 @@
 // app/page.tsx
 "use client";
 
+import React, { type ReactNode } from 'react';
 import type { NextPage } from 'next';
 import { Sparkles, Camera, Target, Lightbulb, Bot, Check, ArrowRight, ArrowUp, Globe } from 'lucide-react'; // Removed ArrowDown
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from './context/LanguageContext';
 
+// 定义功能项的类型
+type FeatureItem = {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  items: string[];
+};
+
 // 主页面组件
 const LandingPage: NextPage = () => {
   const [isVisible, setIsVisible] = useState({
     hero: false,
-    features: false,
     pricing: false,
     cta: false,
     footer: false
@@ -19,14 +27,12 @@ const LandingPage: NextPage = () => {
 
   useEffect(() => {
     const heroTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, hero: true })), 100);
-    const featuresTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, features: true })), 300);
     const pricingTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, pricing: true })), 500);
     const ctaTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, cta: true })), 700);
     const footerTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, footer: true })), 900);
 
     return () => {
       clearTimeout(heroTimer);
-      clearTimeout(featuresTimer);
       clearTimeout(pricingTimer);
       clearTimeout(ctaTimer);
       clearTimeout(footerTimer);
@@ -51,10 +57,14 @@ const LandingPage: NextPage = () => {
         <div ref={topRef} />
         <main>
           <HeroSection isVisible={isVisible.hero} scrollToTop={scrollToTop} /> {/* 传递函数到 HeroSection */}
-          {/* 将下面部分向上移动更多，并与 Hero 部分产生重叠效果 */}
-          <div className="-mt-40"> {/* Increased negative margin */}
-            <FeaturesSection />
+          
+          {/* Features 部分将在这里开始，现在没有视频了 */}
+          <FeaturesSection />
+
+          {/* Pricing 和其余部分保持原有逻辑 */}
+          <div className="-mt-20"> {/* Adjust this margin if needed after adding video */}
             <PricingSection />
+            {/* 调整 CTA 部分的间距，拉近与上方标题的距离 */}
             <CallToActionSection />
           </div>
         </main>
@@ -131,7 +141,8 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
       </div>
 
       {/* 内容容器 - 包含居中的大标题、Slogan 和按钮 */}
-      <div className="flex flex-col items-center justify-center w-full h-screen max-w-4xl mx-auto pt-16 pb-20"> {/* Added pt and pb for spacing with overlapping section */}
+      {/* 修改：增加 min-height 和 pt 值，让 Hero 部分更高，内容往下挪，同时让下方标题露出一半 */}
+      <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto pt-12 pb-20 min-h-[75vh]"> {/* 调整：min-h-[75vh] 和 pt-12 */}
         {/* 新增：原来的黑色大标题，居中放置 */}
         <h1 className={`text-7xl md:text-8xl font-bold text-gray-800 tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
           BulletAI
@@ -177,47 +188,12 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
   );
 };
 
-// 2. 四大核心功能区域 - 移除背景类
-// ... (FeaturesSection, FeatureCard 代码保持不变) ...
-
-// 3. 定价方案区域 - 移除背景类
-// ... (PricingSection, PricingCard 代码保持不变) ...
-
-// 4. 最终行动号召区域 - 移除背景类
-// ... (CallToActionSection 代码保持不变) ...
-
-// Footer 组件 - 移除背景类
-// ... (Footer 代码保持不变，除了 scrollToTop 的调用) ...
-
-// --- 以下部分保持不变 ---
+// 2. 四大核心功能区域 - 移除背景类，移除淡入效果，不再包含视频
 const FeaturesSection = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isVisible) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
-  }, [isVisible]);
-
-  const features = [
+  // 定义功能数组，明确类型
+  const features: FeatureItem[] = [
     {
       icon: <Camera className="h-7 w-7 text-gray-700" />,
       title: t("moments"),
@@ -226,8 +202,6 @@ const FeaturesSection = () => {
         t("momentsItems[0]"),
         t("momentsItems[1]"),
         t("momentsItems[2]"),
-        t("momentsItems[3]"),
-        t("momentsItems[4]"),
       ],
     },
     {
@@ -266,19 +240,16 @@ const FeaturesSection = () => {
   ];
 
   return (
-    <section id="features-section" ref={sectionRef} className={`py-20 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+    <section className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className={`text-center mb-16 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <div className="text-center mb-16">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight">{t("coreFeatures")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("featuresDescription")}</p>
         </div>
         <div className="flex flex-col gap-8">
           {features.map((feature, index) => (
-            <div 
-              key={feature.title}
-              className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-              style={{ transitionDelay: `${index * 150}ms` }}
-            >
+            // 渲染普通功能卡片
+            <div key={feature.title} className="transition-all duration-1000">
               <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg border border-orange-200 hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
                 <FeatureCard {...feature} />
               </div>
@@ -290,8 +261,9 @@ const FeaturesSection = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, description, items }: { icon: React.ReactNode; title: string; description: string; items: string[] }) => {
+const FeatureCard = ({ icon, title, description, items }: FeatureItem) => { // 明确指定 props 类型
   const { t } = useLanguage();
+  // 移除动画类，直接渲染内容
   return (
     <div className="bg-transparent p-0 rounded-2xl shadow-none">
       <div className="flex items-center gap-4 mb-4">
@@ -413,7 +385,7 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
   );
 };
 
-// 4. 最终行动号召区域 - 移除背景类
+// 4. 最终行动号召区域 - 移除背景类，进一步调整间距
 const CallToActionSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -448,7 +420,8 @@ const CallToActionSection = () => {
   };
 
   return (
-    <section ref={sectionRef} className={`py-24 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+    // 修改：将 py-8 改为 py-4，进一步拉近距离
+    <section ref={sectionRef} className={`py-4 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-4xl mx-auto">
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-12 rounded-3xl text-center shadow-lg border border-orange-200 hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight">{t("startYourStory")}</h2>
@@ -510,7 +483,7 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
         </div>
       </div>
       <button 
-        onClick={scrollToTop}
+        onClick={scrollToTop} // 使用从父组件传递下来的函数
         className="fixed bottom-10 right-10 bg-gray-800 text-white p-3 rounded-full shadow-lg hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800 transition-all duration-500 z-50 hover:-translate-y-1 hover:shadow-xl"
         aria-label="返回顶部"
       >
