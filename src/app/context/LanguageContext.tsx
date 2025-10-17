@@ -117,6 +117,10 @@ const translations: Record<string, TranslationValue> = {
     en: "Every soul deserves to be recorded",
     zh: "每一个灵魂，都值得被记录",
   },
+  heroTitle: {
+    en: "Show me your verve and vitality.",
+    zh: "展现你的活力与热情。" // 你可以根据需要调整中文翻译
+  },
   getStarted: {
     en: "Start Recording",
     zh: "开始记录",

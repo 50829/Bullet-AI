@@ -144,8 +144,8 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
       {/* 修改：增加 min-height 和 pt 值，让 Hero 部分更高，内容往下挪，同时让下方标题露出一半 */}
       <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto pt-12 pb-20 min-h-[75vh]"> {/* 调整：min-h-[75vh] 和 pt-12 */}
         {/* 新增：原来的黑色大标题，居中放置 */}
-        <h1 className={`text-7xl md:text-8xl font-bold text-gray-800 tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-          BulletAI
+        <h1 className={`text-6xl md:text-7xl font-bold text-gray-800 tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        {t("heroTitle")}
         </h1>
         
         {/* Slogan 居中 */}
