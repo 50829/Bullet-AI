@@ -119,7 +119,7 @@ const translations: Record<string, TranslationValue> = {
   },
   heroTitle: {
     en: "Show me your verve and vitality.",
-    zh: "展现你的活力与热情。" // 你可以根据需要调整中文翻译
+    zh: "展现你的热情和生命力。" // 你可以根据需要调整中文翻译
   },
   getStarted: {
     en: "Start Recording",
@@ -201,10 +201,6 @@ const translations: Record<string, TranslationValue> = {
     {
       en: "Background Information: Mark event types, inspiration sources, and location",
       zh: "背景信息: 标注事件类型、灵感来源与地点",
-    },
-    {
-      en: "Free Editing: All insights can be modified or deleted anytime",
-      zh: "自由编辑: 所有感悟均可随时修改或删除",
     },
     {
       en: "Quick Search: Search past inspirations via keywords",

@@ -3,10 +3,11 @@
 
 import React, { type ReactNode } from 'react';
 import type { NextPage } from 'next';
-import { Sparkles, Camera, Target, Lightbulb, Bot, Check, ArrowRight, ArrowUp, Globe } from 'lucide-react'; // Removed ArrowDown
+import { Sparkles, Camera, Target, Lightbulb, Bot, Check, ArrowRight, ArrowUp, Globe, Image as ImageIcon } from 'lucide-react'; // Added ImageIcon for fallback
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from './context/LanguageContext';
+import Image from 'next/image'; // Import Next.js Image component
 
 // 定义功能项的类型
 type FeatureItem = {
@@ -223,7 +224,6 @@ const FeaturesSection = () => {
         t("insightsItems[0]"),
         t("insightsItems[1]"),
         t("insightsItems[2]"),
-        t("insightsItems[3]"),
       ],
     },
     {
@@ -246,20 +246,64 @@ const FeaturesSection = () => {
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight">{t("coreFeatures")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("featuresDescription")}</p>
         </div>
-        <div className="flex flex-col gap-8">
-          {features.map((feature, index) => (
-            // 渲染普通功能卡片
-            <div key={feature.title} className="transition-all duration-1000">
-              <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg border border-orange-200 hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
-                <FeatureCard {...feature} />
+        <div className="flex flex-col gap-12">
+          {features.map((feature, index) => {
+            // Determine if the current feature should be reversed (right text, left image)
+            const isReversed = index % 2 !== 0; // Odd indices are reversed
+
+            return (
+              // 使用左右布局的容器，根据索引决定是否反转顺序
+              <div 
+                key={feature.title} 
+                className={`grid grid-cols-1 md:grid-cols-2 gap-8 items-start bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg border border-orange-200 hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ${
+                  isReversed ? 'md:flex-row-reverse' : '' // Apply reverse class for even rows (0-indexed, so 0, 2, 4...)
+                }`}
+              >
+                {/* 左侧（或右侧，如果反转）：文字介绍 */}
+                <div className="flex flex-col justify-start"> {/* Added justify-start */}
+                  <div className="flex items-start gap-4 mb-4"> {/* Changed items-center to items-start */}
+                    <div className="bg-slate-100 p-3 rounded-full flex-shrink-0"> {/* Added flex-shrink-0 to prevent icon shrinking */}
+                      {feature.icon}
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold">{feature.title}</h3>
+                      <p className="text-gray-500">{feature.description}</p>
+                    </div>
+                  </div>
+                  <ul className="mt-6 space-y-3">
+                    {feature.items.map((item, itemIndex) => {
+                      const parts = item.split(':');
+                      return (
+                        <li key={itemIndex} className="flex items-start">
+                          <span className="font-semibold">{parts[0]}:</span>
+                          {parts.length > 1 && ` ${parts[1]}`}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+                {/* 右侧（或左侧，如果反转）：图片区域 */}
+                <div className="flex items-center justify-center">
+                  <div className="w-full h-64 md:h-80 flex items-center justify-center">
+                    <Image 
+                      src="/moments.png" // Use the image from public folder
+                      alt={`Illustration for ${feature.title}`} 
+                      width={500} 
+                      height={300} 
+                      className="object-contain max-w-full max-h-full rounded-xl" // object-contain to fit within bounds
+                      // Optional: Add priority={index === 0} for the first image if it's above the fold
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
   );
 };
+
 
 const FeatureCard = ({ icon, title, description, items }: FeatureItem) => { // 明确指定 props 类型
   const { t } = useLanguage();
