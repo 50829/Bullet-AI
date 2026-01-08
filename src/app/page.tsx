@@ -470,6 +470,7 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
+  const router = useRouter();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -506,7 +507,12 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
           <p className="mt-2 text-sm text-center sm:text-left">{t("copyright")}</p>
         </div>
         <div className={`mt-8 sm:mt-0 text-center sm:text-right transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <h4 className="font-semibold">{t("contactUs")}</h4>
+          <button
+            onClick={() => router.push('/contact')}
+            className="font-semibold hover:text-orange-400 transition-colors cursor-pointer"
+          >
+            {t("contactUs")}
+          </button>
         </div>
       </div>
       <button 

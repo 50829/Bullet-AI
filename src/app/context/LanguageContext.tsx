@@ -299,6 +299,26 @@ const translations: Record<string, TranslationValue> = {
     en: "Contact Us",
     zh: "联系我们",
   },
+  back: {
+    en: "Back",
+    zh: "返回",
+  },
+  contactDescription: {
+    en: "If you have any questions or suggestions, please feel free to contact us",
+    zh: "如有任何问题或建议，欢迎联系我们",
+  },
+  from: {
+    en: "From",
+    zh: "来自",
+  },
+  universityHIT: {
+    en: "Harbin Institute of Technology",
+    zh: "哈尔滨工业大学",
+  },
+  universityUSTC: {
+    en: "University of Science and Technology of China",
+    zh: "中国科学技术大学",
+  },
   // MomentsPage translations
   loading: {
     en: "Loading...",
