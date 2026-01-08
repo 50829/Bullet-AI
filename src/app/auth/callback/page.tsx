@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import { clearGuestMode } from "../../../lib/guestAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,8 @@ export default function AuthCallback() {
         }
 
         if (session) {
-          // 会话存在，跳转到 main 页面
+          // 会话存在，清除游客模式并跳转到 main 页面
+          clearGuestMode();
           setMsg("登录成功，正在跳转…");
           router.replace("/main");
         } else {

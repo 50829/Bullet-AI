@@ -40,8 +40,6 @@ type Goal = {
   image_url?: string | null;
   image_path?: string | null;
   date?: string;
-  type: string; // 添加 type 字段
-  priority?: string;
 };
 
 type Habit = {

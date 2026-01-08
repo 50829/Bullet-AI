@@ -6,53 +6,130 @@ import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
+import { isGuestMode } from '../../lib/guestAuth';
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  selectedDate?: Date | null;
 };
 
-export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
+// 将Date对象转换为YYYY-MM-DD格式，避免时区问题
+const formatDateToLocal = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const GoalModal = ({ isOpen, onClose, onSuccess, selectedDate }: Props) => {
   const { t } = useLanguage(); // 获取翻译函数
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [type, setType] = useState("今日待办"); // 使用原始中文值
-  const [priority, setPriority] = useState("中");
   const [loading, setLoading] = useState(false);
+
+  // 获取要使用的日期（使用本地时间格式，避免时区问题）
+  const getDueDate = (): string => {
+    if (selectedDate) {
+      return formatDateToLocal(selectedDate);
+    }
+    return formatDateToLocal(new Date());
+  };
 
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
     if (!title.trim()) return alert(t("pleaseEnterTitle") || "请填写目标标题");
 
-    setLoading(true);
-
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData?.user;
-    if (!user) {
-      alert(t("pleaseLogin") || "请先登录");
-      setLoading(false);
+    // 检查是否是游客模式
+    if (isGuestMode()) {
+      alert(t("guestModeNoSave") || "游客模式不支持保存数据，请先登录");
       return;
     }
 
-    const { error } = await supabase.from("goals").insert({
-      user_id: user.id,
-      title,
-      description,
-      type,
-      priority,
-    });
+    setLoading(true);
 
-    setLoading(false);
-    if (error) {
-      console.error(error);
-      alert(t("saveFailed") || "保存失败，请重试");
-    } else {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const user = userData?.user;
+    
+    if (userError) {
+      console.error("获取用户信息失败:", userError);
+      setLoading(false);
+      alert(`${t("pleaseLogin") || "请先登录"}: ${userError.message}`);
+      return;
+    }
+    
+    if (!user) {
+      setLoading(false);
+      alert(t("pleaseLogin") || "请先登录");
+      return;
+    }
+
+    try {
+      const dueDate = getDueDate();
+      const insertData = {
+        user_id: user.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        due_date: dueDate,
+      };
+
+      console.log("准备插入的数据:", insertData);
+      console.log("用户ID:", user.id);
+      console.log("日期格式:", dueDate);
+
+      const { data, error } = await supabase.from("goals").insert([insertData]);
+
+      if (error) {
+        // 尝试获取错误的所有属性
+        const errorInfo: any = {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        };
+        
+        // 尝试获取所有可枚举属性
+        for (const key in error) {
+          if (error.hasOwnProperty(key)) {
+            errorInfo[key] = (error as any)[key];
+          }
+        }
+        
+        console.error("保存失败，错误对象详情:", errorInfo);
+        console.error("错误对象类型:", typeof error);
+        console.error("错误对象构造函数:", error.constructor?.name);
+        console.error("错误对象字符串:", String(error));
+        
+        // 构建错误消息
+        let errorMessage = t("saveFailed") || "保存失败，请重试";
+        if (error.message) {
+          errorMessage += `: ${error.message}`;
+        } else if (error.code) {
+          errorMessage += ` (错误代码: ${error.code})`;
+        } else if (error.details) {
+          errorMessage += ` (详情: ${error.details})`;
+        } else {
+          errorMessage += ` (未知错误: ${JSON.stringify(errorInfo)})`;
+        }
+        
+        setLoading(false);
+        alert(errorMessage);
+        return;
+      }
+
+      console.log("保存成功，返回数据:", data);
+      setLoading(false);
       onSuccess();
       onClose();
       setTitle("");
       setDescription("");
+    } catch (err) {
+      console.error("捕获到异常:", err);
+      setLoading(false);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      alert(`${t("saveFailed") || "保存失败，请重试"}: ${errorMsg}`);
     }
   };
 
@@ -74,33 +151,6 @@ export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">{t("type") || "类型"}</label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2"
-            >
-              <option value="今日待办">{t("todayTasks") || "今日待办"}</option>
-              <option value="近期目标">{t("recentGoals") || "近期目标"}</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">{t("priority") || "优先级"}</label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2"
-            >
-              <option value="高">{t("high") || "高"}</option>
-              <option value="中">{t("medium") || "中"}</option>
-              <option value="低">{t("low") || "低"}</option>
-            </select>
-          </div>
-        </div>
 
         <div className="flex justify-end mt-6 space-x-3">
           <Button 

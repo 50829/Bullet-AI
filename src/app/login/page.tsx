@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient"; // 更新路径
 import { useLanguage } from '../context/LanguageContext'; // 更新路径
+import { setGuestMode, clearGuestMode } from "../../lib/guestAuth"; // 导入游客模式工具函数
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,6 +32,8 @@ export default function LoginPage() {
       if (error) {
         setMessage(`登录失败：${error.message}`);
       } else {
+        // 登录成功，清除游客模式
+        clearGuestMode();
         // 密码登录成功后跳转到 main 页面
         router.push("/main");
       }
@@ -57,6 +60,11 @@ export default function LoginPage() {
       setMessage(error.message);
     }
     // 注意：OAuth 登录不会返回到当前函数，而是重定向到回调页面
+  };
+
+  const handleGuestLogin = () => {
+    setGuestMode();
+    router.push("/main");
   };
 
   return (
@@ -130,6 +138,28 @@ export default function LoginPage() {
           <a href="/register" className="text-amber-500 hover:underline">
             {t("registerTip")}
           </a>
+        </p>
+
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-sm text-gray-500">{t("or")}</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
+
+        {/* 游客登录按钮 */}
+        <button
+          onClick={handleGuestLogin}
+          disabled={loading}
+          className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 hover:bg-gray-50 text-gray-700 flex items-center justify-center gap-3 mb-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          {t("guestLogin")}
+        </button>
+        <p className="text-xs text-gray-500 text-center mb-4">
+          {t("guestLoginNote")}
         </p>
 
         {message && <p className="text-sm text-orange-400 mt-4">{message}</p>}

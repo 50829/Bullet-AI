@@ -151,24 +151,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
         
         {/* Slogan 居中 */}
         <div className="mt-4 flex justify-center">
-          {sloganVisible ? (
-            <div className="text-2xl md:text-3xl text-gray-600 flex flex-wrap justify-center">
-              {slogan.split('').map((char, index) => (
-                <span 
-                  key={index} 
-                  className="inline-block"
-                  style={{ 
-                    opacity: 0,
-                    animation: `fadeInUp 0.8s ${index * 0.15}s forwards`,
-                  }}
-                >
-                  {char === ' ' ? '\u00A0' : char}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-2xl md:text-3xl text-gray-600 opacity-0">{t("slogan")}</p>
-          )}
+          <p className="text-2xl md:text-3xl text-gray-600">{t("slogan")}</p>
         </div>
         
         {/* 按钮居中 */}

@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
+import { isGuestMode } from '../../lib/guestAuth';
 import { MainLayout } from '../components/layout/MainLayout';
 import MomentsPage from '../moments/page';
 import GoalsPage from '../goals/page';
@@ -40,6 +41,10 @@ export default function MainDashboardClient() {
   useEffect(() => {
     let mounted = true;
     const checkSession = async () => {
+      // 如果是游客模式，允许访问
+      if (isGuestMode()) {
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (mounted && !session) {
         router.push('/login');
@@ -47,6 +52,10 @@ export default function MainDashboardClient() {
     };
     checkSession();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // 如果是游客模式，不检查session
+      if (isGuestMode()) {
+        return;
+      }
       if (!session) router.push('/login');
     });
     return () => {

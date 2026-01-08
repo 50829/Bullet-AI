@@ -63,6 +63,14 @@ const translations: Record<string, TranslationValue> = {
     en: "No account? Register here",
     zh: "没有账号？去注册",
   },
+  guestLogin: {
+    en: "Continue as Guest",
+    zh: "游客登录",
+  },
+  guestLoginNote: {
+    en: "Note: Guest mode does not provide data saving service. Your data will only be stored locally in your browser.",
+    zh: "注意：游客模式不提供数据保存服务，数据仅保存在本地浏览器中。",
+  },
   // RegisterPage translations
   registerTitle: {
     en: "Register for BulletAI",
@@ -410,6 +418,22 @@ const translations: Record<string, TranslationValue> = {
     en: "Recent Goals",
     zh: "近期目标",
   },
+  schedulePlanning: {
+    en: "Schedule Planning",
+    zh: "日程规划",
+  },
+  selectDate: {
+    en: "Please select a date",
+    zh: "请选择日期",
+  },
+  noGoalsForDate: {
+    en: "No goals for this date",
+    zh: "该日期暂无目标",
+  },
+  dueDate: {
+    en: "Date",
+    zh: "日期",
+  },
   myHabits: {
     en: "My Habits",
     zh: "我的习惯",
@@ -441,6 +465,10 @@ const translations: Record<string, TranslationValue> = {
   pleaseLogin: {
     en: "Please log in first",
     zh: "请先登录",
+  },
+  guestModeNoSave: {
+    en: "Guest mode does not support saving data. Please log in first.",
+    zh: "游客模式不支持保存数据，请先登录",
   },
   addFailed: {
     en: "Failed to add",

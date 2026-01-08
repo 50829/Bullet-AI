@@ -4,9 +4,10 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { Trash2, ArrowUpDown } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { GoalModal } from "../components/GoalModal";
 import { HabitModal } from "../components/HabitModal";
+import { Calendar } from "../components/Calendar";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext';
 
@@ -14,8 +15,6 @@ type Goal = {
   id: number;
   title: string;
   description: string | null;
-  type: string;
-  priority: string;
   created_at: string;
   image_path?: string | null;
   status?: string;
@@ -48,11 +47,12 @@ type Message = {
 export default function GoalsPage() {
   const { goals, habits, loading, refreshGoals, refreshHabits, deleteGoal, updateGoal, checkinHabit } = useAppContext();
   const { t, language } = useLanguage();
-  const [activeTab, setActiveTab] = useState("myHabits");
-  const tabs = ["todayTasks", "recentGoals", "myHabits"];
+  const [activeTab, setActiveTab] = useState("schedulePlanning");
+  const tabs = ["schedulePlanning", "myHabits"];
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
   const [isAIPlanningOpen, setIsAIPlanningOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{ 
@@ -74,9 +74,29 @@ export default function GoalsPage() {
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  // 过滤目标和习惯
-  const goalsToday = goals.filter(g => g.type === "今日待办");
-  const goalsRecent = goals.filter(g => g.type === "近期目标");
+  // 将Date对象转换为YYYY-MM-DD格式（本地时间）
+  const formatDateToLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // 根据选中日期过滤目标
+  const getGoalsForDate = (date: Date | null) => {
+    if (!date) return [];
+    const dateStr = formatDateToLocal(date);
+    return goals.filter(goal => {
+      if (!goal.due_date) return false;
+      // 直接比较字符串，避免时区转换问题
+      return goal.due_date === dateStr;
+    });
+  };
+
+  const selectedDateGoals = getGoalsForDate(selectedDate);
+  
+  // 获取所有有日期的目标，用于日历显示
+  const goalsWithDates = goals.filter(g => g.due_date).map(g => ({ date: g.due_date! }));
 
   // 计算距离上次打卡的天数
   const daysSinceLastCheckin = (lastCheckinDate?: string | null): number | null => {
@@ -111,19 +131,6 @@ export default function GoalsPage() {
     }
   };
 
-  const handleMoveGoal = async (goalId: number, currentType: string) => {
-    console.log(`[Page DEBUG] 开始移动目标 ID: ${goalId}, 从 "${currentType}" 到 "${currentType === "今日待办" ? "近期目标" : "今日待办"}"`);
-    
-    const newType = currentType === "今日待办" ? "近期目标" : "今日待办";
-    try {
-        console.log(`[Page DEBUG] 调用 updateGoal 更新目标 ${goalId} 的类型为 "${newType}"...`);
-        await updateGoal(goalId, { type: newType });
-        console.log(`[Page DEBUG] updateGoal 调用成功`);
-    } catch (error) {
-        console.error("[Page ERROR] 移动目标失败:", error);
-        alert(t("moveFailed") || "移动失败，操作已回滚，请检查控制台日志或稍后重试");
-    }
-  };
 
   const handleCheckin = async (habitId: number) => {
     try {
@@ -214,15 +221,17 @@ export default function GoalsPage() {
       return;
     }
 
-    // 添加 Daily 任务
+    // 添加 Daily 任务（使用今天的日期）
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
     for (const task of daily) {
       const { title, description } = task;
       const { error } = await supabase.from("goals").insert({
         user_id: user.id,
         title,
         description,
-        type: "今日待办",
-        priority: "中",
+        due_date: todayStr,
       });
 
       if (error) {
@@ -232,15 +241,18 @@ export default function GoalsPage() {
       }
     }
 
-    // 添加 Future 任务
+    // 添加 Future 任务（使用一周后的日期）
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 7);
+    const futureDateStr = futureDate.toISOString().split('T')[0];
+    
     for (const task of future) {
       const { title, description } = task;
       const { error } = await supabase.from("goals").insert({
         user_id: user.id,
         title,
         description,
-        type: "近期目标",
-        priority: "中",
+        due_date: futureDateStr,
       });
 
       if (error) {
@@ -290,7 +302,13 @@ export default function GoalsPage() {
               >
                 {t("aiPlanning") || "AI智能规划"}
               </Button>
-              <Button onClick={() => activeTab === "myHabits" ? setIsHabitModalOpen(true) : setIsGoalModalOpen(true)}>
+              <Button onClick={() => {
+                if (activeTab === "myHabits") {
+                  setIsHabitModalOpen(true);
+                } else {
+                  setIsGoalModalOpen(true);
+                }
+              }}>
                 + {t("new")} {activeTab === "myHabits" ? t("habit") : t("goal")}
               </Button>
             </div>
@@ -318,77 +336,57 @@ export default function GoalsPage() {
         <div className="p-4 pt-0">
           <div className="max-w-6xl mx-auto">
             <div>
-              {activeTab === "todayTasks" && (
-                <div className="space-y-4">
-                  {goalsToday.map(goal => (
-                    <Card key={goal.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200">
-                      <div className="flex justify-between">
-                        <div>
-                          <h4 className="font-bold">{goal.title}</h4>
-                          <p className="text-sm text-gray-500">{goal.description}</p>
-                        </div>
-                        <div className="flex space-x-3 text-gray-400">
-                          <button
-                            type="button"
-                            className="cursor-pointer hover:text-orange-400 focus:outline-none"
-                            onClick={() => handleMoveGoal(goal.id, goal.type)}
-                          >
-                            <ArrowUpDown size={18} />
-                          </button>
-                          <Trash2 
-                            size={18} 
-                            className="cursor-pointer hover:text-orange-400" 
-                            onClick={() => {
-                              setSelectedItem({ 
-                                type: 'goal', 
-                                id: goal.id, 
-                                name: goal.title,
-                                imagePath: goal.image_path 
-                              });
-                              setShowConfirm(true);
-                            }} 
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              {activeTab === "recentGoals" && (
-                <div className="space-y-4">
-                  {goalsRecent.map(goal => (
-                    <Card key={goal.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200">
-                      <div className="flex justify-between">
-                        <div>
-                          <h4 className="font-bold">{goal.title}</h4>
-                          <p className="text-sm text-gray-500">{goal.description}</p>
-                        </div>
-                        <div className="flex space-x-3 text-gray-400">
-                          <button
-                            type="button"
-                            className="cursor-pointer hover:text-orange-400 focus:outline-none"
-                            onClick={() => handleMoveGoal(goal.id, goal.type)}
-                          >
-                            <ArrowUpDown size={18} />
-                          </button>
-                          <Trash2 
-                            size={18} 
-                            className="cursor-pointer hover:text-orange-400" 
-                            onClick={() => {
-                              setSelectedItem({ 
-                                type: 'goal', 
-                                id: goal.id, 
-                                name: goal.title,
-                                imagePath: goal.image_path 
-                              });
-                              setShowConfirm(true);
-                            }} 
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+              {activeTab === "schedulePlanning" && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* 左侧日历 */}
+                  <div>
+                    <Calendar
+                      selectedDate={selectedDate}
+                      onDateSelect={setSelectedDate}
+                      goalsWithDates={goalsWithDates}
+                    />
+                  </div>
+                  
+                  {/* 右侧目标列表 */}
+                  <div>
+                    <div className="mb-4">
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">
+                        {selectedDate 
+                          ? `${selectedDate.getFullYear()}年${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日`
+                          : t("selectDate") || "请选择日期"}
+                      </h3>
+                      {selectedDateGoals.length === 0 && (
+                        <p className="text-gray-500 text-sm">{t("noGoalsForDate") || "该日期暂无目标"}</p>
+                      )}
+                    </div>
+                    <div className="space-y-4">
+                      {selectedDateGoals.map(goal => (
+                        <Card key={goal.id} className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-4 rounded-3xl shadow-lg border border-orange-200">
+                          <div className="flex justify-between">
+                            <div>
+                              <h4 className="font-bold">{goal.title}</h4>
+                              <p className="text-sm text-gray-500">{goal.description}</p>
+                            </div>
+                            <div className="flex space-x-3 text-gray-400">
+                              <Trash2 
+                                size={18} 
+                                className="cursor-pointer hover:text-orange-400" 
+                                onClick={() => {
+                                  setSelectedItem({ 
+                                    type: 'goal', 
+                                    id: goal.id, 
+                                    name: goal.title,
+                                    imagePath: goal.image_path 
+                                  });
+                                  setShowConfirm(true);
+                                }} 
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -588,6 +586,7 @@ export default function GoalsPage() {
         isOpen={isGoalModalOpen}
         onClose={() => setIsGoalModalOpen(false)}
         onSuccess={refreshGoals}
+        selectedDate={selectedDate}
       />
 
       <HabitModal
