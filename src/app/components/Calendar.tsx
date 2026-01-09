@@ -3,13 +3,24 @@
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+type Goal = {
+  id: number;
+  title: string;
+  description: string | null;
+  created_at: string;
+  image_path?: string | null;
+  status?: string;
+  due_date?: string | null;
+  progress?: number;
+};
+
 type CalendarProps = {
   selectedDate: Date | null;
   onDateSelect: (date: Date) => void;
-  goalsWithDates: { date: string }[];
+  goals: Goal[];
 };
 
-export const Calendar = ({ selectedDate, onDateSelect, goalsWithDates }: CalendarProps) => {
+export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // 获取月份的第一天和最后一天
@@ -40,14 +51,16 @@ export const Calendar = ({ selectedDate, onDateSelect, goalsWithDates }: Calenda
     days.push(null);
   }
 
-  // 检查某天是否有目标
-  const hasGoalOnDate = (day: number | null): boolean => {
+  // 检查某天是否有未完成的目标
+  const hasIncompleteGoalOnDate = (day: number | null): boolean => {
     if (day === null) return false;
     const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return goalsWithDates.some(goal => {
-      if (!goal.date) return false;
+    return goals.some(goal => {
+      if (!goal.due_date) return false;
       // 直接比较字符串，避免时区转换问题
-      return goal.date === dateStr;
+      if (goal.due_date !== dateStr) return false;
+      // 只返回未完成的目标
+      return goal.status !== 'completed';
     });
   };
 
@@ -93,9 +106,9 @@ export const Calendar = ({ selectedDate, onDateSelect, goalsWithDates }: Calenda
   const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-orange-200 p-4">
+    <div className="bg-white rounded-2xl shadow-lg border border-orange-200 p-4 h-[520px] flex flex-col">
       {/* 月份导航 */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <button
           onClick={prevMonth}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -114,18 +127,18 @@ export const Calendar = ({ selectedDate, onDateSelect, goalsWithDates }: Calenda
       </div>
 
       {/* 星期标题 */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-1 mb-2 flex-shrink-0">
         {weekDays.map((day) => (
-          <div key={day} className="text-center text-sm font-medium text-gray-600 py-2">
+          <div key={day} className="text-center text-sm font-medium text-gray-600 py-1">
             {day}
           </div>
         ))}
       </div>
 
       {/* 日期网格 */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1 flex-1 min-h-0">
         {days.map((day, index) => {
-          const hasGoal = hasGoalOnDate(day);
+          const hasIncompleteGoal = hasIncompleteGoalOnDate(day);
           const today = isToday(day);
           const selected = isSelected(day);
 
@@ -141,16 +154,13 @@ export const Calendar = ({ selectedDate, onDateSelect, goalsWithDates }: Calenda
                   ? 'bg-orange-400 text-white font-bold' 
                   : today 
                     ? 'bg-orange-100 text-orange-600 font-semibold' 
-                    : hasGoal
+                    : hasIncompleteGoal
                       ? 'bg-blue-50 text-gray-800 hover:bg-blue-100'
                       : 'text-gray-700 hover:bg-gray-100'
                 }
               `}
             >
               {day}
-              {hasGoal && !selected && (
-                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mx-auto mt-1" />
-              )}
             </button>
           );
         })}

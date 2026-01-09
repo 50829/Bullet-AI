@@ -86,9 +86,6 @@ export default function GoalsPage() {
 
   const selectedDateGoals = getGoalsForDate(selectedDate);
   
-  // 获取所有有日期的目标，用于日历显示
-  const goalsWithDates = goals.filter(g => g.due_date).map(g => ({ date: g.due_date! }));
-  
   // 获取迁移列表（无日期的目标）
   const migrationListGoals = goals.filter(g => !g.due_date);
 
@@ -241,9 +238,9 @@ export default function GoalsPage() {
   if (loading.goals || loading.habits) return <div className="text-center py-8">{t("loadingGoals") || "目标加载中..."}</div>;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* 固定的头部区域 - 毛玻璃圆角矩形模块 */}
-      <div className="sticky top-0 z-20 py-4 px-4">
+      <div className="flex-shrink-0 z-20 py-4 px-4">
         <div className="max-w-6xl mx-auto bg-gradient-to-br from-blue-100/70 via-white/70 to-orange-100/70 rounded-3xl shadow-lg border border-orange-200 backdrop-blur-md">
           {/* 标题和按钮行 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
@@ -319,27 +316,27 @@ export default function GoalsPage() {
         onAddGoals={addTasksFromAIReply}
       />
 
-      {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
-      <div className={`flex-1 transition-all duration-300 ${showAIPanel ? 'lg:ml-96' : ''}`}>
-        <div className="p-4 pt-0">
+      {/* 内容区域 - 固定高度，内部滚动 */}
+      <div className={`flex-1 transition-all duration-300 overflow-hidden ${showAIPanel ? 'lg:ml-96' : ''}`}>
+        <div className="h-full p-4 pt-0 overflow-y-auto">
           <div className="max-w-6xl mx-auto">
             <div>
               {activeTab === "schedulePlanning" && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* 左侧日历 */}
-                  <div>
+                  <div className="h-[520px]">
                     <Calendar
                       selectedDate={selectedDate}
                       onDateSelect={setSelectedDate}
-                      goalsWithDates={goalsWithDates}
+                      goals={goals}
                     />
                   </div>
                   
                   {/* 右侧目标列表 */}
-                  <div>
-                    <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-orange-200 relative">
+                  <div className="h-[520px]">
+                    <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-orange-200 relative h-full flex flex-col">
                       {/* 标题和切换按钮 */}
-                      <div className="mb-4 flex items-center justify-between">
+                      <div className="mb-4 flex items-center justify-between flex-shrink-0">
                         <h3 className="text-xl font-bold text-gray-800">
                           {rightViewMode === "migration" 
                             ? t("migrationList") || "迁移列表"
@@ -361,11 +358,11 @@ export default function GoalsPage() {
 
                       {/* 迁移列表视图 */}
                       {rightViewMode === "migration" && (
-                        <div>
+                        <div className="flex-1 flex flex-col min-h-0">
                           {migrationListGoals.length === 0 && (
-                            <p className="text-gray-500 text-sm mb-4">{t("noMigrationGoals") || "迁移列表为空，新建目标将自动添加到这里"}</p>
+                            <p className="text-gray-500 text-sm mb-4 flex-shrink-0">{t("noMigrationGoals") || "迁移列表为空，新建目标将自动添加到这里"}</p>
                           )}
-                          <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                          <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
                             {migrationListGoals.map(goal => {
                               const isCompleted = goal.status === 'completed';
                               return (
@@ -460,11 +457,11 @@ export default function GoalsPage() {
 
                       {/* 日程视图 */}
                       {rightViewMode === "schedule" && (
-                        <div>
+                        <div className="flex-1 flex flex-col min-h-0">
                           {selectedDateGoals.length === 0 && (
-                            <p className="text-gray-500 text-sm mb-4">{t("noGoalsForDate") || "该日期暂无目标"}</p>
+                            <p className="text-gray-500 text-sm mb-4 flex-shrink-0">{t("noGoalsForDate") || "该日期暂无目标"}</p>
                           )}
-                          <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                          <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
                             {selectedDateGoals.map(goal => {
                               const isCompleted = goal.status === 'completed';
                               return (
