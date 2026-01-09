@@ -215,13 +215,13 @@ const FeaturesSection = () => {
     },
     {
       icon: <Bot className="h-7 w-7 text-gray-700" />,
-      title: t("aiCave"),
-      description: t("aiCaveDescription"),
+      title: t("aiEmpowerment"),
+      description: t("aiEmpowermentDescription"),
       items: [
-        t("aiCaveItems[0]"),
-        t("aiCaveItems[1]"),
-        t("aiCaveItems[2]"),
-        t("aiCaveItems[3]"),
+        t("aiEmpowermentItems[0]"),
+        t("aiEmpowermentItems[1]"),
+        t("aiEmpowermentItems[2]"),
+        t("aiEmpowermentItems[3]"),
       ],
       imagePath: "/moments.png", // 可以根据需要替换为对应的图片路径
     },

@@ -150,21 +150,21 @@ const translations: Record<string, TranslationValue> = {
     zh: "我的时刻",
   },
   momentsDescription: {
-    en: "Record daily bits, cherish life moments in a dedicated diary",
-    zh: "记录日常点滴，珍藏生活瞬间的专属日记",
+    en: "Record every precious moment in life, from daily routines to special memories",
+    zh: "记录生活中的每一个珍贵瞬间，从日常点滴到特别回忆",
   },
   momentsItems: [
     {
-      en: "Multimedia Recording: Support text, images to make memories more vivid",
-      zh: "多媒体记录: 支持文字、图片，让回忆更生动",
+      en: "Rich Content: Record with text, images, event types, locations, and custom tags",
+      zh: "丰富内容: 支持文字、图片、事件类型、地点和自定义标签记录",
     },
     {
-      en: "Smart Tagging: Customize event types (e.g., life, work, travel) and geographic location",
-      zh: "智能标记: 自定义事件类型（如生活、工作、旅行）与地理位置",
+      en: "AI Moment Assistant: Chat about life topics, get companionship and inspiration",
+      zh: "AI时刻助手: 聊生活话题，获得陪伴与启发",
     },
     {
-      en: "Efficient Retrieval: Quickly filter and review through keywords or event types",
-      zh: "高效检索: 通过关键词或事件类型快速筛选回顾",
+      en: "Unified Search: Search across all content types with one keyword",
+      zh: "统一搜索: 一个关键词搜索所有类型的内容",
     },
   ],
   goals: {
@@ -172,25 +172,25 @@ const translations: Record<string, TranslationValue> = {
     zh: "我的目标",
   },
   goalsDescription: {
-    en: "Clear planning for tasks and dreams, from daily to-dos to long-term goals",
-    zh: "清晰规划任务与梦想，从每日待办到长期目标",
+    en: "Plan your future with clear goals, from daily tasks to long-term dreams",
+    zh: "清晰规划未来，从每日任务到长期梦想",
   },
   goalsItems: [
     {
-      en: "Today's To-Dos: Add tasks, set priorities, mark completion status",
-      zh: "今日待办: 添加任务、设置优先级、标记完成状态",
+      en: "Calendar Planning: Visualize goals on calendar, manage by date",
+      zh: "日程规划: 在日历上可视化目标，按日期管理",
     },
     {
-      en: "Recent Goals: Set medium or long-term goals and track progress",
-      zh: "近期目标: 设定中期或长期目标并追踪进度",
+      en: "Migration List: Flexible goal management, assign to specific dates",
+      zh: "迁移列表: 灵活的目标管理，分配到具体日期",
     },
     {
-      en: "My Habits: Create habits, set frequency, track check-in counts",
-      zh: "我的习惯: 创建习惯、设定频率、统计打卡次数",
+      en: "Habit Tracking: Create habits, set frequency, track check-ins",
+      zh: "习惯追踪: 创建习惯、设定频率、记录打卡",
     },
     {
-      en: "Flexible Management: Edit or delete tasks, goals, and habits anytime",
-      zh: "灵活管理: 随时编辑或删除任务、目标与习惯",
+      en: "AI Planning Assistant: Break down large goals into actionable sub-goals",
+      zh: "AI智能规划: 将大目标拆分成可执行的小目标",
     },
   ],
   insights: {
@@ -198,47 +198,47 @@ const translations: Record<string, TranslationValue> = {
     zh: "我的感悟",
   },
   insightsDescription: {
-    en: "Accumulate inspiration and thoughts, build your private thought library",
-    zh: "沉淀灵感与思考，打造你的私人思想库",
+    en: "Capture inspiration and wisdom, build your personal philosophy library",
+    zh: "捕捉灵感与智慧，打造你的个人哲学库",
   },
   insightsItems: [
     {
-      en: "Deep Recording: Support text, images to record insights",
-      zh: "深度记录: 支持文字、图片记录感悟",
+      en: "Rich Recording: Record insights with text, images, sources, and locations",
+      zh: "丰富记录: 支持文字、图片、来源、地点记录感悟",
     },
     {
-      en: "Background Information: Mark event types, inspiration sources, and location",
-      zh: "背景信息: 标注事件类型、灵感来源与地点",
+      en: "AI Thought Assistant: Explore philosophy, life wisdom, and profound insights",
+      zh: "AI思维助手: 探讨哲学思想、人生智慧与深刻洞察",
     },
     {
-      en: "Quick Search: Search past inspirations via keywords",
-      zh: "快速查找: 通过关键词搜索过往灵感",
+      en: "Unified Search: Search across all content with one keyword",
+      zh: "统一搜索: 一个关键词搜索所有内容",
     },
   ],
-  aiCave: {
-    en: "AI Cave",
-    zh: "AI树洞",
+  aiEmpowerment: {
+    en: "AI Empowerment",
+    zh: "AI赋能",
   },
-  aiCaveDescription: {
-    en: "Your private smart partner, understands you, accompanies you, inspires you",
-    zh: "你的私密智能伙伴，懂你、陪你、启发你",
+  aiEmpowermentDescription: {
+    en: "Three specialized AI assistants to enhance your recording, thinking, and planning",
+    zh: "三大专业AI助手，提升你的记录、思考与规划能力",
   },
-  aiCaveItems: [
+  aiEmpowermentItems: [
     {
-      en: "Personalized Conversation: Deep understanding and response based on all your records",
-      zh: "个性化对话: 基于你所有记录进行深度理解与回应",
+      en: "AI Moment Assistant: Chat about life, share beautiful moments together",
+      zh: "AI时刻助手: 聊生活话题，一起分享美好瞬间",
     },
     {
-      en: "Emotional Support: Listen and accompany with warmth and empathy",
-      zh: "情感支持: 以温暖、共情的方式倾听与陪伴",
+      en: "AI Thought Assistant: Explore philosophy and life wisdom in depth",
+      zh: "AI思维助手: 深入探讨哲学思想与人生智慧",
     },
     {
-      en: "Smart Insights: Review the past, provide growth perspectives and new thoughts",
-      zh: "智能洞察: 回顾过往，提供成长视角与新思考",
+      en: "AI Planning Assistant: Break down large goals into actionable steps",
+      zh: "AI智能规划: 将大目标拆解成可执行的步骤",
     },
     {
-      en: "Absolutely Private: All data is used only by you and AI, safe and worry-free",
-      zh: "绝对私密: 所有数据仅限你与AI使用，安全无忧",
+      en: "Intelligent Integration: AI understands your records and provides personalized support",
+      zh: "智能融合: AI理解你的记录，提供个性化支持",
     },
   ],
   suitableForEveryone: {
@@ -255,20 +255,20 @@ const translations: Record<string, TranslationValue> = {
   },
   pricingFeatures: [
     {
-      en: "My Moments: Complete recording and management",
-      zh: "我的时刻：完整记录与管理",
+      en: "My Moments: Complete recording with AI Moment Assistant",
+      zh: "我的时刻：完整记录，配备AI时刻助手",
     },
     {
-      en: "My Goals: Task, goal, and habit tracking",
-      zh: "我的目标：任务、目标与习惯追踪",
+      en: "My Goals: Calendar planning, migration list, and AI Planning Assistant",
+      zh: "我的目标：日程规划、迁移列表，配备AI智能规划",
     },
     {
-      en: "My Insights: Inspiration accumulation and review",
-      zh: "我的感悟：灵感沉淀与回顾",
+      en: "My Insights: Inspiration recording with AI Thought Assistant",
+      zh: "我的感悟：灵感记录，配备AI思维助手",
     },
     {
-      en: "AI Cave: Private smart conversation and insights",
-      zh: "AI树洞：私密智能对话与洞察",
+      en: "AI Empowerment: Three specialized AI assistants for comprehensive support",
+      zh: "AI赋能：三大专业AI助手，全方位支持",
     },
     {
       en: "Multimedia Support: Text, images",
@@ -417,6 +417,30 @@ const translations: Record<string, TranslationValue> = {
   aiPlanning: {
     en: "AI Planning",
     zh: "AI智能规划",
+  },
+  aiPlanningGreeting: {
+    en: "Hello! I'm your AI Planning Assistant. Tell me what goal you want to achieve, and I'll help you break it down into actionable sub-goals. 🎯",
+    zh: "你好！我是你的AI规划助手。请告诉我你想完成什么目标，我会帮你拆解成可执行的小目标。🎯",
+  },
+  aiGoalInputPlaceholder: {
+    en: "Enter the large goal you want to achieve...",
+    zh: "输入你想完成的大目标...",
+  },
+  addToMigrationList: {
+    en: "Add to Migration List",
+    zh: "一键添加到迁移列表",
+  },
+  goalsAddedSuccessfully: {
+    en: "✅ Goals have been successfully added to the migration list!",
+    zh: "✅ 目标已成功添加到迁移列表！",
+  },
+  addGoalsFailed: {
+    en: "Failed to add goals, please try again later.",
+    zh: "添加目标失败，请稍后再试。",
+  },
+  adding: {
+    en: "Adding...",
+    zh: "添加中...",
   },
   new: {
     en: "New",
@@ -876,6 +900,27 @@ const translations: Record<string, TranslationValue> = {
   aiCaveInputPlaceholder: {
     en: "Enter your thoughts...",
     zh: "输入你的想法...",
+  },
+  // AI Assistant translations
+  aiAssistant: {
+    en: "AI Assistant",
+    zh: "AI助手",
+  },
+  aiThoughtAssistant: {
+    en: "AI Thought Assistant",
+    zh: "AI思维助手",
+  },
+  aiMomentAssistant: {
+    en: "AI Moment Assistant",
+    zh: "AI时刻助手",
+  },
+  aiThoughtAssistantGreeting: {
+    en: "Hello! I'm your AI Thought Assistant, focused on exploring philosophical ideas, life wisdom, and profound insights with you. Let's think about the meaning of life together! ✨",
+    zh: "你好！我是你的AI思维助手，专注于和你探讨哲学思想、人生智慧等深刻的感悟话题。让我们一起思考生活的意义吧！✨",
+  },
+  aiMomentAssistantGreeting: {
+    en: "Hello! I'm your AI Moment Assistant, focused on chatting about life-related topics with you. Let's share the beautiful moments in life together! 🌟",
+    zh: "你好！我是你的AI时刻助手，专注于和你聊生活相关的话题。让我们一起分享生活中的美好瞬间吧！🌟",
   },
 };
 

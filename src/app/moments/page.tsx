@@ -5,8 +5,9 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Tag } from "../components/ui/Tag";
-import { Search, MapPin, Trash2, Menu, X } from "lucide-react";
+import { Search, MapPin, Trash2, Menu, X, Sparkles } from "lucide-react";
 import { MomentModal } from "../components/MomentModal";
+import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 
@@ -25,7 +26,7 @@ type Moment = {
 
 export default function MomentsPage() {
   const { moments, loading, refreshMoments, deleteMoment } = useAppContext();
-  const { t } = useLanguage(); // 获取翻译函数
+  const { t, language } = useLanguage(); // 获取翻译函数和语言设置
   const [filteredMoments, setFilteredMoments] = useState<Moment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -33,6 +34,7 @@ export default function MomentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(false); // 新增状态控制搜索栏显示
   const [isMobile, setIsMobile] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
 
   // 检测屏幕尺寸
   useEffect(() => {
@@ -114,6 +116,15 @@ export default function MomentsPage() {
               <p className="text-gray-500 mt-1">{t("momentsDescription") || "珍藏每一个值得记录的瞬间"}</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
+              {/* AI时刻助手按钮 */}
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAIPanel(!showAIPanel)}
+                className="flex items-center gap-1"
+              >
+                <Sparkles size={16} /> 
+                {t("aiMomentAssistant") || "AI时刻助手"}
+              </Button>
               {/* 搜索按钮 */}
               <Button 
                 variant="outline" 
@@ -162,8 +173,30 @@ export default function MomentsPage() {
         </div>
       </div>
 
+      {/* AI对话面板 */}
+      <AIChatPanel
+        isOpen={showAIPanel}
+        onClose={() => setShowAIPanel(false)}
+        greeting={t("aiMomentAssistantGreeting") || "你好！我是你的AI时刻助手，专注于和你聊生活相关的话题。让我们一起分享生活中的美好瞬间吧！🌟"}
+        systemPrompt={
+          language === "en"
+            ? "You are the user's AI Moment Assistant, focused on chatting about life-related topics. Please strictly follow these rules:\n" +
+              "1. Your responses must be relaxed, natural, and close to life, using the same language as the user. Please respond in English.\n" +
+              "2. Based on the life moments and experiences shared by the user, provide empathy and understanding.\n" +
+              "3. You can share life tips, interesting stories, life insights, etc.\n" +
+              "4. Keep the conversation light and pleasant, making users feel the beauty of life.\n" +
+              "5. When users share joy, celebrate together; when users encounter difficulties, provide encouragement and support."
+            : "你是用户的 AI 时刻助手，专注于聊生活相关的话题。请严格遵守以下规则：\n" +
+              "1. 回答必须轻松、自然、贴近生活，且使用与用户相同的语言。请使用中文回复。\n" +
+              "2. 基于用户分享的生活时刻和经历，给予共鸣和理解。\n" +
+              "3. 可以分享生活小贴士、有趣的故事、生活感悟等。\n" +
+              "4. 保持对话的轻松愉快，让用户感受到生活的美好。\n" +
+              "5. 当用户分享快乐时，一起庆祝；当用户遇到困难时，给予鼓励和支持。"
+        }
+      />
+
       {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
-      <div className="flex-1">
+      <div className={`flex-1 transition-all duration-300 ${showAIPanel ? 'lg:ml-96' : ''}`}>
         <div className="p-4 pt-0">
           <div className="max-w-6xl mx-auto">
             <div className="space-y-6">

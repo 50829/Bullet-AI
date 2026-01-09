@@ -9,7 +9,6 @@ import { MainLayout } from '../components/layout/MainLayout';
 import MomentsPage from '../moments/page';
 import GoalsPage from '../goals/page';
 import ReflectionsPage from '../reflections/page';
-import AICompanionPage from '../ai-companion/page';
 import MonthlyRecommendationPage from '../monthly-recommendation/page'; // 新增导入
 
 function InnerPage({ activePage }: { activePage: string }) {
@@ -20,8 +19,6 @@ function InnerPage({ activePage }: { activePage: string }) {
       return <GoalsPage />;
     case 'reflections':
       return <ReflectionsPage />;
-    case 'ai-companion':
-      return <AICompanionPage />;
     case 'moments':
     default:
       return <MomentsPage />;

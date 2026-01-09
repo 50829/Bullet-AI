@@ -5,8 +5,9 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Tag } from "../components/ui/Tag";
-import { Search, MapPin, Trash2, X } from "lucide-react";
+import { Search, MapPin, Trash2, X, Sparkles } from "lucide-react";
 import { ReflectionModal } from "../components/ReflectionModal";
+import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 
@@ -25,7 +26,7 @@ type Reflection = {
 
 export default function ReflectionsPage() {
   const { reflections, loading, refreshReflections, deleteReflection } = useAppContext();
-  const { t } = useLanguage(); // 获取翻译函数
+  const { t, language } = useLanguage(); // 获取翻译函数和语言设置
   const [filteredReflections, setFilteredReflections] = useState<Reflection[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -33,6 +34,7 @@ export default function ReflectionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
 
   // 检测屏幕尺寸
   useEffect(() => {
@@ -114,6 +116,15 @@ export default function ReflectionsPage() {
               <p className="text-gray-500 mt-1">{t("insightsDescription") || "记录生活中的灵感与思考"}</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
+              {/* AI思维助手按钮 */}
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAIPanel(!showAIPanel)}
+                className="flex items-center gap-1"
+              >
+                <Sparkles size={16} /> 
+                {t("aiThoughtAssistant") || "AI思维助手"}
+              </Button>
               {/* 搜索按钮 */}
               <Button 
                 variant="outline" 
@@ -162,8 +173,30 @@ export default function ReflectionsPage() {
         </div>
       </div>
 
+      {/* AI对话面板 */}
+      <AIChatPanel
+        isOpen={showAIPanel}
+        onClose={() => setShowAIPanel(false)}
+        greeting={t("aiThoughtAssistantGreeting") || "你好！我是你的AI思维助手，专注于和你探讨哲学思想、人生智慧等深刻的感悟话题。让我们一起思考生活的意义吧！✨"}
+        systemPrompt={
+          language === "en"
+            ? "You are the user's AI Thought Assistant, focused on exploring philosophical ideas, life wisdom, and profound insights. Please strictly follow these rules:\n" +
+              "1. Your responses must be profound, inspiring, and philosophical, using the same language as the user. Please respond in English.\n" +
+              "2. Based on the insights and thoughts shared by the user, provide deep insights and inspiration.\n" +
+              "3. You can quote philosophical ideas, famous quotes, and classic theories to enrich the conversation.\n" +
+              "4. Maintain the depth and thoughtfulness of the conversation, guiding users to think more deeply.\n" +
+              "5. When users express confusion or uncertainty, provide wise guidance and inspiration."
+            : "你是用户的 AI 思维助手，专注于探讨哲学思想、人生智慧、生活感悟等深刻话题。请严格遵守以下规则：\n" +
+              "1. 回答必须深刻、有启发性、富有哲理，且使用与用户相同的语言。请使用中文回复。\n" +
+              "2. 基于用户分享的感悟和思考，给予深入的见解和启发。\n" +
+              "3. 可以引用哲学思想、名人名言、经典理论来丰富对话。\n" +
+              "4. 保持对话的深度和思考性，引导用户进行更深层次的思考。\n" +
+              "5. 当用户表达困惑或迷茫时，给予智慧的指引和启发。"
+        }
+      />
+
       {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
-      <div className="flex-1">
+      <div className={`flex-1 transition-all duration-300 ${showAIPanel ? 'lg:ml-96' : ''}`}>
         <div className="p-4 pt-0"> {/* 移除顶部padding，因为头部已固定 */}
           <div className="max-w-6xl mx-auto">
             <div className="space-y-6">

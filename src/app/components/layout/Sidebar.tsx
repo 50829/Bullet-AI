@@ -54,7 +54,6 @@ export const Sidebar = () => {
     { page: 'moments', label: t("myMomentsNav") || '我的时刻', icon: <Heart size={20} /> },
     { page: 'goals', label: t("myGoalsNav") || '我的目标', icon: <Target size={20} /> },
     { page: 'reflections', label: t("myReflectionsNav") || '我的感悟', icon: <BrainCircuit size={20} /> },
-    { page: 'ai-companion', label: t("aiCaveNav") || 'AI树洞', icon: <MessageSquare size={20} /> },
   ];
 
   // 检测屏幕尺寸

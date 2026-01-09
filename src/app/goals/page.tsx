@@ -4,10 +4,11 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { Trash2, CheckCircle2, ArrowRight, ArrowLeft, RefreshCw } from "lucide-react";
+import { Trash2, CheckCircle2, ArrowRight, ArrowLeft, RefreshCw, Sparkles } from "lucide-react";
 import { GoalModal } from "../components/GoalModal";
 import { HabitModal } from "../components/HabitModal";
 import { Calendar } from "../components/Calendar";
+import { AIGoalPlanningPanel } from "../components/AIGoalPlanningPanel";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext';
 
@@ -51,7 +52,7 @@ export default function GoalsPage() {
   const tabs = ["schedulePlanning", "myHabits"];
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
-  const [isAIPlanningOpen, setIsAIPlanningOpen] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [rightViewMode, setRightViewMode] = useState<"migration" | "schedule">("migration");
   
@@ -63,17 +64,6 @@ export default function GoalsPage() {
     imagePath?: string | null 
   } | null>(null);
 
-  // AI智能规划相关状态
-  const [aiMessages, setAiMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: t("aiPlanningGreeting") || '你好！我是你的AI规划助手。请告诉我你想完成什么目标，我会帮你拆解成可执行的任务列表。🎯',
-      planData: null
-    }
-  ]);
-  const [aiInput, setAiInput] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
 
   // 将Date对象转换为YYYY-MM-DD格式（本地时间）
   const formatDateToLocal = (date: Date): string => {
@@ -213,7 +203,7 @@ export default function GoalsPage() {
     }
   };
 
-  // 从AI回复中解析任务并添加
+  // 从AI回复中解析任务并添加到迁移列表（不设置日期）
   const addTasksFromAIReply = async (plan: { daily: { title: string, description: string }[], future: { title: string, description: string }[] }) => {
     const { daily, future } = plan;
     
@@ -221,68 +211,30 @@ export default function GoalsPage() {
     const { data } = await supabase.auth.getUser();
     const user = data?.user;
     if (!user) {
-      alert(t("pleaseLogin") || "请先登录");
-      return;
+      throw new Error(t("pleaseLogin") || "请先登录");
     }
 
-    // 添加 Daily 任务（使用今天的日期）
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    // 合并所有任务（daily 和 future）都添加到迁移列表（不设置日期）
+    const allTasks = [...daily, ...future];
     
-    for (const task of daily) {
+    for (const task of allTasks) {
       const { title, description } = task;
       const { error } = await supabase.from("goals").insert({
         user_id: user.id,
         title,
         description,
-        due_date: todayStr,
+        // 不设置 due_date，这样会添加到迁移列表
+        due_date: null,
       });
 
       if (error) {
-        console.error("添加今日待办失败:", error);
-        alert(`${t("addFailed")} "${title}" ${t("retry")}` || `添加任务 "${title}" 失败，请重试`);
-        return;
+        console.error("添加目标失败:", error);
+        throw new Error(`${t("addFailed") || "添加失败"}: "${title}"`);
       }
     }
 
-    // 添加 Future 任务（使用一周后的日期）
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + 7);
-    const futureDateStr = futureDate.toISOString().split('T')[0];
-    
-    for (const task of future) {
-      const { title, description } = task;
-      const { error } = await supabase.from("goals").insert({
-        user_id: user.id,
-        title,
-        description,
-        due_date: futureDateStr,
-      });
-
-      if (error) {
-        console.error("添加近期目标失败:", error);
-        alert(`${t("addFailed")} "${title}" ${t("retry")}` || `添加目标 "${title}" 失败，请重试`);
-        return;
-      }
-    }
-    
-    alert(`${t("addSuccess")} ${daily.length + future.length} ${t("tasksAdded")}!`);
+    // 刷新目标列表
     refreshGoals();
-  };
-
-  // 关闭AI规划面板时重置状态
-  const closeAIPlanning = () => {
-    setIsAIPlanningOpen(false);
-    setAiMessages([
-      {
-        id: '1',
-        role: 'assistant',
-        content: t("aiPlanningGreeting") || '你好！我是你的AI规划助手。请告诉我你想完成什么目标，我会帮你拆解成可执行的任务列表。🎯',
-        planData: null
-      }
-    ]);
-    setAiInput('');
-    setAiLoading(false);
   };
 
 
@@ -299,11 +251,14 @@ export default function GoalsPage() {
               <h2 className="text-3xl font-bold text-gray-800">{t("myGoals") || "我的目标"}</h2>
               <p className="text-gray-500 mt-1">{t("planForFuture") || "规划未来，成就更好的自己"}</p>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* AI智能规划按钮 */}
               <Button 
-                variant="secondary" 
-                onClick={() => setIsAIPlanningOpen(true)}
+                variant="outline" 
+                onClick={() => setShowAIPanel(!showAIPanel)}
+                className="flex items-center gap-1"
               >
+                <Sparkles size={16} /> 
                 {t("aiPlanning") || "AI智能规划"}
               </Button>
               <Button onClick={() => {
@@ -335,8 +290,35 @@ export default function GoalsPage() {
         </div>
       </div>
 
+      {/* AI智能规划面板 */}
+      <AIGoalPlanningPanel
+        isOpen={showAIPanel}
+        onClose={() => setShowAIPanel(false)}
+        greeting={t("aiPlanningGreeting") || (language === "en" 
+          ? "Hello! I'm your AI Planning Assistant. Tell me what goal you want to achieve, and I'll help you break it down into actionable sub-goals. 🎯"
+          : "你好！我是你的AI规划助手。请告诉我你想完成什么目标，我会帮你拆解成可执行的小目标。🎯")}
+        systemPrompt={
+          language === "en"
+            ? "You are the user's AI Planning Assistant, focused on breaking down large goals into actionable sub-goals. Please strictly follow these rules:\n" +
+              "1. Your responses must be clear, actionable, and structured, using the same language as the user. Please respond in English.\n" +
+              "2. When users share a large goal, break it down into multiple smaller, executable sub-goals.\n" +
+              "3. You must provide a structured plan in JSON format with 'tasksDaily' and 'tasksFuture' arrays.\n" +
+              "4. 'tasksDaily' should contain immediate actionable tasks, 'tasksFuture' should contain medium-term sub-goals.\n" +
+              "5. Each task should have a clear title (≤30 characters) and description.\n" +
+              "6. Always generate the JSON plan when users express planning intentions."
+            : "你是用户的 AI 规划助手，专注于将大目标拆分成可执行的小目标。请严格遵守以下规则：\n" +
+              "1. 回答必须清晰、可执行、结构化，且使用与用户相同的语言。请使用中文回复。\n" +
+              "2. 当用户分享大目标时，将其拆解成多个可执行的小目标。\n" +
+              "3. 必须提供结构化的计划，使用 JSON 格式，包含 'tasksDaily' 和 'tasksFuture' 两个数组。\n" +
+              "4. 'tasksDaily' 应包含立即可执行的任务，'tasksFuture' 应包含中期的小目标。\n" +
+              "5. 每个任务应有清晰的标题（≤30字符）和描述。\n" +
+              "6. 当用户表达规划意图时，必须生成 JSON 计划。"
+        }
+        onAddGoals={addTasksFromAIReply}
+      />
+
       {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
-      <div className="flex-1">
+      <div className={`flex-1 transition-all duration-300 ${showAIPanel ? 'lg:ml-96' : ''}`}>
         <div className="p-4 pt-0">
           <div className="max-w-6xl mx-auto">
             <div>
@@ -649,119 +631,6 @@ export default function GoalsPage() {
         </div>
       </div>
 
-      {/* AI智能规划模态框 */}
-      {isAIPlanningOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-orange-200 w-full max-w-2xl h-[600px] flex flex-col">
-            <div className="p-4 border-b border-orange-200">
-              <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-800">{t("aiPlanning") || "AI智能规划"}</h3>
-                <button 
-                  onClick={closeAIPlanning}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-            
-            {/* 聊天内容区域 */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {aiMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
-                >
-                  <div
-                    className={`inline-block p-4 rounded-xl max-w-full ${
-                      message.role === 'user'
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-                        : 'bg-gradient-to-r from-orange-200 to-yellow-100 text-gray-800'
-                    }`}
-                  >
-                    <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
-
-                    {message.planData && (
-                      <div className="mt-3 p-3 bg-white/30 rounded-lg">
-                        <h4 className="font-semibold text-sm mb-2">{t("aiGeneratedPlan") || "📋 AI生成的计划："}</h4>
-                        
-                        {message.planData.daily && message.planData.daily.length > 0 && (
-                          <div className="mb-3">
-                            <h5 className="font-medium text-xs text-gray-600 mb-1">{t("todayTasks")} ({message.planData.daily.length})</h5>
-                            <ul className="text-xs space-y-1">
-                              {message.planData.daily.map((task, index) => (
-                                <li key={index} className="flex">
-                                  <span className="mr-1">•</span>
-                                  <strong>{task.title}:</strong> {task.description}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {message.planData.future && message.planData.future.length > 0 && (
-                          <div>
-                            <h5 className="font-medium text-xs text-gray-600 mb-1">{t("recentGoals")} ({message.planData.future.length})</h5>
-                            <ul className="text-xs space-y-1">
-                              {message.planData.future.map((task, index) => (
-                                <li key={index} className="flex">
-                                  <span className="mr-1">•</span>
-                                  <strong>{task.title}:</strong> {task.description}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {message.planData && (
-                      <button
-                        onClick={() => addTasksFromAIReply(message.planData)}
-                        className="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600"
-                      >
-                        {t("addTasksToGoals") || "一键添加到目标"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {aiLoading && (
-                <div className="mb-4 text-left">
-                  <div className="bg-gradient-to-r from-orange-200 to-yellow-100 p-4 rounded-xl max-w-full">
-                    <p className="text-gray-800">{t("aiThinking") || "AI正在思考中..."}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* 输入区域 */}
-            <div className="p-4 border-t border-orange-200">
-              <div className="flex items-center bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-orange-200">
-                <input 
-                  type="text"
-                  value={aiInput}
-                  onChange={(e) => setAiInput(e.target.value)}
-                  onKeyPress={handleAiKeyPress}
-                  placeholder={t("aiInputPlaceholder") || "输入你想完成的事情..."}
-                  className="flex-1 bg-transparent px-2 focus:outline-none text-gray-700"
-                  disabled={aiLoading}
-                />
-                <button 
-                  onClick={sendAiMessage}
-                  disabled={aiLoading || !aiInput.trim()}
-                  className="p-2 rounded-lg bg-gradient-to-r from-orange-400 to-red-500 text-white hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <GoalModal
         isOpen={isGoalModalOpen}
