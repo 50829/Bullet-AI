@@ -15,6 +15,7 @@ type FeatureItem = {
   title: string;
   description: string;
   items: string[];
+  imagePath: string;
 };
 
 // 主页面组件
@@ -172,7 +173,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
   );
 };
 
-// 2. 四大核心功能区域 - 移除背景类，移除淡入效果，不再包含视频
+// 2. 四大核心功能区域 - 2x2网格布局，默认显示文字，悬停显示图片
 const FeaturesSection = () => {
   const { t } = useLanguage();
 
@@ -187,6 +188,7 @@ const FeaturesSection = () => {
         t("momentsItems[1]"),
         t("momentsItems[2]"),
       ],
+      imagePath: "/moments.png",
     },
     {
       icon: <Target className="h-7 w-7 text-gray-700" />,
@@ -198,6 +200,7 @@ const FeaturesSection = () => {
         t("goalsItems[2]"),
         t("goalsItems[3]"),
       ],
+      imagePath: "/moments.png", // 可以根据需要替换为对应的图片路径
     },
     {
       icon: <Lightbulb className="h-7 w-7 text-gray-700" />,
@@ -208,6 +211,7 @@ const FeaturesSection = () => {
         t("insightsItems[1]"),
         t("insightsItems[2]"),
       ],
+      imagePath: "/moments.png", // 可以根据需要替换为对应的图片路径
     },
     {
       icon: <Bot className="h-7 w-7 text-gray-700" />,
@@ -219,6 +223,7 @@ const FeaturesSection = () => {
         t("aiCaveItems[2]"),
         t("aiCaveItems[3]"),
       ],
+      imagePath: "/moments.png", // 可以根据需要替换为对应的图片路径
     },
   ];
 
@@ -229,23 +234,18 @@ const FeaturesSection = () => {
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight">{t("coreFeatures")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("featuresDescription")}</p>
         </div>
-        <div className="flex flex-col gap-12">
+        {/* 2x2 网格布局 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {features.map((feature, index) => {
-            // Determine if the current feature should be reversed (right text, left image)
-            const isReversed = index % 2 !== 0; // Odd indices are reversed
-
             return (
-              // 使用左右布局的容器，根据索引决定是否反转顺序
-              <div 
-                key={feature.title} 
-                className={`grid grid-cols-1 md:grid-cols-2 gap-8 items-start bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg border border-orange-200 hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ${
-                  isReversed ? 'md:flex-row-reverse' : '' // Apply reverse class for even rows (0-indexed, so 0, 2, 4...)
-                }`}
+              <div
+                key={feature.title}
+                className="group relative bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg border border-orange-200 hover:-translate-y-1 hover:shadow-xl transition-all duration-500 overflow-hidden min-h-[400px]"
               >
-                {/* 左侧（或右侧，如果反转）：文字介绍 */}
-                <div className="flex flex-col justify-start"> {/* Added justify-start */}
-                  <div className="flex items-start gap-4 mb-4"> {/* Changed items-center to items-start */}
-                    <div className="bg-slate-100 p-3 rounded-full flex-shrink-0"> {/* Added flex-shrink-0 to prevent icon shrinking */}
+                {/* 文字内容 - 默认显示 */}
+                <div className="flex flex-col justify-start transition-opacity duration-500 group-hover:opacity-0 absolute inset-0 p-8">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="bg-slate-100 p-3 rounded-full flex-shrink-0">
                       {feature.icon}
                     </div>
                     <div>
@@ -265,16 +265,15 @@ const FeaturesSection = () => {
                     })}
                   </ul>
                 </div>
-                {/* 右侧（或左侧，如果反转）：图片区域 */}
-                <div className="flex items-center justify-center">
-                  <div className="w-full h-64 md:h-80 flex items-center justify-center">
-                    <Image 
-                      src="/moments.png" // Use the image from public folder
-                      alt={`Illustration for ${feature.title}`} 
-                      width={500} 
-                      height={300} 
-                      className="object-contain max-w-full max-h-full rounded-xl" // object-contain to fit within bounds
-                      // Optional: Add priority={index === 0} for the first image if it's above the fold
+                {/* 图片内容 - 悬停时显示 */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-8">
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Image
+                      src={feature.imagePath}
+                      alt={`Illustration for ${feature.title}`}
+                      width={500}
+                      height={300}
+                      className="object-contain max-w-full max-h-full rounded-xl"
                     />
                   </div>
                 </div>

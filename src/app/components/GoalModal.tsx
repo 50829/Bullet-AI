@@ -30,11 +30,11 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, selectedDate }: Props) =
   const [loading, setLoading] = useState(false);
 
   // 获取要使用的日期（使用本地时间格式，避免时区问题）
-  const getDueDate = (): string => {
-    if (selectedDate) {
-      return formatDateToLocal(selectedDate);
-    }
-    return formatDateToLocal(new Date());
+  // 新建目标时不设置日期，始终添加到迁移列表
+  const getDueDate = (): string | null => {
+    // 新建目标时始终不设置日期，添加到迁移列表
+    // 用户可以通过迁移功能将任务分配到具体日期
+    return null;
   };
 
   if (!isOpen) return null;
@@ -68,12 +68,21 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, selectedDate }: Props) =
 
     try {
       const dueDate = getDueDate();
-      const insertData = {
+      const insertData: {
+        user_id: string;
+        title: string;
+        description: string | null;
+        due_date?: string | null;
+      } = {
         user_id: user.id,
         title: title.trim(),
         description: description.trim() || null,
-        due_date: dueDate,
       };
+      
+      // 只有当dueDate不为null时才设置due_date字段
+      if (dueDate !== null) {
+        insertData.due_date = dueDate;
+      }
 
       console.log("准备插入的数据:", insertData);
       console.log("用户ID:", user.id);
@@ -138,18 +147,35 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, selectedDate }: Props) =
       <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl transform transition-transform duration-200">
         <h2 className="text-2xl font-bold mb-4">{t("newGoal") || "新建目标"}</h2>
 
-        <label className="block text-sm text-gray-600 mb-1">{t("title") || "标题 *"}</label>
+        <label className="block text-sm text-gray-600 mb-1">
+          {t("title") || "标题 *"}
+          <span className="text-gray-400 ml-2 text-xs">({title.length}/30)</span>
+        </label>
         <Input
           placeholder={t("enterGoal") || "输入目标..."}
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => {
+            if (e.target.value.length <= 30) {
+              setTitle(e.target.value);
+            }
+          }}
+          maxLength={30}
         />
 
-        <label className="block text-sm text-gray-600 mt-4 mb-1">{t("description") || "描述"}</label>
+        <label className="block text-sm text-gray-600 mt-4 mb-1">
+          {t("description") || "描述"}
+          <span className="text-gray-400 ml-2 text-xs">({description.length}/70)</span>
+        </label>
         <Textarea
           placeholder={t("detailedDescription") || "详细描述..."}
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => {
+            if (e.target.value.length <= 70) {
+              setDescription(e.target.value);
+            }
+          }}
+          maxLength={70}
+          rows={3}
         />
 
         <div className="flex justify-end mt-6 space-x-3">

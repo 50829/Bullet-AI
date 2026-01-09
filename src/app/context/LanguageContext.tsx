@@ -450,6 +450,38 @@ const translations: Record<string, TranslationValue> = {
     en: "No goals for this date",
     zh: "该日期暂无目标",
   },
+  migrationList: {
+    en: "Migration List",
+    zh: "迁移列表",
+  },
+  noMigrationGoals: {
+    en: "Migration list is empty. New goals will be added here automatically.",
+    zh: "迁移列表为空，新建目标将自动添加到这里",
+  },
+  selectDateToMigrate: {
+    en: "Please select a date on the calendar, then click the migrate button",
+    zh: "请先选择日历中的日期，然后点击迁移按钮",
+  },
+  migrate: {
+    en: "Migrate",
+    zh: "迁移",
+  },
+  moveBack: {
+    en: "Move Back",
+    zh: "迁回",
+  },
+  migrateFailed: {
+    en: "Migration failed",
+    zh: "迁移失败",
+  },
+  moveBackFailed: {
+    en: "Move back failed",
+    zh: "迁回失败",
+  },
+  switchPanel: {
+    en: "Switch Panel",
+    zh: "切换面板",
+  },
   dueDate: {
     en: "Date",
     zh: "日期",
@@ -610,6 +642,22 @@ const translations: Record<string, TranslationValue> = {
   save: {
     en: "Save",
     zh: "记录",
+  },
+  completed: {
+    en: "Completed",
+    zh: "已完成",
+  },
+  completeGoal: {
+    en: "Complete Goal",
+    zh: "完成目标",
+  },
+  updateFailed: {
+    en: "Update failed",
+    zh: "更新失败",
+  },
+  delete: {
+    en: "Delete",
+    zh: "删除",
   },
   // HabitModal translations
   newHabit: {
@@ -837,17 +885,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [language, setLanguageState] = useState<Language>('en');
+  
+  // 使用统一的默认值 'zh'，避免 SSR/CSR 不匹配
+  // 服务器端和客户端都使用相同的初始值
+  const [language, setLanguageState] = useState<Language>('zh');
 
   useEffect(() => {
-    // 检查URL参数或localStorage中的语言设置
+    // 客户端 hydration 后，检查并同步语言设置
     const urlLang = searchParams.get('lang');
     if (urlLang === 'zh' || urlLang === 'en') {
       setLanguageState(urlLang as Language);
     } else {
       // 尝试从localStorage获取
       const storedLang = localStorage.getItem('language') as Language | null;
-      if (storedLang) {
+      if (storedLang === 'zh' || storedLang === 'en') {
         setLanguageState(storedLang);
       }
     }
