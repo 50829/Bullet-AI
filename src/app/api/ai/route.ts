@@ -44,10 +44,9 @@ function convertPlanForFrontend(plan: InternalPlan): FrontendPlan {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // ✅ 修改：从前端获取 messages 数组、purpose 和 language
-    const { messages: userMessages, purpose, language } = body as {
+    // ✅ 修改：从前端获取 messages 数组和 language
+    const { messages: userMessages, language } = body as {
       messages: ChatMessage[];
-      purpose?: string;
       language?: string;
     };
 
@@ -65,9 +64,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "服务器配置错误：未设置 API Base URL" }, { status: 500 });
     }
 
-    // 确保 baseUrl 不以 / 结尾
-    if (baseUrl.endsWith('/')) {
+    // 检查 baseUrl 是否已经包含完整路径
+    // 如果已经包含 /chat/completions，则直接使用；否则拼接
+    let endpoint: string;
+    if (baseUrl.includes('/chat/completions')) {
+      // 已经包含完整路径，直接使用
+      endpoint = baseUrl;
+    } else {
+      // 需要拼接路径
+      // 确保 baseUrl 不以 / 结尾
+      if (baseUrl.endsWith('/')) {
         baseUrl = baseUrl.slice(0, -1);
+      }
+      endpoint = `${baseUrl}/chat/completions`;
     }
 
     // 根据语言设置调整系统提示
@@ -75,45 +84,20 @@ export async function POST(req: Request) {
       ? "Please respond in English." 
       : "请使用中文回复。";
 
-    // System Prompt - 强化计划生成指令和 JSON 格式
+    // System Prompt - 针对 AI 树洞功能，调整为更友好的对话风格
     const system: ChatMessage = {
       role: "system",
       content:
-        "你是 AI 任务管家，用户是你的老板。请严格遵守以下规则：\n" +
-        `1. 回答必须简短、口语化，且使用与用户相同的语言。${languageInstruction}\n` +
-        "2. **核心规则：每当用户表达任何关于规划、安排、组织、管理时间、设定目标、执行任务、学习复习、准备工作、创建清单或制定时间表的需求时，你都必须在回复文本之后，立即提供一个结构化的任务计划。**\n" +
-        "3. **计划格式：必须使用 ```json 包裹一个 JSON 对象，该对象包含 'tasksDaily' 和 'tasksFuture' 两个数组。**\n" +
-        "4. JSON 结构和含义：\n" +
-        '{\n' +
-        '  "tasksDaily": [{ "title": "每日任务标题 (≤30字符)", "description": "任务描述" }], // 适用于“今日待办”或“今天”、“明天”、“这周”等短期内可完成的任务\n' +
-        '  "tasksFuture": [{ "title": "未来任务标题 (≤30字符)", "description": "任务描述" }]  // 适用于“近期目标”、“下个月”、“本季度”等中长期目标\n' +
-        '}\n' +
-        "5. title 最多 30 个字符；description 应精炼、可执行；若无对应任务，对应数组可为空 []。\n" +
-        "6. **绝对重要：JSON 格式必须完全正确，不能有任何语法错误，且必须严格按照上述结构。**\n" +
-        "7. **绝对重要：必须生成 JSON，即使用户没有明确要求，只要涉及规划意图就必须生成。**\n" +
-        "8. **示例（仅作格式参考，实际需根据用户具体请求生成）：\n" +
-        "用户：下周考雅思，帮我排 7 天复习计划\n" +
-        "你：好咧，已为你安排 7 天冲刺！\n" +
-        "```json\n" +
-        '{\n' +
-        '  "tasksDaily": [\n' +
-        '    { "title": "雅思听力训练", "description": "Cambridge 11 Test 1 + 精听" },\n' +
-        '    { "title": "雅思阅读训练", "description": "Cambridge 11 Test 2 Reading" }\n' +
-        '  ],\n' +
-        '  "tasksFuture": [\n' +
-        '    { "title": "口语模拟考试", "description": "找搭档进行全真模拟" },\n' +
-        '    { "title": "作文批改", "description": "提交一篇大作文给老师批改" }\n' +
-        '  ]\n' +
-        '}\n' +
-        "```\n" +
-        "**请务必严格遵循以上所有规则。**",
+        "你是用户的 AI 树洞，一个温暖、理解、倾听的陪伴者。请严格遵守以下规则：\n" +
+        `1. 回答必须温暖、真诚、口语化，且使用与用户相同的语言。${languageInstruction}\n` +
+        "2. 基于用户分享的时刻、感悟和目标，给予理解和支持。\n" +
+        "3. 如果用户需要规划或安排，可以在回复后提供结构化的任务计划（使用 ```json 格式）。\n" +
+        "4. 保持对话的自然流畅，不要过于机械。\n" +
+        "5. 当用户表达情感时，给予共情和理解。",
     };
 
-    // 将 system message 放在第一位，然后是用户发送的最新消息
-    // 注意：现在前端只发送最新的 user message，所以这里是 [system, user_message]
+    // 将 system message 放在第一位，然后是用户发送的消息
     const messages: ChatMessage[] = [system, ...userMessages];
-
-    const endpoint = `${baseUrl}/chat/completions`;
 
     const resp = await fetch(endpoint, {
       method: "POST",

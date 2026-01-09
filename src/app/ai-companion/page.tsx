@@ -11,7 +11,7 @@ type Message = {
 };
 
 export default function AICompanionPage() {
-  const { t } = useLanguage(); // 获取翻译函数
+  const { t, language } = useLanguage(); // 获取翻译函数和语言设置
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -31,6 +31,19 @@ export default function AICompanionPage() {
       content: input.trim(),
     };
 
+    // 基于当前 messages 状态和新的 userMessage 构建要发送的消息列表
+    // 这样确保包含最新的用户消息，避免闭包问题
+    const allMessages = [...messages, userMessage];
+    
+    // 排除初始问候语，只发送实际的对话消息
+    const messagesToSend = allMessages
+      .filter(msg => msg.role !== 'assistant' || msg.id !== '1')
+      .map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content
+      }));
+
+    // 先更新 UI，添加用户消息
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
@@ -42,24 +55,28 @@ export default function AICompanionPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [
-            ...messages.map(msg => ({
-              role: msg.role as 'user' | 'assistant',
-              content: msg.content
-            }))
-          ]
+          messages: messagesToSend,
+          language: language || 'zh', // 添加语言参数
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        // 尝试获取详细的错误信息
+        let errorMessage = 'Failed to get response';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = `HTTP error! status: ${response.status}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       const aiMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: data.reply,
+        content: data.reply || t("aiError") || '抱歉，没有收到回复。',
       };
 
       setMessages(prev => [...prev, aiMessage]);
@@ -68,7 +85,9 @@ export default function AICompanionPage() {
       const errorMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: t("aiError") || '抱歉，出了点问题，请稍后再试。'
+        content: error instanceof Error 
+          ? `抱歉，${error.message}` 
+          : (t("aiError") || '抱歉，出了点问题，请稍后再试。')
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {

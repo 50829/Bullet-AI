@@ -5,7 +5,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Tag } from "../components/ui/Tag";
-import { Search, MapPin, Trash2 } from "lucide-react";
+import { Search, MapPin, Trash2, X } from "lucide-react";
 import { ReflectionModal } from "../components/ReflectionModal";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
@@ -22,7 +22,6 @@ type Reflection = {
   date?: string;
 };
 
-type SearchType = "text" | "event" | "location" | "inspiration";
 
 export default function ReflectionsPage() {
   const { reflections, loading, refreshReflections, deleteReflection } = useAppContext();
@@ -32,7 +31,6 @@ export default function ReflectionsPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null); // 用于存储要删除的reflection
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchType, setSearchType] = useState<SearchType>("text");
   const [showSearch, setShowSearch] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -58,38 +56,19 @@ export default function ReflectionsPage() {
   const performSearch = () => {
     let results = [...reflections];
     if (searchTerm.trim()) {
-      switch (searchType) {
-        case "text":
-          results = results.filter(r =>
-            r.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (r.source_type?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-          );
-          break;
-        case "event":
-          results = results.filter(r =>
-            (r.source_type?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
-            (r.source?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-          );
-          break;
-        case "location":
-          results = results.filter(r =>
-            (r.location?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-          );
-          break;
-        case "inspiration":
-          results = results.filter(r =>
-            r.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (r.source?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-          );
-          break;
-      }
+      const searchLower = searchTerm.toLowerCase();
+      results = results.filter(r =>
+        r.content?.toLowerCase().includes(searchLower) ||
+        (r.source_type?.toLowerCase().includes(searchLower) ?? false) ||
+        (r.source?.toLowerCase().includes(searchLower) ?? false) ||
+        (r.location?.toLowerCase().includes(searchLower) ?? false)
+      );
     }
     setFilteredReflections(results);
   };
 
   const clearSearch = () => {
     setSearchTerm("");
-    setSearchType("text");
     setFilteredReflections(reflections);
   };
 
@@ -151,44 +130,32 @@ export default function ReflectionsPage() {
           {/* 搜索栏 - 条件渲染 */}
           {showSearch && (
             <div className="p-4 border-t border-orange-200/50">
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <select 
-                    value={searchType} 
-                    onChange={(e) => setSearchType(e.target.value as SearchType)} 
-                    className="w-full p-2 border border-gray-300 rounded-md h-10"
-                  >
-                    <option value="text">{t("text") || "文本"}</option>
-                    <option value="event">{t("event") || "事件"}</option>
-                    <option value="location">{t("location") || "地点"}</option>
-                    <option value="inspiration">{t("inspiration") || "灵感来源"}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <Input 
-                    placeholder={t("searchPlaceholder") || "选择搜索类型，再输入搜索内容~"} 
-                    value={searchTerm} 
-                    onChange={(e) => setSearchTerm(e.target.value)} 
-                    className="w-full h-10"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={performSearch} 
-                    className="flex-1 flex items-center justify-center h-10"
-                  >
-                    <Search size={16} className="mr-1" /> {t("search") || "搜索"}
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    onClick={clearSearch} 
-                    className="flex-1 h-10"
-                  >
-                    {t("clear") || "清空"}
-                  </Button>
-                </div>
+              <div className="flex gap-2 items-center">
+                <Input 
+                  placeholder={t("searchPlaceholder") || "输入搜索内容~"} 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      performSearch();
+                    }
+                  }}
+                  className="flex-1 h-10"
+                />
+                <Button 
+                  onClick={performSearch} 
+                  className="flex items-center justify-center h-10 px-4"
+                >
+                  <Search size={16} className="mr-1" /> {t("search") || "搜索"}
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  onClick={clearSearch} 
+                  className="h-10 px-4"
+                  disabled={!searchTerm}
+                >
+                  <X size={16} className="mr-1" /> {t("clear") || "清空"}
+                </Button>
               </div>
             </div>
           )}

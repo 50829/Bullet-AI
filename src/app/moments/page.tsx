@@ -5,7 +5,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Tag } from "../components/ui/Tag";
-import { Search, MapPin, Trash2, Menu } from "lucide-react";
+import { Search, MapPin, Trash2, Menu, X } from "lucide-react";
 import { MomentModal } from "../components/MomentModal";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
@@ -22,8 +22,6 @@ type Moment = {
   date?: string;
 };
 
-// 定义搜索类型
-type SearchType = "text" | "event" | "location";
 
 export default function MomentsPage() {
   const { moments, loading, refreshMoments, deleteMoment } = useAppContext();
@@ -33,7 +31,6 @@ export default function MomentsPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null); // 用于存储要删除的moment
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchType, setSearchType] = useState<SearchType>("text");
   const [showSearch, setShowSearch] = useState(false); // 新增状态控制搜索栏显示
   const [isMobile, setIsMobile] = useState(false);
 
@@ -59,32 +56,19 @@ export default function MomentsPage() {
   const performSearch = () => {
     let results = [...moments];
     if (searchTerm.trim()) {
-      switch (searchType) {
-        case "text":
-          results = results.filter(m =>
-            m.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            m.event_type?.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-          break;
-        case "event":
-          results = results.filter(m =>
-            m.event_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (m.tags ?? []).some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
-          );
-          break;
-        case "location":
-          results = results.filter(m =>
-            m.location?.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-          break;
-      }
+      const searchLower = searchTerm.toLowerCase();
+      results = results.filter(m =>
+        m.content?.toLowerCase().includes(searchLower) ||
+        m.event_type?.toLowerCase().includes(searchLower) ||
+        m.location?.toLowerCase().includes(searchLower) ||
+        (m.tags ?? []).some(t => t.toLowerCase().includes(searchLower))
+      );
     }
     setFilteredMoments(results);
   };
 
   const clearSearch = () => {
     setSearchTerm("");
-    setSearchType("text"); // 重置搜索类型为默认值
     setFilteredMoments(moments); // 显示全部帖子
   };
 
@@ -146,43 +130,32 @@ export default function MomentsPage() {
           {/* 搜索栏 - 条件渲染 */}
           {showSearch && (
             <div className="p-4 border-t border-orange-200/50">
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <select 
-                    value={searchType} 
-                    onChange={(e) => setSearchType(e.target.value as SearchType)} 
-                    className="w-full p-2 border border-gray-300 rounded-md h-10"
-                  >
-                    <option value="text">{t("text") || "文本"}</option>
-                    <option value="event">{t("event") || "事件"}</option>
-                    <option value="location">{t("location") || "地点"}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <Input 
-                    placeholder={t("searchPlaceholder") || "选择搜索类型，再输入搜索内容~"} 
-                    value={searchTerm} 
-                    onChange={(e) => setSearchTerm(e.target.value)} 
-                    className="w-full h-10"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={performSearch} 
-                    className="flex-1 flex items-center justify-center h-10"
-                  >
-                    <Search size={16} className="mr-1" /> {t("search") || "搜索"}
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    onClick={clearSearch} 
-                    className="flex-1 h-10"
-                  >
-                    {t("clear") || "清空"}
-                  </Button>
-                </div>
+              <div className="flex gap-2 items-center">
+                <Input 
+                  placeholder={t("searchPlaceholder") || "输入搜索内容~"} 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      performSearch();
+                    }
+                  }}
+                  className="flex-1 h-10"
+                />
+                <Button 
+                  onClick={performSearch} 
+                  className="flex items-center justify-center h-10 px-4"
+                >
+                  <Search size={16} className="mr-1" /> {t("search") || "搜索"}
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  onClick={clearSearch} 
+                  className="h-10 px-4"
+                  disabled={!searchTerm}
+                >
+                  <X size={16} className="mr-1" /> {t("clear") || "清空"}
+                </Button>
               </div>
             </div>
           )}

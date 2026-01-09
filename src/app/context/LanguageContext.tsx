@@ -365,8 +365,8 @@ const translations: Record<string, TranslationValue> = {
     zh: "灵感来源",
   },
   searchPlaceholder: {
-    en: "Select search type, then enter search content~",
-    zh: "选择搜索类型，再输入搜索内容~",
+    en: "Enter search content~",
+    zh: "输入搜索内容~",
   },
   clear: {
     en: "Clear",
