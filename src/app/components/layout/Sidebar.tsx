@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Heart, Target, MessageSquare, BrainCircuit, Sparkles, Calendar, Menu, X } from 'lucide-react';
+import { Camera, Target, Lightbulb, Sparkles, Calendar, Menu, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext'; // 添加语言Hook
 
 type NavItemProps = {
@@ -50,10 +50,10 @@ export const Sidebar = () => {
   const { t } = useLanguage(); // 获取翻译函数
   
   const navItems = [
-    { page: 'monthly-recommendation', label: t("monthlyRecommendationNav") || '月度推荐', icon: <Calendar size={20} /> },
-    { page: 'moments', label: t("myMomentsNav") || '我的时刻', icon: <Heart size={20} /> },
-    { page: 'goals', label: t("myGoalsNav") || '我的目标', icon: <Target size={20} /> },
-    { page: 'reflections', label: t("myReflectionsNav") || '我的感悟', icon: <BrainCircuit size={20} /> },
+    { page: 'monthly-recommendation', label: t("monthlyRecommendation") || '月度推荐', icon: <Calendar size={20} /> },
+    { page: 'moments', label: t("moments") || '我的时刻', icon: <Camera size={20} /> },
+    { page: 'goals', label: t("goals") || '我的目标', icon: <Target size={20} /> },
+    { page: 'reflections', label: t("insights") || '我的感悟', icon: <Lightbulb size={20} /> },
   ];
 
   // 检测屏幕尺寸

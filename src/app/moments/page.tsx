@@ -5,7 +5,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Tag } from "../components/ui/Tag";
-import { Search, MapPin, Trash2, Menu, X, Sparkles } from "lucide-react";
+import { Search, MapPin, Trash2, Menu, X, Sparkles, Camera } from "lucide-react";
 import { MomentModal } from "../components/MomentModal";
 import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
@@ -111,7 +111,10 @@ export default function MomentsPage() {
         <div className="max-w-6xl mx-auto bg-gradient-to-br from-blue-100/70 via-white/70 to-orange-100/70 rounded-3xl shadow-lg border border-orange-200 backdrop-blur-md">
           {/* 标题和按钮行 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
-            <div>
+            <div className="flex items-center gap-3">
+              <div className="bg-white/70 p-2 rounded-full shadow-sm">
+                <Camera size={24} className="text-gray-700" />
+              </div>
               <h2 className="text-3xl font-bold text-gray-800">{t("moments") || "我的时刻"}</h2>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
