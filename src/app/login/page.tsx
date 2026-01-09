@@ -69,7 +69,7 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-orange-100 text-gray-800 relative">
-      <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg p-8 text-center w-full max-w-md mx-4 border border-orange-200">
+      <div className="bg-transparent rounded-3xl p-8 text-center w-full max-w-md mx-4">
         {/* 移除了语言切换按钮 */}
         <h1 className="text-3xl font-bold text-gray-800 mb-6">{t("loginTitle")}</h1>
 

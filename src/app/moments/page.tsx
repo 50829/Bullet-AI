@@ -113,7 +113,6 @@ export default function MomentsPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
             <div>
               <h2 className="text-3xl font-bold text-gray-800">{t("moments") || "我的时刻"}</h2>
-              <p className="text-gray-500 mt-1">{t("momentsDescription") || "珍藏每一个值得记录的瞬间"}</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               {/* AI时刻助手按钮 */}

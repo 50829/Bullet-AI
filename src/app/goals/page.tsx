@@ -249,7 +249,6 @@ export default function GoalsPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
             <div>
               <h2 className="text-3xl font-bold text-gray-800">{t("myGoals") || "我的目标"}</h2>
-              <p className="text-gray-500 mt-1">{t("planForFuture") || "规划未来，成就更好的自己"}</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               {/* AI智能规划按钮 */}

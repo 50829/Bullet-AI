@@ -234,52 +234,74 @@ const FeaturesSection = () => {
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight">{t("coreFeatures")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("featuresDescription")}</p>
         </div>
-        {/* 2x2 网格布局 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {features.map((feature, index) => {
-            return (
+
+        {/* 十字四象限布局：中间用细线分成四块，保留悬浮图片效果 */}
+        <div className="relative max-w-6xl mx-auto">
+          {/* 十字分割线：使用与卡片 hover 相同色系的柔和线条，仅在中大屏显示 */}
+          <div className="pointer-events-none absolute inset-0 hidden md:block">
+            {/* 竖线 */}
+            <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-gradient-to-b from-orange-100 via-orange-200 to-orange-100" />
+            {/* 横线 */}
+            <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-orange-100 via-orange-200 to-orange-100" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-y-12 gap-x-12 px-0 md:px-4">
+            {features.map((feature, index) => (
               <div
                 key={feature.title}
-                className="group relative bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg border border-orange-200 hover:-translate-y-1 hover:shadow-xl transition-all duration-500 overflow-hidden min-h-[400px]"
+                className="group relative flex flex-col justify-center items-start p-4 md:p-6 rounded-3xl transition-all duration-500 overflow-hidden"
               >
-                {/* 文字内容 - 默认显示 */}
-                <div className="flex flex-col justify-start transition-opacity duration-500 group-hover:opacity-0 absolute inset-0 p-8">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="bg-slate-100 p-3 rounded-full flex-shrink-0">
-                      {feature.icon}
+                <div className="relative w-full h-full">
+                  {/* 文字内容 - 默认显示，悬浮时淡出 */}
+                  <div className="flex flex-col justify-start p-4 md:p-6 transition-opacity duration-500 group-hover:opacity-0">
+                    {/* 图标和标题保持同一水平线 */}
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="bg-white/70 p-3 rounded-full flex-shrink-0 shadow-sm">
+                        {feature.icon}
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900">
+                        {feature.title}
+                      </h3>
                     </div>
-                    <div>
-                      <h3 className="text-2xl font-bold">{feature.title}</h3>
-                      <p className="text-gray-500">{feature.description}</p>
-                    </div>
+                    <p className="text-gray-600 text-base md:text-lg">
+                      {feature.description}
+                    </p>
+                    <ul className="mt-4 space-y-2 text-sm md:text-base text-gray-700">
+                      {feature.items.map((item, itemIndex) => {
+                        const parts = item.split(':');
+                        return (
+                          <li key={itemIndex} className="flex items-center gap-2">
+                            {/* 分点与文字垂直居中对齐 */}
+                            <span className="h-1.5 w-1.5 rounded-full bg-orange-400 flex-shrink-0" />
+                            <p className="leading-relaxed">
+                              <span className="font-semibold">
+                                {parts[0]}
+                                {parts.length > 1 ? '：' : ''}
+                              </span>
+                              {parts.length > 1 && <span className="ml-1">{parts[1]}</span>}
+                            </p>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
-                  <ul className="mt-6 space-y-3">
-                    {feature.items.map((item, itemIndex) => {
-                      const parts = item.split(':');
-                      return (
-                        <li key={itemIndex} className="flex items-start">
-                          <span className="font-semibold">{parts[0]}:</span>
-                          {parts.length > 1 && ` ${parts[1]}`}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-                {/* 图片内容 - 悬停时显示 */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-8">
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Image
-                      src={feature.imagePath}
-                      alt={`Illustration for ${feature.title}`}
-                      width={500}
-                      height={300}
-                      className="object-contain max-w-full max-h-full rounded-xl"
-                    />
+
+                  {/* 图片内容 - 悬浮时显示 */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-4 md:p-6">
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Image
+                        src={feature.imagePath}
+                        alt={`Illustration for ${feature.title}`}
+                        width={500}
+                        height={300}
+                        className="object-contain max-w-full max-h-full rounded-xl shadow-lg"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </div>
     </section>

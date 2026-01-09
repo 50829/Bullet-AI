@@ -84,7 +84,7 @@ export default function RegisterPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-orange-100 text-gray-800">
-      <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg p-8 text-center w-full max-w-md mx-4 border border-orange-200">
+      <div className="bg-transparent rounded-3xl p-8 text-center w-full max-w-md mx-4">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">{t("registerTitle")}</h1>
         <form onSubmit={handleRegister} className="space-y-3 mb-6 text-left">
           <label className="block text-sm text-gray-700">{t("setEmail")}</label>
