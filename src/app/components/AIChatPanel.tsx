@@ -118,9 +118,9 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
         onClick={onClose}
       />
       {/* AI 对话面板 */}
-      <div className="fixed left-0 top-0 h-full w-full lg:w-[520px] bg-gradient-to-br from-blue-100/95 via-white/95 to-orange-100/95 border-r border-orange-200 shadow-2xl z-40 flex flex-col backdrop-blur-md">
+      <div className="fixed left-0 top-0 h-full w-full lg:w-[520px] bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 border-r border-orange-200/50 shadow-2xl z-40 flex flex-col backdrop-blur-lg">
       {/* 头部 */}
-      <div className="p-4 border-b border-orange-200/50 flex items-center justify-between">
+      <div className="p-4 border-b border-orange-200/50 flex items-center justify-between bg-white/20 backdrop-blur-sm">
         <h3 className="text-2xl font-bold text-gray-800">{t("aiAssistant") || "AI助手"}</h3>
         <button
           onClick={onClose}
@@ -139,10 +139,10 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[80%] p-3 rounded-xl ${
+              className={`max-w-[80%] p-3 rounded-xl backdrop-blur-md ${
                 message.role === 'user'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-                  : 'bg-gradient-to-r from-orange-200 to-yellow-100 text-gray-800'
+                  ? 'bg-gradient-to-r from-blue-500/80 to-purple-500/80 text-white shadow-lg'
+                  : 'bg-gradient-to-r from-orange-200/60 to-yellow-100/60 text-gray-800 shadow-lg'
               }`}
             >
               <p className="text-base leading-relaxed whitespace-pre-wrap">{message.content}</p>
@@ -151,7 +151,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
         ))}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-gradient-to-r from-orange-200 to-yellow-100 p-3 rounded-xl max-w-[80%]">
+            <div className="bg-gradient-to-r from-orange-200/60 to-yellow-100/60 backdrop-blur-md p-3 rounded-xl max-w-[80%] shadow-lg">
               <p className="text-base text-gray-800">{t("aiThinking") || "思考中..."}</p>
             </div>
           </div>
@@ -159,8 +159,8 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
       </div>
 
       {/* 输入区域 */}
-      <div className="p-4 border-t border-orange-200/50">
-        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-orange-200">
+      <div className="p-4 border-t border-orange-200/50 bg-white/20 backdrop-blur-sm">
+        <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md rounded-lg p-2 border border-orange-200/50">
           <input
             type="text"
             value={input}

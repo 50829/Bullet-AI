@@ -9,12 +9,9 @@ import { MainLayout } from '../components/layout/MainLayout';
 import MomentsPage from '../moments/page';
 import GoalsPage from '../goals/page';
 import ReflectionsPage from '../reflections/page';
-import MonthlyRecommendationPage from '../monthly-recommendation/page'; // 新增导入
 
 function InnerPage({ activePage }: { activePage: string }) {
   switch (activePage) {
-    case 'monthly-recommendation': // 新增路由
-      return <MonthlyRecommendationPage />;
     case 'goals':
       return <GoalsPage />;
     case 'reflections':
@@ -28,10 +25,10 @@ function InnerPage({ activePage }: { activePage: string }) {
 export default function MainDashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activePage, setActivePage] = useState('monthly-recommendation');
+  const [activePage, setActivePage] = useState('moments');
 
   useEffect(() => {
-    const page = searchParams.get('page') || 'monthly-recommendation';
+    const page = searchParams.get('page') || 'moments';
     if (page !== activePage) setActivePage(page);
   }, [searchParams, activePage]);
 

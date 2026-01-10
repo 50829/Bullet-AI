@@ -241,11 +241,11 @@ export default function GoalsPage() {
     <div className="h-screen flex flex-col overflow-hidden">
       {/* 固定的头部区域 - 毛玻璃圆角矩形模块 */}
       <div className="flex-shrink-0 z-20 py-4 px-4">
-        <div className="max-w-6xl mx-auto bg-gradient-to-br from-blue-100/70 via-white/70 to-orange-100/70 rounded-3xl shadow-lg border border-orange-200 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 rounded-3xl shadow-lg border border-orange-200/50 backdrop-blur-lg">
           {/* 标题和按钮行 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
             <div className="flex items-center gap-3">
-              <div className="bg-white/70 p-2 rounded-full shadow-sm">
+              <div className="bg-white/40 backdrop-blur-md p-2 rounded-full shadow-sm">
                 <Target size={24} className="text-gray-700" />
               </div>
               <h2 className="text-3xl font-bold text-gray-800">{t("myGoals") || "我的目标"}</h2>

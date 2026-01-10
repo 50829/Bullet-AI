@@ -121,7 +121,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
           onClick={() => setLanguage("en")}
           className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
             language === "en" 
-              ? "bg-amber-500 text-white" 
+              ? "bg-black text-white" 
               : "text-gray-500 hover:text-amber-500"
           }`}
         >
@@ -133,7 +133,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
           onClick={() => setLanguage("zh")}
           className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
             language === "zh" 
-              ? "bg-amber-500 text-white" 
+              ? "bg-black text-white" 
               : "text-gray-500 hover:text-amber-500"
           }`}
         >

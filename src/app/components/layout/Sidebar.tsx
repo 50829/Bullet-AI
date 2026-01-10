@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Camera, Target, Lightbulb, Sparkles, Calendar, Menu, X } from 'lucide-react';
+import { Camera, Target, Lightbulb, Sparkles, Menu, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext'; // 添加语言Hook
 
 type NavItemProps = {
@@ -19,8 +19,8 @@ const NavItem = ({ page, icon, label, onClick }: NavItemProps) => {
   const searchParams = useSearchParams();
   const { t } = useLanguage(); // 获取翻译函数
   
-  // 修复：当没有page参数时，默认为monthly-recommendation
-  const currentActivePage = searchParams.get('page') || 'monthly-recommendation';
+  // 修复：当没有page参数时，默认为moments
+  const currentActivePage = searchParams.get('page') || 'moments';
   const isActive = currentActivePage === page;
 
   const handleClick = () => {
@@ -33,7 +33,7 @@ const NavItem = ({ page, icon, label, onClick }: NavItemProps) => {
   return (
     <li
       className={`flex items-center p-3 my-2 cursor-pointer rounded-lg transition-colors ${
-        isActive ? 'bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 text-orange-400 shadow-lg border border-orange-200' : 'text-gray-600 hover:bg-gradient-to-br hover:from-blue-100/50 hover:via-white/50 hover:to-orange-100/50 hover:shadow-sm'
+        isActive ? 'bg-gradient-to-br from-blue-100/40 via-white/40 to-orange-100/40 backdrop-blur-md text-orange-400 shadow-lg border border-orange-200/50' : 'text-gray-600 hover:bg-gradient-to-br hover:from-blue-100/30 hover:via-white/30 hover:to-orange-100/30 hover:backdrop-blur-md hover:shadow-sm'
       }`}
       onClick={handleClick}
     >
@@ -50,7 +50,6 @@ export const Sidebar = () => {
   const { t } = useLanguage(); // 获取翻译函数
   
   const navItems = [
-    { page: 'monthly-recommendation', label: t("monthlyRecommendation") || '月度推荐', icon: <Calendar size={20} /> },
     { page: 'moments', label: t("moments") || '我的时刻', icon: <Camera size={20} /> },
     { page: 'goals', label: t("goals") || '我的目标', icon: <Target size={20} /> },
     { page: 'reflections', label: t("insights") || '我的感悟', icon: <Lightbulb size={20} /> },
@@ -89,7 +88,7 @@ export const Sidebar = () => {
         {!isSidebarOpen && (
           <button
             onClick={toggleSidebar}
-            className="fixed bottom-4 left-4 z-50 p-3 bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-full shadow-lg border border-orange-200 lg:hidden"
+            className="fixed bottom-4 left-4 z-50 p-3 bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg rounded-full shadow-lg border border-orange-200/50 lg:hidden"
             aria-label={t("toggleMenu") || "切换菜单"}
           >
             <Menu size={24} />
@@ -106,9 +105,9 @@ export const Sidebar = () => {
             />
             
             {/* 侧边栏内容 */}
-            <aside className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-blue-100/80 via-white/80 to-orange-100/80 border-r border-orange-200 p-4 flex flex-col z-50 shadow-lg lg:hidden transform translate-x-0 transition-transform duration-300 ease-in-out">
+            <aside className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg border-r border-orange-200/50 rounded-r-3xl p-4 flex flex-col z-50 shadow-lg lg:hidden transform translate-x-0 transition-transform duration-300 ease-in-out">
               <div className="flex flex-col items-center mb-8">
-                <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
+                <div className="bg-gradient-to-br from-blue-100/40 via-white/40 to-orange-100/40 backdrop-blur-md p-2 rounded-3xl shadow-lg border border-orange-200/50">
                   <Sparkles size={24} className="text-gray-700" />
                 </div>
                 <h1 className="text-2xl font-bold text-gray-800 mt-2">BulletAI</h1>
@@ -136,9 +135,9 @@ export const Sidebar = () => {
 
   // 桌面端正常显示的侧边栏
   return (
-    <aside className="w-64 bg-gradient-to-b from-blue-100/80 via-white/80 to-orange-100/80 border-r border-orange-200 p-4 flex flex-col shrink-0 shadow-lg hidden lg:block">
+    <aside className="w-64 bg-gradient-to-b from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg border-r border-orange-200/50 rounded-r-3xl p-4 flex flex-col shrink-0 shadow-lg hidden lg:block">
       <div className="flex flex-col items-center mb-8">
-        <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
+        <div className="bg-gradient-to-br from-blue-100/40 via-white/40 to-orange-100/40 backdrop-blur-md p-2 rounded-3xl shadow-lg border border-orange-200/50">
           <Sparkles size={24} className="text-gray-700" />
         </div>
         <h1 className="text-2xl font-bold text-gray-800 mt-2">BulletAI</h1>
