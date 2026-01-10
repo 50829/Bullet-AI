@@ -106,7 +106,7 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
   const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-orange-200 p-4 h-[520px] flex flex-col">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 h-[520px] flex flex-col">
       {/* 月份导航 */}
       <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <button

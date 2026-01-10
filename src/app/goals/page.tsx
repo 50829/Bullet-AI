@@ -48,8 +48,6 @@ type Message = {
 export default function GoalsPage() {
   const { goals, habits, loading, refreshGoals, refreshHabits, deleteGoal, updateGoal, checkinHabit } = useAppContext();
   const { t, language } = useLanguage();
-  const [activeTab, setActiveTab] = useState("schedulePlanning");
-  const tabs = ["schedulePlanning", "myHabits"];
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -238,9 +236,9 @@ export default function GoalsPage() {
   if (loading.goals || loading.habits) return <div className="text-center py-8">{t("loadingGoals") || "目标加载中..."}</div>;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="min-h-screen flex flex-col">
       {/* 固定的头部区域 - 毛玻璃圆角矩形模块 */}
-      <div className="flex-shrink-0 z-20 py-4 px-4">
+      <div className="sticky top-0 z-20 py-4 px-4">
         <div className="max-w-6xl mx-auto bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 rounded-3xl shadow-lg border border-gray-200/50 backdrop-blur-lg">
           {/* 标题和按钮行 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
@@ -260,30 +258,9 @@ export default function GoalsPage() {
                 <Sparkles size={16} /> 
                 {t("aiPlanning") || "AI智能规划"}
               </Button>
-              <Button onClick={() => {
-                if (activeTab === "myHabits") {
-                  setIsHabitModalOpen(true);
-                } else {
-                  setIsGoalModalOpen(true);
-                }
-              }}>
-                + {t("new")} {activeTab === "myHabits" ? t("habit") : t("goal")}
+              <Button onClick={() => setIsGoalModalOpen(true)}>
+                + {t("new")} {t("goal")}
               </Button>
-            </div>
-          </div>
-
-          {/* Tab 栏 */}
-          <div className="px-4 pb-4">
-            <div className="flex space-x-4 border-b">
-              {tabs.map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`py-2 px-1 font-medium transition-colors duration-200 ${activeTab === tab ? 'border-b-2 border-orange-400 text-orange-400' : 'text-gray-500 hover:text-gray-800'}`}
-                >
-                  {t(tab) || tab}
-                </button>
-              ))}
             </div>
           </div>
         </div>
@@ -316,273 +293,278 @@ export default function GoalsPage() {
         onAddGoals={addTasksFromAIReply}
       />
 
-      {/* 内容区域 - 固定高度，内部滚动 */}
-      <div className={`flex-1 transition-all duration-300 overflow-hidden ${showAIPanel ? 'lg:ml-96' : ''}`}>
-        <div className="h-full p-4 pt-0 overflow-y-auto">
+      {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
+      <div className={`flex-1 transition-all duration-300 ${showAIPanel ? 'lg:ml-96' : ''}`}>
+        <div className="p-4 pt-0">
           <div className="max-w-6xl mx-auto">
-            <div>
-              {activeTab === "schedulePlanning" && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* 左侧日历 */}
-                  <div className="h-[520px]">
-                    <Calendar
-                      selectedDate={selectedDate}
-                      onDateSelect={setSelectedDate}
-                      goals={goals}
-                    />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* 左侧日历 */}
+              <div className="h-[520px]">
+                <Calendar
+                  selectedDate={selectedDate}
+                  onDateSelect={setSelectedDate}
+                  goals={goals}
+                />
+              </div>
+              
+              {/* 右侧目标列表 */}
+              <div className="h-[520px]">
+                <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-gray-200 relative h-full flex flex-col">
+                  {/* 标题和切换按钮 */}
+                  <div className="mb-4 flex items-center justify-between flex-shrink-0">
+                    <h3 className="text-xl font-bold text-gray-800">
+                      {rightViewMode === "migration" 
+                        ? t("migrationList") || "迁移列表"
+                        : selectedDate 
+                          ? `${selectedDate.getFullYear()}年${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日`
+                          : t("selectDate") || "请选择日期"}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setRightViewMode(prev => prev === "migration" ? "schedule" : "migration");
+                      }}
+                      className="p-2 rounded-lg bg-white/60 hover:bg-white/80 text-gray-600 hover:text-gray-800 transition-all duration-200 flex items-center gap-2"
+                      title={t("switchPanel") || "切换面板"}
+                    >
+                      <RefreshCw size={18} />
+                      <span className="text-sm font-medium">{t("switchPanel") || "切换面板"}</span>
+                    </button>
                   </div>
-                  
-                  {/* 右侧目标列表 */}
-                  <div className="h-[520px]">
-                    <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-orange-200 relative h-full flex flex-col">
-                      {/* 标题和切换按钮 */}
-                      <div className="mb-4 flex items-center justify-between flex-shrink-0">
-                        <h3 className="text-xl font-bold text-gray-800">
-                          {rightViewMode === "migration" 
-                            ? t("migrationList") || "迁移列表"
-                            : selectedDate 
-                              ? `${selectedDate.getFullYear()}年${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日`
-                              : t("selectDate") || "请选择日期"}
-                        </h3>
-                        <button
-                          onClick={() => {
-                            setRightViewMode(prev => prev === "migration" ? "schedule" : "migration");
-                          }}
-                          className="p-2 rounded-lg bg-white/60 hover:bg-white/80 text-gray-600 hover:text-gray-800 transition-all duration-200 flex items-center gap-2"
-                          title={t("switchPanel") || "切换面板"}
-                        >
-                          <RefreshCw size={18} />
-                          <span className="text-sm font-medium">{t("switchPanel") || "切换面板"}</span>
-                        </button>
-                      </div>
 
-                      {/* 迁移列表视图 */}
-                      {rightViewMode === "migration" && (
-                        <div className="flex-1 flex flex-col min-h-0">
-                          {migrationListGoals.length === 0 && (
-                            <p className="text-gray-500 text-sm mb-4 flex-shrink-0">{t("noMigrationGoals") || "迁移列表为空，新建目标将自动添加到这里"}</p>
-                          )}
-                          <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
-                            {migrationListGoals.map(goal => {
-                              const isCompleted = goal.status === 'completed';
-                              return (
-                                <div
-                                  key={goal.id}
-                                  className={`bg-white/80 p-5 rounded-2xl shadow-md border border-orange-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
-                                    isCompleted ? 'opacity-75' : ''
-                                  }`}
-                                >
-                                  <div className="flex justify-between items-start gap-4">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-3 mb-2">
-                                        {!isCompleted && (
-                                          <button
-                                            onClick={async () => {
-                                              try {
-                                                await updateGoal(goal.id, { status: 'completed' });
-                                                refreshGoals();
-                                              } catch (err) {
-                                                alert(err instanceof Error ? err.message : t("updateFailed") || "更新失败");
-                                              }
-                                            }}
-                                            className="p-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors duration-200 flex items-center justify-center flex-shrink-0"
-                                            title={t("completeGoal") || "完成目标"}
-                                          >
-                                            <CheckCircle2 size={18} />
-                                          </button>
-                                        )}
-                                        <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                                          {goal.title}
-                                        </h4>
-                                        {isCompleted && (
-                                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                                            {t("completed") || "已完成"}
-                                          </span>
-                                        )}
-                                      </div>
-                                      {goal.description && (
-                                        <p className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-600'}`}>
-                                          {goal.description}
-                                        </p>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      {!isCompleted && selectedDate && (
-                                        <button
-                                          onClick={async () => {
-                                            try {
-                                              const dateStr = formatDateToLocal(selectedDate);
-                                              await updateGoal(goal.id, { due_date: dateStr });
-                                              refreshGoals();
-                                              // 迁移成功后自动切换到日程视图
-                                              setRightViewMode("schedule");
-                                            } catch (err) {
-                                              alert(err instanceof Error ? err.message : t("migrateFailed") || "迁移失败");
-                                            }
-                                          }}
-                                          className="p-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200 flex items-center justify-center"
-                                          title={t("migrate") || "迁移"}
-                                        >
-                                          <ArrowRight size={18} />
-                                        </button>
-                                      )}
+                  {/* 迁移列表视图 */}
+                  {rightViewMode === "migration" && (
+                    <div className="flex-1 flex flex-col min-h-0">
+                      {migrationListGoals.length === 0 && (
+                        <p className="text-gray-500 text-sm mb-4 flex-shrink-0">{t("noMigrationGoals") || "迁移列表为空，新建目标将自动添加到这里"}</p>
+                      )}
+                      <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
+                        {migrationListGoals.map(goal => {
+                          const isCompleted = goal.status === 'completed';
+                          return (
+                            <div
+                              key={goal.id}
+                              className={`bg-white/80 p-5 rounded-2xl shadow-md border border-gray-200 ${
+                                isCompleted ? 'opacity-75' : ''
+                              }`}
+                            >
+                              <div className="flex justify-between items-start gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    {!isCompleted && (
                                       <button
-                                        onClick={() => {
-                                          setSelectedItem({ 
-                                            type: 'goal', 
-                                            id: goal.id, 
-                                            name: goal.title,
-                                            imagePath: goal.image_path 
-                                          });
-                                          setShowConfirm(true);
+                                        onClick={async () => {
+                                          try {
+                                            await updateGoal(goal.id, { status: 'completed' });
+                                            refreshGoals();
+                                          } catch (err) {
+                                            alert(err instanceof Error ? err.message : t("updateFailed") || "更新失败");
+                                          }
                                         }}
-                                        className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
-                                        title={t("delete") || "删除"}
+                                        className="p-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                                        title={t("completeGoal") || "完成目标"}
                                       >
-                                        <Trash2 size={18} />
+                                        <CheckCircle2 size={18} />
                                       </button>
-                                    </div>
+                                    )}
+                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                                      {goal.title}
+                                    </h4>
+                                    {isCompleted && (
+                                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                                        {t("completed") || "已完成"}
+                                      </span>
+                                    )}
                                   </div>
-                                  {!selectedDate && !isCompleted && (
-                                    <p className="text-xs text-gray-500 mt-2">
-                                      {t("selectDateToMigrate") || "请先选择日历中的日期，然后点击迁移按钮"}
+                                  {goal.description && (
+                                    <p className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-600'}`}>
+                                      {goal.description}
                                     </p>
                                   )}
                                 </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 日程视图 */}
-                      {rightViewMode === "schedule" && (
-                        <div className="flex-1 flex flex-col min-h-0">
-                          {selectedDateGoals.length === 0 && (
-                            <p className="text-gray-500 text-sm mb-4 flex-shrink-0">{t("noGoalsForDate") || "该日期暂无目标"}</p>
-                          )}
-                          <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
-                            {selectedDateGoals.map(goal => {
-                              const isCompleted = goal.status === 'completed';
-                              return (
-                                <div
-                                  key={goal.id}
-                                  className={`bg-white/80 p-5 rounded-2xl shadow-md border border-orange-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
-                                    isCompleted ? 'opacity-75' : ''
-                                  }`}
-                                >
-                                  <div className="flex justify-between items-start gap-4">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-3 mb-2">
-                                        {!isCompleted && (
-                                          <button
-                                            onClick={async () => {
-                                              try {
-                                                await updateGoal(goal.id, { status: 'completed' });
-                                                refreshGoals();
-                                              } catch (err) {
-                                                alert(err instanceof Error ? err.message : t("updateFailed") || "更新失败");
-                                              }
-                                            }}
-                                            className="p-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors duration-200 flex items-center justify-center flex-shrink-0"
-                                            title={t("completeGoal") || "完成目标"}
-                                          >
-                                            <CheckCircle2 size={18} />
-                                          </button>
-                                        )}
-                                        <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                                          {goal.title}
-                                        </h4>
-                                        {isCompleted && (
-                                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                                            {t("completed") || "已完成"}
-                                          </span>
-                                        )}
-                                      </div>
-                                      {goal.description && (
-                                        <p className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-600'}`}>
-                                          {goal.description}
-                                        </p>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      {!isCompleted && (
-                                        <button
-                                          onClick={async () => {
-                                            try {
-                                              await updateGoal(goal.id, { due_date: null });
-                                              refreshGoals();
-                                              // 迁回成功后自动切换到迁移列表视图
-                                              setRightViewMode("migration");
-                                            } catch (err) {
-                                              alert(err instanceof Error ? err.message : t("moveBackFailed") || "迁回失败");
-                                            }
-                                          }}
-                                          className="p-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors duration-200 flex items-center justify-center"
-                                          title={t("moveBack") || "迁回"}
-                                        >
-                                          <ArrowLeft size={18} />
-                                        </button>
-                                      )}
-                                      <button
-                                        onClick={() => {
-                                          setSelectedItem({ 
-                                            type: 'goal', 
-                                            id: goal.id, 
-                                            name: goal.title,
-                                            imagePath: goal.image_path 
-                                          });
-                                          setShowConfirm(true);
-                                        }}
-                                        className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
-                                        title={t("delete") || "删除"}
-                                      >
-                                        <Trash2 size={18} />
-                                      </button>
-                                    </div>
-                                  </div>
+                                <div className="flex items-center gap-2">
+                                  {!isCompleted && selectedDate && (
+                                    <button
+                                      onClick={async () => {
+                                        try {
+                                          const dateStr = formatDateToLocal(selectedDate);
+                                          await updateGoal(goal.id, { due_date: dateStr });
+                                          refreshGoals();
+                                          // 迁移成功后自动切换到日程视图
+                                          setRightViewMode("schedule");
+                                        } catch (err) {
+                                          alert(err instanceof Error ? err.message : t("migrateFailed") || "迁移失败");
+                                        }
+                                      }}
+                                      className="p-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200 flex items-center justify-center"
+                                      title={t("migrate") || "迁移"}
+                                    >
+                                      <ArrowRight size={18} />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      setSelectedItem({ 
+                                        type: 'goal', 
+                                        id: goal.id, 
+                                        name: goal.title,
+                                        imagePath: goal.image_path 
+                                      });
+                                      setShowConfirm(true);
+                                    }}
+                                    className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
+                                    title={t("delete") || "删除"}
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-                  </div>
-                </div>
-              )}
+                              </div>
+                              {!selectedDate && !isCompleted && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  {t("selectDateToMigrate") || "请先选择日历中的日期，然后点击迁移按钮"}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
-              {activeTab === "myHabits" && (
+                  {/* 日程视图 */}
+                  {rightViewMode === "schedule" && (
+                    <div className="flex-1 flex flex-col min-h-0">
+                      {selectedDateGoals.length === 0 && (
+                        <p className="text-gray-500 text-sm mb-4 flex-shrink-0">{t("noGoalsForDate") || "该日期暂无目标"}</p>
+                      )}
+                      <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
+                        {selectedDateGoals.map(goal => {
+                          const isCompleted = goal.status === 'completed';
+                          return (
+                            <div
+                              key={goal.id}
+                              className={`bg-white/80 p-5 rounded-2xl shadow-md border border-gray-200 ${
+                                isCompleted ? 'opacity-75' : ''
+                              }`}
+                            >
+                              <div className="flex justify-between items-start gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    {!isCompleted && (
+                                      <button
+                                        onClick={async () => {
+                                          try {
+                                            await updateGoal(goal.id, { status: 'completed' });
+                                            refreshGoals();
+                                          } catch (err) {
+                                            alert(err instanceof Error ? err.message : t("updateFailed") || "更新失败");
+                                          }
+                                        }}
+                                        className="p-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                                        title={t("completeGoal") || "完成目标"}
+                                      >
+                                        <CheckCircle2 size={18} />
+                                      </button>
+                                    )}
+                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                                      {goal.title}
+                                    </h4>
+                                    {isCompleted && (
+                                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                                        {t("completed") || "已完成"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {goal.description && (
+                                    <p className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-600'}`}>
+                                      {goal.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {!isCompleted && (
+                                    <button
+                                      onClick={async () => {
+                                        try {
+                                          await updateGoal(goal.id, { due_date: null });
+                                          refreshGoals();
+                                          // 迁回成功后自动切换到迁移列表视图
+                                          setRightViewMode("migration");
+                                        } catch (err) {
+                                          alert(err instanceof Error ? err.message : t("moveBackFailed") || "迁回失败");
+                                        }
+                                      }}
+                                      className="p-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors duration-200 flex items-center justify-center"
+                                      title={t("moveBack") || "迁回"}
+                                    >
+                                      <ArrowLeft size={18} />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      setSelectedItem({ 
+                                        type: 'goal', 
+                                        id: goal.id, 
+                                        name: goal.title,
+                                        imagePath: goal.image_path 
+                                      });
+                                      setShowConfirm(true);
+                                    }}
+                                    className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
+                                    title={t("delete") || "删除"}
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              </div>
+            </div>
+
+            {/* 我的习惯卡片 - 放在日历下方 */}
+            <div className="mt-6">
+              <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-gray-200">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-gray-800">{t("myHabits") || "我的习惯"}</h3>
+                  <Button onClick={() => setIsHabitModalOpen(true)} className="border-2 border-transparent hover:!border-gray-800">
+                    + {t("new")} {t("habit")}
+                  </Button>
+                </div>
                 <div className="space-y-4">
-                  {habits.map(habit => {
-                    const daysSince = daysSinceLastCheckin(habit.last_checkin);
-                    const today = new Date();
-                    const lastCheckinDate = habit.last_checkin ? new Date(habit.last_checkin) : null;
-                    const isToday = lastCheckinDate && 
-                      lastCheckinDate.getDate() === today.getDate() &&
-                      lastCheckinDate.getMonth() === today.getMonth() &&
-                      lastCheckinDate.getFullYear() === today.getFullYear();
-                    
-                    return (
-                      <Card 
-                        key={habit.id} 
-                        className={`p-4 rounded-3xl shadow-lg border border-orange-200 ${
-                          isToday 
-                            ? 'bg-gradient-to-r from-orange-200 to-yellow-100 text-gray-800' 
-                            : 'bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <div className="flex items-center mb-2">
-                              <h4 className="font-bold text-lg text-gray-800">{habit.name}</h4>
-                              <div className="flex items-center ml-3 space-x-2">
+                  {habits.length === 0 ? (
+                    <p className="text-gray-500 text-sm text-center py-4">{t("noHabits") || "暂无习惯，点击上方按钮添加第一个习惯吧！"}</p>
+                  ) : (
+                    habits.map(habit => {
+                      const daysSince = daysSinceLastCheckin(habit.last_checkin);
+                      const today = new Date();
+                      const lastCheckinDate = habit.last_checkin ? new Date(habit.last_checkin) : null;
+                      const isToday = lastCheckinDate && 
+                        lastCheckinDate.getDate() === today.getDate() &&
+                        lastCheckinDate.getMonth() === today.getMonth() &&
+                        lastCheckinDate.getFullYear() === today.getFullYear();
+                      
+                      return (
+                        <div
+                          key={habit.id}
+                          className={`bg-white/80 p-5 rounded-2xl shadow-md border border-gray-200 ${
+                            isToday 
+                              ? 'bg-gradient-to-r from-orange-200/80 to-yellow-100/80' 
+                              : ''
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h4 className="font-bold text-lg text-gray-800">{habit.name}</h4>
                                 <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
                                   {t(habit.frequency) || habit.frequency}
                                 </span>
-                                <Trash2 
-                                  size={18} 
-                                  className="cursor-pointer hover:text-orange-400" 
+                                <button
                                   onClick={() => {
                                     setSelectedItem({ 
                                       type: 'habit', 
@@ -590,41 +572,48 @@ export default function GoalsPage() {
                                       name: habit.name
                                     });
                                     setShowConfirm(true);
-                                  }} 
-                                />
+                                  }}
+                                  className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
+                                  title={t("delete") || "删除"}
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+                              {habit.description && (
+                                <p className="text-sm text-gray-600 mb-2">{habit.description}</p>
+                              )}
+                              <div className="flex items-center text-green-600">
+                                <span className="text-sm">{t("checkinCount")} {habit.checkin_count || 0} {t("times")}</span>
+                                {daysSince !== null && (
+                                  <span className="ml-3 text-sm text-gray-500">{t("lastCheckin")} {daysSince} {t("daysAgo")}</span>
+                                )}
                               </div>
                             </div>
-                            <p className="text-gray-500 mb-3">{habit.description}</p>
-                            <div className="flex items-center text-green-600">
-                              <span className="ml-2 text-sm">{t("checkinCount")} {habit.checkin_count || 0} {t("times")}</span>
-                              {daysSince !== null && (
-                                <span className="ml-3 text-sm text-gray-500">{t("lastCheckin")} {daysSince} {t("daysAgo")}</span>
+                            <div className="flex items-center ml-4">
+                              {isToday ? (
+                                <Button
+                                  variant="primary"
+                                  className="px-6 py-2 text-sm rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                                  disabled
+                                >
+                                  {t("checkedIn") || "已打卡"}
+                                </Button>
+                              ) : (
+                                <Button
+                                  onClick={() => handleCheckin(habit.id)}
+                                  className="px-6 py-2 text-sm rounded-lg bg-black text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white"
+                                >
+                                  {t("checkin") || "打卡"}
+                                </Button>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center">
-                            {isToday ? (
-                              <Button
-                                variant="primary"
-                                className="px-6 py-2 text-sm rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white"
-                              >
-                                {t("checkedIn") || "已打卡"}
-                              </Button>
-                            ) : (
-                              <Button
-                                onClick={() => handleCheckin(habit.id)}
-                                className="px-6 py-2 text-sm rounded-lg bg-black text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white"
-                              >
-                                {t("checkin") || "打卡"}
-                              </Button>
-                            )}
-                          </div>
                         </div>
-                      </Card>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
-              )}
+              </Card>
             </div>
           </div>
         </div>
@@ -646,7 +635,7 @@ export default function GoalsPage() {
 
       {showConfirm && selectedItem && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-orange-200 max-w-sm w-full">
+          <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-gray-200 max-w-sm w-full">
             <h2 className="text-lg font-semibold mb-4 text-center">
               {t("confirmDelete")} {selectedItem.name} {selectedItem.type === 'goal' ? t("goal") : t("habit")}{t("questionMark") || "吗？"}
             </h2>
