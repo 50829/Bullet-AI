@@ -108,7 +108,7 @@ export default function ReflectionsPage() {
     <div className="min-h-screen flex flex-col">
       {/* 固定的头部区域 - 毛玻璃圆角矩形模块 */}
       <div className="sticky top-0 z-20 py-4 px-4">
-        <div className="max-w-6xl mx-auto bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 rounded-3xl shadow-lg border border-orange-200/50 backdrop-blur-lg">
+        <div className="max-w-6xl mx-auto bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 rounded-3xl shadow-lg border border-gray-200/50 backdrop-blur-lg">
           {/* 标题和按钮行 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
             <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ export default function ReflectionsPage() {
 
           {/* 搜索栏 - 条件渲染 */}
           {showSearch && (
-            <div className="p-4 border-t border-orange-200/50">
+            <div className="p-4 border-t border-gray-200/50">
               <div className="flex gap-2 items-center">
                 <Input 
                   placeholder={t("searchPlaceholder") || "输入搜索内容~"} 
@@ -210,7 +210,7 @@ export default function ReflectionsPage() {
                 filteredReflections.map((reflection) => (
                   <Card 
                     key={reflection.id} 
-                    className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-4 rounded-3xl shadow-lg border border-orange-200/50 w-full max-w-3xl mx-auto"
+                    className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-4 rounded-3xl shadow-lg border border-gray-200/50 w-full max-w-3xl mx-auto"
                   >
                     <div className="flex flex-col gap-4"> {/* 垂直布局 */}
                       {/* 文字区域 */}
@@ -275,7 +275,7 @@ export default function ReflectionsPage() {
       {/* 修改确认对话框 - 确保在 selectedReflection 存在时才渲染 */}
       {showConfirm && selectedReflection && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-6 rounded-3xl shadow-lg border border-orange-200/50 max-w-sm w-full mx-4">
+          <div className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-6 rounded-3xl shadow-lg border border-gray-200/50 max-w-sm w-full mx-4">
             <h2 className="text-lg font-semibold mb-4 text-center">{t("confirmDelete") || "确认删除这条感悟吗？"}</h2>
             <p className="text-gray-600 text-sm mb-4 text-center">{t("cannotRecover") || "删除后无法恢复。"}</p>
             <div className="flex justify-center space-x-3">

@@ -118,9 +118,9 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
         onClick={onClose}
       />
       {/* AI 对话面板 */}
-      <div className="fixed left-0 top-0 h-full w-full lg:w-[520px] bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 border-r border-orange-200/50 shadow-2xl z-40 flex flex-col backdrop-blur-lg">
+      <div className="fixed left-0 top-0 h-full w-full lg:w-[520px] bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 border-r border-gray-200/50 shadow-2xl z-40 flex flex-col backdrop-blur-lg">
       {/* 头部 */}
-      <div className="p-4 border-b border-orange-200/50 flex items-center justify-between bg-white/20 backdrop-blur-sm">
+      <div className="p-4 border-b border-gray-200/50 flex items-center justify-between bg-white/20 backdrop-blur-sm">
         <h3 className="text-2xl font-bold text-gray-800">{t("aiAssistant") || "AI助手"}</h3>
         <button
           onClick={onClose}
@@ -159,8 +159,8 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
       </div>
 
       {/* 输入区域 */}
-      <div className="p-4 border-t border-orange-200/50 bg-white/20 backdrop-blur-sm">
-        <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md rounded-lg p-2 border border-orange-200/50">
+      <div className="p-4 border-t border-gray-200/50 bg-white/20 backdrop-blur-sm">
+        <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md rounded-lg p-2 border border-gray-200/50">
           <input
             type="text"
             value={input}
