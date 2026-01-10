@@ -270,22 +270,22 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
 
         {/* 输入区域 */}
         <div className="p-4 border-t border-gray-200/50 bg-white/20 backdrop-blur-sm">
-          <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md rounded-lg p-2 border border-gray-200/50">
+          <div className="flex items-center gap-2 bg-white/30 backdrop-blur-lg rounded-lg p-3 border border-gray-200/50">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={t("aiGoalInputPlaceholder") || "输入你想完成的大目标..."}
-              className="flex-1 bg-transparent px-2 focus:outline-none text-base text-gray-700"
+              className="flex-1 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded-lg text-lg text-gray-700"
               disabled={isLoading}
             />
             <button
               onClick={sendMessage}
               disabled={isLoading || !input.trim()}
-              className="p-2 rounded-lg bg-gradient-to-r from-orange-400 to-red-500 text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="p-3 rounded-lg bg-black text-white hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              <Send size={16} />
+              <Send size={20} />
             </button>
           </div>
         </div>

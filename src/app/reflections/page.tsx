@@ -179,6 +179,7 @@ export default function ReflectionsPage() {
       <AIChatPanel
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
+        title={t("aiThoughtAssistant") || "AI思维助手"}
         greeting={t("aiThoughtAssistantGreeting") || "你好！我是你的AI思维助手，专注于和你探讨哲学思想、人生智慧等深刻的感悟话题。让我们一起思考生活的意义吧！✨"}
         systemPrompt={
           language === "en"

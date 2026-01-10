@@ -115,7 +115,7 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h3 className="text-lg font-semibold text-gray-800">
+        <h3 className="text-xl font-semibold text-gray-800">
           {currentMonth.getFullYear()}年 {monthNames[currentMonth.getMonth()]}
         </h3>
         <button
@@ -129,7 +129,7 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
       {/* 星期标题 */}
       <div className="grid grid-cols-7 gap-1 mb-2 flex-shrink-0">
         {weekDays.map((day) => (
-          <div key={day} className="text-center text-sm font-medium text-gray-600 py-1">
+          <div key={day} className="text-center text-base font-medium text-gray-600 py-1">
             {day}
           </div>
         ))}
@@ -148,16 +148,11 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
               onClick={() => handleDayClick(day)}
               disabled={day === null}
               className={`
-                aspect-square p-2 rounded-lg text-sm transition-all
-                ${day === null ? 'cursor-default opacity-0' : 'cursor-pointer'}
-                ${selected 
-                  ? 'bg-orange-400 text-white font-bold' 
-                  : today 
-                    ? 'bg-orange-100 text-orange-600 font-semibold' 
-                    : hasIncompleteGoal
-                      ? 'bg-blue-50 text-gray-800 hover:bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100'
-                }
+                aspect-square p-2 rounded-full text-base transition-all flex items-center justify-center
+                ${day === null ? 'cursor-default opacity-0' : 'cursor-pointer hover:bg-gray-100'}
+                ${selected ? 'border-2 border-orange-400' : ''}
+                ${today ? 'text-orange-600 font-semibold' : day !== null ? 'text-gray-700' : ''}
+                ${hasIncompleteGoal ? 'bg-blue-50' : ''}
               `}
             >
               {day}

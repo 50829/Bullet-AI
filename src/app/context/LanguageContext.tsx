@@ -333,11 +333,11 @@ const translations: Record<string, TranslationValue> = {
     zh: "思考即将开始...",
   },
   addNewMoment: {
-    en: "+ Add New Moment",
+    en: "+ New Moment",
     zh: "+ 记录新时刻",
   },
   addNewReflection: {
-    en: "+ Add New Reflection",
+    en: "+ New Reflection",
     zh: "+ 记录新感悟",
   },
   collapseSearch: {

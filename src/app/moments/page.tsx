@@ -179,6 +179,7 @@ export default function MomentsPage() {
       <AIChatPanel
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
+        title={t("aiMomentAssistant") || "AI时刻助手"}
         greeting={t("aiMomentAssistantGreeting") || "你好！我是你的AI时刻助手，专注于和你聊生活相关的话题。让我们一起分享生活中的美好瞬间吧！🌟"}
         systemPrompt={
           language === "en"

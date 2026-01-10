@@ -15,9 +15,10 @@ interface AIChatPanelProps {
   onClose: () => void;
   greeting: string;
   systemPrompt: string;
+  title?: string;
 }
 
-export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greeting, systemPrompt }) => {
+export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greeting, systemPrompt, title }) => {
   const { t, language } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -121,7 +122,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
       <div className="fixed left-0 top-0 h-full w-full lg:w-[520px] bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 border-r border-gray-200/50 shadow-2xl z-40 flex flex-col backdrop-blur-lg">
       {/* 头部 */}
       <div className="p-4 border-b border-gray-200/50 flex items-center justify-between bg-white/20 backdrop-blur-sm">
-        <h3 className="text-2xl font-bold text-gray-800">{t("aiAssistant") || "AI助手"}</h3>
+        <h3 className="text-2xl font-bold text-gray-800">{title || t("aiAssistant") || "AI助手"}</h3>
         <button
           onClick={onClose}
           className="p-2 rounded-lg hover:bg-orange-100/50 transition-colors"
@@ -160,22 +161,22 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
 
       {/* 输入区域 */}
       <div className="p-4 border-t border-gray-200/50 bg-white/20 backdrop-blur-sm">
-        <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md rounded-lg p-2 border border-gray-200/50">
+        <div className="flex items-center gap-2 bg-white/30 backdrop-blur-lg rounded-lg p-3 border border-gray-200/50">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={t("aiInputPlaceholder") || "输入你的想法..."}
-            className="flex-1 bg-transparent px-2 focus:outline-none text-base text-gray-700"
+            className="flex-1 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded-lg text-lg text-gray-700"
             disabled={isLoading}
           />
           <button
             onClick={sendMessage}
             disabled={isLoading || !input.trim()}
-            className="p-2 rounded-lg bg-gradient-to-r from-orange-400 to-red-500 text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="p-3 rounded-lg bg-black text-white hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            <Send size={16} />
+            <Send size={20} />
           </button>
         </div>
       </div>
