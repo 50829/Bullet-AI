@@ -251,30 +251,36 @@ const FeaturesSection = () => {
                 key={feature.title}
                 className="group relative flex flex-col justify-center items-start p-4 md:p-6 rounded-3xl transition-all duration-500 overflow-hidden"
               >
-                <div className="relative w-full h-full">
-                  {/* 文字内容 - 默认显示，悬浮时淡出 */}
-                  <div className="flex flex-col justify-start p-4 md:p-6 transition-opacity duration-500 group-hover:opacity-0">
-                    {/* 图标和标题保持同一水平线 */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="bg-white/70 p-3 rounded-full flex-shrink-0 shadow-sm">
+                <div className="relative w-full h-full min-h-[200px] flex items-center justify-center">
+                  {/* 默认显示：标题和描述 */}
+                  <div className="flex flex-col justify-center items-center text-center p-6 md:p-8 transition-opacity duration-500 group-hover:opacity-0 group-hover:pointer-events-none">
+                    {/* 图标 */}
+                    <div className="mb-6">
+                      <div className="bg-white/70 p-4 rounded-full flex-shrink-0 shadow-sm">
                         {feature.icon}
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-900">
-                        {feature.title}
-                      </h3>
                     </div>
-                    <p className="text-gray-600 text-base md:text-lg">
+                    {/* 标题 */}
+                    <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                      {feature.title}
+                    </h3>
+                    {/* 描述 */}
+                    <p className="text-gray-600 text-lg md:text-xl max-w-md leading-relaxed">
                       {feature.description}
                     </p>
-                    <ul className="mt-4 space-y-2 text-sm md:text-base text-gray-700">
+                  </div>
+
+                  {/* 悬浮显示：分点列表 */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none group-hover:pointer-events-auto">
+                    <ul className="space-y-4 text-base md:text-lg text-gray-700 px-6 md:px-8">
                       {feature.items.map((item, itemIndex) => {
                         const parts = item.split(':');
                         return (
-                          <li key={itemIndex} className="flex items-center gap-2">
-                            {/* 分点与文字垂直居中对齐 */}
-                            <span className="h-1.5 w-1.5 rounded-full bg-orange-400 flex-shrink-0" />
+                          <li key={itemIndex} className="flex items-start gap-3">
+                            {/* 分点 */}
+                            <span className="h-2 w-2 rounded-full bg-orange-400 flex-shrink-0 mt-2" />
                             <p className="leading-relaxed">
-                              <span className="font-semibold">
+                              <span className="font-semibold text-gray-900">
                                 {parts[0]}
                                 {parts.length > 1 ? '：' : ''}
                               </span>
@@ -284,19 +290,6 @@ const FeaturesSection = () => {
                         );
                       })}
                     </ul>
-                  </div>
-
-                  {/* 图片内容 - 悬浮时显示 */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-4 md:p-6">
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Image
-                        src={feature.imagePath}
-                        alt={`Illustration for ${feature.title}`}
-                        width={500}
-                        height={300}
-                        className="object-contain max-w-full max-h-full rounded-xl shadow-lg"
-                      />
-                    </div>
                   </div>
                 </div>
               </div>

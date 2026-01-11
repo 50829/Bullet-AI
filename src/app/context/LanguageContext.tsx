@@ -138,8 +138,8 @@ const translations: Record<string, TranslationValue> = {
     zh: "了解更多",
   },
   coreFeatures: {
-    en: "Four Core Features",
-    zh: "四大核心功能",
+    en: "Regain Meaning and Order",
+    zh: "重拾意义与秩序",
   },
   featuresDescription: {
     en: "Comprehensive recording, planning, thinking, letting AI be your growth partner",
@@ -150,8 +150,8 @@ const translations: Record<string, TranslationValue> = {
     zh: "我的时刻",
   },
   momentsDescription: {
-    en: "Record every precious moment in life, from daily routines to special memories",
-    zh: "记录生活中的每一个珍贵瞬间，从日常点滴到特别回忆",
+    en: "In the quiet fragments of time, where silence speaks truth, we gently recognize ourselves",
+    zh: "在那些细碎、沉默却真实存在的瞬间里，我们悄然认出了自己",
   },
   momentsItems: [
     {
@@ -172,8 +172,8 @@ const translations: Record<string, TranslationValue> = {
     zh: "我的目标",
   },
   goalsDescription: {
-    en: "Plan your future with clear goals, from daily tasks to long-term dreams",
-    zh: "清晰规划未来，从每日任务到长期梦想",
+    en: "In steps taken without applause, we quietly become who we are meant to be",
+    zh: "在那些无人喝彩却未曾停下的脚步里，我们默默靠近了自己想成为的人",
   },
   goalsItems: [
     {
@@ -198,8 +198,8 @@ const translations: Record<string, TranslationValue> = {
     zh: "我的感悟",
   },
   insightsDescription: {
-    en: "Capture inspiration and wisdom, build your personal philosophy library",
-    zh: "捕捉灵感与智慧，打造你的个人哲学库",
+    en: "In countless solitary moments with dawn or dusk, we finally hear the faintest yet truest echo within",
+    zh: "在无数个独自面对晨光或夜色的刹那，我们终于听见了内心最轻却最真的回响",
   },
   insightsItems: [
     {
@@ -220,8 +220,8 @@ const translations: Record<string, TranslationValue> = {
     zh: "AI赋能",
   },
   aiEmpowermentDescription: {
-    en: "Three specialized AI assistants to enhance your recording, thinking, and planning",
-    zh: "三大专业AI助手，提升你的记录、思考与规划能力",
+    en: "In the profound silence of algorithms, we hear the rhythm of our own heartbeat more clearly",
+    zh: "让我们在算法的静默深处，更清晰地听见自己心跳的节奏。",
   },
   aiEmpowermentItems: [
     {
@@ -513,10 +513,6 @@ const translations: Record<string, TranslationValue> = {
   myHabits: {
     en: "My Habits",
     zh: "我的习惯",
-  },
-  aiPlanningGreeting: {
-    en: "Hello! I'm your AI planning assistant. Please tell me what goal you want to achieve, and I'll help you break it down into actionable tasks. 🎯",
-    zh: "你好！我是你的AI规划助手。请告诉我你想完成什么目标，我会帮你拆解成可执行的任务列表。🎯",
   },
   deleteHabitNotImplemented: {
     en: "Deleting habits is not yet implemented",
