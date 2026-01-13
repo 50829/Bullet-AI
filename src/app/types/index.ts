@@ -2,7 +2,6 @@ export interface Moment {
     id: number;
     date: string;
     content: string;
-    tags: string[];
     imageUrl?: string;
   }
   

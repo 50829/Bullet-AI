@@ -4,8 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
-import { Tag } from "../components/ui/Tag";
-import { Search, MapPin, Trash2, Menu, X, Sparkles, Camera } from "lucide-react";
+import { Search, Trash2, X, Sparkles, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { MomentModal } from "../components/MomentModal";
 import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
@@ -15,12 +14,23 @@ type Moment = {
   id: number;
   created_at: string;
   content: string;
-  event_type: string;
-  location: string;
   image_url?: string | null;
   image_path?: string | null;
-  tags?: string[];
   date?: string;
+};
+
+// 按日期分组的卡片类型
+type DayCard = {
+  date: string; // YYYY-MM-DD 格式
+  dateDisplay: string; // 显示用的日期格式
+  moments: Moment[]; // 该天的所有时刻
+};
+
+// 按月份分组的卡片类型
+type MonthCard = {
+  month: string; // YYYY-MM 格式
+  monthDisplay: string; // 显示用的月份格式
+  dayCards: DayCard[]; // 该月的所有日期卡片
 };
 
 
@@ -28,6 +38,8 @@ export default function MomentsPage() {
   const { moments, loading, refreshMoments, deleteMoment } = useAppContext();
   const { t, language } = useLanguage(); // 获取翻译函数和语言设置
   const [filteredMoments, setFilteredMoments] = useState<Moment[]>([]);
+  const [dayCards, setDayCards] = useState<DayCard[]>([]);
+  const [monthCards, setMonthCards] = useState<MonthCard[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null); // 用于存储要删除的moment
@@ -35,6 +47,125 @@ export default function MomentsPage() {
   const [showSearch, setShowSearch] = useState(false); // 新增状态控制搜索栏显示
   const [isMobile, setIsMobile] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  
+  // 折叠状态管理
+  const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
+  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
+
+  // 格式化日期显示 - 只显示几号（使用 UTC 时间避免时区问题）
+  const formatDateDisplay = (dateString: string) => {
+    // 如果日期字符串是 ISO 格式，直接提取日期部分
+    if (dateString.includes('T')) {
+      const datePart = dateString.split('T')[0];
+      return datePart.split('-')[2]; // 只返回日期部分
+    }
+    // 否则使用 UTC 时间提取日期
+    const date = new Date(dateString);
+    const day = String(date.getUTCDate());
+    return day;
+  };
+
+  // 将日期字符串转换为 YYYY-MM-DD 格式用于分组（使用 UTC 时间避免时区问题）
+  const getDateKey = (dateString: string): string => {
+    // 如果日期字符串是 ISO 格式，直接提取日期部分
+    if (dateString.includes('T')) {
+      return dateString.split('T')[0];
+    }
+    // 否则使用 UTC 时间提取日期
+    const date = new Date(dateString);
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // 格式化月份显示 - 显示为"月份（年份）"格式
+  const formatMonthDisplay = (monthKey: string) => {
+    const [year, month] = monthKey.split('-');
+    return `${parseInt(month)}月（${year}）`;
+  };
+
+  // 获取月份键（YYYY-MM）
+  const getMonthKey = (dateString: string): string => {
+    const dateKey = getDateKey(dateString);
+    return dateKey.substring(0, 7); // 提取 YYYY-MM
+  };
+
+  // 按日期分组时刻
+  const groupMomentsByDate = (moments: Moment[]): DayCard[] => {
+    const grouped = new Map<string, Moment[]>();
+    
+    moments.forEach(moment => {
+      const dateKey = getDateKey(moment.created_at);
+      if (!grouped.has(dateKey)) {
+        grouped.set(dateKey, []);
+      }
+      grouped.get(dateKey)!.push(moment);
+    });
+    
+    // 转换为数组并按日期排序（最新的在前）
+    const cards: DayCard[] = Array.from(grouped.entries())
+      .map(([dateKey, moments]) => ({
+        date: dateKey,
+        dateDisplay: formatDateDisplay(moments[0].created_at),
+        moments: moments.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ),
+      }))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    return cards;
+  };
+
+  // 按月份分组日期卡片
+  const groupDaysByMonth = (dayCards: DayCard[]): MonthCard[] => {
+    const grouped = new Map<string, DayCard[]>();
+    
+    dayCards.forEach(dayCard => {
+      const monthKey = getMonthKey(dayCard.date);
+      if (!grouped.has(monthKey)) {
+        grouped.set(monthKey, []);
+      }
+      grouped.get(monthKey)!.push(dayCard);
+    });
+    
+    // 转换为数组并按月份排序（最新的在前）
+    const cards: MonthCard[] = Array.from(grouped.entries())
+      .map(([monthKey, dayCards]) => ({
+        month: monthKey,
+        monthDisplay: formatMonthDisplay(monthKey),
+        dayCards: dayCards.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+      }))
+      .sort((a, b) => new Date(b.month + '-01').getTime() - new Date(a.month + '-01').getTime());
+    
+    return cards;
+  };
+
+  // 切换月份折叠状态
+  const toggleMonth = (monthKey: string) => {
+    setCollapsedMonths(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(monthKey)) {
+        newSet.delete(monthKey);
+      } else {
+        newSet.add(monthKey);
+      }
+      return newSet;
+    });
+  };
+
+  // 切换日期折叠状态
+  const toggleDay = (dateKey: string) => {
+    setCollapsedDays(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(dateKey)) {
+        newSet.delete(dateKey);
+      } else {
+        newSet.add(dateKey);
+      }
+      return newSet;
+    });
+  };
 
   // 检测屏幕尺寸
   useEffect(() => {
@@ -50,9 +181,12 @@ export default function MomentsPage() {
     };
   }, []);
 
-  // 初始过滤
+  // 初始过滤和分组
   useEffect(() => {
     setFilteredMoments(moments);
+    const days = groupMomentsByDate(moments);
+    setDayCards(days);
+    setMonthCards(groupDaysByMonth(days));
   }, [moments]);
 
   const performSearch = () => {
@@ -60,18 +194,21 @@ export default function MomentsPage() {
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       results = results.filter(m =>
-        m.content?.toLowerCase().includes(searchLower) ||
-        m.event_type?.toLowerCase().includes(searchLower) ||
-        m.location?.toLowerCase().includes(searchLower) ||
-        (m.tags ?? []).some(t => t.toLowerCase().includes(searchLower))
+        m.content?.toLowerCase().includes(searchLower)
       );
     }
     setFilteredMoments(results);
+    const days = groupMomentsByDate(results);
+    setDayCards(days);
+    setMonthCards(groupDaysByMonth(days));
   };
 
   const clearSearch = () => {
     setSearchTerm("");
     setFilteredMoments(moments); // 显示全部帖子
+    const days = groupMomentsByDate(moments);
+    setDayCards(days);
+    setMonthCards(groupDaysByMonth(days));
   };
 
   const handleAddMoment = () => setIsModalOpen(true);
@@ -101,8 +238,6 @@ export default function MomentsPage() {
       refreshMoments();
     }
   };
-
-  if (loading.moments) return <div className="text-center py-8">{t("loading.moments") || "记忆生成中..."}</div>;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -203,58 +338,118 @@ export default function MomentsPage() {
         <div className="p-4 pt-0">
           <div className="max-w-6xl mx-auto">
             <div className="space-y-6">
-              {filteredMoments.length === 0 ? (
+              {monthCards.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   {searchTerm ? t("noMatches") || "没有找到匹配的时刻记录" : t("noRecords") || "暂无时刻记录，点击上方按钮记录第一个时刻吧！"}
                 </div>
               ) : (
-                filteredMoments.map((moment) => (
-                  <Card 
-                    key={moment.id} 
-                    className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-4 rounded-3xl shadow-lg border border-gray-200/50 w-full max-w-3xl mx-auto"
-                  >
-                    <div className="flex flex-col gap-4">
-                      {/* 文字区域 */}
-                      <div className="min-w-0">
-                        <div className="flex justify-between items-start">
-                          <p className="text-lg text-gray-400 mb-2">{moment.date}</p>
-                          <div className="flex justify-end mt-2 space-x-3 text-gray-400">
-                            <Trash2 size={18} className="cursor-pointer hover:text-orange-400" onClick={() => { setSelectedMoment(moment); setShowConfirm(true); }} />
-                          </div>
+                monthCards.map((monthCard) => {
+                  const isMonthCollapsed = collapsedMonths.has(monthCard.month);
+                  
+                  return (
+                    <Card 
+                      key={monthCard.month} 
+                      className="bg-gradient-to-br from-purple-100/30 via-white/30 to-pink-100/30 backdrop-blur-lg p-4 rounded-3xl shadow-lg border border-black w-full max-w-3xl mx-auto"
+                    >
+                      <div className="flex flex-col gap-4">
+                        {/* 月份标题 - 带折叠按钮 */}
+                        <div 
+                          className="flex items-center gap-2 border-b border-gray-200/50 pb-2 cursor-pointer hover:bg-gray-50/50 rounded-lg p-2 -m-2 transition-colors"
+                          onClick={() => toggleMonth(monthCard.month)}
+                        >
+                          <button className="flex items-center justify-center w-6 h-6 hover:bg-gray-200 rounded transition-colors">
+                            {isMonthCollapsed ? (
+                              <ChevronDown size={16} className="text-gray-600" />
+                            ) : (
+                              <ChevronUp size={16} className="text-gray-600" />
+                            )}
+                          </button>
+                          <h2 className="text-xl font-bold text-gray-800 flex-1">{monthCard.monthDisplay}</h2>
                         </div>
                         
-                        <p className="text-xl text-gray-700 mt-2 whitespace-pre-line">
-                          {moment.content}
-                        </p>
+                        {/* 该月的所有日期卡片 */}
+                        {!isMonthCollapsed && (
+                          <div className="space-y-4 pl-2">
+                            {monthCard.dayCards.map((dayCard) => {
+                              const isDayCollapsed = collapsedDays.has(dayCard.date);
+                              
+                              return (
+                                <Card 
+                                  key={dayCard.date} 
+                                  className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-4 rounded-2xl shadow-md border border-black"
+                                >
+                                  <div className="flex flex-col gap-4">
+                                    {/* 日期标题 - 带折叠按钮 */}
+                                    <div 
+                                      className="flex items-center gap-2 border-b border-gray-200/50 pb-2 cursor-pointer hover:bg-gray-50/50 rounded-lg p-2 -m-2 transition-colors"
+                                      onClick={() => toggleDay(dayCard.date)}
+                                    >
+                                      <button className="flex items-center justify-center w-5 h-5 hover:bg-gray-200 rounded transition-colors">
+                                        {isDayCollapsed ? (
+                                          <ChevronDown size={14} className="text-gray-600" />
+                                        ) : (
+                                          <ChevronUp size={14} className="text-gray-600" />
+                                        )}
+                                      </button>
+                                      <h3 className="text-lg font-semibold text-gray-700 flex-1">{dayCard.dateDisplay}</h3>
+                                    </div>
+                                    
+                                    {/* 该天的所有时刻内容 */}
+                                    {!isDayCollapsed && (
+                                      <div className="space-y-4">
+                                        {dayCard.moments.map((moment) => (
+                                          <div 
+                                            key={moment.id} 
+                                            className="flex flex-col gap-3 group/item relative"
+                                          >
+                                            {/* 删除按钮 - 只在hover时显示，右侧居中 */}
+                                            <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 transition-opacity z-10">
+                                              <Trash2 
+                                                size={18} 
+                                                className="cursor-pointer text-gray-400 hover:text-orange-400" 
+                                                onClick={(e) => { 
+                                                  e.stopPropagation();
+                                                  setSelectedMoment(moment); 
+                                                  setShowConfirm(true); 
+                                                }} 
+                                              />
+                                            </div>
+                                            
+                                            {/* 文字内容 */}
+                                            {moment.content && (
+                                              <div className="min-w-0 pr-8">
+                                                <p className="text-lg text-gray-700 whitespace-pre-line">
+                                                  {moment.content}
+                                                </p>
+                                              </div>
+                                            )}
+                                            
+                                            {/* 图片 */}
+                                            {moment.image_url && (
+                                              <div className="flex justify-center">
+                                                <div className="relative">
+                                                  <img 
+                                                    src={moment.image_url} 
+                                                    alt="时刻图片" 
+                                                    className="w-full max-w-md h-auto rounded-lg object-cover" 
+                                                  />
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                      
-                      {/* 图片区域 - 放在文字下方 */}
-                      {moment.image_url && (
-                        <div className="flex justify-center">
-                          <img 
-                            src={moment.image_url} 
-                            alt="时刻图片" 
-                            className="w-full max-w-md h-auto rounded-lg object-cover" 
-                          />
-                        </div>
-                      )}
-                      
-                      {/* 标签区域 - 放在图片下方 */}
-                      {(moment.tags?.length > 0 || moment.event_type || moment.location) && (
-                        <div className="flex flex-wrap gap-2">
-                          {(moment.tags ?? []).map((tag, i) => <Tag key={i}>{tag}</Tag>)}
-                          {moment.event_type && <Tag>{moment.event_type}</Tag>}
-                          {moment.location && (
-                            <Tag>
-                              <MapPin size={14} className="inline mr-1" />
-                              {moment.location}
-                            </Tag>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                ))
+                    </Card>
+                  );
+                })
               )}
             </div>
           </div>
@@ -266,26 +461,25 @@ export default function MomentsPage() {
       {/* 修改确认对话框 - 确保在 selectedMoment 存在时才渲染 */}
       {showConfirm && selectedMoment && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-6 rounded-3xl shadow-lg border border-gray-200/50 max-w-sm w-full mx-4">
-            <h2 className="text-lg font-semibold mb-4 text-center">{t("confirmDelete") || "确认删除这条时刻吗？"}</h2>
-            <p className="text-gray-600 text-sm mb-4 text-center">{t("cannotRecover") || "删除后无法恢复。"}</p>
+          <div className="bg-gradient-to-br from-blue-100 via-white to-orange-100 p-4 rounded-2xl shadow-md border border-gray-300 max-w-sm w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4 text-center text-gray-700">{t("confirmDelete") || "确认删除这条时刻吗？"}</h2>
+            <p className="text-gray-600 text-base mb-4 text-center">{t("cannotRecover") || "删除后不可恢复"}</p>
             <div className="flex justify-center space-x-3">
-              <Button 
-                variant="secondary" 
+              <button 
                 onClick={() => { 
                   setShowConfirm(false); 
                   setSelectedMoment(null); // 点击取消也清除选中项
                 }}
+                className="px-4 py-2 rounded-lg font-semibold transition-colors border-2 border-black bg-white text-black hover:bg-black hover:text-white hover:border-black text-base"
               >
                 {t("cancel") || "取消"}
-              </Button>
-              <Button 
-                variant="primary" 
-                className="bg-red-500 hover:bg-red-600 text-white" 
+              </button>
+              <button 
+                className="px-4 py-2 rounded-lg font-semibold transition-colors border-2 border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 text-base" 
                 onClick={handleDelete} // 点击后立即关闭面板
               >
                 {t("confirm") || "确认删除"}
-              </Button>
+              </button>
             </div>
           </div>
         </div>

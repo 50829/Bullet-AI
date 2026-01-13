@@ -9,11 +9,8 @@ type Moment = {
   id: number;
   created_at: string;
   content: string;
-  event_type: string;
-  location: string;
   image_url?: string | null;
   image_path?: string | null;
-  tags?: string[];
   date?: string;
 };
 
