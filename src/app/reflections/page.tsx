@@ -276,26 +276,29 @@ export default function ReflectionsPage() {
       {/* 修改确认对话框 - 确保在 selectedReflection 存在时才渲染 */}
       {showConfirm && selectedReflection && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-6 rounded-3xl shadow-lg border border-gray-200/50 max-w-sm w-full mx-4">
-            <h2 className="text-lg font-semibold mb-4 text-center">{t("confirmDelete") || "确认删除这条感悟吗？"}</h2>
-            <p className="text-gray-600 text-sm mb-4 text-center">{t("cannotRecover") || "删除后无法恢复。"}</p>
+          <div className="bg-gradient-to-br from-blue-100 via-white to-orange-100 p-4 rounded-2xl shadow-md border border-gray-300 max-w-sm w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4 text-center text-gray-700">
+              {t("confirmDelete") || "确认删除这条感悟吗？"}
+            </h2>
+            <p className="text-gray-600 text-base mb-4 text-center">
+              {t("cannotRecover") || "删除后不可恢复"}
+            </p>
             <div className="flex justify-center space-x-3">
-              <Button 
-                variant="secondary" 
+              <button 
                 onClick={() => { 
                   setShowConfirm(false); 
                   setSelectedReflection(null); // 点击取消也清除选中项
                 }}
+                className="px-4 py-2 rounded-lg font-semibold transition-colors border-2 border-black bg-white text-black hover:bg-black hover:text-white hover:border-black text-base"
               >
                 {t("cancel") || "取消"}
-              </Button>
-              <Button 
-                variant="primary" 
-                className="bg-red-500 hover:bg-red-600 text-white" 
+              </button>
+              <button 
+                className="px-4 py-2 rounded-lg font-semibold transition-colors border-2 border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 text-base" 
                 onClick={handleDelete} // 点击后立即关闭面板
               >
                 {t("confirm") || "确认删除"}
-              </Button>
+              </button>
             </div>
           </div>
         </div>

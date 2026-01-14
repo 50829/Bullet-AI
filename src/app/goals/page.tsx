@@ -46,7 +46,7 @@ type Message = {
 };
 
 export default function GoalsPage() {
-  const { goals, habits, loading, refreshGoals, refreshHabits, deleteGoal, updateGoal, checkinHabit } = useAppContext();
+  const { goals, habits, loading, refreshGoals, refreshHabits, deleteGoal, deleteHabit, updateGoal, checkinHabit } = useAppContext();
   const { t, language } = useLanguage();
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
@@ -84,7 +84,7 @@ export default function GoalsPage() {
 
   const selectedDateGoals = getGoalsForDate(selectedDate);
   
-  // 获取迁移列表（无日期的目标）
+  // 获取待分配任务（无日期的目标）
   const migrationListGoals = goals.filter(g => !g.due_date);
 
   // 计算距离上次打卡的天数
@@ -108,15 +108,18 @@ export default function GoalsPage() {
         // 从全局状态中删除目标
         await deleteGoal(selectedItem.id, selectedItem.imagePath);
       } else {
-        // 注意：这里应该是删除习惯，但目前deleteHabit还没实现
-        console.error("删除习惯功能尚未实现");
-        alert(t("deleteHabitNotImplemented") || "删除习惯功能尚未实现");
+        // 删除习惯
+        await deleteHabit(selectedItem.id);
       }
     } catch (err) {
       console.error("删除异常:", err);
       alert(t("deleteFailed") || "删除失败，请稍后重试");
       // 如果删除失败，重新刷新数据以确保状态同步
-      refreshGoals();
+      if (selectedItem?.type === 'goal') {
+        refreshGoals();
+      } else {
+        refreshHabits();
+      }
     }
   };
 
@@ -314,7 +317,7 @@ export default function GoalsPage() {
                   <div className="mb-4 flex items-center justify-between flex-shrink-0">
                     <h3 className="text-xl font-bold text-gray-800">
                       {rightViewMode === "migration" 
-                        ? t("migrationList") || "迁移列表"
+                        ? t("migrationList") || "待分配任务"
                         : selectedDate 
                           ? `${selectedDate.getFullYear()}年${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日`
                           : t("selectDate") || "请选择日期"}
@@ -331,11 +334,11 @@ export default function GoalsPage() {
                     </button>
                   </div>
 
-                  {/* 迁移列表视图 */}
+                  {/* 待分配任务视图 */}
                   {rightViewMode === "migration" && (
                     <div className="flex-1 flex flex-col min-h-0">
                       {migrationListGoals.length === 0 && (
-                        <p className="text-gray-500 text-sm mb-4 flex-shrink-0">{t("noMigrationGoals") || "迁移列表为空，新建目标将自动添加到这里"}</p>
+                        <p className="text-gray-500 text-sm mb-4 flex-shrink-0">{t("noMigrationGoals") || "待分配任务为空，新建目标将自动添加到这里"}</p>
                       )}
                       <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
                         {migrationListGoals.map(goal => {
@@ -551,19 +554,21 @@ export default function GoalsPage() {
                       return (
                         <div
                           key={habit.id}
-                          className={`bg-white/80 p-5 rounded-2xl shadow-md border border-gray-200 ${
+                          className={`group bg-white/80 p-5 rounded-2xl shadow-md border border-gray-200 ${
                             isToday 
                               ? 'bg-gradient-to-r from-orange-200/80 to-yellow-100/80' 
                               : ''
                           }`}
                         >
-                          <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <h4 className="font-bold text-lg text-gray-800">{habit.name}</h4>
-                                <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
-                                  {t(habit.frequency) || habit.frequency}
-                                </span>
+                                    {habit.frequency !== "每日" && (
+                                      <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
+                                        {t(habit.frequency) || habit.frequency}
+                                      </span>
+                                    )}
                                 <button
                                   onClick={() => {
                                     setSelectedItem({ 
@@ -573,7 +578,7 @@ export default function GoalsPage() {
                                     });
                                     setShowConfirm(true);
                                   }}
-                                  className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
+                                      className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200 opacity-0 group-hover:opacity-100"
                                   title={t("delete") || "删除"}
                                 >
                                   <Trash2 size={18} />
@@ -592,8 +597,8 @@ export default function GoalsPage() {
                             <div className="flex items-center ml-4">
                               {isToday ? (
                                 <Button
-                                  variant="primary"
-                                  className="px-6 py-2 text-sm rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                                  variant="ghost"
+                                  className="px-6 py-2 text-sm rounded-lg bg-white/40 backdrop-blur-md text-black shadow-sm cursor-default"
                                   disabled
                                 >
                                   {t("checkedIn") || "已打卡"}
@@ -601,7 +606,7 @@ export default function GoalsPage() {
                               ) : (
                                 <Button
                                   onClick={() => handleCheckin(habit.id)}
-                                  className="px-6 py-2 text-sm rounded-lg bg-black text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white"
+                                  className="px-6 py-2 text-sm rounded-lg border border-black bg-black text-white hover:bg-white hover:text-black transition-colors duration-200"
                                 >
                                   {t("checkin") || "打卡"}
                                 </Button>
@@ -635,30 +640,29 @@ export default function GoalsPage() {
 
       {showConfirm && selectedItem && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-6 rounded-3xl shadow-lg border border-gray-200 max-w-sm w-full">
-            <h2 className="text-lg font-semibold mb-4 text-center">
+          <div className="bg-gradient-to-br from-blue-100 via-white to-orange-100 p-4 rounded-2xl shadow-md border border-gray-300 max-w-sm w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4 text-center text-gray-700">
               {t("confirmDelete")} {selectedItem.name} {selectedItem.type === 'goal' ? t("goal") : t("habit")}{t("questionMark") || "吗？"}
             </h2>
-            <p className="text-gray-600 text-sm mb-4 text-center">
-              {t("cannotRecover") || "删除后无法恢复。"}
+            <p className="text-gray-600 text-base mb-4 text-center">
+              {t("cannotRecover") || "删除后不可恢复"}
             </p>
             <div className="flex justify-center space-x-3">
-              <Button
-                variant="secondary"
+              <button
                 onClick={() => {
                   setShowConfirm(false);
                   setSelectedItem(null);
                 }}
+                className="px-4 py-2 rounded-lg font-semibold transition-colors border-2 border-black bg-white text-black hover:bg-black hover:text-white hover:border-black text-base"
               >
                 {t("cancel") || "取消"}
-              </Button>
-              <Button
-                variant="primary"
-                className="bg-red-500 hover:bg-red-600 text-white"
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg font-semibold transition-colors border-2 border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 text-base"
                 onClick={handleDelete}
               >
                 {t("confirm") || "确认删除"}
-              </Button>
+              </button>
             </div>
           </div>
         </div>

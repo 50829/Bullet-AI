@@ -182,7 +182,7 @@ const translations: Record<string, TranslationValue> = {
     },
     {
       en: "Migration List: Flexible goal management, assign to specific dates",
-      zh: "迁移列表: 灵活的目标管理，分配到具体日期",
+      zh: "待分配任务: 灵活的目标管理，分配到具体日期",
     },
     {
       en: "Habit Tracking: Create habits, set frequency, track check-ins",
@@ -260,7 +260,7 @@ const translations: Record<string, TranslationValue> = {
     },
     {
       en: "My Goals: Calendar planning, migration list, and AI Planning Assistant",
-      zh: "我的目标：日程规划、迁移列表，配备AI智能规划",
+      zh: "我的目标：日程规划、待分配任务，配备AI智能规划",
     },
     {
       en: "My Insights: Inspiration recording with AI Thought Assistant",
@@ -428,11 +428,11 @@ const translations: Record<string, TranslationValue> = {
   },
   addToMigrationList: {
     en: "Add to Migration List",
-    zh: "一键添加到迁移列表",
+    zh: "一键添加到待分配任务",
   },
   goalsAddedSuccessfully: {
     en: "✅ Goals have been successfully added to the migration list!",
-    zh: "✅ 目标已成功添加到迁移列表！",
+    zh: "✅ 目标已成功添加到待分配任务！",
   },
   addGoalsFailed: {
     en: "Failed to add goals, please try again later.",
@@ -476,11 +476,11 @@ const translations: Record<string, TranslationValue> = {
   },
   migrationList: {
     en: "Migration List",
-    zh: "迁移列表",
+    zh: "待分配任务",
   },
   noMigrationGoals: {
     en: "Migration list is empty. New goals will be added here automatically.",
-    zh: "迁移列表为空，新建目标将自动添加到这里",
+    zh: "待分配任务为空，新建目标将自动添加到这里",
   },
   selectDateToMigrate: {
     en: "Please select a date on the calendar, then click the migrate button",
@@ -512,7 +512,7 @@ const translations: Record<string, TranslationValue> = {
   },
   myHabits: {
     en: "My Habits",
-    zh: "我的习惯",
+    zh: "我的习惯（坚持100天，量变到质变）",
   },
   deleteHabitNotImplemented: {
     en: "Deleting habits is not yet implemented",
@@ -571,12 +571,12 @@ const translations: Record<string, TranslationValue> = {
     zh: "打卡",
   },
   checkinCount: {
-    en: "Checked in ",
-    zh: "已打卡 ",
+    en: "Persisted for ",
+    zh: "已坚持 ",
   },
   times: {
-    en: " times",
-    zh: " 次",
+    en: " days",
+    zh: " 天",
   },
   lastCheckin: {
     en: "Last check-in ",
