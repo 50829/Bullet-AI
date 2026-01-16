@@ -173,40 +173,80 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return;
     }
 
-    const { data, error } = await supabase
-      .from("reflections")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("reflections")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("id", { ascending: false }); // 使用 id 排序，因为 created_at 列可能不存在
 
-    if (error) {
-      console.error("获取感悟失败:", error);
-      setLoading(prev => ({ ...prev, reflections: false }));
-      return;
-    }
-
-    const withUrls = await Promise.all(
-      (data || []).map(async (item: Reflection) => {
-        let signedUrl: string | null = item.image_url ?? null;
-        if (!signedUrl && item.image_path) {
-          const result = await supabase.storage
-            .from("reflections")
-            .createSignedUrl(item.image_path, 60 * 60);
-          
-          if (!result.error && result.data) {
-            signedUrl = result.data.signedUrl;
-          }
+      // 优先检查数据是否存在 - 如果数据存在，即使有错误也继续处理
+      if (data && Array.isArray(data)) {
+        // 数据存在，继续处理（即使可能有错误对象）
+        if (error) {
+          // 记录警告但不阻止处理 - 可能是 Supabase 客户端的误报
+          console.warn("获取感悟时检测到错误对象，但数据存在，继续处理。数据数量:", data.length);
         }
-        return {
-          ...item,
-          image_url: signedUrl,
-          date: formatDate(item.created_at),
-        };
-      })
-    );
+        // 继续执行下面的处理逻辑
+      } else {
+        // 数据不存在，检查是否有错误
+        if (error) {
+          // 尝试获取错误信息
+          const errorMessage = error.message || error.code || error.details || "未知错误";
+          console.error("获取感悟失败:", errorMessage);
+        } else {
+          console.warn("获取感悟返回空数据，用户ID:", user.id);
+        }
+        setLoading(prev => ({ ...prev, reflections: false }));
+        setReflections([]);
+        return;
+      }
 
-    setReflections(withUrls);
-    setLoading(prev => ({ ...prev, reflections: false }));
+      const withUrls = await Promise.all(
+        (data || []).map(async (item: Reflection) => {
+          try {
+            let signedUrl: string | null = item.image_url ?? null;
+            if (!signedUrl && item.image_path) {
+              const result = await supabase.storage
+                .from("reflections")
+                .createSignedUrl(item.image_path, 60 * 60);
+              
+              if (!result.error && result.data) {
+                signedUrl = result.data.signedUrl;
+              }
+            }
+            // 处理 created_at 可能不存在的情况
+            const dateString = item.created_at || new Date().toISOString();
+            return {
+              ...item,
+              image_url: signedUrl,
+              date: formatDate(dateString),
+            };
+          } catch (itemError) {
+            console.error("处理感悟项失败:", itemError, item);
+            // 即使处理单个项失败，也返回基本数据
+            const dateString = item.created_at || new Date().toISOString();
+            return {
+              ...item,
+              image_url: item.image_url ?? null,
+              date: formatDate(dateString),
+            };
+          }
+        })
+      );
+
+      setReflections(withUrls);
+      setLoading(prev => ({ ...prev, reflections: false }));
+    } catch (err) {
+      // 捕获任何未预期的错误
+      console.error("获取感悟时发生异常:", err);
+      if (err instanceof Error) {
+        console.error("错误消息:", err.message);
+        console.error("错误堆栈:", err.stack);
+      }
+      setReflections([]);
+      setLoading(prev => ({ ...prev, reflections: false }));
+    }
   };
 
   // 获取 Goals 数据

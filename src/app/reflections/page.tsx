@@ -4,12 +4,12 @@ import React, { useEffect, useState } from "react";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
-import { Tag } from "../components/ui/Tag";
-import { Search, MapPin, Trash2, X, Sparkles, Lightbulb } from "lucide-react";
-import { ReflectionModal } from "../components/ReflectionModal";
+import { Textarea } from "../components/ui/Textarea";
+import { Search, Trash2, X, Sparkles, Lightbulb, Save } from "lucide-react";
 import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
+import { supabase } from "../../lib/supabaseClient";
 
 type Reflection = {
   id: number;
@@ -28,27 +28,15 @@ export default function ReflectionsPage() {
   const { reflections, loading, refreshReflections, deleteReflection } = useAppContext();
   const { t, language } = useLanguage(); // 获取翻译函数和语言设置
   const [filteredReflections, setFilteredReflections] = useState<Reflection[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null); // 用于存储要删除的reflection
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
-
-  // 检测屏幕尺寸
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-    };
-  }, []);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newContent, setNewContent] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // 初始过滤
   useEffect(() => {
@@ -60,10 +48,7 @@ export default function ReflectionsPage() {
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       results = results.filter(r =>
-        r.content?.toLowerCase().includes(searchLower) ||
-        (r.source_type?.toLowerCase().includes(searchLower) ?? false) ||
-        (r.source?.toLowerCase().includes(searchLower) ?? false) ||
-        (r.location?.toLowerCase().includes(searchLower) ?? false)
+        r.content?.toLowerCase().includes(searchLower)
       );
     }
     setFilteredReflections(results);
@@ -74,11 +59,60 @@ export default function ReflectionsPage() {
     setFilteredReflections(reflections);
   };
 
-  const handleAddReflection = () => setIsModalOpen(true);
-  const handleModalClose = () => setIsModalOpen(false);
-  const handleModalSuccess = () => {
-    refreshReflections();
-    setIsModalOpen(false);
+  const handleAddReflection = () => {
+    setIsCreatingNew(true);
+    setNewTitle("");
+    setNewContent("");
+  };
+
+  const handleCancelNew = () => {
+    setIsCreatingNew(false);
+    setNewTitle("");
+    setNewContent("");
+  };
+
+  const handleSaveNew = async () => {
+    if (!newContent.trim()) {
+      alert(t("pleaseEnterContent") || "请填写感悟内容");
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (!user) {
+        alert(t("pleaseLogin") || "请先登录！");
+        setIsSaving(false);
+        return;
+      }
+
+      // 如果标题为空，将标题和正文合并到content中
+      // 如果标题不为空，尝试保存title字段（如果数据库支持）
+      const contentToSave = newTitle.trim() 
+        ? `${newTitle.trim()}\n\n${newContent.trim()}`
+        : newContent.trim();
+
+      const { error } = await supabase.from("reflections").insert({
+        user_id: user.id,
+        content: contentToSave,
+      });
+
+      if (error) {
+        console.error("写入 reflections 失败:", error);
+        alert(t("publishFailed") || "发布失败，请重试");
+      } else {
+        refreshReflections();
+        setIsCreatingNew(false);
+        setNewTitle("");
+        setNewContent("");
+      }
+    } catch (err) {
+      console.error("提交错误:", err);
+      alert(t("publishFailed") || "发布异常，请稍后重试");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // 修改 handleDelete 函数以实现即时关闭面板
@@ -164,8 +198,7 @@ export default function ReflectionsPage() {
                 <Button 
                   variant="secondary" 
                   onClick={clearSearch} 
-                  className="h-10 px-4"
-                  disabled={!searchTerm}
+                  className={`h-10 px-4 ${!searchTerm ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
                 >
                   <X size={16} className="mr-1" /> {t("clear") || "清空"}
                 </Button>
@@ -203,75 +236,100 @@ export default function ReflectionsPage() {
         <div className="p-4 pt-0"> {/* 移除顶部padding，因为头部已固定 */}
           <div className="max-w-6xl mx-auto">
             <div className="space-y-6">
-              {filteredReflections.length === 0 ? (
+              {/* 新建感悟卡片 - 显示在列表顶部 */}
+              {isCreatingNew && (
+                <Card className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-6 rounded-3xl shadow-lg border border-gray-200/50 w-full max-w-3xl mx-auto">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-xl font-semibold text-gray-700">{t("newReflection") || "记录新感悟"}</h3>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-2">{t("title") || "标题"}</label>
+                      <Input
+                        placeholder={t("enterTitle") || "输入标题（可选）"}
+                        value={newTitle}
+                        onChange={(e) => setNewTitle(e.target.value)}
+                        className="mb-4"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-2">{t("content") || "内容 *"}</label>
+                      <Textarea
+                        placeholder={t("recordThoughts") || "记录你的思考和感悟..."}
+                        value={newContent}
+                        onChange={(e) => setNewContent(e.target.value)}
+                        className="min-h-[200px]"
+                      />
+                    </div>
+                    
+                    <div className="flex justify-end gap-3 mt-4">
+                      <Button
+                        variant="secondary"
+                        onClick={handleCancelNew}
+                        className={isSaving ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                      >
+                        {t("cancel") || "取消"}
+                      </Button>
+                      <Button
+                        onClick={handleSaveNew}
+                        className={`flex items-center gap-2 ${(isSaving || !newContent.trim()) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                      >
+                        <Save size={16} />
+                        {isSaving ? t("saving") || "保存中..." : t("save") || "保存"}
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {filteredReflections.length === 0 && !isCreatingNew ? (
                 <div className="text-center py-12 text-gray-500">
                   {searchTerm ? t("noMatches") || "没有找到匹配的感悟记录" : t("noRecords") || "暂无感悟记录，点击上方按钮记录第一个感悟吧！"}
                 </div>
               ) : (
-                filteredReflections.map((reflection) => (
-                  <Card 
-                    key={reflection.id} 
-                    className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-4 rounded-3xl shadow-lg border border-gray-200/50 w-full max-w-3xl mx-auto"
-                  >
-                    <div className="flex flex-col gap-4"> {/* 垂直布局 */}
-                      {/* 文字区域 */}
-                      <div className="min-w-0">
-                        <div className="flex justify-between items-start">
-                          <p className="text-lg text-gray-400 mb-2">{reflection.date}</p>
-                          <div className="flex justify-end mt-2 space-x-3 text-gray-400">
-                            <Trash2 
-                              size={18} 
-                              className="cursor-pointer hover:text-orange-400" 
-                              onClick={() => { 
-                                setSelectedReflection(reflection); 
-                                setShowConfirm(true); 
-                              }} 
-                            />
+                filteredReflections.map((reflection) => {
+                  // 解析内容：如果有换行符分隔标题和正文，则分开显示
+                  const contentLines = reflection.content.split('\n\n');
+                  const hasTitle = contentLines.length > 1 && contentLines[0].trim().length > 0 && contentLines[0].trim().length < 100;
+                  const displayTitle = hasTitle ? contentLines[0].trim() : null;
+                  const displayContent = hasTitle ? contentLines.slice(1).join('\n\n') : reflection.content;
+                  
+                  return (
+                    <Card 
+                      key={reflection.id} 
+                      className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-4 rounded-3xl shadow-lg border border-gray-200/50 w-full max-w-3xl mx-auto"
+                    >
+                      <div className="flex flex-col gap-4">
+                        <div className="min-w-0">
+                          <div className="flex justify-between items-start">
+                            {displayTitle && (
+                              <h3 className="text-2xl font-semibold text-gray-800 mb-3">{displayTitle}</h3>
+                            )}
+                            <div className="flex justify-end mt-2 space-x-3 text-gray-400">
+                              <Trash2 
+                                size={18} 
+                                className="cursor-pointer hover:text-orange-400" 
+                                onClick={() => { 
+                                  setSelectedReflection(reflection); 
+                                  setShowConfirm(true); 
+                                }} 
+                              />
+                            </div>
                           </div>
+                          
+                          <p className="text-xl text-gray-700 whitespace-pre-line">{displayContent}</p>
                         </div>
-                        
-                        <p className="text-xl text-gray-700 mb-4 whitespace-pre-line">{reflection.content}</p> {/* 增大字体并添加换行支持 */}
-                        
-                        {/* 灵感来源 - 灰色斜体显示在文本下方 */}
-                        {reflection.source && (
-                          <p className="text-gray-500 italic mb-4">------ {reflection.source}</p>
-                        )}
                       </div>
-                      
-                      {/* 图片区域 - 放在文字下方 */}
-                      {reflection.image_url && (
-                        <div className="flex justify-center">
-                          <img 
-                            src={reflection.image_url} 
-                            alt="感悟图片" 
-                            className="w-full max-w-md h-auto rounded-lg object-cover" 
-                          />
-                        </div>
-                      )}
-                      
-                      {/* 标签区域 - 放在图片下方 */}
-                      {(reflection.source_type || reflection.location) && (
-                        <div className="flex flex-wrap gap-2">
-                          {reflection.source_type && <Tag>{reflection.source_type}</Tag>}
-                          {reflection.location && (
-                            <Tag>
-                              <MapPin size={14} className="inline mr-1" />
-                              {reflection.location}
-                            </Tag>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                ))
+                    </Card>
+                  );
+                })
               )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* 模态框和确认对话框 */}
-      <ReflectionModal isOpen={isModalOpen} onClose={handleModalClose} onSuccess={handleModalSuccess} />
 
       {/* 修改确认对话框 - 确保在 selectedReflection 存在时才渲染 */}
       {showConfirm && selectedReflection && (
