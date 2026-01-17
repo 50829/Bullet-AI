@@ -579,12 +579,8 @@ const translations: Record<string, TranslationValue> = {
     zh: " 天",
   },
   lastCheckin: {
-    en: "Last check-in ",
-    zh: "上次打卡 ",
-  },
-  daysAgo: {
-    en: " days ago",
-    zh: " 天前",
+    en: "Last check-in: ",
+    zh: "上次打卡：",
   },
   questionMark: {
     en: "?",
@@ -643,13 +639,17 @@ const translations: Record<string, TranslationValue> = {
     en: "Enter goal...",
     zh: "输入目标...",
   },
+  enterTitle: {
+    en: "Enter title (required)",
+    zh: "输入标题（必填）",
+  },
   detailedDescription: {
     en: "Detailed description...",
     zh: "详细描述...",
   },
   pleaseEnterTitle: {
-    en: "Please enter the goal title",
-    zh: "请填写目标标题",
+    en: "Please enter the title",
+    zh: "请填写标题",
   },
   saveFailed: {
     en: "Save failed, please try again",
@@ -817,6 +817,14 @@ const translations: Record<string, TranslationValue> = {
   pleaseEnterContent: {
     en: "Please enter the reflection content",
     zh: "请填写感悟内容",
+  },
+  editReflection: {
+    en: "Edit Reflection",
+    zh: "编辑感悟",
+  },
+  edit: {
+    en: "Edit",
+    zh: "编辑",
   },
   recordThoughts: {
     en: "Record your thoughts and reflections...",

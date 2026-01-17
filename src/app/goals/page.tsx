@@ -96,6 +96,17 @@ export default function GoalsPage() {
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  // 格式化日期显示
+  const formatCheckinDate = (dateString?: string | null): string | null => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    if (language === 'zh') {
+      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+    } else {
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+  };
+
   const handleDelete = async () => {
     if (!selectedItem) return;
 
@@ -543,7 +554,6 @@ export default function GoalsPage() {
                     <p className="text-gray-500 text-sm text-center py-4">{t("noHabits") || "暂无习惯，点击上方按钮添加第一个习惯吧！"}</p>
                   ) : (
                     habits.map(habit => {
-                      const daysSince = daysSinceLastCheckin(habit.last_checkin);
                       const today = new Date();
                       const lastCheckinDate = habit.last_checkin ? new Date(habit.last_checkin) : null;
                       const isToday = lastCheckinDate && 
@@ -589,8 +599,8 @@ export default function GoalsPage() {
                               )}
                               <div className="flex items-center text-green-600">
                                 <span className="text-sm">{t("checkinCount")} {habit.checkin_count || 0} {t("times")}</span>
-                                {daysSince !== null && (
-                                  <span className="ml-3 text-sm text-gray-500">{t("lastCheckin")} {daysSince} {t("daysAgo")}</span>
+                                {habit.last_checkin && (
+                                  <span className="ml-3 text-sm text-gray-500">{t("lastCheckin")}{formatCheckinDate(habit.last_checkin)}</span>
                                 )}
                               </div>
                             </div>

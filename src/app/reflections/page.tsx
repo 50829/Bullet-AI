@@ -5,7 +5,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
-import { Search, Trash2, X, Sparkles, Lightbulb, Save } from "lucide-react";
+import { Search, Trash2, X, Sparkles, Lightbulb, Save, Edit2 } from "lucide-react";
 import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
@@ -25,7 +25,7 @@ type Reflection = {
 
 
 export default function ReflectionsPage() {
-  const { reflections, loading, refreshReflections, deleteReflection } = useAppContext();
+  const { reflections, loading, refreshReflections, deleteReflection, updateReflection } = useAppContext();
   const { t, language } = useLanguage(); // 获取翻译函数和语言设置
   const [filteredReflections, setFilteredReflections] = useState<Reflection[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -37,10 +37,37 @@ export default function ReflectionsPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [editingReflection, setEditingReflection] = useState<Reflection | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
 
-  // 初始过滤
+  // 获取标题首字符用于排序
+  const getTitleFirstChar = (reflection: Reflection): string => {
+    const contentLines = reflection.content.split('\n\n');
+    const hasTitle = contentLines.length > 1 && contentLines[0].trim().length > 0 && contentLines[0].trim().length < 100;
+    const title = hasTitle ? contentLines[0].trim() : reflection.content.trim();
+    if (!title) return 'ZZZ'; // 没有标题的排在最后
+    const firstChar = title.charAt(0).toUpperCase();
+    // 如果是中文字符，返回拼音首字母或直接返回字符
+    if (/[\u4e00-\u9fa5]/.test(firstChar)) {
+      return firstChar;
+    }
+    // 如果是英文字母或数字，直接返回
+    if (/[A-Z0-9]/.test(firstChar)) {
+      return firstChar;
+    }
+    // 其他字符排在最后
+    return 'ZZZ';
+  };
+
+  // 初始过滤和排序
   useEffect(() => {
-    setFilteredReflections(reflections);
+    const sorted = [...reflections].sort((a, b) => {
+      const charA = getTitleFirstChar(a);
+      const charB = getTitleFirstChar(b);
+      return charA.localeCompare(charB, 'zh-CN');
+    });
+    setFilteredReflections(sorted);
   }, [reflections]);
 
   const performSearch = () => {
@@ -51,12 +78,23 @@ export default function ReflectionsPage() {
         r.content?.toLowerCase().includes(searchLower)
       );
     }
-    setFilteredReflections(results);
+    // 对搜索结果也进行排序
+    const sorted = results.sort((a, b) => {
+      const charA = getTitleFirstChar(a);
+      const charB = getTitleFirstChar(b);
+      return charA.localeCompare(charB, 'zh-CN');
+    });
+    setFilteredReflections(sorted);
   };
 
   const clearSearch = () => {
     setSearchTerm("");
-    setFilteredReflections(reflections);
+    const sorted = [...reflections].sort((a, b) => {
+      const charA = getTitleFirstChar(a);
+      const charB = getTitleFirstChar(b);
+      return charA.localeCompare(charB, 'zh-CN');
+    });
+    setFilteredReflections(sorted);
   };
 
   const handleAddReflection = () => {
@@ -72,6 +110,10 @@ export default function ReflectionsPage() {
   };
 
   const handleSaveNew = async () => {
+    if (!newTitle.trim()) {
+      alert(t("pleaseEnterTitle") || "请填写标题");
+      return;
+    }
     if (!newContent.trim()) {
       alert(t("pleaseEnterContent") || "请填写感悟内容");
       return;
@@ -87,11 +129,8 @@ export default function ReflectionsPage() {
         return;
       }
 
-      // 如果标题为空，将标题和正文合并到content中
-      // 如果标题不为空，尝试保存title字段（如果数据库支持）
-      const contentToSave = newTitle.trim() 
-        ? `${newTitle.trim()}\n\n${newContent.trim()}`
-        : newContent.trim();
+      // 标题和正文合并到content中
+      const contentToSave = `${newTitle.trim()}\n\n${newContent.trim()}`;
 
       const { error } = await supabase.from("reflections").insert({
         user_id: user.id,
@@ -110,6 +149,51 @@ export default function ReflectionsPage() {
     } catch (err) {
       console.error("提交错误:", err);
       alert(t("publishFailed") || "发布异常，请稍后重试");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEdit = (reflection: Reflection) => {
+    const contentLines = reflection.content.split('\n\n');
+    const hasTitle = contentLines.length > 1 && contentLines[0].trim().length > 0 && contentLines[0].trim().length < 100;
+    const title = hasTitle ? contentLines[0].trim() : "";
+    const content = hasTitle ? contentLines.slice(1).join('\n\n') : reflection.content;
+    
+    setEditingReflection(reflection);
+    setEditTitle(title);
+    setEditContent(content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReflection(null);
+    setEditTitle("");
+    setEditContent("");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingReflection) return;
+    
+    if (!editTitle.trim()) {
+      alert(t("pleaseEnterTitle") || "请填写标题");
+      return;
+    }
+    if (!editContent.trim()) {
+      alert(t("pleaseEnterContent") || "请填写感悟内容");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const contentToSave = `${editTitle.trim()}\n\n${editContent.trim()}`;
+      await updateReflection(editingReflection.id, { content: contentToSave });
+      refreshReflections();
+      setEditingReflection(null);
+      setEditTitle("");
+      setEditContent("");
+    } catch (err) {
+      console.error("更新错误:", err);
+      alert(t("updateFailed") || "更新失败，请重试");
     } finally {
       setIsSaving(false);
     }
@@ -245,9 +329,9 @@ export default function ReflectionsPage() {
                     </div>
                     
                     <div>
-                      <label className="block text-sm text-gray-600 mb-2">{t("title") || "标题"}</label>
+                      <label className="block text-sm text-gray-600 mb-2">{t("title") || "标题"} *</label>
                       <Input
-                        placeholder={t("enterTitle") || "输入标题（可选）"}
+                        placeholder={t("enterTitle") || "输入标题（必填）"}
                         value={newTitle}
                         onChange={(e) => setNewTitle(e.target.value)}
                         className="mb-4"
@@ -274,7 +358,7 @@ export default function ReflectionsPage() {
                       </Button>
                       <Button
                         onClick={handleSaveNew}
-                        className={`flex items-center gap-2 ${(isSaving || !newContent.trim()) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                        className={`flex items-center gap-2 ${(isSaving || !newTitle.trim() || !newContent.trim()) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
                       >
                         <Save size={16} />
                         {isSaving ? t("saving") || "保存中..." : t("save") || "保存"}
@@ -284,12 +368,65 @@ export default function ReflectionsPage() {
                 </Card>
               )}
 
-              {filteredReflections.length === 0 && !isCreatingNew ? (
+              {filteredReflections.length === 0 && !isCreatingNew && !editingReflection ? (
                 <div className="text-center py-12 text-gray-500">
                   {searchTerm ? t("noMatches") || "没有找到匹配的感悟记录" : t("noRecords") || "暂无感悟记录，点击上方按钮记录第一个感悟吧！"}
                 </div>
               ) : (
                 filteredReflections.map((reflection) => {
+                  // 如果是正在编辑的reflection，显示编辑表单
+                  if (editingReflection && editingReflection.id === reflection.id) {
+                    return (
+                      <Card 
+                        key={reflection.id} 
+                        className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-6 rounded-3xl shadow-lg border border-gray-200/50 w-full max-w-3xl mx-auto"
+                      >
+                        <div className="flex flex-col gap-4">
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-xl font-semibold text-gray-700">{t("editReflection") || "编辑感悟"}</h3>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm text-gray-600 mb-2">{t("title") || "标题"} *</label>
+                            <Input
+                              placeholder={t("enterTitle") || "输入标题（必填）"}
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              className="mb-4"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm text-gray-600 mb-2">{t("content") || "内容"} *</label>
+                            <Textarea
+                              placeholder={t("recordThoughts") || "记录你的思考和感悟..."}
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              className="min-h-[200px]"
+                            />
+                          </div>
+                          
+                          <div className="flex justify-end gap-3 mt-4">
+                            <Button
+                              variant="secondary"
+                              onClick={handleCancelEdit}
+                              className={isSaving ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                            >
+                              {t("cancel") || "取消"}
+                            </Button>
+                            <Button
+                              onClick={handleSaveEdit}
+                              className={`flex items-center gap-2 ${(isSaving || !editTitle.trim() || !editContent.trim()) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                            >
+                              <Save size={16} />
+                              {isSaving ? t("saving") || "保存中..." : t("save") || "保存"}
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  }
+
                   // 解析内容：如果有换行符分隔标题和正文，则分开显示
                   const contentLines = reflection.content.split('\n\n');
                   const hasTitle = contentLines.length > 1 && contentLines[0].trim().length > 0 && contentLines[0].trim().length < 100;
@@ -299,7 +436,7 @@ export default function ReflectionsPage() {
                   return (
                     <Card 
                       key={reflection.id} 
-                      className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-4 rounded-3xl shadow-lg border border-gray-200/50 w-full max-w-3xl mx-auto"
+                      className="group bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-4 rounded-3xl shadow-lg border border-gray-200/50 w-full max-w-3xl mx-auto"
                     >
                       <div className="flex flex-col gap-4">
                         <div className="min-w-0">
@@ -307,14 +444,21 @@ export default function ReflectionsPage() {
                             {displayTitle && (
                               <h3 className="text-2xl font-semibold text-gray-800 mb-3">{displayTitle}</h3>
                             )}
-                            <div className="flex justify-end mt-2 space-x-3 text-gray-400">
+                            <div className="flex justify-end mt-2 space-x-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <Edit2 
+                                size={18} 
+                                className="cursor-pointer hover:text-blue-500 transition-colors" 
+                                onClick={() => handleEdit(reflection)} 
+                                title={t("edit") || "编辑"}
+                              />
                               <Trash2 
                                 size={18} 
-                                className="cursor-pointer hover:text-orange-400" 
+                                className="cursor-pointer hover:text-red-500 transition-colors" 
                                 onClick={() => { 
                                   setSelectedReflection(reflection); 
                                   setShowConfirm(true); 
                                 }} 
+                                title={t("delete") || "删除"}
                               />
                             </div>
                           </div>

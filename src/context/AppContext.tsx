@@ -72,7 +72,7 @@ interface AppContextType {
   addGoal: (goal: Goal) => void;
   addHabit: (habit: Habit) => void;
   updateMoment: (id: number, updates: Partial<Moment>) => void;
-  updateReflection: (id: number, updates: Partial<Reflection>) => void;
+  updateReflection: (id: number, updates: Partial<Reflection>) => Promise<void>;
   updateGoal: (id: number, updates: Partial<Goal>) => Promise<void>; // 更新为 Promise<void>
   updateHabit: (id: number, updates: Partial<Habit>) => void;
   deleteMoment: (id: number, imagePath?: string | null) => Promise<void>;
@@ -371,10 +371,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     ));
   };
 
-  const updateReflection = (id: number, updates: Partial<Reflection>) => {
+  const updateReflection = async (id: number, updates: Partial<Reflection>) => {
+    // 1. 先更新前端状态，提供即时反馈
     setReflections(prev => prev.map(reflection => 
       reflection.id === id ? { ...reflection, ...updates } : reflection
     ));
+
+    // 2. 更新数据库
+    try {
+      const userResponse = await supabase.auth.getUser();
+      const user = userResponse.data?.user;
+      if (!user) {
+        throw new Error("用户未登录，无法更新感悟");
+      }
+
+      const { error: dbError } = await supabase
+        .from("reflections")
+        .update(updates)
+        .eq("id", id)
+        .eq("user_id", user.id);
+
+      if (dbError) {
+        console.error("更新感悟失败:", dbError);
+        // 如果更新失败，刷新数据以恢复状态
+        refreshReflections();
+        throw new Error(`更新失败: ${dbError.message}`);
+      }
+    } catch (err) {
+      console.error("更新感悟异常:", err);
+      // 如果更新失败，刷新数据以恢复状态
+      refreshReflections();
+      throw err;
+    }
   };
 
   // 修改 updateGoal 函数 - 添加日志
