@@ -28,9 +28,6 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
   const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
   const firstDayOfWeek = firstDayOfMonth.getDay();
   const daysInMonth = lastDayOfMonth.getDate();
-
-  // 获取上个月的最后几天
-  const prevMonthLastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 0).getDate();
   
   // 创建日期数组
   const days: (number | null)[] = [];
@@ -106,30 +103,34 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
   const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
 
   return (
-    <div className="bg-[#efeeeb] rounded-[28px] p-4 h-[520px] flex flex-col">
+    <div className="bg-[#003049] rounded-[28px] p-4 h-[520px] flex flex-col">
       {/* 月份导航 */}
       <div className="flex items-center justify-between mb-3 flex-shrink-0">
-        <button
-          onClick={prevMonth}
-          className="p-2 hover:bg-gray-100 rounded-2xl transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <h3 className="text-xl font-semibold text-gray-800">
+        {/* 标题放在左上角 */}
+        <h3 className="text-2xl font-semibold text-[#efeeeb]">
           {currentMonth.getFullYear()}年 {monthNames[currentMonth.getMonth()]}
         </h3>
-        <button
-          onClick={nextMonth}
-          className="p-2 hover:bg-gray-100 rounded-2xl transition-colors"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+        {/* 月份切换按钮放在右上角 */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={prevMonth}
+            className="p-2 hover:bg-[#003049]/80 rounded-2xl transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 text-[#efeeeb]" />
+          </button>
+          <button
+            onClick={nextMonth}
+            className="p-2 hover:bg-[#003049]/80 rounded-2xl transition-colors"
+          >
+            <ChevronRight className="w-5 h-5 text-[#efeeeb]" />
+          </button>
+        </div>
       </div>
 
       {/* 星期标题 */}
       <div className="grid grid-cols-7 gap-1 mb-2 flex-shrink-0">
         {weekDays.map((day) => (
-          <div key={day} className="text-center text-base font-medium text-gray-600 py-1">
+          <div key={day} className="text-center text-lg font-medium text-[#efeeeb] py-1">
             {day}
           </div>
         ))}
@@ -148,11 +149,11 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
               onClick={() => handleDayClick(day)}
               disabled={day === null}
               className={`
-                aspect-square p-2 rounded-full text-base transition-all flex items-center justify-center
-                ${day === null ? 'cursor-default opacity-0' : 'cursor-pointer hover:bg-gray-100'}
-                ${selected ? 'border-2 border-orange-400' : ''}
-                ${today ? 'text-orange-600 font-semibold' : day !== null ? 'text-gray-700' : ''}
-                ${hasIncompleteGoal ? 'bg-blue-50' : ''}
+                aspect-square p-2 rounded-full text-lg flex items-center justify-center
+                ${day === null ? 'cursor-default opacity-0' : 'cursor-pointer'}
+                ${selected ? 'border-2 border-[#b8860b]' : 'border-2 border-transparent'}
+                ${today ? 'text-[#b8860b] font-semibold' : day !== null ? 'text-[#efeeeb]' : ''}
+                ${hasIncompleteGoal ? 'bg-blue-50/20' : ''}
               `}
             >
               {day}

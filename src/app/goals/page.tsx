@@ -308,25 +308,25 @@ export default function GoalsPage() {
               
               {/* 右侧目标列表 */}
               <div className="h-[520px]">
-                <Card className="bg-[#efeeeb] rounded-[28px] relative h-full flex flex-col">
+                <Card className="bg-white rounded-[28px] relative h-full flex flex-col">
                   {/* 标题和切换按钮 */}
                   <div className="mb-4 flex items-center justify-between flex-shrink-0">
-                    <h3 className="text-xl font-bold text-gray-800">
+                    <h3 className="text-2xl font-semibold text-[#003049]">
                       {rightViewMode === "migration" 
                         ? t("migrationList") || "待分配任务"
                         : selectedDate 
-                          ? `${selectedDate.getFullYear()}年${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日`
+                          ? `${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日`
                           : t("selectDate") || "请选择日期"}
                     </h3>
                     <button
                       onClick={() => {
                         setRightViewMode(prev => prev === "migration" ? "schedule" : "migration");
                       }}
-                      className="p-2 rounded-2xl bg-white/60 hover:bg-white/80 text-gray-600 hover:text-gray-800 transition-all duration-200 flex items-center gap-2"
+                      className="p-2 rounded-2xl bg-white/60 hover:bg-white/80 text-[#003049] hover:text-[#003049] transition-all duration-200 flex items-center gap-2"
                       title={t("switchPanel") || "切换面板"}
                     >
                       <RefreshCw size={18} />
-                      <span className="text-sm font-medium">{t("switchPanel") || "切换面板"}</span>
+                      <span className="text-2xl font-semibold">{t("switchPanel") || "切换面板"}</span>
                     </button>
                   </div>
 
@@ -334,7 +334,9 @@ export default function GoalsPage() {
                   {rightViewMode === "migration" && (
                     <div className="flex-1 flex flex-col min-h-0">
                       {migrationListGoals.length === 0 && (
-                        <p className="text-gray-500 text-sm mb-4 flex-shrink-0">{t("noMigrationGoals") || "待分配任务为空，新建目标将自动添加到这里"}</p>
+                        <div className="flex-1 flex items-center justify-center">
+                          <p className="text-[#003049] text-2xl font-semibold">{t("noMigrationGoals") || "待分配任务为空，新建目标将自动添加到这里"}</p>
+                        </div>
                       )}
                       <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
                         {migrationListGoals.map(goal => {
@@ -342,30 +344,30 @@ export default function GoalsPage() {
                           return (
                             <div
                               key={goal.id}
-                              className={`bg-[#efeeeb] p-5 rounded-[28px] ${
+                              className={`group bg-[#efeeeb] p-5 rounded-[28px] ${
                                 isCompleted ? 'opacity-75' : ''
                               }`}
                             >
-                              <div className="flex justify-between items-start gap-4">
+                              <div className="flex justify-between items-center gap-4">
+                                {!isCompleted && (
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await updateGoal(goal.id, { status: 'completed' });
+                                        refreshGoals();
+                                      } catch (err) {
+                                        alert(err instanceof Error ? err.message : t("updateFailed") || "更新失败");
+                                      }
+                                    }}
+                                    className="p-1.5 rounded-full bg-[#b2ff9e] hover:bg-[#b2ff9e]/80 transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                                    title={t("completeGoal") || "完成目标"}
+                                  >
+                                    <CheckCircle2 size={18} className="text-[#003049]" />
+                                  </button>
+                                )}
                                 <div className="flex-1">
                                   <div className="flex items-center gap-3 mb-2">
-                                    {!isCompleted && (
-                                      <button
-                                        onClick={async () => {
-                                          try {
-                                            await updateGoal(goal.id, { status: 'completed' });
-                                            refreshGoals();
-                                          } catch (err) {
-                                            alert(err instanceof Error ? err.message : t("updateFailed") || "更新失败");
-                                          }
-                                        }}
-                                        className="p-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors duration-200 flex items-center justify-center flex-shrink-0"
-                                        title={t("completeGoal") || "完成目标"}
-                                      >
-                                        <CheckCircle2 size={18} />
-                                      </button>
-                                    )}
-                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[#003049]/50' : 'text-[#003049]'}`}>
                                       {goal.title}
                                     </h4>
                                     {isCompleted && (
@@ -375,7 +377,7 @@ export default function GoalsPage() {
                                     )}
                                   </div>
                                   {goal.description && (
-                                    <p className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-600'}`}>
+                                    <p className={`text-sm ${isCompleted ? 'text-[#003049]/50 line-through' : 'text-[#003049]'}`}>
                                       {goal.description}
                                     </p>
                                   )}
@@ -394,31 +396,34 @@ export default function GoalsPage() {
                                           alert(err instanceof Error ? err.message : t("migrateFailed") || "迁移失败");
                                         }
                                       }}
-                                      className="p-2 rounded-2xl bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200 flex items-center justify-center"
+                                      className="p-2 rounded-2xl bg-[#003049] hover:bg-[#003049]/90 text-white transition-colors duration-200 flex items-center justify-center"
                                       title={t("migrate") || "迁移"}
                                     >
                                       <ArrowRight size={18} />
                                     </button>
                                   )}
-                                  <button
-                                    onClick={() => {
-                                      setSelectedItem({ 
-                                        type: 'goal', 
-                                        id: goal.id, 
-                                        name: goal.title,
-                                        imagePath: goal.image_path 
-                                      });
-                                      setShowConfirm(true);
-                                    }}
-                                    className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
+                                  <div 
+                                    className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
                                     title={t("delete") || "删除"}
                                   >
-                                    <Trash2 size={18} />
-                                  </button>
+                                    <Trash2 
+                                      size={18} 
+                                      className="hover:text-red-500 transition-colors" 
+                                      onClick={() => {
+                                        setSelectedItem({ 
+                                          type: 'goal', 
+                                          id: goal.id, 
+                                          name: goal.title,
+                                          imagePath: goal.image_path 
+                                        });
+                                        setShowConfirm(true);
+                                      }} 
+                                    />
+                                  </div>
                                 </div>
                               </div>
                               {!selectedDate && !isCompleted && (
-                                <p className="text-xs text-gray-500 mt-2">
+                                <p className="text-xs text-[#003049] mt-2">
                                   {t("selectDateToMigrate") || "请先选择日历中的日期，然后点击迁移按钮"}
                                 </p>
                               )}
@@ -431,9 +436,11 @@ export default function GoalsPage() {
 
                   {/* 日程视图 */}
                   {rightViewMode === "schedule" && (
-                    <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-1 flex flex-col min-h-0 relative">
                       {selectedDateGoals.length === 0 && (
-                        <p className="text-gray-500 text-sm mb-4 flex-shrink-0">{t("noGoalsForDate") || "该日期暂无目标"}</p>
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <p className="text-[#003049] text-2xl font-semibold">{t("noGoalsForDate") || "该日期暂无目标"}</p>
+                        </div>
                       )}
                       <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
                         {selectedDateGoals.map(goal => {
@@ -441,30 +448,30 @@ export default function GoalsPage() {
                           return (
                             <div
                               key={goal.id}
-                              className={`bg-[#efeeeb] p-5 rounded-[28px] ${
+                              className={`group bg-[#efeeeb] p-5 rounded-[28px] ${
                                 isCompleted ? 'opacity-75' : ''
                               }`}
                             >
-                              <div className="flex justify-between items-start gap-4">
+                              <div className="flex justify-between items-center gap-4">
+                                {!isCompleted && (
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await updateGoal(goal.id, { status: 'completed' });
+                                        refreshGoals();
+                                      } catch (err) {
+                                        alert(err instanceof Error ? err.message : t("updateFailed") || "更新失败");
+                                      }
+                                    }}
+                                    className="p-1.5 rounded-full bg-[#b2ff9e] hover:bg-[#b2ff9e]/80 transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                                    title={t("completeGoal") || "完成目标"}
+                                  >
+                                    <CheckCircle2 size={18} className="text-[#003049]" />
+                                  </button>
+                                )}
                                 <div className="flex-1">
                                   <div className="flex items-center gap-3 mb-2">
-                                    {!isCompleted && (
-                                      <button
-                                        onClick={async () => {
-                                          try {
-                                            await updateGoal(goal.id, { status: 'completed' });
-                                            refreshGoals();
-                                          } catch (err) {
-                                            alert(err instanceof Error ? err.message : t("updateFailed") || "更新失败");
-                                          }
-                                        }}
-                                        className="p-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors duration-200 flex items-center justify-center flex-shrink-0"
-                                        title={t("completeGoal") || "完成目标"}
-                                      >
-                                        <CheckCircle2 size={18} />
-                                      </button>
-                                    )}
-                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[#003049]/50' : 'text-[#003049]'}`}>
                                       {goal.title}
                                     </h4>
                                     {isCompleted && (
@@ -474,7 +481,7 @@ export default function GoalsPage() {
                                     )}
                                   </div>
                                   {goal.description && (
-                                    <p className={`text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-600'}`}>
+                                    <p className={`text-sm ${isCompleted ? 'text-[#003049]/50 line-through' : 'text-[#003049]'}`}>
                                       {goal.description}
                                     </p>
                                   )}
@@ -492,27 +499,30 @@ export default function GoalsPage() {
                                           alert(err instanceof Error ? err.message : t("moveBackFailed") || "迁回失败");
                                         }
                                       }}
-                                      className="p-2 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white transition-colors duration-200 flex items-center justify-center"
+                                      className="p-2 rounded-2xl bg-[#003049] hover:bg-[#003049]/90 text-white transition-colors duration-200 flex items-center justify-center"
                                       title={t("moveBack") || "迁回"}
                                     >
                                       <ArrowLeft size={18} />
                                     </button>
                                   )}
-                                  <button
-                                    onClick={() => {
-                                      setSelectedItem({ 
-                                        type: 'goal', 
-                                        id: goal.id, 
-                                        name: goal.title,
-                                        imagePath: goal.image_path 
-                                      });
-                                      setShowConfirm(true);
-                                    }}
-                                    className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
+                                  <div 
+                                    className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
                                     title={t("delete") || "删除"}
                                   >
-                                    <Trash2 size={18} />
-                                  </button>
+                                    <Trash2 
+                                      size={18} 
+                                      className="hover:text-red-500 transition-colors" 
+                                      onClick={() => {
+                                        setSelectedItem({ 
+                                          type: 'goal', 
+                                          id: goal.id, 
+                                          name: goal.title,
+                                          imagePath: goal.image_path 
+                                        });
+                                        setShowConfirm(true);
+                                      }} 
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -564,20 +574,23 @@ export default function GoalsPage() {
                                         {t(habit.frequency) || habit.frequency}
                                       </span>
                                     )}
-                                <button
-                                  onClick={() => {
-                                    setSelectedItem({ 
-                                      type: 'habit', 
-                                      id: habit.id, 
-                                      name: habit.name
-                                    });
-                                    setShowConfirm(true);
-                                  }}
-                                      className="p-1 rounded-2xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200 opacity-0 group-hover:opacity-100"
+                                <div 
+                                  className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
                                   title={t("delete") || "删除"}
                                 >
-                                  <Trash2 size={18} />
-                                </button>
+                                  <Trash2 
+                                    size={18} 
+                                    className="hover:text-red-500 transition-colors" 
+                                    onClick={() => {
+                                      setSelectedItem({ 
+                                        type: 'habit', 
+                                        id: habit.id, 
+                                        name: habit.name
+                                      });
+                                      setShowConfirm(true);
+                                    }} 
+                                  />
+                                </div>
                               </div>
                               {habit.description && (
                                 <p className="text-sm text-gray-600 mb-2">{habit.description}</p>

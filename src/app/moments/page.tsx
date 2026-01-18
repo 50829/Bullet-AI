@@ -353,10 +353,13 @@ export default function MomentsPage() {
                                             className="flex flex-col gap-3 group/item relative"
                                           >
                                             {/* 删除按钮 - 只在hover时显示，右侧居中 */}
-                                            <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 transition-opacity z-10">
+                                            <div 
+                                              className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 transition-opacity z-10 cursor-pointer"
+                                              title={t("delete") || "删除"}
+                                            >
                                               <Trash2 
                                                 size={18} 
-                                                className="cursor-pointer text-gray-400 hover:text-orange-400" 
+                                                className="text-gray-400 hover:text-red-500 transition-colors" 
                                                 onClick={(e) => { 
                                                   e.stopPropagation();
                                                   setSelectedMoment(moment); 
