@@ -6,7 +6,6 @@ import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
-import { isGuestMode } from '../../lib/guestAuth';
 
 type Props = {
   isOpen: boolean;
@@ -41,12 +40,6 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, selectedDate }: Props) =
 
   const handleSubmit = async () => {
     if (!title.trim()) return alert(t("pleaseEnterTitle") || "请填写目标标题");
-
-    // 检查是否是游客模式
-    if (isGuestMode()) {
-      alert(t("guestModeNoSave") || "游客模式不支持保存数据，请先登录");
-      return;
-    }
 
     setLoading(true);
 
@@ -144,7 +137,7 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, selectedDate }: Props) =
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl transform transition-transform duration-200">
+      <div className="bg-[#efeeeb] rounded-[28px] p-6 w-full max-w-md shadow-xl transform transition-transform duration-200">
         <h2 className="text-2xl font-bold mb-4">{t("newGoal") || "新建目标"}</h2>
 
         <label className="block text-sm text-gray-600 mb-1">

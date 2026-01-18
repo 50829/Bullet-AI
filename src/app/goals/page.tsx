@@ -11,6 +11,7 @@ import { Calendar } from "../components/Calendar";
 import { AIGoalPlanningPanel } from "../components/AIGoalPlanningPanel";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext';
+import { useTopBar } from '../components/layout/TopBar';
 
 type Goal = {
   id: number;
@@ -48,11 +49,13 @@ type Message = {
 export default function GoalsPage() {
   const { goals, habits, loading, refreshGoals, refreshHabits, deleteGoal, deleteHabit, updateGoal, checkinHabit } = useAppContext();
   const { t, language } = useLanguage();
+  const { setTopBarHandlers } = useTopBar();
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [rightViewMode, setRightViewMode] = useState<"migration" | "schedule">("migration");
+  const [username, setUsername] = useState<string | null>(null);
   
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{ 
@@ -247,38 +250,20 @@ export default function GoalsPage() {
   };
 
 
+  // 注册 TopBar 回调
+  useEffect(() => {
+    setTopBarHandlers({
+      onAddGoal: () => setIsGoalModalOpen(true),
+      onToggleAIPanel: () => setShowAIPanel(!showAIPanel),
+      showAIPanel,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setTopBarHandlers, showAIPanel]);
+
   if (loading.goals || loading.habits) return <div className="text-center py-8">{t("loadingGoals") || "目标加载中..."}</div>;
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* 固定的头部区域 - 毛玻璃圆角矩形模块 */}
-      <div className="sticky top-0 z-20 py-4 px-4">
-        <div className="max-w-6xl mx-auto bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 rounded-3xl shadow-lg border border-gray-200/50 backdrop-blur-lg">
-          {/* 标题和按钮行 */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/40 backdrop-blur-md p-2 rounded-full shadow-sm">
-                <Target size={24} className="text-gray-700" />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-800">{t("myGoals") || "我的目标"}</h2>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* AI智能规划按钮 */}
-              <Button 
-                variant="outline" 
-                onClick={() => setShowAIPanel(!showAIPanel)}
-                className="flex items-center gap-1"
-              >
-                <Sparkles size={16} /> 
-                {t("aiPlanning") || "AI智能规划"}
-              </Button>
-              <Button onClick={() => setIsGoalModalOpen(true)}>
-                + {t("new")} {t("goal")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* AI智能规划面板 */}
       <AIGoalPlanningPanel
@@ -323,7 +308,7 @@ export default function GoalsPage() {
               
               {/* 右侧目标列表 */}
               <div className="h-[520px]">
-                <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-gray-200 relative h-full flex flex-col">
+                <Card className="bg-[#efeeeb] rounded-[28px] relative h-full flex flex-col">
                   {/* 标题和切换按钮 */}
                   <div className="mb-4 flex items-center justify-between flex-shrink-0">
                     <h3 className="text-xl font-bold text-gray-800">
@@ -337,7 +322,7 @@ export default function GoalsPage() {
                       onClick={() => {
                         setRightViewMode(prev => prev === "migration" ? "schedule" : "migration");
                       }}
-                      className="p-2 rounded-lg bg-white/60 hover:bg-white/80 text-gray-600 hover:text-gray-800 transition-all duration-200 flex items-center gap-2"
+                      className="p-2 rounded-2xl bg-white/60 hover:bg-white/80 text-gray-600 hover:text-gray-800 transition-all duration-200 flex items-center gap-2"
                       title={t("switchPanel") || "切换面板"}
                     >
                       <RefreshCw size={18} />
@@ -357,7 +342,7 @@ export default function GoalsPage() {
                           return (
                             <div
                               key={goal.id}
-                              className={`bg-white/80 p-5 rounded-2xl shadow-md border border-gray-200 ${
+                              className={`bg-[#efeeeb] p-5 rounded-[28px] ${
                                 isCompleted ? 'opacity-75' : ''
                               }`}
                             >
@@ -409,7 +394,7 @@ export default function GoalsPage() {
                                           alert(err instanceof Error ? err.message : t("migrateFailed") || "迁移失败");
                                         }
                                       }}
-                                      className="p-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200 flex items-center justify-center"
+                                      className="p-2 rounded-2xl bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200 flex items-center justify-center"
                                       title={t("migrate") || "迁移"}
                                     >
                                       <ArrowRight size={18} />
@@ -456,7 +441,7 @@ export default function GoalsPage() {
                           return (
                             <div
                               key={goal.id}
-                              className={`bg-white/80 p-5 rounded-2xl shadow-md border border-gray-200 ${
+                              className={`bg-[#efeeeb] p-5 rounded-[28px] ${
                                 isCompleted ? 'opacity-75' : ''
                               }`}
                             >
@@ -507,7 +492,7 @@ export default function GoalsPage() {
                                           alert(err instanceof Error ? err.message : t("moveBackFailed") || "迁回失败");
                                         }
                                       }}
-                                      className="p-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors duration-200 flex items-center justify-center"
+                                      className="p-2 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white transition-colors duration-200 flex items-center justify-center"
                                       title={t("moveBack") || "迁回"}
                                     >
                                       <ArrowLeft size={18} />
@@ -588,7 +573,7 @@ export default function GoalsPage() {
                                     });
                                     setShowConfirm(true);
                                   }}
-                                      className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200 opacity-0 group-hover:opacity-100"
+                                      className="p-1 rounded-2xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-200 opacity-0 group-hover:opacity-100"
                                   title={t("delete") || "删除"}
                                 >
                                   <Trash2 size={18} />
@@ -616,7 +601,7 @@ export default function GoalsPage() {
                               ) : (
                                 <Button
                                   onClick={() => handleCheckin(habit.id)}
-                                  className="px-6 py-2 text-sm rounded-lg border border-black bg-black text-white hover:bg-white hover:text-black transition-colors duration-200"
+                                  className="px-6 py-2 text-sm rounded-3xl border-2 border-[#003049] bg-[#003049] text-white hover:bg-white hover:text-[#003049] transition-colors duration-200"
                                 >
                                   {t("checkin") || "打卡"}
                                 </Button>
@@ -650,7 +635,7 @@ export default function GoalsPage() {
 
       {showConfirm && selectedItem && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-blue-100 via-white to-orange-100 p-4 rounded-2xl shadow-md border border-gray-300 max-w-sm w-full mx-4">
+          <div className="bg-[#efeeeb] p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4">
             <h2 className="text-xl font-semibold mb-4 text-center text-gray-700">
               {t("confirmDelete")} {selectedItem.name} {selectedItem.type === 'goal' ? t("goal") : t("habit")}{t("questionMark") || "吗？"}
             </h2>
@@ -663,12 +648,12 @@ export default function GoalsPage() {
                   setShowConfirm(false);
                   setSelectedItem(null);
                 }}
-                className="px-4 py-2 rounded-lg font-semibold transition-colors border-2 border-black bg-white text-black hover:bg-black hover:text-white hover:border-black text-base"
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-black bg-white text-black hover:bg-black hover:text-white hover:border-black text-base"
               >
                 {t("cancel") || "取消"}
               </button>
               <button
-                className="px-4 py-2 rounded-lg font-semibold transition-colors border-2 border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 text-base"
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 text-base"
                 onClick={handleDelete}
               >
                 {t("confirm") || "确认删除"}

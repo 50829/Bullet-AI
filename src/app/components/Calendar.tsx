@@ -106,12 +106,12 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
   const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 h-[520px] flex flex-col">
+    <div className="bg-[#efeeeb] rounded-[28px] p-4 h-[520px] flex flex-col">
       {/* 月份导航 */}
       <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <button
           onClick={prevMonth}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 rounded-2xl transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -120,7 +120,7 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
         </h3>
         <button
           onClick={nextMonth}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 rounded-2xl transition-colors"
         >
           <ChevronRight className="w-5 h-5" />
         </button>

@@ -4,14 +4,16 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
-import { isGuestMode } from '../../lib/guestAuth';
 import { MainLayout } from '../components/layout/MainLayout';
 import MomentsPage from '../moments/page';
 import GoalsPage from '../goals/page';
 import ReflectionsPage from '../reflections/page';
+import HomePage from '../components/HomePage';
 
 function InnerPage({ activePage }: { activePage: string }) {
   switch (activePage) {
+    case 'home':
+      return <HomePage />;
     case 'goals':
       return <GoalsPage />;
     case 'reflections':
@@ -25,32 +27,51 @@ function InnerPage({ activePage }: { activePage: string }) {
 export default function MainDashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activePage, setActivePage] = useState('moments');
+  const [activePage, setActivePage] = useState('home');
 
   useEffect(() => {
-    const page = searchParams.get('page') || 'moments';
+    const page = searchParams.get('page') || 'home';
     if (page !== activePage) setActivePage(page);
   }, [searchParams, activePage]);
 
   useEffect(() => {
     let mounted = true;
     const checkSession = async () => {
-      // 如果是游客模式，允许访问
-      if (isGuestMode()) {
-        return;
-      }
       const { data: { session } } = await supabase.auth.getSession();
       if (mounted && !session) {
         router.push('/login');
+        return;
+      }
+      
+      // 检查是否有昵称
+      if (mounted && session) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("user_id", session.user.id)
+          .single();
+        
+        if (!profile?.username) {
+          router.push('/username');
+        }
       }
     };
     checkSession();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      // 如果是游客模式，不检查session
-      if (isGuestMode()) {
-        return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!session) {
+        router.push('/login');
+      } else {
+        // 检查是否有昵称
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("user_id", session.user.id)
+          .single();
+        
+        if (!profile?.username) {
+          router.push('/username');
+        }
       }
-      if (!session) router.push('/login');
     });
     return () => {
       mounted = false;

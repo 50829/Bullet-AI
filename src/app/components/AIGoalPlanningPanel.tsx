@@ -181,7 +181,7 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
           <h3 className="text-2xl font-bold text-gray-800">{t("aiPlanning") || "AI智能规划"}</h3>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-orange-100/50 transition-colors"
+            className="p-2 rounded-2xl hover:bg-orange-100/50 transition-colors"
             aria-label="关闭"
           >
             <X size={20} className="text-gray-600" />
@@ -196,7 +196,7 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] p-3 rounded-xl backdrop-blur-md ${
+                className={`max-w-[80%] p-3 rounded-3xl backdrop-blur-md ${
                   message.role === 'user'
                     ? 'bg-gradient-to-r from-blue-500/80 to-purple-500/80 text-white shadow-lg'
                     : 'bg-gradient-to-r from-orange-200/60 to-yellow-100/60 text-gray-800 shadow-lg'
@@ -249,7 +249,7 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
                           }
                         }}
                         disabled={isAdding}
-                        className="mt-3 w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                        className="mt-3 w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-3xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                       >
                         {isAdding ? (t("adding") || "添加中...") : (t("addToMigrationList") || "一键添加到迁移列表")}
                       </button>
@@ -270,7 +270,7 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
 
         {/* 输入区域 */}
         <div className="p-4 border-t border-gray-200/50 bg-white/20 backdrop-blur-sm">
-          <div className="flex items-center gap-2 bg-white/30 backdrop-blur-lg rounded-lg p-3 border border-gray-200/50">
+          <div className="flex items-center gap-2 bg-white/30 backdrop-blur-lg rounded-3xl p-3 border border-gray-200/50">
             <input
               type="text"
               value={input}
@@ -283,7 +283,7 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
             <button
               onClick={sendMessage}
               disabled={isLoading || !input.trim()}
-              className="p-3 rounded-lg bg-black text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="p-3 rounded-3xl bg-[#003049] text-white border-2 border-[#003049] hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               <Send size={20} />
             </button>

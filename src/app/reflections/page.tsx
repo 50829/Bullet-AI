@@ -10,6 +10,8 @@ import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 import { supabase } from "../../lib/supabaseClient";
+import { getUserUsername } from '../../lib/userProfile';
+import { useTopBar } from '../components/layout/TopBar';
 
 type Reflection = {
   id: number;
@@ -27,6 +29,7 @@ type Reflection = {
 export default function ReflectionsPage() {
   const { reflections, loading, refreshReflections, deleteReflection, updateReflection } = useAppContext();
   const { t, language } = useLanguage(); // 获取翻译函数和语言设置
+  const { setTopBarHandlers } = useTopBar();
   const [filteredReflections, setFilteredReflections] = useState<Reflection[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null); // 用于存储要删除的reflection
@@ -102,6 +105,22 @@ export default function ReflectionsPage() {
     setNewTitle("");
     setNewContent("");
   };
+
+  // 注册 TopBar 回调
+  useEffect(() => {
+    setTopBarHandlers({
+      onAddReflection: handleAddReflection,
+      onToggleAIPanel: () => setShowAIPanel(!showAIPanel),
+      onToggleSearch: () => setShowSearch(!showSearch),
+      showAIPanel,
+      showSearch,
+      searchTerm,
+      onSearchChange: setSearchTerm,
+      onSearch: performSearch,
+      onClearSearch: clearSearch,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setTopBarHandlers, showAIPanel, showSearch, searchTerm]);
 
   const handleCancelNew = () => {
     setIsCreatingNew(false);
@@ -224,73 +243,6 @@ export default function ReflectionsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* 固定的头部区域 - 毛玻璃圆角矩形模块 */}
-      <div className="sticky top-0 z-20 py-4 px-4">
-        <div className="max-w-6xl mx-auto bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 rounded-3xl shadow-lg border border-gray-200/50 backdrop-blur-lg">
-          {/* 标题和按钮行 */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/40 backdrop-blur-md p-2 rounded-full shadow-sm">
-                <Lightbulb size={24} className="text-gray-700" />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-800">{t("insights") || "我的感悟"}</h2>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* AI思维助手按钮 */}
-              <Button 
-                variant="outline" 
-                onClick={() => setShowAIPanel(!showAIPanel)}
-                className="flex items-center gap-1"
-              >
-                <Sparkles size={16} /> 
-                {t("aiThoughtAssistant") || "AI思维助手"}
-              </Button>
-              {/* 搜索按钮 */}
-              <Button 
-                variant="outline" 
-                onClick={() => setShowSearch(!showSearch)}
-                className="flex items-center gap-1"
-              >
-                <Search size={16} /> 
-                {showSearch ? t("collapseSearch") || '折叠搜索栏' : t("search") || '搜索'}
-              </Button>
-              <Button onClick={handleAddReflection}>{t("addNewReflection") || '+ 记录新感悟'}</Button>
-            </div>
-          </div>
-
-          {/* 搜索栏 - 条件渲染 */}
-          {showSearch && (
-            <div className="p-4 border-t border-gray-200/50">
-              <div className="flex gap-2 items-center">
-                <Input 
-                  placeholder={t("searchPlaceholder") || "输入搜索内容~"} 
-                  value={searchTerm} 
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      performSearch();
-                    }
-                  }}
-                  className="flex-1 h-10"
-                />
-                <Button 
-                  onClick={performSearch} 
-                  className="flex items-center justify-center h-10 px-4"
-                >
-                  <Search size={16} className="mr-1" /> {t("search") || "搜索"}
-                </Button>
-                <Button 
-                  variant="secondary" 
-                  onClick={clearSearch} 
-                  className={`h-10 px-4 ${!searchTerm ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
-                >
-                  <X size={16} className="mr-1" /> {t("clear") || "清空"}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* AI对话面板 */}
       <AIChatPanel
@@ -322,7 +274,7 @@ export default function ReflectionsPage() {
             <div className="space-y-6">
               {/* 新建感悟卡片 - 显示在列表顶部 */}
               {isCreatingNew && (
-                <Card className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-6 rounded-3xl shadow-lg border border-gray-200/50 w-full max-w-3xl mx-auto">
+                <Card className="bg-[#efeeeb] p-6 rounded-[28px] w-full max-w-3xl mx-auto">
                   <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-xl font-semibold text-gray-700">{t("newReflection") || "记录新感悟"}</h3>
@@ -436,7 +388,7 @@ export default function ReflectionsPage() {
                   return (
                     <Card 
                       key={reflection.id} 
-                      className="group bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-4 rounded-3xl shadow-lg border border-gray-200/50 w-full max-w-3xl mx-auto"
+                      className="group bg-[#efeeeb] p-4 rounded-[28px] w-full max-w-3xl mx-auto border-2 border-[#003049]"
                     >
                       <div className="flex flex-col gap-4">
                         <div className="min-w-0">
@@ -478,7 +430,7 @@ export default function ReflectionsPage() {
       {/* 修改确认对话框 - 确保在 selectedReflection 存在时才渲染 */}
       {showConfirm && selectedReflection && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-blue-100 via-white to-orange-100 p-4 rounded-2xl shadow-md border border-gray-300 max-w-sm w-full mx-4">
+          <div className="bg-[#efeeeb] p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4">
             <h2 className="text-xl font-semibold mb-4 text-center text-gray-700">
               {t("confirmDelete") || "确认删除这条感悟吗？"}
             </h2>
@@ -491,12 +443,12 @@ export default function ReflectionsPage() {
                   setShowConfirm(false); 
                   setSelectedReflection(null); // 点击取消也清除选中项
                 }}
-                className="px-4 py-2 rounded-lg font-semibold transition-colors border-2 border-black bg-white text-black hover:bg-black hover:text-white hover:border-black text-base"
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-[#003049] bg-white text-[#003049] hover:bg-[#003049] hover:text-white hover:border-[#003049] text-base"
               >
                 {t("cancel") || "取消"}
               </button>
               <button 
-                className="px-4 py-2 rounded-lg font-semibold transition-colors border-2 border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 text-base" 
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 text-base" 
                 onClick={handleDelete} // 点击后立即关闭面板
               >
                 {t("confirm") || "确认删除"}

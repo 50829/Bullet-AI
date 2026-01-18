@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import { clearGuestMode } from "../../../lib/guestAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -37,10 +36,22 @@ export default function AuthCallback() {
         }
 
         if (session) {
-          // 会话存在，清除游客模式并跳转到 main 页面
-          clearGuestMode();
-          setMsg("登录成功，正在跳转…");
-          router.replace("/main");
+          // 检查是否有昵称
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("user_id", session.user.id)
+            .single();
+          
+          if (!profile?.username) {
+            // 没有昵称，跳转到昵称设置页面
+            setMsg("登录成功，请设置昵称…");
+            router.replace("/username");
+          } else {
+            // 有昵称，跳转到主页面
+            setMsg("登录成功，正在跳转…");
+            router.replace("/main");
+          }
         } else {
           // 没有会话，可能需要重定向到登录页
           setMsg("未获取到会话，正在跳转到登录页…");
@@ -63,7 +74,7 @@ export default function AuthCallback() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-orange-100">
-      <div className="bg-white rounded-2xl shadow-lg p-8 text-center w-full max-w-md mx-4 border border-orange-200">
+      <div className="bg-[#efeeeb] rounded-[28px] shadow-lg p-8 text-center w-full max-w-md mx-4">
         <p className="text-gray-700">{msg}</p>
       </div>
     </div>

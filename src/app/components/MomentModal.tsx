@@ -174,7 +174,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-xl shadow-xl">
+      <div className="bg-[#efeeeb] rounded-[28px] p-6 w-full max-w-xl shadow-xl">
         <h2 className="text-2xl font-bold mb-4">{t("newMoment") || "记录新时刻"}</h2>
 
         <div className="mb-4">
@@ -206,7 +206,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
               setImageFile(e.target.files?.[0] || null);
               setPreviewUrl(null);
             }} 
-            className="block w-full border border-dashed rounded-lg p-3 text-sm text-gray-500" 
+            className="block w-full border border-dashed rounded-3xl p-3 text-sm text-gray-500" 
           />
           {previewUrl && <img src={previewUrl} alt="preview" className="mt-3 w-48 h-48 object-cover rounded" />}
         </div>

@@ -63,14 +63,6 @@ const translations: Record<string, TranslationValue> = {
     en: "No account? Register here",
     zh: "没有账号？去注册",
   },
-  guestLogin: {
-    en: "Continue as Guest",
-    zh: "游客登录",
-  },
-  guestLoginNote: {
-    en: "Note: Guest mode does not provide data saving service. Your data will only be stored locally in your browser.",
-    zh: "注意：游客模式不提供数据保存服务，数据仅保存在本地浏览器中。",
-  },
   // RegisterPage translations
   registerTitle: {
     en: "Register for BulletAI",
@@ -147,7 +139,7 @@ const translations: Record<string, TranslationValue> = {
   },
   moments: {
     en: "My Moments",
-    zh: "我的时刻",
+    zh: "记录",
   },
   momentsDescription: {
     en: "In the quiet fragments of time, where silence speaks truth, we gently recognize ourselves",
@@ -169,7 +161,7 @@ const translations: Record<string, TranslationValue> = {
   ],
   goals: {
     en: "My Goals",
-    zh: "我的目标",
+    zh: "目标",
   },
   goalsDescription: {
     en: "In steps taken without applause, we quietly become who we are meant to be",
@@ -195,7 +187,7 @@ const translations: Record<string, TranslationValue> = {
   ],
   insights: {
     en: "My Insights",
-    zh: "我的感悟",
+    zh: "感悟",
   },
   insightsDescription: {
     en: "In countless solitary moments with dawn or dusk, we finally hear the faintest yet truest echo within",
@@ -256,11 +248,11 @@ const translations: Record<string, TranslationValue> = {
   pricingFeatures: [
     {
       en: "My Moments: Complete recording with AI Moment Assistant",
-      zh: "我的时刻：完整记录，配备AI时刻助手",
+      zh: "记录：完整记录，配备AI时刻助手",
     },
     {
       en: "My Goals: Calendar planning, migration list, and AI Planning Assistant",
-      zh: "我的目标：日程规划、待分配任务，配备AI智能规划",
+      zh: "目标：日程规划、待分配任务，配备AI智能规划",
     },
     {
       en: "My Insights: Inspiration recording with AI Thought Assistant",
@@ -408,7 +400,7 @@ const translations: Record<string, TranslationValue> = {
   // GoalsPage translations
   myGoals: {
     en: "My Goals",
-    zh: "我的目标",
+    zh: "目标",
   },
   planForFuture: {
     en: "Plan for the future, become a better self",
@@ -537,10 +529,6 @@ const translations: Record<string, TranslationValue> = {
   pleaseLogin: {
     en: "Please log in first",
     zh: "请先登录",
-  },
-  guestModeNoSave: {
-    en: "Guest mode does not support saving data. Please log in first.",
-    zh: "游客模式不支持保存数据，请先登录",
   },
   addFailed: {
     en: "Failed to add",
@@ -866,15 +854,15 @@ const translations: Record<string, TranslationValue> = {
   },
   myMomentsNav: {
     en: "My Moments",
-    zh: "我的时刻",
+    zh: "记录",
   },
   myGoalsNav: {
     en: "My Goals",
-    zh: "我的目标",
+    zh: "目标",
   },
   myReflectionsNav: {
     en: "My Reflections",
-    zh: "我的感悟",
+    zh: "感悟",
   },
   aiCaveNav: {
     en: "AI Cave",

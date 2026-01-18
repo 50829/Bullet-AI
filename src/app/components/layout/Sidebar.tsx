@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Camera, Target, Lightbulb, Sparkles, Menu, X } from 'lucide-react';
+import { Camera, Target, Lightbulb, Menu, Home } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext'; // 添加语言Hook
 
 type NavItemProps = {
@@ -19,8 +19,8 @@ const NavItem = ({ page, icon, label, onClick }: NavItemProps) => {
   const searchParams = useSearchParams();
   const { t } = useLanguage(); // 获取翻译函数
   
-  // 修复：当没有page参数时，默认为moments
-  const currentActivePage = searchParams.get('page') || 'moments';
+  // 修复：当没有page参数时，默认为home
+  const currentActivePage = searchParams.get('page') || 'home';
   const isActive = currentActivePage === page;
 
   const handleClick = () => {
@@ -32,16 +32,17 @@ const NavItem = ({ page, icon, label, onClick }: NavItemProps) => {
 
   return (
     <li
-      className={`flex items-center p-3 my-2 cursor-pointer rounded-lg transition-colors ${
-        isActive ? 'bg-black text-white shadow-lg' : 'text-black hover:bg-gray-100/50 hover:backdrop-blur-md hover:shadow-sm'
+      className={`flex items-center justify-center p-3 cursor-pointer rounded-full transition-colors ${
+        isActive 
+          ? 'bg-[#efeeeb]' 
+          : 'bg-[#003049] hover:bg-[#003049]/90'
       }`}
       onClick={handleClick}
+      title={label}
     >
-      <span className={isActive ? 'text-white' : 'text-black'}>
+      <span className="text-[#6c757d]">
         {icon}
       </span>
-      {/* 使用 suppressHydrationWarning 来处理语言相关的文本不匹配 */}
-      <span className="ml-4 font-medium" suppressHydrationWarning={true}>{label}</span>
     </li>
   );
 };
@@ -52,6 +53,7 @@ export const Sidebar = () => {
   const { t } = useLanguage(); // 获取翻译函数
   
   const navItems = [
+    { page: 'home', label: 'Home', icon: <Home size={20} /> },
     { page: 'moments', label: t("moments") || '我的时刻', icon: <Camera size={20} /> },
     { page: 'goals', label: t("goals") || '我的目标', icon: <Target size={20} /> },
     { page: 'reflections', label: t("insights") || '我的感悟', icon: <Lightbulb size={20} /> },
@@ -107,16 +109,9 @@ export const Sidebar = () => {
             />
             
             {/* 侧边栏内容 */}
-            <aside className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg border-r border-gray-200/50 rounded-r-3xl p-4 flex flex-col z-50 shadow-lg lg:hidden transform translate-x-0 transition-transform duration-300 ease-in-out">
-              <div className="flex flex-col items-center mb-8">
-                <div className="bg-gradient-to-br from-blue-100/40 via-white/40 to-orange-100/40 backdrop-blur-md p-2 rounded-3xl shadow-lg border border-gray-200/50">
-                  <Sparkles size={24} className="text-gray-700" />
-                </div>
-                <h1 className="text-2xl font-bold text-gray-800 mt-2">BulletAI</h1>
-                <p className="text-sm text-gray-500 mt-1">每一个灵魂，都值得被记录</p>
-              </div>
-              <nav className="flex-1">
-                <ul>
+            <aside className="fixed top-20 left-4 bg-[#003049] rounded-[32px] p-3 z-50 shadow-lg lg:hidden transform translate-x-0 transition-transform duration-300 ease-in-out">
+              <nav>
+                <ul className="space-y-2">
                   {navItems.map((item) => (
                     <NavItem 
                       key={item.page} 
@@ -137,16 +132,9 @@ export const Sidebar = () => {
 
   // 桌面端正常显示的侧边栏
   return (
-    <aside className="w-64 bg-gradient-to-b from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg border-r border-gray-200/50 rounded-r-3xl p-4 flex flex-col shrink-0 shadow-lg hidden lg:block">
-      <div className="flex flex-col items-center mb-8">
-        <div className="bg-gradient-to-br from-blue-100/40 via-white/40 to-orange-100/40 backdrop-blur-md p-2 rounded-3xl shadow-lg border border-orange-200/50">
-          <Sparkles size={24} className="text-gray-700" />
-        </div>
-        <h1 className="text-2xl font-bold text-gray-800 mt-2">BulletAI</h1>
-        <p className="text-sm text-gray-500 mt-1">每一个灵魂，都值得被记录</p>
-      </div>
+    <aside className="fixed left-4 top-20 bg-[#003049] rounded-[32px] p-3 shadow-lg hidden lg:block z-30">
       <nav>
-        <ul>
+        <ul className="space-y-2">
           {navItems.map((item) => (
             <NavItem key={item.page} {...item} />
           ))}

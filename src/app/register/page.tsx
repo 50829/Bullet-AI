@@ -92,7 +92,7 @@ export default function RegisterPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-800"
+            className="w-full border border-gray-300 rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-800"
             placeholder={t("confirmEmailPlaceholder")}
             disabled={loading}
             required
@@ -160,7 +160,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading || !isPasswordMatch || !isPasswordStrong(password)}
-            className="w-full mt-4 px-4 py-2.5 rounded-xl bg-black text-white font-bold border-2 border-transparent hover:bg-white hover:text-amber-500 hover:border-black transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mt-4 px-4 py-2.5 rounded-3xl bg-black text-white font-bold border-2 border-transparent hover:bg-white hover:text-amber-500 hover:border-black transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? t("registering") : t("register")}
           </button>
