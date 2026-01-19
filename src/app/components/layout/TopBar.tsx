@@ -1,10 +1,11 @@
 "use client";
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Sparkles, Camera, Target, Lightbulb, Search } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { supabase } from '../../../lib/supabaseClient';
 
 // TopBar Context
 type TopBarHandlers = {
@@ -66,7 +67,50 @@ export const TopBar = () => {
   const { t } = useLanguage();
   const currentPage = searchParams.get('page') || 'home';
   const context = useContext(TopBarContext);
-  
+  const [username, setUsername] = useState<string | null>(null);
+
+  // 获取用户名
+  useEffect(() => {
+    const fetchUsername = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("user_id", session.user.id)
+            .single();
+          
+          setUsername(profile?.username || null);
+        }
+      } catch (error) {
+        console.error("获取用户名失败:", error);
+        setUsername(null);
+      }
+    };
+
+    fetchUsername();
+
+    // 监听认证状态变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("user_id", session.user.id)
+          .single();
+        
+        setUsername(profile?.username || null);
+      } else {
+        setUsername(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   if (!context) {
     // 如果没有 context，返回基本布局
     return (
@@ -74,7 +118,11 @@ export const TopBar = () => {
         <div className="w-full flex items-center justify-between gap-4 pl-4 pr-4 py-3">
           <div className="flex items-center gap-3 flex-shrink-0">
             <Sparkles className="h-8 w-8 text-gray-700" />
-            <span className="text-2xl font-bold text-gray-800">BulletAI</span>
+            {currentPage === 'home' && username ? (
+              <span className="text-2xl font-bold text-gray-800">你好，{username}</span>
+            ) : (
+              <span className="text-2xl font-bold text-gray-800">BulletAI</span>
+            )}
           </div>
         </div>
       </div>
@@ -144,12 +192,18 @@ export const TopBar = () => {
         {/* 左侧：Logo 和页面名称 */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <Sparkles className="h-8 w-8 text-gray-700" />
-          <span className="text-2xl font-bold text-gray-800">BulletAI</span>
-          {pageInfo.icon && (
+          {currentPage === 'home' && username ? (
+            <span className="text-2xl font-bold text-gray-800">你好，{username}</span>
+          ) : (
             <>
-              <span className="text-gray-400 mx-1">|</span>
-              {pageInfo.icon}
-              <h2 className="text-2xl font-bold text-gray-800">{pageInfo.title}</h2>
+              <span className="text-2xl font-bold text-gray-800">BulletAI</span>
+              {pageInfo.icon && (
+                <>
+                  <span className="text-gray-400 mx-1">|</span>
+                  {pageInfo.icon}
+                  <h2 className="text-2xl font-bold text-gray-800">{pageInfo.title}</h2>
+                </>
+              )}
             </>
           )}
         </div>

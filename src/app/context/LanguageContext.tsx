@@ -914,6 +914,30 @@ const translations: Record<string, TranslationValue> = {
     en: "Hello! I'm your AI Moment Assistant, focused on chatting about life-related topics with you. Let's share the beautiful moments in life together! 🌟",
     zh: "你好！我是你的AI时刻助手，专注于和你聊生活相关的话题。让我们一起分享生活中的美好瞬间吧！🌟",
   },
+  recentRecords: {
+    en: "Recent Records",
+    zh: "近一周记录",
+  },
+  viewAll: {
+    en: "View All",
+    zh: "查看全部",
+  },
+  manage: {
+    en: "Manage",
+    zh: "管理",
+  },
+  noRecentRecords: {
+    en: "No recent records",
+    zh: "暂无近一周的记录",
+  },
+  noTasksToday: {
+    en: "No tasks today",
+    zh: "今日暂无任务",
+  },
+  inProgress: {
+    en: "In Progress",
+    zh: "进行中",
+  },
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
