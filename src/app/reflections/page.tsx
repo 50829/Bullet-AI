@@ -5,7 +5,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
-import { Search, Trash2, X, Sparkles, Lightbulb, Save, Edit2 } from "lucide-react";
+import { Search, Trash2, X, Sparkles, Lightbulb, Save, Edit2, ChevronDown, ChevronUp } from "lucide-react";
 import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
@@ -43,6 +43,22 @@ export default function ReflectionsPage() {
   const [editingReflection, setEditingReflection] = useState<Reflection | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  
+  // 折叠状态管理
+  const [collapsedReflections, setCollapsedReflections] = useState<Set<number>>(new Set());
+
+  // 切换折叠状态
+  const toggleReflection = (reflectionId: number) => {
+    setCollapsedReflections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(reflectionId)) {
+        newSet.delete(reflectionId);
+      } else {
+        newSet.add(reflectionId);
+      }
+      return newSet;
+    });
+  };
 
   // 获取标题首字符用于排序
   const getTitleFirstChar = (reflection: Reflection): string => {
@@ -385,37 +401,82 @@ export default function ReflectionsPage() {
                   const displayTitle = hasTitle ? contentLines[0].trim() : null;
                   const displayContent = hasTitle ? contentLines.slice(1).join('\n\n') : reflection.content;
                   
+                  const isCollapsed = collapsedReflections.has(reflection.id);
+                  
                   return (
                     <Card 
                       key={reflection.id} 
-                      className="group bg-[#efeeeb] p-4 rounded-[28px] w-full max-w-3xl mx-auto border-2 border-[#003049]"
+                      className="group bg-white/80 p-4 rounded-[28px] w-full max-w-3xl mx-auto"
                     >
                       <div className="flex flex-col gap-4">
                         <div className="min-w-0">
-                          <div className="flex justify-between items-start">
-                            {displayTitle && (
-                              <h3 className="text-2xl font-semibold text-gray-800 mb-3">{displayTitle}</h3>
-                            )}
-                            <div className="flex justify-end mt-2 space-x-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              <Edit2 
-                                size={18} 
-                                className="cursor-pointer hover:text-blue-500 transition-colors" 
-                                onClick={() => handleEdit(reflection)} 
-                                title={t("edit") || "编辑"}
-                              />
-                              <Trash2 
-                                size={18} 
-                                className="cursor-pointer hover:text-red-500 transition-colors" 
-                                onClick={() => { 
-                                  setSelectedReflection(reflection); 
-                                  setShowConfirm(true); 
-                                }} 
-                                title={t("delete") || "删除"}
-                              />
+                          {/* 标题区域 - 带折叠按钮 */}
+                          {displayTitle && (
+                            <div 
+                              className="flex items-center gap-2 border-b border-gray-200/50 pb-2 cursor-pointer hover:bg-gray-50/50 rounded-2xl p-2 -m-2 transition-colors mb-3"
+                              onClick={() => toggleReflection(reflection.id)}
+                            >
+                              <button className="flex items-center justify-center w-5 h-5 hover:bg-gray-200 rounded transition-colors">
+                                {isCollapsed ? (
+                                  <ChevronDown size={14} className="text-gray-600" />
+                                ) : (
+                                  <ChevronUp size={14} className="text-gray-600" />
+                                )}
+                              </button>
+                              <h3 className="text-2xl font-semibold text-gray-800 flex-1">{displayTitle}</h3>
+                              <div className="flex justify-end space-x-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <div title={t("edit") || "编辑"}>
+                                  <Edit2 
+                                    size={18} 
+                                    className="cursor-pointer hover:text-blue-500 transition-colors" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEdit(reflection);
+                                    }} 
+                                  />
+                                </div>
+                                <div title={t("delete") || "删除"}>
+                                  <Trash2 
+                                    size={18} 
+                                    className="cursor-pointer hover:text-red-500 transition-colors" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedReflection(reflection); 
+                                      setShowConfirm(true);
+                                    }} 
+                                  />
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          )}
                           
-                          <p className="text-xl text-gray-700 whitespace-pre-line">{displayContent}</p>
+                          {/* 没有标题时显示编辑和删除按钮 */}
+                          {!displayTitle && (
+                            <div className="flex justify-end mb-3 space-x-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <div title={t("edit") || "编辑"}>
+                                <Edit2 
+                                  size={18} 
+                                  className="cursor-pointer hover:text-blue-500 transition-colors" 
+                                  onClick={() => handleEdit(reflection)} 
+                                />
+                              </div>
+                              <div title={t("delete") || "删除"}>
+                                <Trash2 
+                                  size={18} 
+                                  className="cursor-pointer hover:text-red-500 transition-colors" 
+                                  onClick={() => { 
+                                    setSelectedReflection(reflection); 
+                                    setShowConfirm(true);
+                                  }} 
+                                />
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* 内容区域 - 可折叠（有标题时）或直接显示（无标题时） */}
+                          {(!displayTitle || !isCollapsed) && (
+                            <p className="text-xl text-gray-700 whitespace-pre-line">{displayContent}</p>
+                          )}
                         </div>
                       </div>
                     </Card>

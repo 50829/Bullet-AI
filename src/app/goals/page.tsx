@@ -308,7 +308,7 @@ export default function GoalsPage() {
               
               {/* 右侧目标列表 */}
               <div className="h-[520px]">
-                <Card className="bg-white rounded-[28px] relative h-full flex flex-col">
+                <Card className="bg-white/80 rounded-[28px] relative h-full flex flex-col">
                   {/* 标题和切换按钮 */}
                   <div className="mb-4 flex items-center justify-between flex-shrink-0">
                     <h3 className="text-2xl font-semibold text-[#003049]">

@@ -299,7 +299,7 @@ export default function MomentsPage() {
                   return (
                     <Card 
                       key={monthCard.month} 
-                      className="bg-white p-4 rounded-[28px] w-full max-w-3xl mx-auto"
+                      className="bg-gray-100 p-4 rounded-[28px] w-full max-w-3xl mx-auto"
                     >
                       <div className="flex flex-col gap-4">
                         {/* 月份标题 - 带折叠按钮 */}
@@ -329,7 +329,7 @@ export default function MomentsPage() {
                               return (
                                 <Card 
                                   key={dayCard.date} 
-                                  className="bg-[#efeeeb] p-4 rounded-[28px] shadow-md"
+                                  className="bg-white/80 p-4 rounded-[28px] shadow-md"
                                 >
                                   <div className="flex flex-col gap-4">
                                     {/* 日期标题 - 带折叠按钮 */}
