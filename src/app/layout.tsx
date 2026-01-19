@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'BulletAI',
-  description: '每一个灵魂，都值得被记录',
+  description: '利用BulletAI，活成自己梦想中的样子',
 };
 
 export default function RootLayout({

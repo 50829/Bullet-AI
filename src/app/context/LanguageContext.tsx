@@ -114,12 +114,12 @@ const translations: Record<string, TranslationValue> = {
   },
   // LandingPage translations
   slogan: {
-    en: "Every soul deserves to be recorded",
-    zh: "每一个灵魂，都值得被记录",
+    en: "With BulletAI, become who you dream to be",
+    zh: "在BulletAI，成为自己梦想中的样子",
   },
   heroTitle: {
-    en: "Show me your verve and vitality.",
-    zh: "展现你的热情和生命力。" // 你可以根据需要调整中文翻译
+    en: "Regain order and meaning in life",
+    zh: "找回人生的秩序感和意义感"
   },
   getStarted: {
     en: "Start Recording",
@@ -130,8 +130,8 @@ const translations: Record<string, TranslationValue> = {
     zh: "了解更多",
   },
   coreFeatures: {
-    en: "Regain Meaning and Order",
-    zh: "重拾意义与秩序",
+    en: "Every soul deserves to be recorded",
+    zh: "每一个灵魂，都值得被记录",
   },
   featuresDescription: {
     en: "Comprehensive recording, planning, thinking, letting AI be your growth partner",
@@ -234,8 +234,8 @@ const translations: Record<string, TranslationValue> = {
     },
   ],
   suitableForEveryone: {
-    en: "A starting point for everyone",
-    zh: "适合每个人的起点",
+    en: "A journey of a thousand miles\nbegins with a single step",
+    zh: "千里之行，\n始于足下",
   },
   pricingDescription: {
     en: "Experience all core features of BulletAI, start your growth journey",
@@ -272,8 +272,8 @@ const translations: Record<string, TranslationValue> = {
     },
   ],
   startYourStory: {
-    en: "Start Recording Your Story",
-    zh: "开始记录您的故事",
+    en: "Start Recording, Planning and Thinking",
+    zh: "开始记录、规划与思考",
   },
   storyDescription: {
     en: "Let every thought, every growth, every moment of emotion be treasured",
@@ -937,6 +937,23 @@ const translations: Record<string, TranslationValue> = {
   inProgress: {
     en: "In Progress",
     zh: "进行中",
+  },
+  // BottomSidebar translations
+  settings: {
+    en: "Settings",
+    zh: "设置",
+  },
+  logout: {
+    en: "Logout",
+    zh: "退出登录",
+  },
+  confirmLogout: {
+    en: "Confirm Logout",
+    zh: "确认退出登录",
+  },
+  confirmLogoutMessage: {
+    en: "Are you sure you want to logout?",
+    zh: "确定要退出登录吗？",
   },
 };
 

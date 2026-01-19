@@ -52,7 +52,7 @@ const LandingPage: NextPage = () => {
 
   return (
     // 1. 固定背景层
-    <div className="relative h-screen overflow-hidden bg-gradient-to-br from-blue-100 via-white to-orange-100">
+    <div className="relative h-screen overflow-hidden bg-[#efeeeb]">
       {/* 2. 滚动内容层 */}
       <div className="absolute inset-0 overflow-y-auto">
         {/* 在内容最顶部添加一个空 div 作为滚动目标 */}
@@ -85,24 +85,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
     router.push('/login');
   };
 
-  const slogan = t("slogan");
-  const [sloganVisible, setSloganVisible] = useState(false);
-  const [buttonsVisible, setButtonsVisible] = useState(false);
-
-  useEffect(() => {
-    if (isVisible) {
-      const sloganTimer = setTimeout(() => setSloganVisible(true), 1000);
-      const buttonsTimer = setTimeout(() => setButtonsVisible(true), 2000);
-      
-      return () => {
-        clearTimeout(sloganTimer);
-        clearTimeout(buttonsTimer);
-      };
-    } else {
-      setSloganVisible(false);
-      setButtonsVisible(false);
-    }
-  }, [isVisible]);
+  // 移除独立的动画状态，使用 isVisible 统一控制
 
   return (
     // 减少最小高度，让内容更紧凑，并允许与其他部分重叠
@@ -112,7 +95,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
           <Sparkles className="h-6 w-6 text-gray-700" />
         </div>
-        <span className="text-xl font-bold text-gray-800">BulletAI</span>
+        <span className="text-xl font-bold text-[#003049]">BulletAI</span>
       </div>
 
       {/* 保留语言切换在右上角 */}
@@ -121,7 +104,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
           onClick={() => setLanguage("en")}
           className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
             language === "en" 
-              ? "bg-black text-white" 
+              ? "bg-[#003049] text-white" 
               : "text-gray-500 hover:text-amber-500"
           }`}
         >
@@ -133,7 +116,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
           onClick={() => setLanguage("zh")}
           className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
             language === "zh" 
-              ? "bg-black text-white" 
+              ? "bg-[#003049] text-white" 
               : "text-gray-500 hover:text-amber-500"
           }`}
         >
@@ -146,20 +129,20 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
       {/* 修改：增加 min-height 和 pt 值，让 Hero 部分更高，内容往下挪，同时让下方标题露出一半 */}
       <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto pt-12 pb-20 min-h-[75vh]"> {/* 调整：min-h-[75vh] 和 pt-12 */}
         {/* 新增：原来的黑色大标题，居中放置 */}
-        <h1 className={`text-6xl md:text-7xl font-bold text-gray-800 tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <h1 className={`text-6xl md:text-7xl font-bold text-[#003049] tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
         {t("heroTitle")}
         </h1>
         
         {/* Slogan 居中 */}
-        <div className="mt-4 flex justify-center">
+        <div className={`mt-4 flex justify-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <p className="text-2xl md:text-3xl text-gray-600">{t("slogan")}</p>
         </div>
         
         {/* 按钮居中 */}
-        <div className={`mt-10 flex flex-col sm:flex-row gap-4 transition-all duration-1000 ${buttonsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+        <div className={`mt-10 flex flex-col sm:flex-row gap-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <button 
             onClick={goToLogin}
-            className="bg-gray-800 text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800 transition-all duration-500 text-lg min-w-[200px] h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
+            className="bg-[#003049] text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-[#003049] hover:border-2 border-[#003049] transition-all duration-500 text-lg min-w-[200px] h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
           >
             {t("getStarted")}
           </button>
@@ -231,7 +214,7 @@ const FeaturesSection = () => {
     <section className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight">{t("coreFeatures")}</h2>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-[#003049]">{t("coreFeatures")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("featuresDescription")}</p>
         </div>
 
@@ -249,11 +232,11 @@ const FeaturesSection = () => {
             {features.map((feature, index) => (
               <div
                 key={feature.title}
-                className="group relative flex flex-col justify-center items-start p-4 md:p-6 rounded-3xl transition-all duration-500 overflow-hidden"
+                className="relative flex flex-col justify-center items-start p-4 md:p-6 rounded-3xl overflow-hidden"
               >
                 <div className="relative w-full h-full min-h-[200px] flex items-center justify-center">
-                  {/* 默认显示：标题和描述 */}
-                  <div className="flex flex-col justify-center items-center text-center p-6 md:p-8 transition-opacity duration-500 group-hover:opacity-0 group-hover:pointer-events-none">
+                  {/* 显示：标题和描述 */}
+                  <div className="flex flex-col justify-center items-center text-center p-6 md:p-8">
                     {/* 图标 */}
                     <div className="mb-6">
                       <div className="bg-white/70 p-4 rounded-full flex-shrink-0 shadow-sm">
@@ -261,35 +244,13 @@ const FeaturesSection = () => {
                       </div>
                     </div>
                     {/* 标题 */}
-                    <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                    <h3 className="text-3xl md:text-4xl font-bold text-[#003049] mb-4">
                       {feature.title}
                     </h3>
                     {/* 描述 */}
                     <p className="text-gray-600 text-lg md:text-xl max-w-md leading-relaxed">
                       {feature.description}
                     </p>
-                  </div>
-
-                  {/* 悬浮显示：分点列表 */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none group-hover:pointer-events-auto">
-                    <ul className="space-y-4 text-base md:text-lg text-gray-700 px-6 md:px-8">
-                      {feature.items.map((item, itemIndex) => {
-                        const parts = item.split(':');
-                        return (
-                          <li key={itemIndex} className="flex items-start gap-3">
-                            {/* 分点 */}
-                            <span className="h-2 w-2 rounded-full bg-orange-400 flex-shrink-0 mt-2" />
-                            <p className="leading-relaxed">
-                              <span className="font-semibold text-gray-900">
-                                {parts[0]}
-                                {parts.length > 1 ? '：' : ''}
-                              </span>
-                              {parts.length > 1 && <span className="ml-1">{parts[1]}</span>}
-                            </p>
-                          </li>
-                        );
-                      })}
-                    </ul>
                   </div>
                 </div>
               </div>
@@ -379,7 +340,7 @@ const PricingSection = () => {
     <section ref={sectionRef} className={`py-20 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className={`lg:col-span-1 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight">{t("suitableForEveryone")}</h2>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight whitespace-pre-line text-[#003049]">{t("suitableForEveryone")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("pricingDescription")}</p>
         </div>
         <div className="lg:col-span-2 flex items-center justify-center">
@@ -404,7 +365,7 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
 
   return (
     <div className="flex flex-col p-0 rounded-2xl shadow-none w-full">
-      <h3 className="text-4xl font-bold">{name}</h3>
+      <h3 className="text-4xl font-bold text-[#003049]">{name}</h3>
       <p className="mt-2 text-gray-600">{description}</p>
       <ul className="mt-8 space-y-4 flex-grow">
         {features.map((feature, index) => (
@@ -418,7 +379,7 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
       </ul>
       <button 
         onClick={goToLogin}
-        className="mt-8 w-full text-lg font-semibold py-4 px-4 rounded-full bg-gray-800 text-white hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800 transition-all duration-500 h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
+        className="mt-8 w-full text-lg font-semibold py-4 px-4 rounded-full bg-[#003049] text-white hover:bg-transparent hover:text-[#003049] hover:border-2 border-[#003049] transition-all duration-500 h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
       >
         {buttonText}
       </button>
@@ -465,11 +426,11 @@ const CallToActionSection = () => {
     <section ref={sectionRef} className={`py-4 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-4xl mx-auto">
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-12 rounded-3xl text-center shadow-lg border border-orange-200 hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight">{t("startYourStory")}</h2>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-[#003049]">{t("startYourStory")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("storyDescription")}</p>
           <button 
             onClick={goToLogin}
-            className="mt-12 bg-gray-800 text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800 transition-all duration-500 inline-flex items-center gap-2 text-lg h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
+            className="mt-12 bg-[#003049] text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-[#003049] hover:border-2 border-[#003049] transition-all duration-500 inline-flex items-center gap-2 text-lg h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
           >
             {t("startNow")} <ArrowRight className="h-5 w-5" />
           </button>
@@ -516,9 +477,9 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
             <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
                 <Sparkles className="h-6 w-6 text-gray-700"/>
             </div>
-            <span className="font-bold text-xl">BulletAI</span>
+            <span className="font-bold text-xl text-[#003049]">BulletAI</span>
           </div>
-          <p className="mt-2 text-sm text-center sm:text-left">{t("copyright")}</p>
+          <p className="mt-2 text-sm text-center sm:text-left text-[#003049]">{t("copyright")}</p>
         </div>
         <div className={`mt-8 sm:mt-0 text-center sm:text-right transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <button
@@ -531,7 +492,7 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
       </div>
       <button 
         onClick={scrollToTop} // 使用从父组件传递下来的函数
-        className="fixed bottom-10 right-10 bg-gray-800 text-white p-3 rounded-full shadow-lg hover:bg-transparent hover:text-gray-800 hover:border-2 border-gray-800 transition-all duration-500 z-50 hover:-translate-y-1 hover:shadow-xl"
+        className="fixed bottom-10 right-10 bg-[#003049] text-white p-3 rounded-full shadow-lg hover:bg-transparent hover:text-[#003049] hover:border-2 border-[#003049] transition-all duration-500 z-50 hover:-translate-y-1 hover:shadow-xl"
         aria-label="返回顶部"
       >
         <ArrowUp className="h-6 w-6" />

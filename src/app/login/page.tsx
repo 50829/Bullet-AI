@@ -77,10 +77,10 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-orange-100 text-gray-800 relative">
+    <main className="min-h-screen flex items-center justify-center bg-[#efeeeb] text-[#003049] relative">
       <div className="bg-transparent rounded-3xl p-8 text-center w-full max-w-md mx-4">
         {/* 移除了语言切换按钮 */}
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">{t("loginTitle")}</h1>
+        <h1 className="text-3xl font-bold text-[#003049] mb-6">{t("loginTitle")}</h1>
 
         {/* Google 登录 */}
         <button
@@ -120,7 +120,7 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-gray-300 rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-800"
+            className="w-full border border-gray-300 rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-[#003049]"
             placeholder={t("emailPlaceholder")}
             disabled={loading}
           />
@@ -130,14 +130,14 @@ export default function LoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-800"
+            className="w-full border border-gray-300 rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-[#003049]"
             placeholder={t("passwordPlaceholder")}
             disabled={loading}
           />
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-4 px-4 py-2.5 rounded-3xl bg-black text-white font-bold border-2 border-transparent hover:bg-white hover:text-amber-500 hover:border-black transition-all duration-300"
+            className="w-full mt-4 px-4 py-2.5 rounded-3xl bg-[#003049] text-white font-bold border-2 border-transparent hover:bg-white hover:text-[#003049] hover:border-[#003049] transition-all duration-300"
           >
             {loading ? t("loggingIn") : t("login")}
           </button>
