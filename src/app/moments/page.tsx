@@ -299,22 +299,25 @@ export default function MomentsPage() {
                   return (
                     <Card 
                       key={monthCard.month} 
-                      className="bg-[#efeeeb] p-4 rounded-[28px] w-full max-w-3xl mx-auto border-2 border-[#003049]"
+                      className="bg-white p-4 rounded-[28px] w-full max-w-3xl mx-auto"
                     >
                       <div className="flex flex-col gap-4">
                         {/* 月份标题 - 带折叠按钮 */}
                         <div 
-                          className="flex items-center gap-2 border-b border-gray-200/50 pb-2 cursor-pointer hover:bg-gray-50/50 rounded-2xl p-2 -m-2 transition-colors"
+                          className="flex items-center gap-2 border-b border-[#003049]/30 pb-2 cursor-pointer transition-colors"
                           onClick={() => toggleMonth(monthCard.month)}
                         >
-                          <button className="flex items-center justify-center w-6 h-6 hover:bg-gray-200 rounded transition-colors">
+                          <button 
+                            className="flex items-center justify-center w-6 h-6 bg-transparent border-none outline-none p-0 m-0 cursor-pointer"
+                            style={{ background: 'none', boxShadow: 'none' }}
+                          >
                             {isMonthCollapsed ? (
-                              <ChevronDown size={16} className="text-gray-600" />
+                              <ChevronDown size={16} className="text-[#003049]" />
                             ) : (
-                              <ChevronUp size={16} className="text-gray-600" />
+                              <ChevronUp size={16} className="text-[#003049]" />
                             )}
                           </button>
-                          <h2 className="text-xl font-bold text-gray-800 flex-1">{monthCard.monthDisplay}</h2>
+                          <h2 className="text-2xl font-semibold text-[#003049] flex-1">{monthCard.monthDisplay}</h2>
                         </div>
                         
                         {/* 该月的所有日期卡片 */}
@@ -326,7 +329,7 @@ export default function MomentsPage() {
                               return (
                                 <Card 
                                   key={dayCard.date} 
-                                  className="bg-[#efeeeb] p-4 rounded-[28px] shadow-md border-2 border-[#003049]"
+                                  className="bg-[#efeeeb] p-4 rounded-[28px] shadow-md"
                                 >
                                   <div className="flex flex-col gap-4">
                                     {/* 日期标题 - 带折叠按钮 */}
