@@ -1,21 +1,81 @@
 // src/components/layout/BottomSidebar.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, LogOut } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../../lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import LogoutConfirmDialog from './LogoutConfirmDialog';
+import SettingsPanel from './SettingsPanel';
+
+interface UserProfile {
+  username: string;
+  updated_at: string | null;
+}
 
 export const BottomSidebar = () => {
   const { t } = useLanguage();
   const router = useRouter();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  // 预先加载用户数据
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          return;
+        }
+
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("username, updated_at")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (!error && profile) {
+          setUserProfile({
+            username: profile.username || '',
+            updated_at: profile.updated_at || null,
+          });
+        }
+      } catch (error) {
+        console.error("获取用户信息失败:", error);
+      }
+    };
+
+    fetchUserProfile();
+
+    // 监听认证状态变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username, updated_at")
+          .eq("user_id", session.user.id)
+          .single();
+        
+        if (profile) {
+          setUserProfile({
+            username: profile.username || '',
+            updated_at: profile.updated_at || null,
+          });
+        }
+      } else {
+        setUserProfile(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleSettingsClick = () => {
-    // 设置按钮目前不放功能
-    // TODO: 实现设置功能
+    setShowSettingsPanel(true);
   };
 
   const handleLogoutClick = () => {
@@ -91,6 +151,17 @@ export const BottomSidebar = () => {
         <LogoutConfirmDialog
           onConfirm={handleLogoutConfirm}
           onCancel={handleLogoutCancel}
+        />
+      )}
+
+      {/* 设置面板 */}
+      {showSettingsPanel && (
+        <SettingsPanel 
+          onClose={() => setShowSettingsPanel(false)}
+          initialProfile={userProfile}
+          onProfileUpdate={(profile) => {
+            setUserProfile(profile);
+          }}
         />
       )}
     </>

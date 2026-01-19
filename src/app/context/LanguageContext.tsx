@@ -951,6 +951,67 @@ const translations: Record<string, TranslationValue> = {
     en: "Are you sure you want to logout?",
     zh: "确定要退出登录吗？",
   },
+  // Settings panel translations
+  close: {
+    en: "Close",
+    zh: "关闭",
+  },
+  user: {
+    en: "User",
+    zh: "用户",
+  },
+  userSettings: {
+    en: "User Settings",
+    zh: "用户设置",
+  },
+  username: {
+    en: "Username",
+    zh: "用户名",
+  },
+  usernamePlaceholder: {
+    en: "Enter username",
+    zh: "请输入用户名",
+  },
+  usernameRequired: {
+    en: "Please enter a username",
+    zh: "请输入用户名",
+  },
+  usernameUnchanged: {
+    en: "Username unchanged",
+    zh: "用户名未更改",
+  },
+  usernameTaken: {
+    en: "This username is already taken, please choose another",
+    zh: "该用户名已被使用，请选择其他用户名",
+  },
+  usernameChangeCooldown: {
+    en: "You need to wait {days} days before changing your username again",
+    zh: "您需要等待 {days} 天才能再次修改用户名",
+  },
+  updateSuccess: {
+    en: "Username updated successfully!",
+    zh: "用户名更新成功！",
+  },
+  updateFailed: {
+    en: "Update failed, please try again later",
+    zh: "更新失败，请稍后再试",
+  },
+  updateError: {
+    en: "An error occurred, please try again later",
+    zh: "发生错误，请稍后再试",
+  },
+  save: {
+    en: "Save",
+    zh: "保存",
+  },
+  saving: {
+    en: "Saving...",
+    zh: "保存中...",
+  },
+  loading: {
+    en: "Loading...",
+    zh: "加载中...",
+  },
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);

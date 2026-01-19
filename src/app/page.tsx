@@ -343,7 +343,7 @@ const PricingSection = () => {
           <p className="mt-4 text-xl text-gray-600">{t("pricingDescription")}</p>
         </div>
         <div className="lg:col-span-2 flex items-center justify-center">
-          <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg border border-orange-200 w-full max-w-md hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
+          <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg w-full max-w-md hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
             <PricingCard {...tier} />
           </div>
         </div>
@@ -424,7 +424,7 @@ const CallToActionSection = () => {
     // 修改：将 py-8 改为 py-4，进一步拉近距离
     <section ref={sectionRef} className={`py-4 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-4xl mx-auto">
-        <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-12 rounded-3xl text-center shadow-lg border border-orange-200 hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
+        <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-12 rounded-3xl text-center shadow-lg hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-[#003049]">{t("startYourStory")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("storyDescription")}</p>
           <button 

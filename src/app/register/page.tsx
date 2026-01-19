@@ -92,7 +92,7 @@ export default function RegisterPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-gray-300 rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-[#003049]"
+            className="w-full border border-[#003049] rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-[#003049]"
             placeholder={t("confirmEmailPlaceholder")}
             disabled={loading}
             required
@@ -102,7 +102,7 @@ export default function RegisterPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={`w-full border ${password && (!isPasswordMatch || !isPasswordStrong(password)) ? 'border-red-500' : 'border-gray-300'} rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-[#003049]`}
+            className={`w-full border ${password && (!isPasswordMatch || !isPasswordStrong(password)) ? 'border-red-500' : 'border-[#003049]'} rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-[#003049]`}
             placeholder={t("setPasswordPlaceholder")}
             disabled={loading}
             required
@@ -132,7 +132,7 @@ export default function RegisterPage() {
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className={`w-full border ${confirmPassword && !isPasswordMatch ? 'border-red-500' : 'border-gray-300'} rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-[#003049]`}
+            className={`w-full border ${confirmPassword && !isPasswordMatch ? 'border-red-500' : 'border-[#003049]'} rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-[#003049]`}
             placeholder={t("confirmPasswordPlaceholder")}
             disabled={loading}
             required
@@ -167,7 +167,7 @@ export default function RegisterPage() {
         </form>
         <p className="text-sm">
           {t("alreadyAccount")}{" "}
-          <a href="/login" className="text-amber-500 hover:underline">
+          <a href="/login" className="text-[#B8860B] hover:underline">
             {t("login")} {/* 使用专门的“去登录”翻译 */}
           </a>
         </p>
