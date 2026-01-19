@@ -333,19 +333,19 @@ export default function HomePage() {
             </Card>
 
             {/* 右侧：下半部分 - 今日任务面板 */}
-            <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-gray-200">
+            <Card className="bg-[#003049] rounded-[28px] shadow-lg">
               <div className="mb-4">
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-[#efeeeb] flex items-center gap-2">
                   <CheckCircle2 size={20} />
                   {t("todayTasks") || "今日任务"}
                 </h3>
               </div>
               <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto relative min-h-[200px]">
                 {loading.goals ? (
-                  <div className="text-center py-4 text-gray-500 text-sm">{t("loading") || "加载中..."}</div>
+                  <div className="text-center py-4 text-[#efeeeb] text-sm">{t("loading") || "加载中..."}</div>
                 ) : todayGoals.length === 0 ? (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <p className="text-[#003049] text-2xl font-semibold">{t("noTasksToday") || "今日暂无任务"}</p>
+                    <p className="text-[#efeeeb] text-2xl font-semibold">{t("noTasksToday") || "今日暂无任务"}</p>
                   </div>
                 ) : (
                   todayGoals.map((goal: Goal) => {
@@ -353,7 +353,7 @@ export default function HomePage() {
                     return (
                       <div
                         key={goal.id}
-                        className={`group bg-[#efeeeb] p-5 rounded-[28px] ${
+                        className={`group bg-[#003049]/80 p-5 rounded-[28px] border border-[#efeeeb]/20 ${
                           isCompleted ? 'opacity-75' : ''
                         }`}
                       >
@@ -376,7 +376,7 @@ export default function HomePage() {
                           )}
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[#003049]/50' : 'text-[#003049]'}`}>
+                              <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[#efeeeb]/50' : 'text-[#efeeeb]'}`}>
                                 {goal.title}
                               </h4>
                               {isCompleted && (
@@ -386,7 +386,7 @@ export default function HomePage() {
                               )}
                             </div>
                             {goal.description && (
-                              <p className={`text-sm ${isCompleted ? 'text-[#003049]/50 line-through' : 'text-[#003049]'}`}>
+                              <p className={`text-sm ${isCompleted ? 'text-[#efeeeb]/50 line-through' : 'text-[#efeeeb]'}`}>
                                 {goal.description}
                               </p>
                             )}

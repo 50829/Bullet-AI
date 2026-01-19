@@ -267,7 +267,7 @@ export default function ReflectionsPage() {
             <div className="space-y-6">
               {/* 新建感悟卡片 - 显示在列表顶部 */}
               {isCreatingNew && (
-                <Card className="bg-[#efeeeb] p-6 rounded-[28px] w-full max-w-3xl mx-auto">
+                <Card className="bg-gray-100 p-6 rounded-[28px] w-full max-w-3xl mx-auto">
                   <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-xl font-semibold text-gray-700">{t("newReflection") || "记录新感悟"}</h3>
@@ -324,7 +324,7 @@ export default function ReflectionsPage() {
                     return (
                       <Card 
                         key={reflection.id} 
-                        className="bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg p-6 rounded-3xl shadow-lg border border-gray-200/50 w-full max-w-3xl mx-auto"
+                        className="bg-gray-100 p-6 rounded-[28px] w-full max-w-3xl mx-auto"
                       >
                         <div className="flex flex-col gap-4">
                           <div className="flex justify-between items-center mb-2">
@@ -364,7 +364,7 @@ export default function ReflectionsPage() {
                               className={`flex items-center gap-2 ${(isSaving || !editTitle.trim() || !editContent.trim()) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
                             >
                               <Save size={16} />
-                              {isSaving ? t("saving") || "保存中..." : t("save") || "保存"}
+                              {isSaving ? t("updating") || "更新中..." : t("update") || "更新"}
                             </Button>
                           </div>
                         </div>
