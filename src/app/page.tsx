@@ -330,7 +330,6 @@ const PricingSection = () => {
       t("pricingFeatures[2]"),
       t("pricingFeatures[3]"),
       t("pricingFeatures[4]"),
-      t("pricingFeatures[5]"),
     ],
     buttonText: t("getStarted"),
     isFeatured: true,

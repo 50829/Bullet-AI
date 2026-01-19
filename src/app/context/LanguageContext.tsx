@@ -247,28 +247,24 @@ const translations: Record<string, TranslationValue> = {
   },
   pricingFeatures: [
     {
-      en: "My Moments: Complete recording with AI Moment Assistant",
-      zh: "记录：完整记录，配备AI时刻助手",
+      en: "Record life moments with text and images",
+      zh: "记录生活瞬间：支持文字和图片",
     },
     {
-      en: "My Goals: Calendar planning, migration list, and AI Planning Assistant",
-      zh: "目标：日程规划、待分配任务，配备AI智能规划",
+      en: "Plan goals and track habits on calendar",
+      zh: "规划目标与习惯：日历可视化管理",
     },
     {
-      en: "My Insights: Inspiration recording with AI Thought Assistant",
-      zh: "我的感悟：灵感记录，配备AI思维助手",
+      en: "Capture insights and reflections",
+      zh: "记录感悟与思考",
     },
     {
-      en: "AI Empowerment: Three specialized AI assistants for comprehensive support",
-      zh: "AI赋能：三大专业AI助手，全方位支持",
+      en: "Three AI assistants: Moment, Planning, and Thought",
+      zh: "三大AI助手：时刻、规划、思维",
     },
     {
-      en: "Multimedia Support: Text, images",
-      zh: "多媒体支持：文字、图片",
-    },
-    {
-      en: "Tag Classification and Keyword Search",
-      zh: "标签分类与关键词搜索",
+      en: "All features free forever",
+      zh: "全部功能永久免费",
     },
   ],
   startYourStory: {
