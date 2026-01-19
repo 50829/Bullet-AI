@@ -5,12 +5,11 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
-import { Search, Trash2, X, Sparkles, Lightbulb, Save, Edit2, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, Save, Edit2, ChevronDown, ChevronUp } from "lucide-react";
 import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 import { supabase } from "../../lib/supabaseClient";
-import { getUserUsername } from '../../lib/userProfile';
 import { useTopBar } from '../components/layout/TopBar';
 
 type Reflection = {
@@ -33,9 +32,8 @@ export default function ReflectionsPage() {
   const [filteredReflections, setFilteredReflections] = useState<Reflection[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null); // 用于存储要删除的reflection
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showSearch, setShowSearch] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
@@ -46,6 +44,16 @@ export default function ReflectionsPage() {
   
   // 折叠状态管理
   const [collapsedReflections, setCollapsedReflections] = useState<Set<number>>(new Set());
+
+  // 检测屏幕尺寸
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   // 切换折叠状态
   const toggleReflection = (reflectionId: number) => {
@@ -89,33 +97,6 @@ export default function ReflectionsPage() {
     setFilteredReflections(sorted);
   }, [reflections]);
 
-  const performSearch = () => {
-    let results = [...reflections];
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      results = results.filter(r =>
-        r.content?.toLowerCase().includes(searchLower)
-      );
-    }
-    // 对搜索结果也进行排序
-    const sorted = results.sort((a, b) => {
-      const charA = getTitleFirstChar(a);
-      const charB = getTitleFirstChar(b);
-      return charA.localeCompare(charB, 'zh-CN');
-    });
-    setFilteredReflections(sorted);
-  };
-
-  const clearSearch = () => {
-    setSearchTerm("");
-    const sorted = [...reflections].sort((a, b) => {
-      const charA = getTitleFirstChar(a);
-      const charB = getTitleFirstChar(b);
-      return charA.localeCompare(charB, 'zh-CN');
-    });
-    setFilteredReflections(sorted);
-  };
-
   const handleAddReflection = () => {
     setIsCreatingNew(true);
     setNewTitle("");
@@ -127,16 +108,9 @@ export default function ReflectionsPage() {
     setTopBarHandlers({
       onAddReflection: handleAddReflection,
       onToggleAIPanel: () => setShowAIPanel(!showAIPanel),
-      onToggleSearch: () => setShowSearch(!showSearch),
       showAIPanel,
-      showSearch,
-      searchTerm,
-      onSearchChange: setSearchTerm,
-      onSearch: performSearch,
-      onClearSearch: clearSearch,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setTopBarHandlers, showAIPanel, showSearch, searchTerm]);
+  }, [setTopBarHandlers, showAIPanel]);
 
   const handleCancelNew = () => {
     setIsCreatingNew(false);
@@ -284,7 +258,10 @@ export default function ReflectionsPage() {
       />
 
       {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
-      <div className={`flex-1 transition-all duration-300 ${showAIPanel ? 'lg:ml-96' : ''}`}>
+      <div 
+        className="flex-1 transition-all duration-300"
+        style={showAIPanel && isDesktop ? { transform: 'translateX(-300px)' } : {}}
+      >
         <div className="p-4 pt-0"> {/* 移除顶部padding，因为头部已固定 */}
           <div className="max-w-6xl mx-auto">
             <div className="space-y-6">
@@ -338,7 +315,7 @@ export default function ReflectionsPage() {
 
               {filteredReflections.length === 0 && !isCreatingNew && !editingReflection ? (
                 <div className="text-center py-12 text-gray-500">
-                  {searchTerm ? t("noMatches") || "没有找到匹配的感悟记录" : t("noRecords") || "暂无感悟记录，点击上方按钮记录第一个感悟吧！"}
+                  {t("noRecords") || "暂无感悟记录，点击上方按钮记录第一个感悟吧！"}
                 </div>
               ) : (
                 filteredReflections.map((reflection) => {

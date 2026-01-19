@@ -340,12 +340,12 @@ export default function HomePage() {
                   {t("todayTasks") || "今日任务"}
                 </h3>
               </div>
-              <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
+              <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto relative min-h-[200px]">
                 {loading.goals ? (
                   <div className="text-center py-4 text-gray-500 text-sm">{t("loading") || "加载中..."}</div>
                 ) : todayGoals.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500 text-sm">
-                    {t("noTasksToday") || "今日暂无任务"}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <p className="text-[#003049] text-2xl font-semibold">{t("noTasksToday") || "今日暂无任务"}</p>
                   </div>
                 ) : (
                   todayGoals.map((goal: Goal) => {

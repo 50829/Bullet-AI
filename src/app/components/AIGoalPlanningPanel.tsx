@@ -1,7 +1,7 @@
 // src/app/components/AIGoalPlanningPanel.tsx
 "use client";
 import React, { useState } from 'react';
-import { Send, X } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 type Message = {
@@ -165,29 +165,19 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
     <>
       {/* 移动端遮罩层 */}
       <div 
-        className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+        className={`fixed inset-0 bg-black/50 z-30 lg:hidden transition-opacity duration-300 ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
         onClick={onClose}
       />
       {/* AI 对话面板 */}
-      <div className="fixed left-0 top-0 h-full w-full lg:w-[520px] bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 border-r border-gray-200/50 shadow-2xl z-40 flex flex-col backdrop-blur-lg">
-        {/* 头部 */}
-        <div className="p-4 border-b border-gray-200/50 flex items-center justify-between bg-white/20 backdrop-blur-sm">
-          <h3 className="text-2xl font-bold text-gray-800">{t("aiPlanning") || "AI智能规划"}</h3>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-2xl hover:bg-orange-100/50 transition-colors"
-            aria-label="关闭"
-          >
-            <X size={20} className="text-gray-600" />
-          </button>
-        </div>
-
+      <div className={`fixed right-4 top-16 bottom-0 w-full lg:w-[520px] bg-gray-100/85 rounded-tl-3xl rounded-tr-3xl shadow-2xl z-40 flex flex-col transition-transform duration-300 ease-out ${
+        isOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}>
         {/* 聊天内容区域 */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((message) => (

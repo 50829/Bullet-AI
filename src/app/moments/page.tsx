@@ -2,9 +2,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Card } from "../components/ui/Card";
-import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { Search, Trash2, X, Sparkles, Camera, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { MomentModal } from "../components/MomentModal";
 import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
@@ -36,23 +34,29 @@ type MonthCard = {
 
 
 export default function MomentsPage() {
-  const { moments, loading, refreshMoments, deleteMoment } = useAppContext();
+  const { moments, refreshMoments, deleteMoment } = useAppContext();
   const { t, language } = useLanguage(); // 获取翻译函数和语言设置
   const { setTopBarHandlers } = useTopBar();
-  const [filteredMoments, setFilteredMoments] = useState<Moment[]>([]);
-  const [dayCards, setDayCards] = useState<DayCard[]>([]);
   const [monthCards, setMonthCards] = useState<MonthCard[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null); // 用于存储要删除的moment
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showSearch, setShowSearch] = useState(false); // 新增状态控制搜索栏显示
-  const [isMobile, setIsMobile] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   
   // 折叠状态管理
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
+
+  // 检测屏幕尺寸
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   // 格式化日期显示 - 只显示几号（使用 UTC 时间避免时区问题）
   const formatDateDisplay = (dateString: string) => {
@@ -169,49 +173,11 @@ export default function MomentsPage() {
     });
   };
 
-  // 检测屏幕尺寸
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-    };
-  }, []);
-
   // 初始过滤和分组
   useEffect(() => {
-    setFilteredMoments(moments);
     const days = groupMomentsByDate(moments);
-    setDayCards(days);
     setMonthCards(groupDaysByMonth(days));
   }, [moments]);
-
-  const performSearch = () => {
-    let results = [...moments];
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      results = results.filter(m =>
-        m.content?.toLowerCase().includes(searchLower)
-      );
-    }
-    setFilteredMoments(results);
-    const days = groupMomentsByDate(results);
-    setDayCards(days);
-    setMonthCards(groupDaysByMonth(days));
-  };
-
-  const clearSearch = () => {
-    setSearchTerm("");
-    setFilteredMoments(moments); // 显示全部帖子
-    const days = groupMomentsByDate(moments);
-    setDayCards(days);
-    setMonthCards(groupDaysByMonth(days));
-  };
 
   const handleAddMoment = () => setIsModalOpen(true);
 
@@ -220,16 +186,9 @@ export default function MomentsPage() {
     setTopBarHandlers({
       onAddMoment: handleAddMoment,
       onToggleAIPanel: () => setShowAIPanel(!showAIPanel),
-      onToggleSearch: () => setShowSearch(!showSearch),
       showAIPanel,
-      showSearch,
-      searchTerm,
-      onSearchChange: setSearchTerm,
-      onSearch: performSearch,
-      onClearSearch: clearSearch,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setTopBarHandlers, showAIPanel, showSearch, searchTerm]);
+  }, [setTopBarHandlers, showAIPanel]);
   const handleModalClose = () => setIsModalOpen(false);
   const handleModalSuccess = () => {
     refreshMoments();
@@ -284,13 +243,16 @@ export default function MomentsPage() {
       />
 
       {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
-      <div className={`flex-1 transition-all duration-300 ${showAIPanel ? 'lg:ml-96' : ''}`}>
+      <div 
+        className="flex-1 transition-all duration-300"
+        style={showAIPanel && isDesktop ? { transform: 'translateX(-300px)' } : {}}
+      >
         <div className="p-4 pt-0">
           <div className="max-w-6xl mx-auto">
             <div className="space-y-6">
               {monthCards.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
-                  {searchTerm ? t("noMatches") || "没有找到匹配的时刻记录" : t("noRecords") || "暂无时刻记录，点击上方按钮记录第一个时刻吧！"}
+                  {t("noRecords") || "暂无时刻记录，点击上方按钮记录第一个时刻吧！"}
                 </div>
               ) : (
                 monthCards.map((monthCard) => {

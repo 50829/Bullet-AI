@@ -51,3 +51,27 @@ body {
     transform: translateY(0);
   }
 }
+
+/* 侧边栏按钮平滑动画 */
+@keyframes buttonPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* 平滑的颜色过渡 */
+.sidebar-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-button-icon {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 确保 fadeInUp 动画可用 */
+.animate-fadeInUp {
+  animation: fadeInUp 0.4s ease-out;
+}

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Camera, Target, Lightbulb, Menu, Home } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext'; // 添加语言Hook
 
@@ -11,13 +11,13 @@ type NavItemProps = {
   icon: React.ReactNode;
   label: string;
   onClick?: () => void; // 添加可选的 onClick 属性
+  className?: string; // 添加可选的 className 属性
+  style?: React.CSSProperties; // 添加可选的 style 属性
 };
 
-const NavItem = ({ page, icon, label, onClick }: NavItemProps) => {
-  const pathname = usePathname();
+const NavItem = ({ page, icon, label, onClick, className, style }: NavItemProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useLanguage(); // 获取翻译函数
   
   // 修复：当没有page参数时，默认为home
   const currentActivePage = searchParams.get('page') || 'home';
@@ -32,15 +32,20 @@ const NavItem = ({ page, icon, label, onClick }: NavItemProps) => {
 
   return (
     <li
-      className={`flex items-center justify-center p-3 cursor-pointer rounded-full transition-colors ${
+      className={`flex items-center justify-center p-3 cursor-pointer rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform ${
         isActive 
-          ? 'bg-[#efeeeb]' 
-          : 'bg-[#003049] hover:bg-[#003049]/90'
-      }`}
+          ? 'bg-[#efeeeb] scale-105 shadow-md' 
+          : 'bg-[#003049] hover:bg-[#003049]/90 hover:scale-105 active:scale-95'
+      } ${className || ''}`}
       onClick={handleClick}
       title={label}
+      style={style}
     >
-      <span className="text-[#6c757d]">
+      <span className={`transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        isActive 
+          ? 'text-[#003049] scale-110' 
+          : 'text-[#6c757d] hover:text-white'
+      }`}>
         {icon}
       </span>
     </li>
@@ -92,10 +97,10 @@ export const Sidebar = () => {
         {!isSidebarOpen && (
           <button
             onClick={toggleSidebar}
-            className="fixed bottom-4 left-4 z-50 p-3 bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg rounded-full shadow-lg border border-gray-200/50 lg:hidden"
+            className="fixed bottom-4 left-4 z-50 p-3 bg-gradient-to-br from-blue-100/30 via-white/30 to-orange-100/30 backdrop-blur-lg rounded-full shadow-lg border border-gray-200/50 lg:hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-110 active:scale-95 hover:shadow-xl"
             aria-label={t("toggleMenu") || "切换菜单"}
           >
-            <Menu size={24} />
+            <Menu size={24} className="transition-transform duration-300" />
           </button>
         )}
 
@@ -104,21 +109,27 @@ export const Sidebar = () => {
           <>
             {/* 遮罩层 */}
             <div 
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              className={`fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                isSidebarOpen ? 'opacity-100' : 'opacity-0'
+              }`}
               onClick={toggleSidebar}
             />
             
             {/* 侧边栏内容 */}
-            <aside className="fixed top-20 left-4 bg-[#003049] rounded-[32px] p-3 z-50 shadow-lg lg:hidden transform translate-x-0 transition-transform duration-300 ease-in-out">
+            <aside className={`fixed top-20 left-4 bg-[#003049] rounded-[32px] p-3 z-50 shadow-lg lg:hidden transform transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
+            }`}>
               <nav>
                 <ul className="space-y-2">
-                  {navItems.map((item) => (
+                  {navItems.map((item, index) => (
                     <NavItem 
-                      key={item.page} 
+                      key={item.page}
                       page={item.page} 
                       icon={item.icon} 
                       label={item.label} 
                       onClick={() => setIsSidebarOpen(false)} // 点击后关闭侧边栏
+                      className="animate-fadeInUp"
+                      style={{ animationDelay: `${index * 0.1}s`, animationFillMode: 'both' }}
                     />
                   ))}
                 </ul>

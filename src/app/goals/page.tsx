@@ -53,9 +53,20 @@ export default function GoalsPage() {
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [rightViewMode, setRightViewMode] = useState<"migration" | "schedule">("migration");
   const [username, setUsername] = useState<string | null>(null);
+
+  // 检测屏幕尺寸
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
   
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{ 
@@ -293,7 +304,10 @@ export default function GoalsPage() {
       />
 
       {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
-      <div className={`flex-1 transition-all duration-300 ${showAIPanel ? 'lg:ml-96' : ''}`}>
+      <div 
+        className="flex-1 transition-all duration-300"
+        style={showAIPanel && isDesktop ? { transform: 'translateX(-300px)' } : {}}
+      >
         <div className="p-4 pt-0">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

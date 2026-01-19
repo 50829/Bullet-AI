@@ -1,10 +1,9 @@
 "use client";
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Sparkles, Camera, Target, Lightbulb, Search } from 'lucide-react';
+import { Sparkles, Camera, Target, Lightbulb } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
 import { supabase } from '../../../lib/supabaseClient';
 
 // TopBar Context
@@ -184,10 +183,8 @@ export const TopBar = () => {
   const pageInfo = getPageInfo();
   const showButtons = currentPage !== 'home';
 
-  const topBarHeight = showSearch && (currentPage === 'moments' || currentPage === 'reflections') ? 'h-24' : 'h-16';
-  
   return (
-    <div className={`fixed top-0 left-0 right-0 z-30 bg-[#efeeeb] border-b border-gray-200/50 ${topBarHeight}`}>
+    <div className="fixed top-0 left-0 right-0 z-30 bg-[#efeeeb] border-b border-gray-200/50 h-16">
       <div className="w-full flex items-center justify-between gap-4 h-full pl-4 pr-4">
         {/* 左侧：Logo 和页面名称 */}
         <div className="flex items-center gap-3 flex-shrink-0">
@@ -223,18 +220,6 @@ export const TopBar = () => {
               </Button>
             )}
             
-            {/* 搜索按钮（仅moments和reflections） */}
-            {(currentPage === 'moments' || currentPage === 'reflections') && onToggleSearch && (
-              <Button 
-                variant="outline" 
-                onClick={onToggleSearch}
-                className="flex items-center gap-1"
-              >
-                <Search size={16} /> 
-                {showSearch ? t("collapseSearch") || '折叠搜索栏' : t("search") || '搜索'}
-              </Button>
-            )}
-            
             {/* 添加按钮 */}
             {pageInfo.onAdd && (
               <Button onClick={pageInfo.onAdd}>
@@ -245,38 +230,6 @@ export const TopBar = () => {
         )}
       </div>
 
-      {/* 搜索栏 - 条件渲染 */}
-      {showSearch && (currentPage === 'moments' || currentPage === 'reflections') && (
-        <div className="border-t border-gray-200/50 pl-4 pr-4 py-3 mt-2">
-          <div className="flex gap-2 items-center">
-            <Input 
-              placeholder={t("searchPlaceholder") || "输入搜索内容~"} 
-              value={searchTerm} 
-              onChange={(e) => onSearchChange?.(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  onSearch?.();
-                }
-              }}
-              className="flex-1 h-10"
-            />
-            <Button 
-              onClick={onSearch} 
-              className="flex items-center justify-center h-10 px-4"
-            >
-              <Search size={16} className="mr-1" /> {t("search") || "搜索"}
-            </Button>
-            <Button 
-              variant="secondary" 
-              onClick={onClearSearch} 
-              className="h-10 px-4"
-              disabled={!searchTerm}
-            >
-              {t("clear") || "清空"}
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
