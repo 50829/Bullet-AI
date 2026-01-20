@@ -340,7 +340,7 @@ const PricingSection = () => {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className={`lg:col-span-1 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight whitespace-pre-line text-[#003049]">{t("suitableForEveryone")}</h2>
-          <p className="mt-4 text-xl text-gray-600">{t("pricingDescription")}</p>
+          <p className="mt-4 text-xl text-gray-600 whitespace-pre-line">{t("pricingDescription")}</p>
         </div>
         <div className="lg:col-span-2 flex items-center justify-center">
           <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg w-full max-w-md hover:-translate-y-1 hover:shadow-xl transition-all duration-500">

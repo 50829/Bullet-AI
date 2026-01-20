@@ -23,12 +23,12 @@ export default function ContactPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-orange-100">
+    <div className="min-h-screen bg-[#efeeeb]">
       <div className="max-w-4xl mx-auto px-4 py-12">
         {/* 返回按钮 */}
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-8 transition-colors"
+          className="flex items-center gap-2 text-[#003049] hover:text-gray-600 mb-8 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>{t("back") || "返回"}</span>
@@ -36,7 +36,7 @@ export default function ContactPage() {
 
         {/* 标题 */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-[#003049] mb-4">
             {t("contactUs") || "联系我们"}
           </h1>
           <p className="text-gray-600 text-lg">
@@ -49,7 +49,7 @@ export default function ContactPage() {
           {contacts.map((contact, index) => (
             <div
               key={index}
-              className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-orange-200 p-8 hover:-translate-y-1 hover:shadow-xl transition-all duration-500"
+              className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg p-8 hover:-translate-y-1 hover:shadow-xl transition-all duration-500"
             >
               {/* 头像区域 */}
               <div className="flex justify-center mb-6">
@@ -68,7 +68,7 @@ export default function ContactPage() {
 
               {/* 联系人信息 */}
               <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                <h3 className="text-2xl font-bold text-[#003049] mb-2">
                   {contact.name}
                 </h3>
                 <p className="text-gray-600 text-lg">

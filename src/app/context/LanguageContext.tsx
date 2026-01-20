@@ -239,7 +239,7 @@ const translations: Record<string, TranslationValue> = {
   },
   pricingDescription: {
     en: "Experience all core features of BulletAI, start your growth journey",
-    zh: "体验 BulletAI 全部核心功能，开启你的成长之旅",
+    zh: "体验 BulletAI 全部核心功能，\n开启你的成长之旅",
   },
   freeStart: {
     en: "Start Free",
