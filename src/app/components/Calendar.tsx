@@ -1,6 +1,6 @@
 // components/Calendar.tsx
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Goal = {
@@ -22,6 +22,21 @@ type CalendarProps = {
 
 export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 检测屏幕尺寸
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // 768px 以下为移动端
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
   // 获取月份的第一天和最后一天
   const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -103,11 +118,11 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
   const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
 
   return (
-    <div className="bg-[#003049] rounded-[28px] p-4 h-[520px] flex flex-col">
+    <div className={`bg-[#003049] rounded-[28px] p-4 ${isMobile ? 'h-auto min-h-[400px]' : 'h-[520px]'} flex flex-col`}>
       {/* 月份导航 */}
       <div className="flex items-center justify-between mb-3 flex-shrink-0">
         {/* 标题放在左上角 */}
-        <h3 className="text-2xl font-semibold text-[#efeeeb]">
+        <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-[#efeeeb]`}>
           {currentMonth.getFullYear()}年 {monthNames[currentMonth.getMonth()]}
         </h3>
         {/* 月份切换按钮放在右上角 */}
@@ -116,13 +131,13 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
             onClick={prevMonth}
             className="p-2 hover:bg-[#003049]/80 rounded-2xl transition-colors"
           >
-            <ChevronLeft className="w-5 h-5 text-[#efeeeb]" />
+            <ChevronLeft className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-[#efeeeb]`} />
           </button>
           <button
             onClick={nextMonth}
             className="p-2 hover:bg-[#003049]/80 rounded-2xl transition-colors"
           >
-            <ChevronRight className="w-5 h-5 text-[#efeeeb]" />
+            <ChevronRight className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-[#efeeeb]`} />
           </button>
         </div>
       </div>
@@ -130,14 +145,14 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
       {/* 星期标题 */}
       <div className="grid grid-cols-7 gap-1 mb-2 flex-shrink-0">
         {weekDays.map((day) => (
-          <div key={day} className="text-center text-lg font-medium text-[#efeeeb] py-1">
+          <div key={day} className={`text-center ${isMobile ? 'text-sm' : 'text-lg'} font-medium text-[#efeeeb] py-1`}>
             {day}
           </div>
         ))}
       </div>
 
       {/* 日期网格 */}
-      <div className="grid grid-cols-7 gap-1 flex-1 min-h-0">
+      <div className={`grid grid-cols-7 gap-1 ${isMobile ? '' : 'flex-1 min-h-0'}`}>
         {days.map((day, index) => {
           const hasIncompleteGoal = hasIncompleteGoalOnDate(day);
           const today = isToday(day);
@@ -149,7 +164,7 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
               onClick={() => handleDayClick(day)}
               disabled={day === null}
               className={`
-                aspect-square p-2 rounded-full text-lg flex items-center justify-center
+                aspect-square ${isMobile ? 'p-1' : 'p-2'} rounded-full ${isMobile ? 'text-sm' : 'text-lg'} flex items-center justify-center
                 ${day === null ? 'cursor-default opacity-0' : 'cursor-pointer'}
                 ${selected ? 'border-2 border-[#b8860b]' : 'border-2 border-transparent'}
                 ${today ? 'text-[#b8860b] font-semibold' : day !== null ? 'text-[#efeeeb]' : ''}

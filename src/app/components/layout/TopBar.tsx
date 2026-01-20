@@ -67,6 +67,21 @@ export const TopBar = () => {
   const currentPage = searchParams.get('page') || 'home';
   const context = useContext(TopBarContext);
   const [username, setUsername] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 检测屏幕尺寸
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // 768px 以下为移动端
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
   // 获取用户名
   useEffect(() => {
@@ -117,10 +132,12 @@ export const TopBar = () => {
         <div className="w-full flex items-center justify-between gap-4 pl-4 pr-4 py-3">
           <div className="flex items-center gap-3 flex-shrink-0">
             <Sparkles className="h-8 w-8 text-gray-700" />
-            {currentPage === 'home' && username ? (
-              <span className="text-2xl font-bold text-gray-800">你好，{username}</span>
-            ) : (
-              <span className="text-2xl font-bold text-gray-800">BulletAI</span>
+            <span className="text-2xl font-bold text-gray-800">BulletAI</span>
+            {currentPage === 'home' && username && (
+              <>
+                <span className="text-gray-400 mx-1">|</span>
+                <span className="text-2xl font-bold text-gray-800">你好，{username}</span>
+              </>
             )}
           </div>
         </div>
@@ -189,41 +206,43 @@ export const TopBar = () => {
         {/* 左侧：Logo 和页面名称 */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <Sparkles className="h-8 w-8 text-gray-700" />
+          <span className="text-2xl font-bold text-gray-800">BulletAI</span>
           {currentPage === 'home' && username ? (
-            <span className="text-2xl font-bold text-gray-800">你好，{username}</span>
-          ) : (
             <>
-              <span className="text-2xl font-bold text-gray-800">BulletAI</span>
-              {pageInfo.icon && (
-                <>
-                  <span className="text-gray-400 mx-1">|</span>
-                  {pageInfo.icon}
-                  <h2 className="text-2xl font-bold text-gray-800">{pageInfo.title}</h2>
-                </>
-              )}
+              <span className="text-gray-400 mx-1">|</span>
+              <span className="text-2xl font-bold text-gray-800">你好，{username}</span>
             </>
+          ) : (
+            pageInfo.icon && (
+              <>
+                <span className="text-gray-400 mx-1">|</span>
+                {pageInfo.icon}
+                <h2 className="text-2xl font-bold text-gray-800">{pageInfo.title}</h2>
+              </>
+            )
           )}
         </div>
 
         {/* 右侧：按钮区域 */}
         {showButtons && (
-          <div className="flex items-center gap-3 flex-wrap flex-shrink-0">
+          <div className={`flex items-center gap-2 flex-shrink-0 ${isMobile ? 'ml-auto' : ''}`}>
             {/* AI助手按钮 */}
             {pageInfo.aiButtonText && onToggleAIPanel && (
               <Button 
                 variant="outline" 
                 onClick={onToggleAIPanel}
-                className="flex items-center gap-1"
+                className={`flex items-center justify-center ${isMobile ? 'gap-0 px-2 min-w-[40px]' : 'gap-1'}`}
+                title={isMobile ? pageInfo.aiButtonText : undefined}
               >
                 <Sparkles size={16} /> 
-                {pageInfo.aiButtonText}
+                {!isMobile && <span>{pageInfo.aiButtonText}</span>}
               </Button>
             )}
             
-            {/* 添加按钮 */}
+            {/* 添加按钮 - 在移动端确保位于右上角 */}
             {pageInfo.onAdd && (
-              <Button onClick={pageInfo.onAdd}>
-                {pageInfo.addButtonText}
+              <Button onClick={pageInfo.onAdd} className={isMobile ? 'px-3 text-sm' : ''}>
+                {isMobile ? '+' : pageInfo.addButtonText}
               </Button>
             )}
           </div>

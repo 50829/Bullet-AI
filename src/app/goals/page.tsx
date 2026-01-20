@@ -312,7 +312,7 @@ export default function GoalsPage() {
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* 左侧日历 */}
-              <div className="h-[520px]">
+              <div className="lg:h-[520px]">
                 <Calendar
                   selectedDate={selectedDate}
                   onDateSelect={setSelectedDate}
@@ -321,8 +321,8 @@ export default function GoalsPage() {
               </div>
               
               {/* 右侧目标列表 */}
-              <div className="h-[520px]">
-                <Card className="bg-white/80 rounded-[28px] relative h-full flex flex-col">
+              <div className="lg:h-[520px]">
+                <Card className="bg-white/80 rounded-[28px] relative lg:h-full flex flex-col min-h-[400px]">
                   {/* 标题和切换按钮 */}
                   <div className="mb-4 flex items-center justify-between flex-shrink-0">
                     <h3 className="text-2xl font-semibold text-[#003049]">
