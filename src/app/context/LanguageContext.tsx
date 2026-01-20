@@ -659,6 +659,14 @@ const translations: Record<string, TranslationValue> = {
     en: "Update failed",
     zh: "更新失败",
   },
+  update: {
+    en: "Update",
+    zh: "更新",
+  },
+  updating: {
+    en: "Updating...",
+    zh: "更新中...",
+  },
   delete: {
     en: "Delete",
     zh: "删除",

@@ -97,6 +97,19 @@ export default function ReflectionsPage() {
     setFilteredReflections(sorted);
   }, [reflections]);
 
+  // 监听reflections更新，如果正在编辑的reflection内容已改变，清除编辑状态
+  useEffect(() => {
+    if (editingReflection) {
+      const updatedReflection = reflections.find(r => r.id === editingReflection.id);
+      // 如果找到了更新的reflection且内容已改变，清除编辑状态
+      if (updatedReflection && updatedReflection.content !== editingReflection.content) {
+        setEditingReflection(null);
+        setEditTitle("");
+        setEditContent("");
+      }
+    }
+  }, [reflections]); // 只依赖reflections，不依赖editingReflection避免循环
+
   const handleAddReflection = () => {
     setIsCreatingNew(true);
     setNewTitle("");
@@ -192,18 +205,21 @@ export default function ReflectionsPage() {
       return;
     }
 
+    const reflectionIdToEdit = editingReflection.id; // 保存要编辑的ID
     setIsSaving(true);
     try {
       const contentToSave = `${editTitle.trim()}\n\n${editContent.trim()}`;
-      await updateReflection(editingReflection.id, { content: contentToSave });
-      refreshReflections();
+      await updateReflection(reflectionIdToEdit, { content: contentToSave });
+      // 立即清除编辑状态，因为 updateReflection 已经乐观更新了本地状态
       setEditingReflection(null);
       setEditTitle("");
       setEditContent("");
+      setIsSaving(false);
+      // 然后在后台刷新数据以确保数据同步
+      await refreshReflections();
     } catch (err) {
       console.error("更新错误:", err);
       alert(t("updateFailed") || "更新失败，请重试");
-    } finally {
       setIsSaving(false);
     }
   };
