@@ -23,12 +23,12 @@ export default function ContactPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#efeeeb]">
+    <div className="min-h-screen bg-[var(--color-bg-primary)]">
       <div className="max-w-4xl mx-auto px-4 py-12">
         {/* 返回按钮 */}
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-[#003049] hover:text-gray-600 mb-8 transition-colors"
+          className="flex items-center gap-2 mb-8 transition-colors text-[var(--color-text-primary)] hover:text-[var(--color-text-secondary)]"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>{t("back") || "返回"}</span>
@@ -36,7 +36,7 @@ export default function ContactPage() {
 
         {/* 标题 */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-[#003049] mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-[var(--color-text-primary)]">
             {t("contactUs") || "联系我们"}
           </h1>
           <p className="text-gray-600 text-lg">
@@ -68,7 +68,7 @@ export default function ContactPage() {
 
               {/* 联系人信息 */}
               <div className="text-center">
-                <h3 className="text-2xl font-bold text-[#003049] mb-2">
+                <h3 className="text-2xl font-bold mb-2 text-[var(--color-text-primary)]">
                   {contact.name}
                 </h3>
                 <p className="text-gray-600 text-lg">

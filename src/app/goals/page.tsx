@@ -325,7 +325,7 @@ export default function GoalsPage() {
                 <Card className="bg-white/80 rounded-[28px] relative lg:h-full flex flex-col min-h-[400px]">
                   {/* 标题和切换按钮 */}
                   <div className="mb-4 flex items-center justify-between flex-shrink-0">
-                    <h3 className="text-2xl font-semibold text-[#003049]">
+                    <h3 className="text-2xl font-semibold text-theme-primary">
                       {rightViewMode === "migration" 
                         ? t("migrationList") || "待分配任务"
                         : selectedDate 
@@ -336,7 +336,7 @@ export default function GoalsPage() {
                       onClick={() => {
                         setRightViewMode(prev => prev === "migration" ? "schedule" : "migration");
                       }}
-                      className="p-2 rounded-2xl bg-white/60 hover:bg-white/80 text-[#003049] hover:text-[#003049] transition-all duration-200 flex items-center gap-2"
+                      className="p-2 rounded-2xl bg-white/60 hover:bg-white/80 text-theme-primary hover:text-theme-primary transition-all duration-200 flex items-center gap-2"
                       title={t("switchPanel") || "切换面板"}
                     >
                       <RefreshCw size={18} />
@@ -349,7 +349,7 @@ export default function GoalsPage() {
                     <div className="flex-1 flex flex-col min-h-0">
                       {migrationListGoals.length === 0 && (
                         <div className="flex-1 flex items-center justify-center">
-                          <p className="text-[#003049] text-2xl font-semibold">{t("noMigrationGoals") || "待分配任务为空，新建目标将自动添加到这里"}</p>
+                          <p className="text-theme-primary text-2xl font-semibold">{t("noMigrationGoals") || "待分配任务为空，新建目标将自动添加到这里"}</p>
                         </div>
                       )}
                       <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
@@ -376,7 +376,7 @@ export default function GoalsPage() {
                                     className="p-1.5 rounded-full bg-[#b2ff9e] hover:bg-[#b2ff9e]/80 transition-colors duration-200 flex items-center justify-center flex-shrink-0"
                                     title={t("completeGoal") || "完成目标"}
                                   >
-                                    <CheckCircle2 size={18} className="text-[#003049]" />
+                                    <CheckCircle2 size={18} className="text-theme-primary" />
                                   </button>
                                 )}
                                 <div className="flex-1">
@@ -437,7 +437,7 @@ export default function GoalsPage() {
                                 </div>
                               </div>
                               {!selectedDate && !isCompleted && (
-                                <p className="text-xs text-[#003049] mt-2">
+                                  <p className="text-xs text-theme-primary mt-2">
                                   {t("selectDateToMigrate") || "请先选择日历中的日期，然后点击迁移按钮"}
                                 </p>
                               )}
@@ -453,7 +453,7 @@ export default function GoalsPage() {
                     <div className="flex-1 flex flex-col min-h-0 relative">
                       {selectedDateGoals.length === 0 && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <p className="text-[#003049] text-2xl font-semibold">{t("noGoalsForDate") || "该日期暂无目标"}</p>
+                          <p className="text-theme-primary text-2xl font-semibold">{t("noGoalsForDate") || "该日期暂无目标"}</p>
                         </div>
                       )}
                       <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
@@ -480,7 +480,7 @@ export default function GoalsPage() {
                                     className="p-1.5 rounded-full bg-[#b2ff9e] hover:bg-[#b2ff9e]/80 transition-colors duration-200 flex items-center justify-center flex-shrink-0"
                                     title={t("completeGoal") || "完成目标"}
                                   >
-                                    <CheckCircle2 size={18} className="text-[#003049]" />
+                                    <CheckCircle2 size={18} className="text-theme-primary" />
                                   </button>
                                 )}
                                 <div className="flex-1">

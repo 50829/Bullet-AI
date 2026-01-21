@@ -274,12 +274,12 @@ export default function MomentsPage() {
                             style={{ background: 'none', boxShadow: 'none' }}
                           >
                             {isMonthCollapsed ? (
-                              <ChevronDown size={16} className="text-[#003049]" />
+                              <ChevronDown size={16} className="text-theme-primary" />
                             ) : (
-                              <ChevronUp size={16} className="text-[#003049]" />
+                              <ChevronUp size={16} className="text-theme-primary" />
                             )}
                           </button>
-                          <h2 className="text-2xl font-semibold text-[#003049] flex-1">{monthCard.monthDisplay}</h2>
+                          <h2 className="text-2xl font-semibold text-theme-primary flex-1">{monthCard.monthDisplay}</h2>
                         </div>
                         
                         {/* 该月的所有日期卡片 */}

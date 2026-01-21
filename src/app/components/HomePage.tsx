@@ -332,20 +332,20 @@ export default function HomePage() {
               </div>
             </Card>
 
-            {/* 右侧：下半部分 - 今日任务面板 */}
-            <Card className="bg-[#003049] rounded-[28px] shadow-lg">
+          {/* 右侧：下半部分 - 今日任务面板 */}
+          <Card className="rounded-[28px] shadow-lg bg-[var(--color-panel-primary)]">
               <div className="mb-4">
-                <h3 className="text-xl font-bold text-[#efeeeb] flex items-center gap-2">
+                <h3 className="text-xl font-bold flex items-center gap-2 text-[var(--color-panel-text)]">
                   <CheckCircle2 size={20} />
                   {t("todayTasks") || "今日任务"}
                 </h3>
               </div>
               <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto relative min-h-[200px]">
                 {loading.goals ? (
-                  <div className="text-center py-4 text-[#efeeeb] text-sm">{t("loading") || "加载中..."}</div>
+                  <div className="text-center py-4 text-[var(--color-panel-text)] text-sm">{t("loading") || "加载中..."}</div>
                 ) : todayGoals.length === 0 ? (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <p className="text-[#efeeeb] text-2xl font-semibold">{t("noTasksToday") || "今日暂无任务"}</p>
+                    <p className="text-[var(--color-panel-text)] text-2xl font-semibold">{t("noTasksToday") || "今日暂无任务"}</p>
                   </div>
                 ) : (
                   todayGoals.map((goal: Goal) => {
@@ -353,7 +353,7 @@ export default function HomePage() {
                     return (
                       <div
                         key={goal.id}
-                        className={`group bg-[#003049]/80 p-5 rounded-[28px] border border-[#efeeeb]/20 ${
+                        className={`group p-5 rounded-[28px] border border-[color:rgba(239,238,235,0.2)] bg-[color:rgba(0,48,73,0.85)] ${
                           isCompleted ? 'opacity-75' : ''
                         }`}
                       >
@@ -368,15 +368,15 @@ export default function HomePage() {
                                   alert(err instanceof Error ? err.message : t("updateFailed") || "更新失败");
                                 }
                               }}
-                              className="p-1.5 rounded-full bg-[#b2ff9e] hover:bg-[#b2ff9e]/80 transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                              className="p-1.5 rounded-full bg-[var(--color-success)] hover:bg-[var(--color-success-hover)] transition-colors duration-200 flex items-center justify-center flex-shrink-0"
                               title={t("completeGoal") || "完成目标"}
                             >
-                              <CheckCircle2 size={18} className="text-[#003049]" />
+                              <CheckCircle2 size={18} className="text-[var(--color-text-primary)]" />
                             </button>
                           )}
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[#efeeeb]/50' : 'text-[#efeeeb]'}`}>
+                              <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[color:rgba(239,238,235,0.5)]' : 'text-[var(--color-panel-text)]'}`}>
                                 {goal.title}
                               </h4>
                               {isCompleted && (
@@ -386,7 +386,7 @@ export default function HomePage() {
                               )}
                             </div>
                             {goal.description && (
-                              <p className={`text-sm ${isCompleted ? 'text-[#efeeeb]/50 line-through' : 'text-[#efeeeb]'}`}>
+                              <p className={`text-sm ${isCompleted ? 'text-[color:rgba(239,238,235,0.5)] line-through' : 'text-[var(--color-panel-text)]'}`}>
                                 {goal.description}
                               </p>
                             )}

@@ -83,16 +83,16 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#efeeeb] text-[#003049]">
+    <main className="min-h-screen flex items-center justify-center bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
       <div className="bg-transparent rounded-3xl p-8 text-center w-full max-w-md mx-4">
-        <h1 className="text-3xl font-bold text-[#003049] mb-6">{t("registerTitle")}</h1>
+        <h1 className="text-3xl font-bold mb-6 text-[var(--color-text-primary)]">{t("registerTitle")}</h1>
         <form onSubmit={handleRegister} className="space-y-3 mb-6 text-left">
           <label className="block text-sm text-gray-700">{t("setEmail")}</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-[#003049] rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-[#003049]"
+            className="w-full border border-[#003049] rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-theme-primary"
             placeholder={t("confirmEmailPlaceholder")}
             disabled={loading}
             required
@@ -102,7 +102,7 @@ export default function RegisterPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={`w-full border ${password && (!isPasswordMatch || !isPasswordStrong(password)) ? 'border-red-500' : 'border-[#003049]'} rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-[#003049]`}
+            className={`w-full border ${password && (!isPasswordMatch || !isPasswordStrong(password)) ? 'border-red-500' : 'border-[#003049]'} rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-theme-primary`}
             placeholder={t("setPasswordPlaceholder")}
             disabled={loading}
             required
@@ -132,7 +132,7 @@ export default function RegisterPage() {
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className={`w-full border ${confirmPassword && !isPasswordMatch ? 'border-red-500' : 'border-[#003049]'} rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-[#003049]`}
+            className={`w-full border ${confirmPassword && !isPasswordMatch ? 'border-red-500' : 'border-[#003049]'} rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-theme-primary`}
             placeholder={t("confirmPasswordPlaceholder")}
             disabled={loading}
             required

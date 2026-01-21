@@ -118,27 +118,42 @@ export const BottomSidebar = () => {
 
   return (
     <>
-      <aside className="fixed left-4 bottom-20 bg-[#003049] rounded-[32px] p-3 shadow-lg hidden lg:block z-30">
+      <aside
+        className="fixed left-4 bottom-20 rounded-[32px] p-3 shadow-lg hidden lg:block z-30"
+        style={{ backgroundColor: 'var(--color-primary)' }}
+      >
         <nav>
           <ul className="space-y-2">
             {/* 设置按钮 */}
             <li
-              className="flex items-center justify-center p-3 cursor-pointer rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform bg-[#003049] hover:bg-[#003049]/90 hover:scale-105 active:scale-95"
+              className="flex items-center justify-center p-3 cursor-pointer rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform hover:scale-105 active:scale-95"
+              style={{ backgroundColor: 'var(--color-primary)' }}
               onClick={handleSettingsClick}
               title={t("settings") || "设置"}
             >
-              <span className="transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] text-[#6c757d] hover:text-white">
+              <span
+                className="transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                style={{ color: 'var(--color-text-secondary)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text-inverse)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
+              >
                 <Settings size={20} />
               </span>
             </li>
             
             {/* 退出登录按钮 */}
             <li
-              className="flex items-center justify-center p-3 cursor-pointer rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform bg-[#003049] hover:bg-[#003049]/90 hover:scale-105 active:scale-95"
+              className="flex items-center justify-center p-3 cursor-pointer rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform hover:scale-105 active:scale-95"
+              style={{ backgroundColor: 'var(--color-primary)' }}
               onClick={handleLogoutClick}
               title={t("logout") || "退出登录"}
             >
-              <span className="transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] text-[#6c757d] hover:text-white">
+              <span
+                className="transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                style={{ color: 'var(--color-text-secondary)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text-inverse)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
+              >
                 <LogOut size={20} />
               </span>
             </li>

@@ -126,17 +126,17 @@ export const TopBar = () => {
   }, []);
 
   if (!context) {
-    // 如果没有 context，返回基本布局
+    // 如果没有 context，返回基本布局（透明背景，显示全局渐变）
     return (
-      <div className="fixed top-0 left-0 right-0 z-30 bg-[#efeeeb] border-b border-gray-200/50">
+      <div className="fixed top-0 left-0 right-0 z-30 bg-transparent">
         <div className="w-full flex items-center justify-between gap-4 pl-4 pr-4 py-3">
           <div className="flex items-center gap-3 flex-shrink-0">
-            <Sparkles className="h-8 w-8 text-gray-700" />
-            <span className="text-2xl font-bold text-gray-800">BulletAI</span>
+            <Sparkles className="h-8 w-8" style={{ color: 'var(--color-text-secondary)' }} />
+            <span className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>BulletAI</span>
             {currentPage === 'home' && username && (
               <>
-                <span className="text-gray-400 mx-1">|</span>
-                <span className="text-2xl font-bold text-gray-800">你好，{username}</span>
+                <span className="mx-1" style={{ color: 'var(--color-text-secondary)' }}>|</span>
+                <span className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>你好，{username}</span>
               </>
             )}
           </div>
@@ -201,23 +201,24 @@ export const TopBar = () => {
   const showButtons = currentPage !== 'home';
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-30 bg-[#efeeeb] border-b border-gray-200/50 h-16">
+    // 顶部栏使用透明背景，让 body 的渐变透出来
+    <div className="fixed top-0 left-0 right-0 z-30 h-16 bg-transparent">
       <div className="w-full flex items-center justify-between gap-4 h-full pl-4 pr-4">
         {/* 左侧：Logo 和页面名称 */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <Sparkles className="h-8 w-8 text-gray-700" />
-          <span className="text-2xl font-bold text-gray-800">BulletAI</span>
+          <Sparkles className="h-8 w-8" style={{ color: 'var(--color-text-secondary)' }} />
+          <span className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>BulletAI</span>
           {currentPage === 'home' && username ? (
             <>
-              <span className="text-gray-400 mx-1">|</span>
-              <span className="text-2xl font-bold text-gray-800">你好，{username}</span>
+              <span className="mx-1" style={{ color: 'var(--color-text-secondary)' }}>|</span>
+              <span className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>你好，{username}</span>
             </>
           ) : (
             pageInfo.icon && (
               <>
-                <span className="text-gray-400 mx-1">|</span>
+                <span className="mx-1" style={{ color: 'var(--color-text-secondary)' }}>|</span>
                 {pageInfo.icon}
-                <h2 className="text-2xl font-bold text-gray-800">{pageInfo.title}</h2>
+                <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>{pageInfo.title}</h2>
               </>
             )
           )}

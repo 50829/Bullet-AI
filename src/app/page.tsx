@@ -95,7 +95,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
           <Sparkles className="h-6 w-6 text-gray-700" />
         </div>
-        <span className="text-xl font-bold text-[#003049]">BulletAI</span>
+        <span className="text-xl font-bold text-theme-primary">BulletAI</span>
       </div>
 
       {/* 保留语言切换在右上角 */}
@@ -129,7 +129,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
       {/* 修改：增加 min-height 和 pt 值，让 Hero 部分更高，内容往下挪，同时让下方标题露出一半 */}
       <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto pt-12 pb-20 min-h-[75vh]"> {/* 调整：min-h-[75vh] 和 pt-12 */}
         {/* 新增：原来的黑色大标题，居中放置 */}
-        <h1 className={`text-6xl md:text-7xl font-bold text-[#003049] tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <h1 className={`text-6xl md:text-7xl font-bold text-theme-primary tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
         {t("heroTitle")}
         </h1>
         
@@ -214,7 +214,7 @@ const FeaturesSection = () => {
     <section className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-[#003049]">{t("coreFeatures")}</h2>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-theme-primary">{t("coreFeatures")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("featuresDescription")}</p>
         </div>
 
@@ -244,7 +244,7 @@ const FeaturesSection = () => {
                       </div>
                     </div>
                     {/* 标题 */}
-                    <h3 className="text-3xl md:text-4xl font-bold text-[#003049] mb-4">
+                    <h3 className="text-3xl md:text-4xl font-bold text-theme-primary mb-4">
                       {feature.title}
                     </h3>
                     {/* 描述 */}
@@ -339,7 +339,7 @@ const PricingSection = () => {
     <section ref={sectionRef} className={`py-20 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className={`lg:col-span-1 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight whitespace-pre-line text-[#003049]">{t("suitableForEveryone")}</h2>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight whitespace-pre-line text-theme-primary">{t("suitableForEveryone")}</h2>
           <p className="mt-4 text-xl text-gray-600 whitespace-pre-line">{t("pricingDescription")}</p>
         </div>
         <div className="lg:col-span-2 flex items-center justify-center">
@@ -364,7 +364,7 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
 
   return (
     <div className="flex flex-col p-0 rounded-2xl shadow-none w-full">
-      <h3 className="text-4xl font-bold text-[#003049]">{name}</h3>
+      <h3 className="text-4xl font-bold text-theme-primary">{name}</h3>
       <p className="mt-2 text-gray-600">{description}</p>
       <ul className="mt-8 space-y-4 flex-grow">
         {features.map((feature, index) => (
@@ -425,7 +425,7 @@ const CallToActionSection = () => {
     <section ref={sectionRef} className={`py-4 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-4xl mx-auto">
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-12 rounded-3xl text-center shadow-lg hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-[#003049]">{t("startYourStory")}</h2>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-theme-primary">{t("startYourStory")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("storyDescription")}</p>
           <button 
             onClick={goToLogin}
@@ -476,9 +476,9 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
             <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
                 <Sparkles className="h-6 w-6 text-gray-700"/>
             </div>
-            <span className="font-bold text-xl text-[#003049]">BulletAI</span>
+            <span className="font-bold text-xl text-theme-primary">BulletAI</span>
           </div>
-          <p className="mt-2 text-sm text-center sm:text-left text-[#003049]">{t("copyright")}</p>
+          <p className="mt-2 text-sm text-center sm:text-left text-theme-primary">{t("copyright")}</p>
         </div>
         <div className={`mt-8 sm:mt-0 text-center sm:text-right transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <button

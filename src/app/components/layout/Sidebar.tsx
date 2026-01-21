@@ -30,22 +30,53 @@ const NavItem = ({ page, icon, label, onClick, className, style }: NavItemProps)
     }
   };
 
+  const liStyle: React.CSSProperties = {
+    ...style,
+    // 非激活：填充侧边栏主色；激活：使用接近页面大背景的颜色，营造“挖空”效果
+    backgroundColor: isActive ? 'var(--color-bg-primary)' : 'var(--color-primary)',
+  };
+
   return (
     <li
       className={`flex items-center justify-center p-3 cursor-pointer rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform ${
         isActive 
-          ? 'bg-[#efeeeb] scale-105 shadow-md' 
-          : 'bg-[#003049] hover:bg-[#003049]/90 hover:scale-105 active:scale-95'
+          ? 'scale-105 shadow-md' 
+          : 'hover:opacity-90 hover:scale-105 active:scale-95'
       } ${className || ''}`}
       onClick={handleClick}
       title={label}
-      style={style}
+      style={{
+        ...liStyle,
+      }}
+      onMouseEnter={(e) => {
+        if (!isActive) {
+          e.currentTarget.style.opacity = '0.9';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isActive) {
+          e.currentTarget.style.opacity = '1';
+        }
+      }}
     >
-      <span className={`transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-        isActive 
-          ? 'text-[#003049] scale-110' 
-          : 'text-[#6c757d] hover:text-white'
-      }`}>
+      <span 
+        className={`transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          isActive ? 'scale-110' : ''
+        }`}
+        style={{
+          color: isActive ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+        }}
+        onMouseEnter={(e) => {
+          if (!isActive) {
+            e.currentTarget.style.color = 'var(--color-text-inverse)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isActive) {
+            e.currentTarget.style.color = 'var(--color-text-secondary)';
+          }
+        }}
+      >
         {icon}
       </span>
     </li>
@@ -116,9 +147,12 @@ export const Sidebar = () => {
             />
             
             {/* 侧边栏内容 */}
-            <aside className={`fixed top-20 left-4 bg-[#003049] rounded-[32px] p-3 z-50 shadow-lg lg:hidden transform transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
-            }`}>
+            <aside 
+              className={`fixed top-20 left-4 rounded-[32px] p-3 z-50 shadow-lg lg:hidden transform transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
+              }`}
+              style={{ backgroundColor: 'var(--color-primary)' }}
+            >
               <nav>
                 <ul className="space-y-2">
                   {navItems.map((item, index) => (
@@ -143,7 +177,10 @@ export const Sidebar = () => {
 
   // 桌面端正常显示的侧边栏
   return (
-    <aside className="fixed left-4 top-20 bg-[#003049] rounded-[32px] p-3 shadow-lg hidden lg:block z-30">
+    <aside 
+      className="fixed left-4 top-20 rounded-[32px] p-3 shadow-lg hidden lg:block z-30"
+      style={{ backgroundColor: 'var(--color-primary)' }}
+    >
       <nav>
         <ul className="space-y-2">
           {navItems.map((item) => (

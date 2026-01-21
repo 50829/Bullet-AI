@@ -77,10 +77,10 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#efeeeb] text-[#003049] relative">
+    <main className="min-h-screen flex items-center justify-center relative bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
       <div className="bg-transparent rounded-3xl p-8 text-center w-full max-w-md mx-4">
         {/* 移除了语言切换按钮 */}
-        <h1 className="text-3xl font-bold text-[#003049] mb-6">{t("loginTitle")}</h1>
+        <h1 className="text-3xl font-bold mb-6 text-[var(--color-text-primary)]">{t("loginTitle")}</h1>
 
         {/* Google 登录 */}
         <button
@@ -120,7 +120,7 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-[#003049] rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-[#003049]"
+            className="w-full border border-[#003049] rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-theme-primary"
             placeholder={t("emailPlaceholder")}
             disabled={loading}
           />
@@ -130,7 +130,7 @@ export default function LoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-[#003049] rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-[#003049]"
+            className="w-full border border-[#003049] rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-theme-primary"
             placeholder={t("passwordPlaceholder")}
             disabled={loading}
           />
