@@ -55,7 +55,7 @@ export const HabitModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-[#efeeeb] rounded-[28px] p-6 w-full max-w-md shadow-xl transform transition-transform duration-200">
+      <div className="rounded-[28px] p-6 w-full max-w-md shadow-xl transform transition-transform duration-200" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
         <h2 className="text-2xl font-bold mb-4">{t("newHabit") || "新建习惯"}</h2>
 
         <label className="block text-sm text-gray-600 mb-1">{t("habitName") || "习惯名称 *"}</label>

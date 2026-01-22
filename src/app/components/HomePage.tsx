@@ -183,7 +183,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* 左侧：近一周的记录 */}
           <div className="lg:col-span-3">
-            <Card className="bg-gray-100 p-4 rounded-[28px]">
+            <Card className="p-4 rounded-[28px]" style={{ backgroundColor: 'var(--color-item-card, rgba(243, 244, 246, 1))', border: 'none' }}>
               <div className="mb-4">
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                   <Camera size={20} />
@@ -203,7 +203,8 @@ export default function HomePage() {
                     return (
                       <Card 
                         key={dayCard.date} 
-                        className="bg-white/80 p-4 rounded-[28px] shadow-md"
+                        className="p-4 rounded-[28px] shadow-md"
+                        style={{ backgroundColor: 'var(--color-item-card, rgba(255, 255, 255, 0.8))', border: 'none' }}
                       >
                         <div className="flex flex-col gap-4">
                           {/* 日期标题 - 带折叠按钮 */}
@@ -265,7 +266,7 @@ export default function HomePage() {
 
           {/* 右侧：上半部分 - 习惯面板 */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-gray-200">
+            <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg" style={{ border: 'none' }}>
               <div className="mb-4">
                 <h3 className="text-xl font-bold text-gray-800">{t("myHabits") || "我的习惯"}</h3>
               </div>
@@ -282,9 +283,10 @@ export default function HomePage() {
                     return (
                       <div
                         key={habit.id}
-                        className={`group bg-white/80 p-5 rounded-2xl shadow-md border border-gray-200 ${
+                        className={`group p-5 rounded-2xl shadow-md border border-gray-200 ${
                           isChecked ? 'bg-gradient-to-r from-orange-200/80 to-yellow-100/80' : ''
                         }`}
+                        style={!isChecked ? { backgroundColor: 'var(--color-item-card, rgba(255, 255, 255, 0.8))' } : {}}
                       >
                         <div className="flex justify-between items-center">
                           <div className="flex-1">
@@ -318,7 +320,8 @@ export default function HomePage() {
                             ) : (
                               <Button
                                 onClick={() => handleCheckin(habit.id)}
-                                className="px-6 py-2 text-sm rounded-3xl border-2 border-[#003049] bg-[#003049] text-white hover:bg-white hover:text-[#003049] transition-colors duration-200"
+                                className="px-6 py-2 text-sm rounded-3xl border-2 border-[#003049] bg-[#003049] hover:bg-white hover:text-[#003049] transition-colors duration-200"
+                                style={{ color: 'var(--color-text-on-primary)' }}
                               >
                                 {t("checkin") || "打卡"}
                               </Button>

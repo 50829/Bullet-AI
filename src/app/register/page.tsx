@@ -1,6 +1,6 @@
 // RegisterPage.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { useLanguage } from '../context/LanguageContext';
@@ -13,6 +13,13 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  // 确保注册页始终使用经典配色
+  useEffect(() => {
+    const root = document.documentElement;
+    // 移除所有主题类
+    root.className = root.className.split(' ').filter(cls => !cls.startsWith('theme-')).join(' ').trim();
+  }, []);
 
   // 检查密码是否匹配
   const isPasswordMatch = password === confirmPassword && password !== "";

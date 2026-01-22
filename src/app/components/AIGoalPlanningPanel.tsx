@@ -242,7 +242,8 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
                           }
                         }}
                         disabled={isAdding}
-                        className="mt-3 w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-3xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                        className="mt-3 w-full px-4 py-2 bg-theme-gradient rounded-3xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                        style={{ color: 'var(--color-text-on-primary)' }}
                       >
                         {isAdding ? (t("adding") || "添加中...") : (t("addToMigrationList") || "一键添加到迁移列表")}
                       </button>
@@ -276,7 +277,8 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
             <button
               onClick={sendMessage}
               disabled={isLoading || !input.trim()}
-              className="p-3 rounded-3xl bg-[#003049] text-white border-2 border-[#003049] hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="p-3 rounded-3xl bg-theme-primary border-2 border-theme-primary hover:opacity-90 transition-opacity disabled:opacity-50"
+              style={{ color: 'var(--color-text-on-primary)' }}
             >
               <Send size={20} />
             </button>

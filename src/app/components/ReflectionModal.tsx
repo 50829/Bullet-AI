@@ -102,7 +102,7 @@ export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-[#efeeeb] rounded-[28px] p-6 w-full max-w-xl shadow-xl">
+      <div className="rounded-[28px] p-6 w-full max-w-xl shadow-xl" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
         <h2 className="text-2xl font-bold mb-4">{t("newReflection") || "记录新感悟"}</h2>
 
         <label className="block text-sm text-gray-600 mb-1">{t("content") || "内容 *"}</label>

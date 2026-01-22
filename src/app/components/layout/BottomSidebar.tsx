@@ -120,14 +120,14 @@ export const BottomSidebar = () => {
     <>
       <aside
         className="fixed left-4 bottom-20 rounded-[32px] p-3 shadow-lg hidden lg:block z-30"
-        style={{ backgroundColor: 'var(--color-primary)' }}
+        style={{ backgroundColor: 'var(--color-sidebar, var(--color-primary))' }}
       >
         <nav>
           <ul className="space-y-2">
             {/* 设置按钮 */}
             <li
               className="flex items-center justify-center p-3 cursor-pointer rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform hover:scale-105 active:scale-95"
-              style={{ backgroundColor: 'var(--color-primary)' }}
+              style={{ backgroundColor: 'var(--color-sidebar, var(--color-primary))' }}
               onClick={handleSettingsClick}
               title={t("settings") || "设置"}
             >
@@ -144,7 +144,7 @@ export const BottomSidebar = () => {
             {/* 退出登录按钮 */}
             <li
               className="flex items-center justify-center p-3 cursor-pointer rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform hover:scale-105 active:scale-95"
-              style={{ backgroundColor: 'var(--color-primary)' }}
+              style={{ backgroundColor: 'var(--color-sidebar, var(--color-primary))' }}
               onClick={handleLogoutClick}
               title={t("logout") || "退出登录"}
             >

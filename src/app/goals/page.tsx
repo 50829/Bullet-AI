@@ -322,7 +322,7 @@ export default function GoalsPage() {
               
               {/* 右侧目标列表 */}
               <div className="lg:h-[520px]">
-                <Card className="bg-white/80 rounded-[28px] relative lg:h-full flex flex-col min-h-[400px]">
+                <Card className="bg-theme-card rounded-[28px] relative lg:h-full flex flex-col min-h-[400px]" style={{ backgroundColor: 'var(--color-task-panel-card, var(--color-bg-card))', border: 'none' }}>
                   {/* 标题和切换按钮 */}
                   <div className="mb-4 flex items-center justify-between flex-shrink-0">
                     <h3 className="text-2xl font-semibold text-theme-primary">
@@ -336,7 +336,17 @@ export default function GoalsPage() {
                       onClick={() => {
                         setRightViewMode(prev => prev === "migration" ? "schedule" : "migration");
                       }}
-                      className="p-2 rounded-2xl bg-white/60 hover:bg-white/80 text-theme-primary hover:text-theme-primary transition-all duration-200 flex items-center gap-2"
+                      className="p-2 rounded-2xl text-theme-primary hover:text-theme-primary transition-all duration-200 flex items-center gap-2"
+                      style={{ 
+                        backgroundColor: 'var(--color-task-panel-card, var(--color-bg-card))',
+                        opacity: 0.8
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '0.8';
+                      }}
                       title={t("switchPanel") || "切换面板"}
                     >
                       <RefreshCw size={18} />
@@ -358,9 +368,13 @@ export default function GoalsPage() {
                           return (
                             <div
                               key={goal.id}
-                              className={`group bg-[#efeeeb] p-5 rounded-[28px] ${
+                              className={`group p-5 rounded-[28px] ${
                                 isCompleted ? 'opacity-75' : ''
                               }`}
+                              style={{ 
+                                backgroundColor: 'var(--color-modal-card, #efeeeb)',
+                                border: '2px solid var(--color-task-card-border, transparent)'
+                              }}
                             >
                               <div className="flex justify-between items-center gap-4">
                                 {!isCompleted && (
@@ -410,7 +424,8 @@ export default function GoalsPage() {
                                           alert(err instanceof Error ? err.message : t("migrateFailed") || "迁移失败");
                                         }
                                       }}
-                                      className="p-2 rounded-2xl bg-[#003049] hover:bg-[#003049]/90 text-white transition-colors duration-200 flex items-center justify-center"
+                                      className="p-2 rounded-2xl bg-theme-primary hover:bg-theme-primary-hover transition-colors duration-200 flex items-center justify-center"
+                                      style={{ color: 'var(--color-text-on-primary)' }}
                                       title={t("migrate") || "迁移"}
                                     >
                                       <ArrowRight size={18} />
@@ -462,9 +477,13 @@ export default function GoalsPage() {
                           return (
                             <div
                               key={goal.id}
-                              className={`group bg-[#efeeeb] p-5 rounded-[28px] ${
+                              className={`group p-5 rounded-[28px] ${
                                 isCompleted ? 'opacity-75' : ''
                               }`}
+                              style={{ 
+                                backgroundColor: 'var(--color-modal-card, #efeeeb)',
+                                border: '2px solid var(--color-task-card-border, transparent)'
+                              }}
                             >
                               <div className="flex justify-between items-center gap-4">
                                 {!isCompleted && (
@@ -513,7 +532,8 @@ export default function GoalsPage() {
                                           alert(err instanceof Error ? err.message : t("moveBackFailed") || "迁回失败");
                                         }
                                       }}
-                                      className="p-2 rounded-2xl bg-[#003049] hover:bg-[#003049]/90 text-white transition-colors duration-200 flex items-center justify-center"
+                                      className="p-2 rounded-2xl bg-theme-primary hover:bg-theme-primary-hover transition-colors duration-200 flex items-center justify-center"
+                                      style={{ color: 'var(--color-text-on-primary)' }}
                                       title={t("moveBack") || "迁回"}
                                     >
                                       <ArrowLeft size={18} />
@@ -551,7 +571,7 @@ export default function GoalsPage() {
 
             {/* 我的习惯卡片 - 放在日历下方 */}
             <div className="mt-6">
-              <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg border border-gray-200">
+              <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg" style={{ border: 'none' }}>
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-xl font-bold text-gray-800">{t("myHabits") || "我的习惯"}</h3>
                   <Button onClick={() => setIsHabitModalOpen(true)} className="border-2 border-transparent hover:!border-gray-800">
@@ -573,11 +593,12 @@ export default function GoalsPage() {
                       return (
                         <div
                           key={habit.id}
-                          className={`group bg-white/80 p-5 rounded-2xl shadow-md border border-gray-200 ${
+                          className={`group p-5 rounded-2xl shadow-md border border-gray-200 ${
                             isToday 
                               ? 'bg-gradient-to-r from-orange-200/80 to-yellow-100/80' 
                               : ''
                           }`}
+                          style={!isToday ? { backgroundColor: 'var(--color-item-card, rgba(255, 255, 255, 0.8))' } : {}}
                         >
                               <div className="flex justify-between items-center">
                             <div className="flex-1">
@@ -628,7 +649,8 @@ export default function GoalsPage() {
                               ) : (
                                 <Button
                                   onClick={() => handleCheckin(habit.id)}
-                                  className="px-6 py-2 text-sm rounded-3xl border-2 border-[#003049] bg-[#003049] text-white hover:bg-white hover:text-[#003049] transition-colors duration-200"
+                                  className="px-6 py-2 text-sm rounded-3xl border-2 border-[#003049] bg-[#003049] hover:bg-white hover:text-[#003049] transition-colors duration-200"
+                                  style={{ color: 'var(--color-text-on-primary)' }}
                                 >
                                   {t("checkin") || "打卡"}
                                 </Button>
@@ -662,7 +684,7 @@ export default function GoalsPage() {
 
       {showConfirm && selectedItem && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-[#efeeeb] p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4">
+          <div className="p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
             <h2 className="text-xl font-semibold mb-4 text-center text-gray-700">
               {t("confirmDelete")} {selectedItem.name} {selectedItem.type === 'goal' ? t("goal") : t("habit")}{t("questionMark") || "吗？"}
             </h2>
@@ -675,12 +697,12 @@ export default function GoalsPage() {
                   setShowConfirm(false);
                   setSelectedItem(null);
                 }}
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-black bg-white text-black hover:bg-black hover:text-white hover:border-black text-base"
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-black bg-transparent text-black hover:bg-black hover:text-[var(--color-text-inverse)] hover:border-black text-base"
               >
                 {t("cancel") || "取消"}
               </button>
               <button
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 text-base"
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-[var(--color-text-inverse)] hover:border-red-500 text-base"
                 onClick={handleDelete}
               >
                 {t("confirm") || "确认删除"}

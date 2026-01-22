@@ -267,7 +267,7 @@ export default function ReflectionsPage() {
             <div className="space-y-6">
               {/* 新建感悟卡片 - 显示在列表顶部 */}
               {isCreatingNew && (
-                <Card className="bg-gray-100 p-6 rounded-[28px] w-full max-w-3xl mx-auto">
+                <Card className="p-6 rounded-[28px] w-full max-w-3xl mx-auto" style={{ backgroundColor: 'var(--color-modal-card, #f3f4f6)', border: 'none' }}>
                   <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-xl font-semibold text-gray-700">{t("newReflection") || "记录新感悟"}</h3>
@@ -383,7 +383,8 @@ export default function ReflectionsPage() {
                   return (
                     <Card 
                       key={reflection.id} 
-                      className="group bg-white/80 p-4 rounded-[28px] w-full max-w-3xl mx-auto"
+                      className="group p-4 rounded-[28px] w-full max-w-3xl mx-auto"
+                      style={{ backgroundColor: 'var(--color-item-card, rgba(255, 255, 255, 0.8))', border: 'none' }}
                     >
                       <div className="flex flex-col gap-4">
                         <div className="min-w-0">
@@ -468,7 +469,7 @@ export default function ReflectionsPage() {
       {/* 修改确认对话框 - 确保在 selectedReflection 存在时才渲染 */}
       {showConfirm && selectedReflection && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-[#efeeeb] p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4">
+          <div className="p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
             <h2 className="text-xl font-semibold mb-4 text-center text-gray-700">
               {t("confirmDelete") || "确认删除这条感悟吗？"}
             </h2>
@@ -481,12 +482,12 @@ export default function ReflectionsPage() {
                   setShowConfirm(false); 
                   setSelectedReflection(null); // 点击取消也清除选中项
                 }}
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-[#003049] bg-white text-[#003049] hover:bg-[#003049] hover:text-white hover:border-[#003049] text-base"
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-[#003049] bg-transparent text-[#003049] hover:bg-[#003049] hover:text-[var(--color-text-on-primary)] hover:border-[#003049] text-base"
               >
                 {t("cancel") || "取消"}
               </button>
               <button 
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 text-base" 
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-[var(--color-text-inverse)] hover:border-red-500 text-base" 
                 onClick={handleDelete} // 点击后立即关闭面板
               >
                 {t("confirm") || "确认删除"}

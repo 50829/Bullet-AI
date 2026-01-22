@@ -1,6 +1,6 @@
 // app/login/page.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient"; // 更新路径
 import { useLanguage } from '../context/LanguageContext'; // 更新路径
@@ -12,6 +12,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  // 确保登录页始终使用经典配色
+  useEffect(() => {
+    const root = document.documentElement;
+    // 移除所有主题类
+    root.className = root.className.split(' ').filter(cls => !cls.startsWith('theme-')).join(' ').trim();
+  }, []);
 
   const getOrigin = () =>
     typeof window !== "undefined"

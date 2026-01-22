@@ -261,7 +261,13 @@ export default function MomentsPage() {
                   return (
                     <Card 
                       key={monthCard.month} 
-                      className="bg-gray-100 p-4 rounded-[28px] w-full max-w-3xl mx-auto"
+                      className="p-4 rounded-[28px] w-full max-w-3xl mx-auto"
+                      style={{ 
+                        backgroundColor: 'var(--color-month-card-bg, rgba(243, 244, 246, 1))',
+                        backdropFilter: 'blur(25px)',
+                        WebkitBackdropFilter: 'blur(25px)',
+                        border: 'none'
+                      }}
                     >
                       <div className="flex flex-col gap-4">
                         {/* 月份标题 - 带折叠按钮 */}
@@ -291,7 +297,8 @@ export default function MomentsPage() {
                               return (
                                 <Card 
                                   key={dayCard.date} 
-                                  className="bg-white/80 p-4 rounded-[28px] shadow-md"
+                                  className="p-4 rounded-[28px] shadow-md"
+                                  style={{ backgroundColor: 'var(--color-item-card, rgba(255, 255, 255, 0.8))' }}
                                 >
                                   <div className="flex flex-col gap-4">
                                     {/* 日期标题 - 带折叠按钮 */}
@@ -379,7 +386,7 @@ export default function MomentsPage() {
       {/* 修改确认对话框 - 确保在 selectedMoment 存在时才渲染 */}
       {showConfirm && selectedMoment && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-[#efeeeb] p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4">
+          <div className="p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
             <h2 className="text-xl font-semibold mb-4 text-center text-gray-700">{t("confirmDelete") || "确认删除这条时刻吗？"}</h2>
             <p className="text-gray-600 text-base mb-4 text-center">{t("cannotRecover") || "删除后不可恢复"}</p>
             <div className="flex justify-center space-x-3">
@@ -388,12 +395,12 @@ export default function MomentsPage() {
                   setShowConfirm(false); 
                   setSelectedMoment(null); // 点击取消也清除选中项
                 }}
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-[#003049] bg-white text-[#003049] hover:bg-[#003049] hover:text-white hover:border-[#003049] text-base"
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-[#003049] bg-transparent text-[#003049] hover:bg-[#003049] hover:text-[var(--color-text-on-primary)] hover:border-[#003049] text-base"
               >
                 {t("cancel") || "取消"}
               </button>
               <button 
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 text-base" 
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-[var(--color-text-inverse)] hover:border-red-500 text-base" 
                 onClick={handleDelete} // 点击后立即关闭面板
               >
                 {t("confirm") || "确认删除"}

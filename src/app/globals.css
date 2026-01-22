@@ -110,9 +110,9 @@
   --color-primary-hover: #0a0806;
   --color-primary-light: #13100d/90;
   --color-bg-primary: #cad8e5;
-  --color-bg-card: #bdcde8;
+  --color-bg-card: #D8E2EE;
   --color-text-primary: #13100d;
-  --color-accent: #8ca4dc;
+  --color-accent: #cad8e5;
   --color-success: #b2ff9e;
   /* 背景渐变 */
   --bg-gradient: linear-gradient(135deg, #8ca4dc 0%, #cad8e5 100%);
@@ -120,6 +120,26 @@
   /* 天空主题下的专用面板颜色（例如日历、今日待办） */
   --color-panel-primary: #6899fa;
   --color-panel-text: #cad8e5;
+  
+  /* 天空主题下的侧边栏和任务面板颜色 */
+  --color-sidebar: #D8E2EE;
+  --color-task-panel-card: #D8E2EE;
+  
+  /* 天空主题下的习惯/记录/感悟卡片颜色 */
+  --color-item-card: #D8E2EE;
+  
+  /* 天空主题下的新建/删除面板和任务卡片颜色（与设置面板同款） */
+  --color-modal-card: var(--color-bg-card);
+  
+  /* 天空主题下的任务卡片边框颜色（与日历选中日期相同） */
+  --color-task-card-border: var(--color-accent);
+  
+  /* 天空主题下的月度记录卡片样式 */
+  --color-month-card-bg: rgba(216, 226, 238, 0.6);
+  --color-month-card-border: rgba(202, 216, 229, 0.3);
+  
+  /* 天空主题下的按钮文字颜色（主色是深色，文字应该是白色，但在浅色背景上应该是深色） */
+  --color-text-on-primary: #ffffff;
 }
 
 @theme inline {
@@ -264,6 +284,11 @@ body {
 
 .hover-theme-accent:hover {
   color: var(--color-accent);
+}
+
+/* 渐变背景工具类 */
+.bg-theme-gradient {
+  background: var(--bg-gradient, linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%));
 }
 
 /* 过渡动画 */

@@ -33,7 +33,7 @@ const NavItem = ({ page, icon, label, onClick, className, style }: NavItemProps)
   const liStyle: React.CSSProperties = {
     ...style,
     // 非激活：填充侧边栏主色；激活：使用接近页面大背景的颜色，营造“挖空”效果
-    backgroundColor: isActive ? 'var(--color-bg-primary)' : 'var(--color-primary)',
+    backgroundColor: isActive ? 'var(--color-bg-primary)' : 'var(--color-sidebar, var(--color-primary))',
   };
 
   return (
@@ -151,7 +151,7 @@ export const Sidebar = () => {
               className={`fixed top-20 left-4 rounded-[32px] p-3 z-50 shadow-lg lg:hidden transform transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                 isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
               }`}
-              style={{ backgroundColor: 'var(--color-primary)' }}
+              style={{ backgroundColor: 'var(--color-sidebar, var(--color-primary))' }}
             >
               <nav>
                 <ul className="space-y-2">
@@ -179,7 +179,7 @@ export const Sidebar = () => {
   return (
     <aside 
       className="fixed left-4 top-20 rounded-[32px] p-3 shadow-lg hidden lg:block z-30"
-      style={{ backgroundColor: 'var(--color-primary)' }}
+      style={{ backgroundColor: 'var(--color-sidebar, var(--color-primary))' }}
     >
       <nav>
         <ul className="space-y-2">

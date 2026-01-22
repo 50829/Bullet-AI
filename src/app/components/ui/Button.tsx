@@ -22,7 +22,7 @@ export const Button = ({ children, onClick, variant = 'primary', className = '',
         };
       case 'secondary':
         return {
-          backgroundColor: 'var(--color-bg-surface)',
+          backgroundColor: 'transparent',
           color: 'var(--color-text-primary)',
           borderColor: 'var(--color-primary)',
         };
@@ -40,11 +40,14 @@ export const Button = ({ children, onClick, variant = 'primary', className = '',
   const variantStyles = getVariantStyles();
   const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
 
+  // 移除className中的text-white，确保使用style中的颜色
+  const cleanedClassName = className.replace(/\btext-white\b/g, '');
+  
   return (
     <button 
       onClick={onClick} 
       disabled={disabled} 
-      className={`${baseClasses} border-2 ${disabledClasses} ${className}`}
+      className={`${baseClasses} border-2 ${disabledClasses} ${cleanedClassName}`}
       style={variantStyles}
       onMouseEnter={(e) => {
         if (!disabled && variant === 'primary') {
