@@ -298,7 +298,7 @@ export default function MomentsPage() {
                                 <Card 
                                   key={dayCard.date} 
                                   className="p-4 rounded-[28px] shadow-md"
-                                  style={{ backgroundColor: 'var(--color-item-card, rgba(255, 255, 255, 0.8))' }}
+                                  style={{ backgroundColor: 'var(--color-item-card, rgba(255, 255, 255, 0.8))', border: 'none' }}
                                 >
                                   <div className="flex flex-col gap-4">
                                     {/* 日期标题 - 带折叠按钮 */}
@@ -313,7 +313,7 @@ export default function MomentsPage() {
                                           <ChevronUp size={14} className="text-gray-600" />
                                         )}
                                       </button>
-                                      <h3 className="text-lg font-semibold text-gray-700 flex-1">{dayCard.dateDisplay}</h3>
+                                      <h3 className="text-lg font-semibold text-[var(--color-text-primary)] flex-1">{dayCard.dateDisplay}</h3>
                                     </div>
                                     
                                     {/* 该天的所有时刻内容 */}
@@ -343,7 +343,7 @@ export default function MomentsPage() {
                                             {/* 文字内容 */}
                                             {moment.content && (
                                               <div className="min-w-0 pr-8">
-                                                <p className="text-lg text-gray-700 whitespace-pre-line">
+                                                <p className="text-lg text-[var(--color-text-primary)] whitespace-pre-line">
                                                   {moment.content}
                                                 </p>
                                               </div>
@@ -387,15 +387,15 @@ export default function MomentsPage() {
       {showConfirm && selectedMoment && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
-            <h2 className="text-xl font-semibold mb-4 text-center text-gray-700">{t("confirmDelete") || "确认删除这条时刻吗？"}</h2>
-            <p className="text-gray-600 text-base mb-4 text-center">{t("cannotRecover") || "删除后不可恢复"}</p>
+            <h2 className="text-xl font-semibold mb-4 text-center text-[var(--color-text-primary)]">{t("confirmDelete") || "确认删除这条时刻吗？"}</h2>
+            <p className="text-[var(--color-text-secondary)] text-base mb-4 text-center">{t("cannotRecover") || "删除后不可恢复"}</p>
             <div className="flex justify-center space-x-3">
               <button 
                 onClick={() => { 
                   setShowConfirm(false); 
                   setSelectedMoment(null); // 点击取消也清除选中项
                 }}
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-[#003049] bg-transparent text-[#003049] hover:bg-[#003049] hover:text-[var(--color-text-on-primary)] hover:border-[#003049] text-base"
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-[#003049] bg-transparent text-[var(--color-text-primary)] hover:bg-[#003049] hover:text-[var(--color-text-on-primary)] hover:border-[#003049] text-base"
               >
                 {t("cancel") || "取消"}
               </button>

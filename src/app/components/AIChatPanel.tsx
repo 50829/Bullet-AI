@@ -136,7 +136,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
               className={`max-w-[80%] p-3 rounded-3xl backdrop-blur-md ${
                 message.role === 'user'
                   ? 'bg-gradient-to-r from-blue-500/80 to-purple-500/80 text-white shadow-lg'
-                  : 'bg-gradient-to-r from-orange-200/60 to-yellow-100/60 text-gray-800 shadow-lg'
+                  : 'bg-gradient-to-r from-orange-200/60 to-yellow-100/60 text-[var(--color-text-primary)] shadow-lg'
               }`}
             >
               <p className="text-base leading-relaxed whitespace-pre-wrap">{message.content}</p>
@@ -146,7 +146,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
         {isLoading && (
           <div className="flex justify-start">
             <div className="bg-gradient-to-r from-orange-200/60 to-yellow-100/60 backdrop-blur-md p-3 rounded-3xl max-w-[80%] shadow-lg">
-              <p className="text-base text-gray-800">{t("aiThinking") || "思考中..."}</p>
+              <p className="text-base text-[var(--color-text-primary)]">{t("aiThinking") || "思考中..."}</p>
             </div>
           </div>
         )}
@@ -161,7 +161,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={t("aiInputPlaceholder") || "输入你的想法..."}
-            className="flex-1 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded-lg text-lg text-gray-700"
+            className="flex-1 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded-lg text-lg text-[var(--color-text-primary)]"
             disabled={isLoading}
           />
           <button

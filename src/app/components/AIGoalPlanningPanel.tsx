@@ -192,7 +192,7 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
                 className={`max-w-[80%] p-3 rounded-3xl backdrop-blur-md ${
                   message.role === 'user'
                     ? 'bg-gradient-to-r from-blue-500/80 to-purple-500/80 text-white shadow-lg'
-                    : 'bg-gradient-to-r from-orange-200/60 to-yellow-100/60 text-gray-800 shadow-lg'
+                    : 'bg-gradient-to-r from-orange-200/60 to-yellow-100/60 text-[var(--color-text-primary)] shadow-lg'
                 }`}
               >
                 <p className="text-base leading-relaxed whitespace-pre-wrap">{message.content}</p>
@@ -204,7 +204,7 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
                     
                     {message.planData.daily && message.planData.daily.length > 0 && (
                       <div className="mb-3">
-                        <h5 className="font-medium text-xs text-gray-600 mb-1">{t("todayTasks") || "今日待办"} ({message.planData.daily.length})</h5>
+                        <h5 className="font-medium text-xs text-[var(--color-text-secondary)] mb-1">{t("todayTasks") || "今日待办"} ({message.planData.daily.length})</h5>
                         <ul className="text-xs space-y-1">
                           {message.planData.daily.map((task, index) => (
                             <li key={index} className="flex">
@@ -218,7 +218,7 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
 
                     {message.planData.future && message.planData.future.length > 0 && (
                       <div>
-                        <h5 className="font-medium text-xs text-gray-600 mb-1">{t("recentGoals") || "近期目标"} ({message.planData.future.length})</h5>
+                        <h5 className="font-medium text-xs text-[var(--color-text-secondary)] mb-1">{t("recentGoals") || "近期目标"} ({message.planData.future.length})</h5>
                         <ul className="text-xs space-y-1">
                           {message.planData.future.map((task, index) => (
                             <li key={index} className="flex">
@@ -256,7 +256,7 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
           {isLoading && (
             <div className="flex justify-start">
               <div className="bg-gradient-to-r from-orange-200/60 to-yellow-100/60 backdrop-blur-md p-3 rounded-xl max-w-[80%] shadow-lg">
-                <p className="text-base text-gray-800">{t("aiThinking") || "思考中..."}</p>
+                <p className="text-base text-[var(--color-text-primary)]">{t("aiThinking") || "思考中..."}</p>
               </div>
             </div>
           )}
@@ -271,7 +271,7 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={t("aiGoalInputPlaceholder") || "输入你想完成的大目标..."}
-              className="flex-1 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded-lg text-lg text-gray-700"
+              className="flex-1 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 rounded-lg text-lg text-[var(--color-text-primary)]"
               disabled={isLoading}
             />
             <button

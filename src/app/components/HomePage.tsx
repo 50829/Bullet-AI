@@ -185,7 +185,7 @@ export default function HomePage() {
           <div className="lg:col-span-3">
             <Card className="p-4 rounded-[28px]" style={{ backgroundColor: 'var(--color-item-card, rgba(243, 244, 246, 1))', border: 'none' }}>
               <div className="mb-4">
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
                   <Camera size={20} />
                   {t("recentRecords") || "近一周记录"}
                 </h3>
@@ -219,7 +219,7 @@ export default function HomePage() {
                                 <ChevronUp size={14} className="text-gray-600" />
                               )}
                             </button>
-                            <h3 className="text-lg font-semibold text-gray-700 flex-1">{dayCard.dateDisplay}</h3>
+                            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] flex-1">{dayCard.dateDisplay}</h3>
                           </div>
                           
                           {/* 该天的所有时刻内容 */}
@@ -233,7 +233,7 @@ export default function HomePage() {
                                   {/* 文字内容 */}
                                   {moment.content && (
                                     <div className="min-w-0 pr-8">
-                                      <p className="text-lg text-gray-700 whitespace-pre-line">
+                                      <p className="text-lg text-[var(--color-text-primary)] whitespace-pre-line">
                                         {moment.content}
                                       </p>
                                     </div>
@@ -268,7 +268,7 @@ export default function HomePage() {
           <div className="lg:col-span-2 space-y-6">
             <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg" style={{ border: 'none' }}>
               <div className="mb-4">
-                <h3 className="text-xl font-bold text-gray-800">{t("myHabits") || "我的习惯"}</h3>
+                <h3 className="text-xl font-bold text-[var(--color-text-primary)]">{t("myHabits") || "我的习惯"}</h3>
               </div>
               <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
                 {loading.habits ? (
@@ -291,7 +291,7 @@ export default function HomePage() {
                         <div className="flex justify-between items-center">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-bold text-lg text-gray-800">{habit.name}</h4>
+                              <h4 className="font-bold text-lg text-[var(--color-text-primary)]">{habit.name}</h4>
                               {habit.frequency !== "每日" && (
                                 <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
                                   {t(habit.frequency) || habit.frequency}
@@ -299,7 +299,7 @@ export default function HomePage() {
                               )}
                             </div>
                             {habit.description && (
-                              <p className="text-sm text-gray-600 mb-2">{habit.description}</p>
+                              <p className="text-sm text-[var(--color-text-secondary)] mb-2">{habit.description}</p>
                             )}
                             <div className="flex flex-col text-green-600">
                               <span className="text-sm">{t("checkinCount")} {habit.checkin_count || 0} {t("times")}</span>
@@ -320,7 +320,7 @@ export default function HomePage() {
                             ) : (
                               <Button
                                 onClick={() => handleCheckin(habit.id)}
-                                className="px-6 py-2 text-sm rounded-3xl border-2 border-[#003049] bg-[#003049] hover:bg-white hover:text-[#003049] transition-colors duration-200"
+                                className="px-6 py-2 text-sm rounded-3xl border-2 border-[#003049] bg-[#003049] hover:bg-white hover:text-[var(--color-text-primary)] transition-colors duration-200"
                                 style={{ color: 'var(--color-text-on-primary)' }}
                               >
                                 {t("checkin") || "打卡"}
@@ -336,7 +336,7 @@ export default function HomePage() {
             </Card>
 
           {/* 右侧：下半部分 - 今日任务面板 */}
-          <Card className="rounded-[28px] shadow-lg bg-[var(--color-panel-primary)]">
+          <Card className="rounded-[28px] shadow-lg bg-[var(--color-panel-primary)]" style={{ border: 'none' }}>
               <div className="mb-4">
                 <h3 className="text-xl font-bold flex items-center gap-2 text-[var(--color-panel-text)]">
                   <CheckCircle2 size={20} />

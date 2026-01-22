@@ -270,7 +270,7 @@ export default function ReflectionsPage() {
                 <Card className="p-6 rounded-[28px] w-full max-w-3xl mx-auto" style={{ backgroundColor: 'var(--color-modal-card, #f3f4f6)', border: 'none' }}>
                   <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-xl font-semibold text-gray-700">{t("newReflection") || "记录新感悟"}</h3>
+                      <h3 className="text-xl font-semibold text-[var(--color-text-primary)]">{t("newReflection") || "记录新感悟"}</h3>
                     </div>
                     
                     <div>
@@ -328,7 +328,7 @@ export default function ReflectionsPage() {
                       >
                         <div className="flex flex-col gap-4">
                           <div className="flex justify-between items-center mb-2">
-                            <h3 className="text-xl font-semibold text-gray-700">{t("editReflection") || "编辑感悟"}</h3>
+                            <h3 className="text-xl font-semibold text-[var(--color-text-primary)]">{t("editReflection") || "编辑感悟"}</h3>
                           </div>
                           
                           <div>
@@ -401,7 +401,7 @@ export default function ReflectionsPage() {
                                   <ChevronUp size={14} className="text-gray-600" />
                                 )}
                               </button>
-                              <h3 className="text-2xl font-semibold text-gray-800 flex-1">{displayTitle}</h3>
+                              <h3 className="text-2xl font-semibold text-[var(--color-text-primary)] flex-1">{displayTitle}</h3>
                               <div className="flex justify-end space-x-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                 <div title={t("edit") || "编辑"}>
                                   <Edit2 
@@ -453,7 +453,7 @@ export default function ReflectionsPage() {
                           
                           {/* 内容区域 - 可折叠（有标题时）或直接显示（无标题时） */}
                           {(!displayTitle || !isCollapsed) && (
-                            <p className="text-xl text-gray-700 whitespace-pre-line">{displayContent}</p>
+                            <p className="text-xl text-[var(--color-text-primary)] whitespace-pre-line">{displayContent}</p>
                           )}
                         </div>
                       </div>
@@ -470,10 +470,10 @@ export default function ReflectionsPage() {
       {showConfirm && selectedReflection && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
-            <h2 className="text-xl font-semibold mb-4 text-center text-gray-700">
+            <h2 className="text-xl font-semibold mb-4 text-center text-[var(--color-text-primary)]">
               {t("confirmDelete") || "确认删除这条感悟吗？"}
             </h2>
-            <p className="text-gray-600 text-base mb-4 text-center">
+            <p className="text-[var(--color-text-secondary)] text-base mb-4 text-center">
               {t("cannotRecover") || "删除后不可恢复"}
             </p>
             <div className="flex justify-center space-x-3">
@@ -482,7 +482,7 @@ export default function ReflectionsPage() {
                   setShowConfirm(false); 
                   setSelectedReflection(null); // 点击取消也清除选中项
                 }}
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-[#003049] bg-transparent text-[#003049] hover:bg-[#003049] hover:text-[var(--color-text-on-primary)] hover:border-[#003049] text-base"
+                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-[#003049] bg-transparent text-[var(--color-text-primary)] hover:bg-[#003049] hover:text-[var(--color-text-on-primary)] hover:border-[#003049] text-base"
               >
                 {t("cancel") || "取消"}
               </button>

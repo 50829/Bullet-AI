@@ -142,7 +142,7 @@ const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToT
         <div className={`mt-10 flex flex-col sm:flex-row gap-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <button 
             onClick={goToLogin}
-            className="bg-[#003049] text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-[#003049] hover:border-2 border-[#003049] transition-all duration-500 text-lg min-w-[200px] h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
+            className="bg-[#003049] text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-[var(--color-text-primary)] hover:border-2 border-[#003049] transition-all duration-500 text-lg min-w-[200px] h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
           >
             {t("getStarted")}
           </button>
@@ -378,7 +378,7 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
       </ul>
       <button 
         onClick={goToLogin}
-        className="mt-8 w-full text-lg font-semibold py-4 px-4 rounded-full bg-[#003049] text-white hover:bg-transparent hover:text-[#003049] hover:border-2 border-[#003049] transition-all duration-500 h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
+        className="mt-8 w-full text-lg font-semibold py-4 px-4 rounded-full bg-[#003049] text-white hover:bg-transparent hover:text-[var(--color-text-primary)] hover:border-2 border-[#003049] transition-all duration-500 h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
       >
         {buttonText}
       </button>
@@ -429,7 +429,7 @@ const CallToActionSection = () => {
           <p className="mt-4 text-xl text-gray-600">{t("storyDescription")}</p>
           <button 
             onClick={goToLogin}
-            className="mt-12 bg-[#003049] text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-[#003049] hover:border-2 border-[#003049] transition-all duration-500 inline-flex items-center gap-2 text-lg h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
+            className="mt-12 bg-[#003049] text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-[var(--color-text-primary)] hover:border-2 border-[#003049] transition-all duration-500 inline-flex items-center gap-2 text-lg h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
           >
             {t("startNow")} <ArrowRight className="h-5 w-5" />
           </button>
@@ -491,7 +491,7 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
       </div>
       <button 
         onClick={scrollToTop} // 使用从父组件传递下来的函数
-        className="fixed bottom-10 right-10 bg-[#003049] text-white p-3 rounded-full shadow-lg hover:bg-transparent hover:text-[#003049] hover:border-2 border-[#003049] transition-all duration-500 z-50 hover:-translate-y-1 hover:shadow-xl"
+        className="fixed bottom-10 right-10 bg-[#003049] text-white p-3 rounded-full shadow-lg hover:bg-transparent hover:text-[var(--color-text-primary)] hover:border-2 border-[#003049] transition-all duration-500 z-50 hover:-translate-y-1 hover:shadow-xl"
         aria-label="返回顶部"
       >
         <ArrowUp className="h-6 w-6" />

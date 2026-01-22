@@ -395,7 +395,7 @@ export default function GoalsPage() {
                                 )}
                                 <div className="flex-1">
                                   <div className="flex items-center gap-3 mb-2">
-                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[#003049]/50' : 'text-[#003049]'}`}>
+                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[var(--color-text-primary)]/50' : 'text-[var(--color-text-primary)]'}`}>
                                       {goal.title}
                                     </h4>
                                     {isCompleted && (
@@ -405,7 +405,7 @@ export default function GoalsPage() {
                                     )}
                                   </div>
                                   {goal.description && (
-                                    <p className={`text-sm ${isCompleted ? 'text-[#003049]/50 line-through' : 'text-[#003049]'}`}>
+                                    <p className={`text-sm ${isCompleted ? 'text-[var(--color-text-primary)]/50 line-through' : 'text-[var(--color-text-primary)]'}`}>
                                       {goal.description}
                                     </p>
                                   )}
@@ -504,7 +504,7 @@ export default function GoalsPage() {
                                 )}
                                 <div className="flex-1">
                                   <div className="flex items-center gap-3 mb-2">
-                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[#003049]/50' : 'text-[#003049]'}`}>
+                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[var(--color-text-primary)]/50' : 'text-[var(--color-text-primary)]'}`}>
                                       {goal.title}
                                     </h4>
                                     {isCompleted && (
@@ -514,7 +514,7 @@ export default function GoalsPage() {
                                     )}
                                   </div>
                                   {goal.description && (
-                                    <p className={`text-sm ${isCompleted ? 'text-[#003049]/50 line-through' : 'text-[#003049]'}`}>
+                                    <p className={`text-sm ${isCompleted ? 'text-[var(--color-text-primary)]/50 line-through' : 'text-[var(--color-text-primary)]'}`}>
                                       {goal.description}
                                     </p>
                                   )}
@@ -573,7 +573,7 @@ export default function GoalsPage() {
             <div className="mt-6">
               <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg" style={{ border: 'none' }}>
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-gray-800">{t("myHabits") || "我的习惯"}</h3>
+                  <h3 className="text-xl font-bold text-[var(--color-text-primary)]">{t("myHabits") || "我的习惯"}</h3>
                   <Button onClick={() => setIsHabitModalOpen(true)} className="border-2 border-transparent hover:!border-gray-800">
                     + {t("new")} {t("habit")}
                   </Button>
@@ -603,7 +603,7 @@ export default function GoalsPage() {
                               <div className="flex justify-between items-center">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
-                                <h4 className="font-bold text-lg text-gray-800">{habit.name}</h4>
+                                <h4 className="font-bold text-lg text-[var(--color-text-primary)]">{habit.name}</h4>
                                     {habit.frequency !== "每日" && (
                                       <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
                                         {t(habit.frequency) || habit.frequency}
@@ -628,7 +628,7 @@ export default function GoalsPage() {
                                 </div>
                               </div>
                               {habit.description && (
-                                <p className="text-sm text-gray-600 mb-2">{habit.description}</p>
+                                <p className="text-sm text-[var(--color-text-secondary)] mb-2">{habit.description}</p>
                               )}
                               <div className="flex items-center text-green-600">
                                 <span className="text-sm">{t("checkinCount")} {habit.checkin_count || 0} {t("times")}</span>
@@ -649,7 +649,7 @@ export default function GoalsPage() {
                               ) : (
                                 <Button
                                   onClick={() => handleCheckin(habit.id)}
-                                  className="px-6 py-2 text-sm rounded-3xl border-2 border-[#003049] bg-[#003049] hover:bg-white hover:text-[#003049] transition-colors duration-200"
+                                  className="px-6 py-2 text-sm rounded-3xl border-2 border-[#003049] bg-[#003049] hover:bg-white hover:text-[var(--color-text-primary)] transition-colors duration-200"
                                   style={{ color: 'var(--color-text-on-primary)' }}
                                 >
                                   {t("checkin") || "打卡"}
@@ -685,10 +685,10 @@ export default function GoalsPage() {
       {showConfirm && selectedItem && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
-            <h2 className="text-xl font-semibold mb-4 text-center text-gray-700">
+            <h2 className="text-xl font-semibold mb-4 text-center text-[var(--color-text-primary)]">
               {t("confirmDelete")} {selectedItem.name} {selectedItem.type === 'goal' ? t("goal") : t("habit")}{t("questionMark") || "吗？"}
             </h2>
-            <p className="text-gray-600 text-base mb-4 text-center">
+            <p className="text-[var(--color-text-secondary)] text-base mb-4 text-center">
               {t("cannotRecover") || "删除后不可恢复"}
             </p>
             <div className="flex justify-center space-x-3">

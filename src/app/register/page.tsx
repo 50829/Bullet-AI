@@ -94,7 +94,7 @@ export default function RegisterPage() {
       <div className="bg-transparent rounded-3xl p-8 text-center w-full max-w-md mx-4">
         <h1 className="text-3xl font-bold mb-6 text-[var(--color-text-primary)]">{t("registerTitle")}</h1>
         <form onSubmit={handleRegister} className="space-y-3 mb-6 text-left">
-          <label className="block text-sm text-gray-700">{t("setEmail")}</label>
+          <label className="block text-sm text-[var(--color-text-primary)]">{t("setEmail")}</label>
           <input
             type="email"
             value={email}
@@ -104,7 +104,7 @@ export default function RegisterPage() {
             disabled={loading}
             required
           />
-          <label className="block text-sm text-gray-700">{t("setPassword")}</label>
+          <label className="block text-sm text-[var(--color-text-primary)]">{t("setPassword")}</label>
           <input
             type="password"
             value={password}
@@ -134,7 +134,7 @@ export default function RegisterPage() {
               )}
             </div>
           )}
-          <label className="block text-sm text-gray-700 mt-3">{t("confirmPassword")}</label>
+          <label className="block text-sm text-[var(--color-text-primary)] mt-3">{t("confirmPassword")}</label>
           <input
             type="password"
             value={confirmPassword}
@@ -167,7 +167,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading || !isPasswordMatch || !isPasswordStrong(password)}
-            className="w-full mt-4 px-4 py-2.5 rounded-3xl bg-[#003049] text-white font-bold border-2 border-transparent hover:bg-white hover:text-[#003049] hover:border-[#003049] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mt-4 px-4 py-2.5 rounded-3xl bg-[#003049] text-white font-bold border-2 border-transparent hover:bg-white hover:text-[var(--color-text-primary)] hover:border-[#003049] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? t("registering") : t("register")}
           </button>
