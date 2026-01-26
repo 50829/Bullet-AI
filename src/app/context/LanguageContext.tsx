@@ -639,14 +639,6 @@ const translations: Record<string, TranslationValue> = {
     en: "Save failed, please try again",
     zh: "保存失败，请重试",
   },
-  saving: {
-    en: "Saving...",
-    zh: "记录中...",
-  },
-  save: {
-    en: "Save",
-    zh: "记录",
-  },
   completed: {
     en: "Completed",
     zh: "已完成",
@@ -654,10 +646,6 @@ const translations: Record<string, TranslationValue> = {
   completeGoal: {
     en: "Complete Goal",
     zh: "完成目标",
-  },
-  updateFailed: {
-    en: "Update failed",
-    zh: "更新失败",
   },
   update: {
     en: "Update",
@@ -1015,10 +1003,6 @@ const translations: Record<string, TranslationValue> = {
   saving: {
     en: "Saving...",
     zh: "保存中...",
-  },
-  loading: {
-    en: "Loading...",
-    zh: "加载中...",
   },
 };
 

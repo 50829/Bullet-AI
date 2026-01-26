@@ -7,6 +7,7 @@ import { Textarea } from "./ui/Textarea";
 import { Input } from "./ui/Input";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 import { useAppContext } from '../../context/AppContext'; // 添加 AppContext
+import { Moment } from '../types'; // 添加类型导入
 
 type Props = { isOpen: boolean; onClose: () => void; onSuccess: () => void; };
 
@@ -81,11 +82,11 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
     }
 
     // 创建临时 moment 对象（乐观更新）
-    const tempMoment: any = {
+    const tempMoment = {
       id: Date.now(), // 使用时间戳作为临时 ID
       user_id: user.id,
       content,
-      image_path: null, // 暂时为 null，上传后更新
+      image_path: null, // 暂时为 null,上传后更新
       image_url: localImageUrl || previewUrl, // 优先使用本地预览 URL
       created_at: dateISO,
       date: dateISO.split('T')[0],
@@ -118,7 +119,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
         }
 
         // 构建插入数据
-        const payload: any = {
+        const payload: { user_id: string; content: string; image_path: string | null; created_at: string } = {
           user_id: user.id,
           content: savedContent,
           image_path: imagePath,

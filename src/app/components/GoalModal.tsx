@@ -85,7 +85,7 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, selectedDate }: Props) =
 
       if (error) {
         // 尝试获取错误的所有属性
-        const errorInfo: any = {
+        const errorInfo: Record<string, unknown> = {
           code: error.code,
           message: error.message,
           details: error.details,
@@ -95,7 +95,7 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, selectedDate }: Props) =
         // 尝试获取所有可枚举属性
         for (const key in error) {
           if (error.hasOwnProperty(key)) {
-            errorInfo[key] = (error as any)[key];
+            errorInfo[key] = (error as unknown as Record<string, unknown>)[key];
           }
         }
         

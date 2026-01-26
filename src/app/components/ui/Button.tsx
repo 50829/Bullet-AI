@@ -4,12 +4,14 @@ import React from 'react';
 type ButtonProps = {
   children: React.ReactNode;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   className?: string;
   disabled?: boolean;
+  style?: React.CSSProperties;
+  title?: string;
 };
 
-export const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }: ButtonProps) => {
+export const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, style, title }: ButtonProps) => {
   const baseClasses = 'px-4 py-2 rounded-3xl font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center';
   
   const getVariantStyles = () => {
@@ -32,6 +34,12 @@ export const Button = ({ children, onClick, variant = 'primary', className = '',
           color: 'var(--color-text-primary)',
           borderColor: 'var(--color-primary)',
         };
+      case 'ghost':
+        return {
+          backgroundColor: 'transparent',
+          color: 'var(--color-text-primary)',
+          borderColor: 'transparent',
+        };
       default:
         return {};
     }
@@ -48,7 +56,8 @@ export const Button = ({ children, onClick, variant = 'primary', className = '',
       onClick={onClick} 
       disabled={disabled} 
       className={`${baseClasses} border-2 ${disabledClasses} ${cleanedClassName}`}
-      style={variantStyles}
+      style={{...variantStyles, ...style}}
+      title={title}
       onMouseEnter={(e) => {
         if (!disabled && variant === 'primary') {
           e.currentTarget.style.backgroundColor = 'transparent';

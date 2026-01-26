@@ -76,6 +76,11 @@ export default function GoalsPage() {
     imagePath?: string | null 
   } | null>(null);
 
+  // AI Panel states
+  const [aiMessages, setAiMessages] = useState<Message[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+
 
   // 将Date对象转换为YYYY-MM-DD格式（本地时间）
   const formatDateToLocal = (date: Date): string => {
