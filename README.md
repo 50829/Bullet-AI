@@ -17,7 +17,7 @@
 - **Moments** — 图文日记，回溯记录生活瞬间
 - **Reflections** — 结构化思想感悟，支持来源/地点标注
 - **Goals** — 日历视图目标管理 + 迁移清单
-- **Habits** — 每日/每周习惯打卡追踪
+- **Habits** — 基于 `habit_checkins` 的每日/每周习惯历史打卡追踪
 - **AI 助手** — 树洞/生活/哲思/规划 4 种 AI 对话
 
 ## 技术栈
@@ -40,3 +40,26 @@ pnpm dev
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `LLM_API_KEY`（AI 功能）
 - `LLM_BASE_URL`（AI 功能）
+
+## 数据库迁移
+
+本版本的习惯打卡不再依赖 `habits.last_checkin` / `habits.checkin_count`，需要先在 Supabase 执行：
+
+```sql
+db/migrations/001_habit_checkins.sql
+```
+
+该迁移会：
+
+- 创建 `habit_checkins` 历史打卡表。
+- 为同一用户、同一习惯、同一日期添加唯一约束。
+- 启用 RLS，限制用户只能读写自己的打卡记录。
+- 将旧 `habits.last_checkin` 最近一次打卡兼容迁移为一条历史记录。
+
+## 验证命令
+
+```bash
+pnpm exec tsc --noEmit
+pnpm lint
+pnpm build
+```

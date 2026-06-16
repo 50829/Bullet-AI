@@ -5,6 +5,7 @@ import { Sparkles, Camera, Target, Lightbulb } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../ui/Button';
 import { supabase } from '../../../lib/supabaseClient';
+import { getCurrentUserProfile } from '../../../lib/profile/profileService';
 
 // TopBar Context
 type TopBarHandlers = {
@@ -87,16 +88,8 @@ export const TopBar = () => {
   useEffect(() => {
     const fetchUsername = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("username")
-            .eq("user_id", session.user.id)
-            .single();
-          
-          setUsername(profile?.username || null);
-        }
+        const profile = await getCurrentUserProfile();
+        setUsername(profile?.username || null);
       } catch (error) {
         console.error("获取用户名失败:", error);
         setUsername(null);
@@ -108,12 +101,7 @@ export const TopBar = () => {
     // 监听认证状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("user_id", session.user.id)
-          .single();
-        
+        const profile = await getCurrentUserProfile();
         setUsername(profile?.username || null);
       } else {
         setUsername(null);
@@ -150,13 +138,6 @@ export const TopBar = () => {
     onAddGoal,
     onAddReflection,
     onToggleAIPanel,
-    onToggleSearch,
-    showAIPanel = false,
-    showSearch = false,
-    searchTerm = '',
-    onSearchChange,
-    onSearch,
-    onClearSearch,
   } = context;
 
   // 根据页面获取标题和图标

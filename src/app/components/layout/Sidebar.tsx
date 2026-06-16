@@ -24,7 +24,7 @@ const NavItem = ({ page, icon, label, onClick, className, style }: NavItemProps)
   const isActive = currentActivePage === page;
 
   const handleClick = () => {
-    router.push(`/main?page=${page}`);
+    router.push(`/dashboard?page=${page}`);
     if (onClick) {
       onClick(); // 调用传入的 onClick 回调
     }

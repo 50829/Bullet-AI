@@ -1,16 +1,14 @@
-import { Suspense } from 'react';
-import MainDashboardClient from './MainDashboardClient';
-import { AppProvider } from '../../context/AppContext';
+import { redirect } from "next/navigation";
 
-// Server component wrapper for /main to satisfy useSearchParams suspense requirement.
-export const dynamic = 'force-dynamic';
+type MainPageProps = {
+  searchParams?: Promise<{
+    page?: string | string[];
+  }>;
+};
 
-export default function MainPage() {
-  return (
-    <AppProvider>
-      <Suspense fallback={<div className="p-6 text-lg text-gray-500">空间准备中</div>}>
-        <MainDashboardClient />
-      </Suspense>
-    </AppProvider>
-  );
+export default async function MainPage({ searchParams }: MainPageProps) {
+  const params = searchParams ? await searchParams : {};
+  const page = typeof params.page === "string" ? `?page=${encodeURIComponent(params.page)}` : "";
+
+  redirect(`/dashboard${page}`);
 }

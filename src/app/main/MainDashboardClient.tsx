@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
 import { MainLayout } from '../components/layout/MainLayout';
-import MomentsPage from '../moments/page';
-import GoalsPage from '../goals/page';
-import ReflectionsPage from '../reflections/page';
+import MomentsPageClient from '../moments/MomentsPageClient';
+import GoalsPageClient from '../goals/GoalsPageClient';
+import ReflectionsPageClient from '../reflections/ReflectionsPageClient';
 import HomePage from '../components/HomePage';
 
 function InnerPage({ activePage }: { activePage: string }) {
@@ -15,12 +15,12 @@ function InnerPage({ activePage }: { activePage: string }) {
     case 'home':
       return <HomePage />;
     case 'goals':
-      return <GoalsPage />;
+      return <GoalsPageClient />;
     case 'reflections':
-      return <ReflectionsPage />;
+      return <ReflectionsPageClient />;
     case 'moments':
     default:
-      return <MomentsPage />;
+      return <MomentsPageClient />;
   }
 }
 
@@ -39,38 +39,13 @@ export default function MainDashboardClient() {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (mounted && !session) {
-        router.push('/login');
-        return;
-      }
-      
-      // 检查是否有昵称
-      if (mounted && session) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("user_id", session.user.id)
-          .single();
-        
-        if (!profile?.username) {
-          router.push('/username');
-        }
+        router.replace('/login');
       }
     };
     checkSession();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
-        router.push('/login');
-      } else {
-        // 检查是否有昵称
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("user_id", session.user.id)
-          .single();
-        
-        if (!profile?.username) {
-          router.push('/username');
-        }
+        router.replace('/login');
       }
     });
     return () => {

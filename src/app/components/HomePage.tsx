@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Card } from "./ui/Card";
-import { Button } from "./ui/Button";
 import { CheckCircle2, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext';
+import { useHabits } from "../../features/habits/hooks/useHabits";
+import { HabitList } from "../../features/habits/components/HabitList";
 
 type Moment = {
   id: number;
@@ -25,16 +26,6 @@ type Goal = {
   progress: number;
 };
 
-type Habit = {
-  id: number;
-  name: string;
-  description: string | null;
-  frequency: string;
-  color: string | null;
-  last_checkin?: string | null;
-  checkin_count?: number;
-};
-
 // 按日期分组的卡片类型
 type DayCard = {
   date: string; // YYYY-MM-DD 格式
@@ -43,23 +34,19 @@ type DayCard = {
 };
 
 export default function HomePage() {
-  const { moments, goals, habits, loading, refreshGoals, refreshHabits, checkinHabit, updateGoal } = useAppContext();
-  const { t, language } = useLanguage();
+  const { moments, goals, loading, refreshGoals, updateGoal } = useAppContext();
+  const { t } = useLanguage();
+  const {
+    habits,
+    loading: habitsLoading,
+    checkinToday,
+    toggleCheckin,
+    removeHabit,
+  } = useHabits();
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
 
-  // 格式化日期显示 - 只显示几号
-  const formatDateDisplay = (dateString: string) => {
-    if (dateString.includes('T')) {
-      const datePart = dateString.split('T')[0];
-      return datePart.split('-')[2];
-    }
-    const date = new Date(dateString);
-    const day = String(date.getUTCDate());
-    return day;
-  };
-
   // 将日期字符串转换为 YYYY-MM-DD 格式用于分组
-  const getDateKey = (dateString: string): string => {
+  const getDateKey = useCallback((dateString: string): string => {
     if (dateString.includes('T')) {
       return dateString.split('T')[0];
     }
@@ -68,18 +55,18 @@ export default function HomePage() {
     const month = String(date.getUTCMonth() + 1).padStart(2, '0');
     const day = String(date.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  };
+  }, []);
 
   // 格式化完整日期显示
-  const formatFullDateDisplay = (dateString: string) => {
+  const formatFullDateDisplay = useCallback((dateString: string) => {
     const date = new Date(dateString);
     const month = date.getMonth() + 1;
     const day = date.getDate();
     return `${month}月${day}日`;
-  };
+  }, []);
 
   // 按日期分组时刻
-  const groupMomentsByDate = (moments: Moment[]): DayCard[] => {
+  const groupMomentsByDate = useCallback((moments: Moment[]): DayCard[] => {
     const grouped = new Map<string, Moment[]>();
     
     moments.forEach(moment => {
@@ -101,7 +88,7 @@ export default function HomePage() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     return cards;
-  };
+  }, [formatFullDateDisplay, getDateKey]);
 
   // 切换日期折叠状态
   const toggleDay = (dateKey: string) => {
@@ -127,7 +114,7 @@ export default function HomePage() {
     });
     
     return groupMomentsByDate(filtered);
-  }, [moments]);
+  }, [groupMomentsByDate, moments]);
 
   // 获取今日的goals
   const todayGoals = useMemo(() => {
@@ -136,46 +123,6 @@ export default function HomePage() {
     
     return goals.filter(goal => goal.due_date === todayStr);
   }, [goals]);
-
-  // 格式化日期显示
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    return `${month}月${day}日`;
-  };
-
-  // 检查习惯今天是否已打卡
-  const isTodayChecked = (habit: Habit) => {
-    if (!habit.last_checkin) return false;
-    const lastCheckin = new Date(habit.last_checkin);
-    const today = new Date();
-    return lastCheckin.getDate() === today.getDate() &&
-           lastCheckin.getMonth() === today.getMonth() &&
-           lastCheckin.getFullYear() === today.getFullYear();
-  };
-
-  // 格式化打卡日期显示
-  const formatCheckinDate = (dateString?: string | null): string | null => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    if (language === 'zh') {
-      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
-    } else {
-      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    }
-  };
-
-  // 处理习惯打卡
-  const handleCheckin = async (habitId: number) => {
-    try {
-      await checkinHabit(habitId);
-      // 打卡后刷新数据
-      await refreshHabits();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : t("checkinFailed") || "打卡失败");
-    }
-  };
 
   return (
     <div className="w-full h-full overflow-y-auto -mt-8">
@@ -270,68 +217,22 @@ export default function HomePage() {
               <div className="mb-4">
                 <h3 className="text-xl font-bold text-[var(--color-text-primary)]">{t("myHabits") || "我的习惯"}</h3>
               </div>
-              <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
-                {loading.habits ? (
-                  <div className="text-center py-4 text-gray-500 text-sm">{t("loading") || "加载中..."}</div>
-                ) : habits.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500 text-sm">
-                    {t("noHabits") || "暂无习惯"}
-                  </div>
-                ) : (
-                  habits.slice(0, 5).map((habit: Habit) => {
-                    const isChecked = isTodayChecked(habit);
-                    return (
-                      <div
-                        key={habit.id}
-                        className={`group p-5 rounded-2xl shadow-md border border-gray-200 ${
-                          isChecked ? 'bg-gradient-to-r from-orange-200/80 to-yellow-100/80' : ''
-                        }`}
-                        style={!isChecked ? { backgroundColor: 'var(--color-item-card, rgba(255, 255, 255, 0.8))' } : {}}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-bold text-lg text-[var(--color-text-primary)]">{habit.name}</h4>
-                              {habit.frequency !== "每日" && (
-                                <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-md">
-                                  {t(habit.frequency) || habit.frequency}
-                                </span>
-                              )}
-                            </div>
-                            {habit.description && (
-                              <p className="text-sm text-[var(--color-text-secondary)] mb-2">{habit.description}</p>
-                            )}
-                            <div className="flex flex-col text-green-600">
-                              <span className="text-sm">{t("checkinCount")} {habit.checkin_count || 0} {t("times")}</span>
-                              {habit.last_checkin && (
-                                <span className="text-sm text-gray-500 mt-1">{t("lastCheckin")}{formatCheckinDate(habit.last_checkin)}</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center ml-4">
-                            {isChecked ? (
-                              <Button
-                                variant="ghost"
-                                className="px-6 py-2 text-sm rounded-lg bg-white/40 backdrop-blur-md text-black shadow-sm cursor-default"
-                                disabled
-                              >
-                                {t("checkedIn") || "已打卡"}
-                              </Button>
-                            ) : (
-                              <Button
-                                onClick={() => handleCheckin(habit.id)}
-                                className="px-6 py-2 text-sm rounded-3xl border-2 border-[#003049] bg-[#003049] hover:bg-white hover:text-[var(--color-text-primary)] transition-colors duration-200"
-                                style={{ color: 'var(--color-text-on-primary)' }}
-                              >
-                                {t("checkin") || "打卡"}
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+              <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
+                <HabitList
+                  habits={habits}
+                  loading={habitsLoading}
+                  limit={5}
+                  onCheckinToday={checkinToday}
+                  onToggleCheckin={toggleCheckin}
+                  onDelete={async (habit) => {
+                    if (!window.confirm(`${t("confirmDelete") || "确认删除"} ${habit.name}${t("questionMark") || "吗？"}`)) return;
+                    try {
+                      await removeHabit(habit.id);
+                    } catch (err) {
+                      alert(err instanceof Error ? err.message : t("deleteFailed") || "删除失败");
+                    }
+                  }}
+                />
               </div>
             </Card>
 

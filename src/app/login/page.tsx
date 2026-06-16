@@ -1,17 +1,21 @@
 // app/login/page.tsx
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient"; // 更新路径
 import { useLanguage } from '../context/LanguageContext'; // 更新路径
+import { getPostLoginRedirect } from "../../lib/auth/getPostLoginRedirect";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useLanguage(); // 从 LanguageContext 获取翻译函数
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const nextPath = getPostLoginRedirect(searchParams.get("next"));
 
   // 确保登录页始终使用经典配色
   useEffect(() => {
@@ -38,25 +42,7 @@ export default function LoginPage() {
       if (error) {
         setMessage(`登录失败：${error.message}`);
       } else {
-        // 检查是否有昵称
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("username")
-            .eq("user_id", session.user.id)
-            .single();
-          
-          if (!profile?.username) {
-            // 没有昵称，跳转到昵称设置页面
-            router.push("/username");
-          } else {
-            // 有昵称，跳转到主页面
-            router.push("/main");
-          }
-        } else {
-          router.push("/main");
-        }
+        router.replace(nextPath);
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -72,7 +58,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${getOrigin()}/auth/callback`,
+        redirectTo: `${getOrigin()}/auth/callback?next=${encodeURIComponent(nextPath)}`,
         queryParams: provider === "github" ? { prompt: "login" } : undefined,
       },
     });

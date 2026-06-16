@@ -1,90 +1,135 @@
-# Supabase 数据库设置说明
+# Supabase 设置说明
 
-## 需要创建的 profiles 表
+## 本地连接远端 Supabase
 
-为了支持用户名功能，需要在 Supabase 中创建一个 `profiles` 表。
+1. 在 Supabase Dashboard 打开你的项目。
+2. 进入 `Project Settings` -> `API`。
+3. 复制：
+   - `Project URL`
+   - `anon public` key
+4. 在项目根目录创建 `.env.local`：
 
-### SQL 创建语句
-
-在 Supabase SQL Editor 中执行以下 SQL：
-
-```sql
--- 创建 profiles 表
-CREATE TABLE IF NOT EXISTS profiles (
-  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  username TEXT UNIQUE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
-);
-
--- 创建索引以提高查询性能
-CREATE INDEX IF NOT EXISTS profiles_username_idx ON profiles(username);
-CREATE INDEX IF NOT EXISTS profiles_user_id_idx ON profiles(user_id);
-
--- 启用 Row Level Security (RLS)
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-
--- 创建策略：用户只能查看和更新自己的 profile
-CREATE POLICY "Users can view own profile"
-  ON profiles FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own profile"
-  ON profiles FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own profile"
-  ON profiles FOR UPDATE
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
-
--- 创建函数：自动更新 updated_at 时间戳
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = TIMEZONE('utc'::text, NOW());
-  RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- 创建触发器：在更新时自动更新 updated_at
-CREATE TRIGGER update_profiles_updated_at
-  BEFORE UPDATE ON profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+```bash
+cp .env.example .env.local
 ```
 
-### 表结构说明
+5. 填入真实值：
 
-- **user_id** (UUID, PRIMARY KEY): 关联到 `auth.users` 表的用户 ID，使用 CASCADE 删除确保用户删除时自动删除 profile
-- **username** (TEXT, UNIQUE, NOT NULL): 用户名，必须唯一且不能为空
-- **created_at** (TIMESTAMP): 创建时间，自动设置为当前 UTC 时间
-- **updated_at** (TIMESTAMP): 更新时间，通过触发器自动更新
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
 
-### 安全设置
+6. 重启开发服务器：
 
-1. **Row Level Security (RLS)**: 已启用，确保用户只能访问自己的数据
-2. **策略**:
-   - 用户只能查看自己的 profile
-   - 用户只能插入自己的 profile
-   - 用户只能更新自己的 profile
+```bash
+pnpm dev
+```
 
-### 注意事项
+## Auth 回调地址
 
-1. 对于现有用户，他们将在下次登录时被重定向到 `/username` 页面来设置用户名
-2. 新用户注册后，首次登录也会被重定向到 `/username` 页面
-3. 用户名在数据库中必须唯一，应用层会检查重复
+在 Supabase Dashboard 进入 `Authentication` -> `URL Configuration`。
 
-### 验证设置
+本地开发建议配置：
 
-执行以下查询来验证表是否创建成功：
+```text
+Site URL: http://localhost:3000
+Redirect URLs:
+http://localhost:3000/auth/callback
+```
+
+线上部署后，再额外添加线上域名：
+
+```text
+https://your-domain.com/auth/callback
+```
+
+## profiles 表
+
+当前版本不再强制用户设置用户名。`username` 是可选显示名，在设置里修改。
+
+在 Supabase SQL Editor 中执行：
 
 ```sql
--- 查看表结构
-SELECT column_name, data_type, is_nullable
-FROM information_schema.columns
-WHERE table_name = 'profiles';
+create table if not exists public.profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  username text unique,
+  created_at timestamptz not null default timezone('utc'::text, now()),
+  updated_at timestamptz not null default timezone('utc'::text, now())
+);
 
--- 查看策略
-SELECT * FROM pg_policies WHERE tablename = 'profiles';
+create index if not exists profiles_username_idx on public.profiles(username);
+create index if not exists profiles_user_id_idx on public.profiles(user_id);
+
+alter table public.profiles enable row level security;
+
+drop policy if exists "Users can view own profile" on public.profiles;
+create policy "Users can view own profile"
+  on public.profiles for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own profile" on public.profiles;
+create policy "Users can insert own profile"
+  on public.profiles for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update own profile" on public.profiles;
+create policy "Users can update own profile"
+  on public.profiles for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create or replace function public.update_updated_at_column()
+returns trigger as $$
+begin
+  new.updated_at = timezone('utc'::text, now());
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists update_profiles_updated_at on public.profiles;
+create trigger update_profiles_updated_at
+  before update on public.profiles
+  for each row
+  execute function public.update_updated_at_column();
+```
+
+如果你已经按旧文档创建了 `profiles.username not null`，需要执行：
+
+```sql
+alter table public.profiles
+  alter column username drop not null;
+```
+
+## habit_checkins 迁移
+
+习惯打卡历史需要执行：
+
+```sql
+db/migrations/001_habit_checkins.sql
+```
+
+它会创建 `habit_checkins`、唯一约束、RLS，并把旧 `habits.last_checkin` 兼容迁移成最近一次历史记录。
+
+## 验证
+
+本地启动后验证：
+
+```bash
+pnpm exec tsc --noEmit
+pnpm lint
+pnpm build
+pnpm dev
+```
+
+未登录访问：
+
+```text
+http://localhost:3000/dashboard
+```
+
+应该跳转到：
+
+```text
+http://localhost:3000/login?next=%2Fdashboard
 ```

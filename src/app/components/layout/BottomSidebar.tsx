@@ -5,18 +5,12 @@ import React, { useState, useEffect } from 'react';
 import { Settings, LogOut } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../../lib/supabaseClient';
-import { useRouter } from 'next/navigation';
 import LogoutConfirmDialog from './LogoutConfirmDialog';
 import SettingsPanel from './SettingsPanel';
-
-interface UserProfile {
-  username: string;
-  updated_at: string | null;
-}
+import { getCurrentUserProfile, type UserProfile } from '../../../lib/profile/profileService';
 
 export const BottomSidebar = () => {
   const { t } = useLanguage();
-  const router = useRouter();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -25,23 +19,8 @@ export const BottomSidebar = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          return;
-        }
-
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("username, updated_at")
-          .eq("user_id", session.user.id)
-          .single();
-
-        if (!error && profile) {
-          setUserProfile({
-            username: profile.username || '',
-            updated_at: profile.updated_at || null,
-          });
-        }
+        const profile = await getCurrentUserProfile();
+        setUserProfile(profile);
       } catch (error) {
         console.error("获取用户信息失败:", error);
       }
@@ -52,18 +31,8 @@ export const BottomSidebar = () => {
     // 监听认证状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("username, updated_at")
-          .eq("user_id", session.user.id)
-          .single();
-        
-        if (profile) {
-          setUserProfile({
-            username: profile.username || '',
-            updated_at: profile.updated_at || null,
-          });
-        }
+        const profile = await getCurrentUserProfile();
+        setUserProfile(profile);
       } else {
         setUserProfile(null);
       }

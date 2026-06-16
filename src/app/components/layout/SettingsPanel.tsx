@@ -1,10 +1,10 @@
 // src/components/layout/SettingsPanel.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { X, User, Palette } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Languages, X, User, Palette } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { supabase } from '../../../lib/supabaseClient';
+import { getCurrentUserProfile, updateCurrentUserDisplayName } from '../../../lib/profile/profileService';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -15,7 +15,7 @@ interface SettingsPanelProps {
   onProfileUpdate?: (profile: { username: string; updated_at: string | null }) => void;
 }
 
-type SettingsSection = 'user' | 'theme';
+type SettingsSection = 'user' | 'theme' | 'language';
 
 type ThemeName = 'default' | 'sky';
 
@@ -35,8 +35,32 @@ const hexToRgba = (hex: string, alpha: number = 1): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+const THEMES: ThemeOption[] = [
+  { id: 'default', name: '经典', bgColor: '#efeeeb', primaryColor: '#003049' },
+  { 
+    id: 'sky', 
+    name: '天空', 
+    bgColor: '#8ca4dc', 
+    primaryColor: '#13100d', 
+    bgGradient: 'linear-gradient(135deg, #8ca4dc 0%, #cad8e5 45%, #6899fa 100%)' 
+  },
+];
+
+const applyTheme = (theme: ThemeName) => {
+  const root = document.documentElement;
+  
+  const currentClasses = root.className.split(' ').filter(cls => !cls.startsWith('theme-'));
+  root.className = currentClasses.join(' ').trim();
+  
+  if (theme !== 'default') {
+    root.className = root.className ? `${root.className} theme-${theme}` : `theme-${theme}`;
+  }
+  
+  void root.offsetHeight;
+};
+
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, onProfileUpdate }) => {
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const [activeSection, setActiveSection] = useState<SettingsSection>('user');
   const [username, setUsername] = useState('');
   const [currentUsername, setCurrentUsername] = useState('');
@@ -46,45 +70,14 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
   const [daysRemaining, setDaysRemaining] = useState(0);
   const [currentTheme, setCurrentTheme] = useState<ThemeName>('default');
 
-  // 主题选项配置
-  const themes: ThemeOption[] = [
-    { id: 'default', name: '经典', bgColor: '#efeeeb', primaryColor: '#003049' },
-    { 
-      id: 'sky', 
-      name: '天空', 
-      bgColor: '#8ca4dc', 
-      primaryColor: '#13100d', 
-      // 左上 8ca4dc → 中间 cad8e5 → 右下 6899fa 的三段渐变
-      bgGradient: 'linear-gradient(135deg, #8ca4dc 0%, #cad8e5 45%, #6899fa 100%)' 
-    },
-  ];
-
   // 加载保存的主题
   useEffect(() => {
     const savedTheme = localStorage.getItem('app-theme') as ThemeName;
-    if (savedTheme && themes.find(t => t.id === savedTheme)) {
+    if (savedTheme && THEMES.find(t => t.id === savedTheme)) {
       setCurrentTheme(savedTheme);
       applyTheme(savedTheme);
     }
   }, []);
-
-  // 应用主题
-  const applyTheme = (theme: ThemeName) => {
-    const root = document.documentElement;
-    
-    // 先清除所有主题类
-    const currentClasses = root.className.split(' ').filter(cls => !cls.startsWith('theme-'));
-    root.className = currentClasses.join(' ').trim();
-    
-    // 添加新主题类
-    if (theme !== 'default') {
-      root.className = root.className ? `${root.className} theme-${theme}` : `theme-${theme}`;
-    }
-    
-    // 强制浏览器重新计算样式
-    // 通过读取计算样式来触发重排
-    void root.offsetHeight;
-  };
 
   // 切换主题
   const handleThemeChange = (theme: ThemeName) => {
@@ -103,94 +96,55 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
     }));
   };
 
-  useEffect(() => {
-    // 如果有初始数据，直接使用；否则获取数据
-    if (initialProfile) {
-      setCurrentUsername(initialProfile.username || '');
-      setUsername(initialProfile.username || '');
+  const applyProfileState = useCallback((profile: { username?: string | null; updated_at?: string | null }) => {
+    setCurrentUsername(profile.username || '');
+    setUsername(profile.username || '');
+    
+    if (profile.updated_at) {
+      const lastUpdate = new Date(profile.updated_at);
+      const now = new Date();
+      const diffTime = now.getTime() - lastUpdate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       
-      // 检查是否可以修改用户名（每三天一次）
-      if (initialProfile.updated_at) {
-        const lastUpdate = new Date(initialProfile.updated_at);
-        const now = new Date();
-        const diffTime = now.getTime() - lastUpdate.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays < 3) {
-          setCanChangeUsername(false);
-          const remaining = 3 - diffDays;
-          setDaysRemaining(remaining);
-        } else {
-          setCanChangeUsername(true);
-          setDaysRemaining(0);
-        }
-      } else {
-        setCanChangeUsername(true);
-        setDaysRemaining(0);
+      if (diffDays < 3) {
+        setCanChangeUsername(false);
+        setDaysRemaining(3 - diffDays);
+        return;
       }
-    } else {
-      // 如果没有初始数据，尝试获取
-      fetchUserProfile();
     }
-  }, [initialProfile]);
 
-  const fetchUserProfile = async () => {
+    setCanChangeUsername(true);
+    setDaysRemaining(0);
+  }, []);
+
+  const fetchUserProfile = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const profile = await getCurrentUserProfile();
+      if (!profile) {
         onClose();
         return;
       }
 
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("username, updated_at")
-        .eq("user_id", session.user.id)
-        .single();
-
-      if (error) {
-        console.error("获取用户信息失败:", error);
-        return;
-      }
-
-      if (profile) {
-        setCurrentUsername(profile.username || '');
-        setUsername(profile.username || '');
-        
-        // 检查是否可以修改用户名（每三天一次）
-        if (profile.updated_at) {
-          const lastUpdate = new Date(profile.updated_at);
-          const now = new Date();
-          const diffTime = now.getTime() - lastUpdate.getTime();
-          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-          
-          if (diffDays < 3) {
-            setCanChangeUsername(false);
-            const remaining = 3 - diffDays;
-            setDaysRemaining(remaining);
-          } else {
-            setCanChangeUsername(true);
-            setDaysRemaining(0);
-          }
-        } else {
-          setCanChangeUsername(true);
-          setDaysRemaining(0);
-        }
-      }
+      applyProfileState(profile);
     } catch (error) {
       console.error("获取用户信息时出错:", error);
     }
-  };
+  }, [applyProfileState, onClose]);
+
+  useEffect(() => {
+    if (initialProfile) {
+      applyProfileState(initialProfile);
+    } else {
+      fetchUserProfile();
+    }
+  }, [applyProfileState, fetchUserProfile, initialProfile]);
 
   const handleUsernameChange = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username.trim()) {
-      setMessage(t("usernameRequired") || "请输入用户名");
-      return;
-    }
+    const nextUsername = username.trim();
 
-    if (username.trim() === currentUsername) {
+    if (nextUsername === currentUsername) {
       setMessage(t("usernameUnchanged") || "用户名未更改");
       return;
     }
@@ -205,52 +159,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
     setMessage(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        onClose();
-        return;
-      }
-
-      // 检查昵称是否已被使用
-      const { data: existing } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("username", username.trim())
-        .single();
-
-      if (existing && existing.user_id !== session.user.id) {
-        setMessage(t("usernameTaken") || "该用户名已被使用，请选择其他用户名");
-        setLoading(false);
-        return;
-      }
-
-      // 更新用户名
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          username: username.trim(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", session.user.id);
-
-      if (error) {
-        console.error("更新用户名失败:", error);
-        setMessage(t("updateFailed") || "更新失败，请稍后再试");
-        setLoading(false);
-        return;
-      }
-
-      setCurrentUsername(username.trim());
+      const updatedProfile = await updateCurrentUserDisplayName(nextUsername);
+      setCurrentUsername(updatedProfile.username);
+      setUsername(updatedProfile.username);
       setMessage(t("updateSuccess") || "用户名更新成功！");
       setCanChangeUsername(false);
       setDaysRemaining(3);
       
       // 通知父组件更新数据
       if (onProfileUpdate) {
-        onProfileUpdate({
-          username: username.trim(),
-          updated_at: new Date().toISOString(),
-        });
+        onProfileUpdate(updatedProfile);
       }
       
       // 刷新页面以更新显示的用户名
@@ -328,6 +246,21 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
                   <Palette size={20} />
                   <span className="font-medium">{t("theme") || "主题"}</span>
                 </button>
+                <button
+                  onClick={() => setActiveSection('language')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 ${
+                    activeSection === 'language'
+                      ? 'text-white'
+                      : 'hover:bg-gray-200/50'
+                  }`}
+                  style={{
+                    backgroundColor: activeSection === 'language' ? 'var(--color-primary)' : 'transparent',
+                    color: activeSection === 'language' ? 'var(--color-text-on-primary)' : 'var(--color-text-secondary)',
+                  }}
+                >
+                  <Languages size={20} />
+                  <span className="font-medium">{language === 'en' ? 'Language' : '语言'}</span>
+                </button>
               </nav>
             </div>
 
@@ -342,7 +275,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
                   <form onSubmit={handleUsernameChange} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t("username") || "用户名"}
+                        {language === 'en' ? 'Display name (optional)' : '显示名称（可选）'}
                       </label>
                       <input
                         type="text"
@@ -354,7 +287,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
                           color: 'var(--color-text-primary)',
                           '--tw-ring-color': 'var(--color-primary)',
                         } as React.CSSProperties & { '--tw-ring-color': string }}
-                        placeholder={t("usernamePlaceholder") || "请输入用户名"}
+                        placeholder={language === 'en' ? 'How should BulletAI call you?' : 'BulletAI 可以怎么称呼你？'}
                         disabled={loading || !canChangeUsername}
                         maxLength={20}
                       />
@@ -414,7 +347,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
                   </h3>
 
                   <div className="grid grid-cols-2 md:grid-cols-2 gap-4 max-w-md">
-                    {themes.map((theme) => (
+                    {THEMES.map((theme) => (
                       <button
                         key={theme.id}
                         onClick={() => handleThemeChange(theme.id)}
@@ -479,6 +412,42 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
                             </svg>
                           </div>
                         )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeSection === 'language' && (
+                <div className="max-w-2xl">
+                  <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--color-text-primary)' }}>
+                    {language === 'en' ? 'Language' : '语言设置'}
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+                    {[
+                      { id: 'zh' as const, label: '中文', description: '使用中文界面' },
+                      { id: 'en' as const, label: 'English', description: 'Use the English interface' },
+                    ].map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setLanguage(option.id)}
+                        className="rounded-2xl border p-4 text-left transition hover:shadow-sm"
+                        style={{
+                          borderColor: language === option.id ? 'var(--color-primary)' : 'var(--color-border)',
+                          backgroundColor: language === option.id ? 'var(--color-bg-surface)' : 'transparent',
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>{option.label}</span>
+                          {language === option.id && (
+                            <span className="rounded-full px-2 py-0.5 text-xs" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-text-on-primary)' }}>
+                              {language === 'en' ? 'Active' : '当前'}
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>{option.description}</p>
                       </button>
                     ))}
                   </div>

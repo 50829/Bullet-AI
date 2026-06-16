@@ -3,11 +3,10 @@
 
 import React, { type ReactNode } from 'react';
 import type { NextPage } from 'next';
-import { Sparkles, Camera, Target, Lightbulb, Bot, Check, ArrowRight, ArrowUp, Globe, Image as ImageIcon } from 'lucide-react'; // Added ImageIcon for fallback
+import { Sparkles, Camera, Target, Lightbulb, Bot, Check, ArrowRight, ArrowUp, Globe } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from './context/LanguageContext';
-import Image from 'next/image'; // Import Next.js Image component
 
 // 定义功能项的类型
 type FeatureItem = {
@@ -58,7 +57,7 @@ const LandingPage: NextPage = () => {
         {/* 在内容最顶部添加一个空 div 作为滚动目标 */}
         <div ref={topRef} />
         <main>
-          <HeroSection isVisible={isVisible.hero} scrollToTop={scrollToTop} /> {/* 传递函数到 HeroSection */}
+          <HeroSection isVisible={isVisible.hero} />
           
           {/* Features 部分将在这里开始，现在没有视频了 */}
           <FeaturesSection />
@@ -77,7 +76,7 @@ const LandingPage: NextPage = () => {
 };
 
 // 1. 顶部英雄区域 - 修改后的 HeroSection
-const HeroSection = ({ isVisible, scrollToTop }: { isVisible: boolean, scrollToTop: () => void }) => {
+const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
   
@@ -229,7 +228,7 @@ const FeaturesSection = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-y-12 gap-x-12 px-0 md:px-4">
-            {features.map((feature, index) => (
+            {features.map((feature) => (
               <div
                 key={feature.title}
                 className="relative flex flex-col justify-center items-start p-4 md:p-6 rounded-3xl overflow-hidden"
@@ -263,35 +262,6 @@ const FeaturesSection = () => {
 };
 
 
-const FeatureCard = ({ icon, title, description, items }: FeatureItem) => { // 明确指定 props 类型
-  const { t } = useLanguage();
-  // 移除动画类，直接渲染内容
-  return (
-    <div className="bg-transparent p-0 rounded-2xl shadow-none">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="bg-slate-100 p-3 rounded-full">
-          {icon}
-        </div>
-        <div>
-          <h3 className="text-2xl font-bold">{title}</h3>
-          <p className="text-gray-500">{description}</p>
-        </div>
-      </div>
-      <ul className="mt-6 space-y-3">
-        {items.map((item, index) => {
-          const parts = item.split(':');
-          return (
-            <li key={index} className="flex items-start">
-              <span className="font-semibold">{parts[0]}:</span>
-              {parts.length > 1 && ` ${parts[1]}`}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-};
-
 // 3. 定价方案区域 - 移除背景类
 const PricingSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -309,13 +279,15 @@ const PricingSection = () => {
       { threshold: 0.1 }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+    const section = sectionRef.current;
+
+    if (section) {
+      observer.observe(section);
     }
 
     return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
+      if (section) {
+        observer.unobserve(section);
       }
     };
   }, [isVisible]);
@@ -356,7 +328,6 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
   name: string; description: string; features: string[]; buttonText: string; isFeatured: boolean;
 }) => {
   const router = useRouter();
-  const { t } = useLanguage();
 
   const goToLogin = () => {
     router.push('/login');
@@ -403,13 +374,15 @@ const CallToActionSection = () => {
       { threshold: 0.1 }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+    const section = sectionRef.current;
+
+    if (section) {
+      observer.observe(section);
     }
 
     return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
+      if (section) {
+        observer.unobserve(section);
       }
     };
   }, [isVisible]);
@@ -457,13 +430,15 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
       { threshold: 0.1 }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+    const section = sectionRef.current;
+
+    if (section) {
+      observer.observe(section);
     }
 
     return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
+      if (section) {
+        observer.unobserve(section);
       }
     };
   }, [isVisible]);

@@ -7,7 +7,6 @@ import { Textarea } from "./ui/Textarea";
 import { Input } from "./ui/Input";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 import { useAppContext } from '../../context/AppContext'; // 添加 AppContext
-import { Moment } from '../types'; // 添加类型导入
 
 type Props = { isOpen: boolean; onClose: () => void; onSuccess: () => void; };
 
@@ -98,9 +97,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
     // 立即关闭模态框并重置表单
     onClose();
     const savedContent = content;
-    const savedDate = selectedDate;
     const savedImageFile = imageFile;
-    const savedPreviewUrl = previewUrl;
     setContent(""); 
     setImageFile(null); 
     setPreviewUrl(null);
@@ -127,7 +124,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
         };
 
         // 尝试插入数据
-        let { data, error } = await supabase.from("moments").insert([payload]).select();
+        let { error } = await supabase.from("moments").insert([payload]).select();
         
         // 如果直接设置 created_at 失败，尝试先插入后更新
         if (error && (error.code === '23502' || error.message?.includes('null value') || error.message?.includes('created_at'))) {
@@ -136,7 +133,6 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
           
           if (insertError) {
             error = insertError;
-            data = null;
           } else {
             if (insertData && insertData[0] && insertData[0].id) {
               const { error: updateError } = await supabase
@@ -145,7 +141,6 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
                 .eq("id", insertData[0].id);
 
               if (!updateError) {
-                data = insertData;
                 error = null;
               }
             }

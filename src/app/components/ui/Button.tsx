@@ -4,6 +4,7 @@ import React from 'react';
 type ButtonProps = {
   children: React.ReactNode;
   onClick?: () => void;
+  type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   className?: string;
   disabled?: boolean;
@@ -11,7 +12,7 @@ type ButtonProps = {
   title?: string;
 };
 
-export const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, style, title }: ButtonProps) => {
+export const Button = ({ children, onClick, type = 'button', variant = 'primary', className = '', disabled = false, style, title }: ButtonProps) => {
   const baseClasses = 'px-4 py-2 rounded-3xl font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center';
   
   const getVariantStyles = () => {
@@ -53,6 +54,7 @@ export const Button = ({ children, onClick, variant = 'primary', className = '',
   
   return (
     <button 
+      type={type}
       onClick={onClick} 
       disabled={disabled} 
       className={`${baseClasses} border-2 ${disabledClasses} ${cleanedClassName}`}

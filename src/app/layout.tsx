@@ -5,6 +5,7 @@ import { Inter } from 'next/font/google';
 import { LanguageProvider } from './context/LanguageContext';
 import { ThemeInitializer } from './components/ThemeInitializer';
 import { Suspense } from 'react';
+import { LoadingState } from './components/ui/LoadingState';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,10 +20,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="zh" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
         <ThemeInitializer />
-        <Suspense fallback={<div className="p-4 text-sm text-gray-500">Loading…</div>}>
+        <Suspense fallback={<LoadingState label="Loading" />}>
           <LanguageProvider>
             {children}
           </LanguageProvider>

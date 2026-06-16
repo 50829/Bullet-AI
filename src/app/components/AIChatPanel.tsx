@@ -15,10 +15,9 @@ interface AIChatPanelProps {
   onClose: () => void;
   greeting: string;
   systemPrompt: string;
-  title?: string;
 }
 
-export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greeting, systemPrompt, title }) => {
+export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greeting, systemPrompt }) => {
   const { t, language } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -73,7 +72,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({ isOpen, onClose, greet
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
-        } catch (e) {
+        } catch {
           errorMessage = `HTTP error! status: ${response.status}`;
         }
         throw new Error(errorMessage);

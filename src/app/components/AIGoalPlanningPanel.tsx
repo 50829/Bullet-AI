@@ -87,7 +87,7 @@ export const AIGoalPlanningPanel: React.FC<AIGoalPlanningPanelProps> = ({
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
-        } catch (e) {
+        } catch {
           errorMessage = `HTTP error! status: ${response.status}`;
         }
         throw new Error(errorMessage);

@@ -1,40 +1,23 @@
 // components/GoalModal.tsx
 "use client";
 import React, { useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
+import { createGoal } from "../../features/goals/services/goalService";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  selectedDate?: Date | null;
 };
 
-// 将Date对象转换为YYYY-MM-DD格式，避免时区问题
-const formatDateToLocal = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-export const GoalModal = ({ isOpen, onClose, onSuccess, selectedDate }: Props) => {
+export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
   const { t } = useLanguage(); // 获取翻译函数
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // 获取要使用的日期（使用本地时间格式，避免时区问题）
-  // 新建目标时不设置日期，始终添加到迁移列表
-  const getDueDate = (): string | null => {
-    // 新建目标时始终不设置日期，添加到迁移列表
-    // 用户可以通过迁移功能将任务分配到具体日期
-    return null;
-  };
 
   if (!isOpen) return null;
 
@@ -43,85 +26,12 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, selectedDate }: Props) =
 
     setLoading(true);
 
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    const user = userData?.user;
-    
-    if (userError) {
-      console.error("获取用户信息失败:", userError);
-      setLoading(false);
-      alert(`${t("pleaseLogin") || "请先登录"}: ${userError.message}`);
-      return;
-    }
-    
-    if (!user) {
-      setLoading(false);
-      alert(t("pleaseLogin") || "请先登录");
-      return;
-    }
-
     try {
-      const dueDate = getDueDate();
-      const insertData: {
-        user_id: string;
-        title: string;
-        description: string | null;
-        due_date?: string | null;
-      } = {
-        user_id: user.id,
-        title: title.trim(),
-        description: description.trim() || null,
-      };
-      
-      // 只有当dueDate不为null时才设置due_date字段
-      if (dueDate !== null) {
-        insertData.due_date = dueDate;
-      }
-
-      console.log("准备插入的数据:", insertData);
-      console.log("用户ID:", user.id);
-      console.log("日期格式:", dueDate);
-
-      const { data, error } = await supabase.from("goals").insert([insertData]);
-
-      if (error) {
-        // 尝试获取错误的所有属性
-        const errorInfo: Record<string, unknown> = {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-        };
-        
-        // 尝试获取所有可枚举属性
-        for (const key in error) {
-          if (error.hasOwnProperty(key)) {
-            errorInfo[key] = (error as unknown as Record<string, unknown>)[key];
-          }
-        }
-        
-        console.error("保存失败，错误对象详情:", errorInfo);
-        console.error("错误对象类型:", typeof error);
-        console.error("错误对象构造函数:", error.constructor?.name);
-        console.error("错误对象字符串:", String(error));
-        
-        // 构建错误消息
-        let errorMessage = t("saveFailed") || "保存失败，请重试";
-        if (error.message) {
-          errorMessage += `: ${error.message}`;
-        } else if (error.code) {
-          errorMessage += ` (错误代码: ${error.code})`;
-        } else if (error.details) {
-          errorMessage += ` (详情: ${error.details})`;
-        } else {
-          errorMessage += ` (未知错误: ${JSON.stringify(errorInfo)})`;
-        }
-        
-        setLoading(false);
-        alert(errorMessage);
-        return;
-      }
-
-      console.log("保存成功，返回数据:", data);
+      await createGoal({
+        title,
+        description,
+        dueDate: null,
+      });
       setLoading(false);
       onSuccess();
       onClose();
