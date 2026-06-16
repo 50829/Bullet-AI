@@ -98,6 +98,13 @@ export const TopBar = () => {
 
     fetchUsername();
 
+    const handleProfileUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ username?: string | null }>).detail;
+      setUsername(detail?.username || null);
+    };
+
+    window.addEventListener('profile-updated', handleProfileUpdated);
+
     // 监听认证状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
@@ -109,6 +116,7 @@ export const TopBar = () => {
     });
 
     return () => {
+      window.removeEventListener('profile-updated', handleProfileUpdated);
       subscription.unsubscribe();
     };
   }, []);

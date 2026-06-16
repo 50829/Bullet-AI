@@ -220,12 +220,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [formatDate]);
 
   // 获取 Goals 数据
-  const fetchGoals = useCallback(async () => {
-    setLoading(prev => ({ ...prev, goals: true }));
+  const fetchGoals = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+
+    if (!silent) {
+      setLoading(prev => ({ ...prev, goals: true }));
+    }
+
     const userResponse = await supabase.auth.getUser();
     const user = userResponse.data?.user;
     if (!user) {
-      setLoading(prev => ({ ...prev, goals: false }));
+      if (!silent) {
+        setLoading(prev => ({ ...prev, goals: false }));
+      }
       return;
     }
 
@@ -237,7 +244,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (error) {
       console.error("获取目标失败:", error);
-      setLoading(prev => ({ ...prev, goals: false }));
+      if (!silent) {
+        setLoading(prev => ({ ...prev, goals: false }));
+      }
       return;
     }
 
@@ -259,7 +268,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
 
     setGoals(withUrls);
-    setLoading(prev => ({ ...prev, goals: false }));
+    if (!silent) {
+      setLoading(prev => ({ ...prev, goals: false }));
+    }
   }, [formatDate]);
 
   // 初始化加载所有数据
@@ -278,7 +289,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const interval = setInterval(() => {
       fetchMoments();
       fetchReflections();
-      fetchGoals();
+      fetchGoals({ silent: true });
     }, 50 * 60 * 1000); // 每 50 分钟刷新一次签名 URL
     
     return () => clearInterval(interval);
@@ -294,7 +305,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const refreshGoals = async () => {
-    await fetchGoals();
+    await fetchGoals({ silent: true });
   };
 
   // 更新函数 - 修改 updateGoal 使其异步并与 Supabase 交互，添加日志
@@ -338,15 +349,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  // 修改 updateGoal 函数 - 添加日志
   const updateGoal = async (id: number, updates: Partial<Goal>) => {
-    console.log(`[AppContext DEBUG] 开始更新目标 ${id}，更新内容:`, updates);
-    
     // 1. 先更新前端状态，提供即时反馈
     setGoals(prev => prev.map(goal => 
       goal.id === id ? { ...goal, ...updates } : goal
     ));
-    console.log(`[AppContext DEBUG] 前端状态已更新，当前 goals 状态:`, goals);
 
     // 2. 尝试更新 Supabase 数据库
     try {
@@ -356,8 +363,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         throw new Error("用户未登录，无法更新目标");
       }
 
-      console.log(`[AppContext DEBUG] 向 Supabase 发送更新请求，目标 ID: ${id}, 更新内容:`, updates);
-      const { data: dbData, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from("goals")
         .update(updates) // 更新指定字段
         .eq("id", id)     // 通过 ID 匹配目标
@@ -367,8 +373,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         console.error("[AppContext ERROR] 更新数据库失败:", dbError);
         throw new Error(`更新数据库失败: ${dbError.message}`);
       }
-
-      console.log(`[AppContext SUCCESS] 目标 ${id} 数据库更新成功，返回数据:`, dbData);
     } catch (err) {
       console.error("[AppContext ERROR] 更新目标失败:", err);
       throw err; // 抛出错误，让调用者 (handleMoveGoal) 能够捕获

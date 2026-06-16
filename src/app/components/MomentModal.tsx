@@ -7,12 +7,14 @@ import { Textarea } from "./ui/Textarea";
 import { Input } from "./ui/Input";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 import { useAppContext } from '../../context/AppContext'; // 添加 AppContext
+import { useToast } from "./ui/Toast";
 
 type Props = { isOpen: boolean; onClose: () => void; onSuccess: () => void; };
 
 export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
   const { t } = useLanguage(); // 获取翻译函数
   const { addMoment, refreshMoments } = useAppContext(); // 获取添加和刷新函数
+  const { showToast } = useToast();
   const [content, setContent] = useState("");
   const [selectedDate, setSelectedDate] = useState(() => {
     // 默认使用今天的日期，格式为 YYYY-MM-DD
@@ -29,7 +31,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) {
-      alert(t("pleaseLogin") || "请先登录");
+      showToast({ type: "error", message: t("pleaseLogin") || "请先登录" });
       return null;
     }
 
@@ -44,7 +46,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
     if (uploadError) {
       console.error("图片上传失败:", uploadError);
-      alert(t("imageUploadFailed") || "图片上传失败，请重试");
+      showToast({ type: "error", message: t("imageUploadFailed") || "图片上传失败，请重试" });
       return null;
     }
 
@@ -60,14 +62,14 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   const handleSubmit = async () => {
     if (!content.trim()) { 
-      alert(t("contentCannotBeEmpty") || "内容不能为空"); 
+      showToast({ type: "error", message: t("contentCannotBeEmpty") || "内容不能为空" }); 
       return; 
     }
 
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) { 
-      alert(t("pleaseLogin") || "请先登录"); 
+      showToast({ type: "error", message: t("pleaseLogin") || "请先登录" }); 
       return; 
     }
 
@@ -151,16 +153,17 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
           console.error("保存失败:", error);
           // 如果保存失败，刷新列表以移除临时添加的 moment
           refreshMoments();
-          alert(t("publishFailed") || "发布失败，请重试");
+          showToast({ type: "error", message: t("publishFailed") || "发布失败，请重试" });
         } else {
           // 保存成功，刷新列表以获取正确的数据（包括数据库生成的 ID）
           refreshMoments();
+          showToast({ type: "success", message: t("addSuccess") || "成功添加" });
         }
       } catch (err) {
         console.error("提交错误:", err);
         // 如果出错，刷新列表以移除临时添加的 moment
         refreshMoments();
-        alert(t("publishFailed") || "发布失败，请重试");
+        showToast({ type: "error", message: t("publishFailed") || "发布失败，请重试" });
       }
     })();
 
@@ -170,7 +173,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="rounded-[28px] p-6 w-full max-w-xl shadow-xl" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
+      <div className="w-full max-w-xl rounded-2xl bg-[var(--color-bg-surface)] p-6 shadow-xl">
         <h2 className="text-2xl font-bold mb-4">{t("newMoment") || "记录新时刻"}</h2>
 
         <div className="mb-4">

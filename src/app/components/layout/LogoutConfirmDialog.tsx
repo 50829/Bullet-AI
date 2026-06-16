@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { useLanguage } from '../../context/LanguageContext';
+import { Button } from '../ui/Button';
 
 interface LogoutConfirmDialogProps {
   onConfirm: () => void;
@@ -19,14 +20,14 @@ const LogoutConfirmDialog: React.FC<LogoutConfirmDialogProps> = ({
     <>
       {/* 遮罩层 */}
       <div
-        className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+        className="fixed inset-0 bg-black/40 z-50 transition-opacity duration-200 motion-reduce:transition-none"
         onClick={onCancel}
       />
       
       {/* 对话框 */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="rounded-[32px] p-6 shadow-xl max-w-md w-full transform transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-[var(--color-bg-card)]"
+          className="w-full max-w-sm rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-5 shadow-xl"
           onClick={(e) => e.stopPropagation()}
         >
           <h3 className="text-xl font-semibold mb-4 text-[var(--color-text-primary)]">
@@ -38,25 +39,23 @@ const LogoutConfirmDialog: React.FC<LogoutConfirmDialogProps> = ({
           </p>
           
           <div className="flex gap-3 justify-end">
-            <button
+            <Button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform hover:scale-105 active:scale-95 bg-[color:rgba(0,48,73,0.1)] hover:bg-[color:rgba(0,48,73,0.2)] text-[var(--color-text-primary)]"
+              variant="ghost"
             >
               {t("cancel") || "取消"}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('确认按钮被点击');
                 onConfirm();
               }}
-              className="px-4 py-2 rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform hover:scale-105 active:scale-95 bg-[var(--color-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-primary-hover)]"
             >
               {t("confirm") || "确认"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

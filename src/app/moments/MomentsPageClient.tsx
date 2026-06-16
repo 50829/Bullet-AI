@@ -8,6 +8,8 @@ import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 import { useTopBar } from '../components/layout/TopBar';
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { useToast } from "../components/ui/Toast";
 
 type Moment = {
   id: number;
@@ -36,27 +38,18 @@ type MonthCard = {
 export default function MomentsPageClient() {
   const { moments, refreshMoments, deleteMoment } = useAppContext();
   const { t, language } = useLanguage(); // 获取翻译函数和语言设置
+  const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
   const [monthCards, setMonthCards] = useState<MonthCard[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null); // 用于存储要删除的moment
   const [showAIPanel, setShowAIPanel] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [deletingMoment, setDeletingMoment] = useState(false);
   
   // 折叠状态管理
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
-
-  // 检测屏幕尺寸
-  useEffect(() => {
-    const checkDesktop = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-    };
-    checkDesktop();
-    window.addEventListener('resize', checkDesktop);
-    return () => window.removeEventListener('resize', checkDesktop);
-  }, []);
 
   // 格式化日期显示 - 只显示几号（使用 UTC 时间避免时区问题）
   const formatDateDisplay = (dateString: string) => {
@@ -199,20 +192,21 @@ export default function MomentsPageClient() {
   const handleDelete = async () => {
     if (!selectedMoment) return;
 
-    // --- 关键修改：立即关闭确认面板和清除选中项 ---
-    setShowConfirm(false);
     const momentToDelete = selectedMoment; // 保存要删除的moment引用
-    setSelectedMoment(null); // 立即清除选中项
+    setDeletingMoment(true);
 
     try {
       // 使用全局状态中的删除函数
       await deleteMoment(momentToDelete.id, momentToDelete.image_path);
-      // 乐观更新已完成，无需额外操作
+      showToast({ type: "success", message: t("deleteSuccess") || "删除成功" });
+      setShowConfirm(false);
+      setSelectedMoment(null);
     } catch (err) {
       console.error("删除异常:", err);
-      alert(t("deleteFailed") || "删除失败，请稍后重试");
-      // 如果删除失败，刷新数据以确保状态同步
+      showToast({ type: "error", message: t("deleteFailed") || "删除失败，请稍后重试" });
       refreshMoments();
+    } finally {
+      setDeletingMoment(false);
     }
   };
 
@@ -243,8 +237,7 @@ export default function MomentsPageClient() {
 
       {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
       <div 
-        className="flex-1 transition-all duration-300"
-        style={showAIPanel && isDesktop ? { transform: 'translateX(-300px)' } : {}}
+        className="flex-1"
       >
         <div className="p-4 pt-0">
           <div className="max-w-6xl mx-auto">
@@ -260,12 +253,10 @@ export default function MomentsPageClient() {
                   return (
                     <Card 
                       key={monthCard.month} 
-                      className="p-4 rounded-[28px] w-full max-w-3xl mx-auto"
+                      className="p-4 rounded-xl w-full max-w-3xl mx-auto"
                       style={{ 
                         backgroundColor: 'var(--color-month-card-bg, rgba(243, 244, 246, 1))',
-                        backdropFilter: 'blur(25px)',
-                        WebkitBackdropFilter: 'blur(25px)',
-                        border: 'none'
+                        border: '1px solid var(--color-border-muted)'
                       }}
                     >
                       <div className="flex flex-col gap-4">
@@ -296,8 +287,7 @@ export default function MomentsPageClient() {
                               return (
                                 <Card 
                                   key={dayCard.date} 
-                                  className="p-4 rounded-[28px] shadow-md"
-                                  style={{ backgroundColor: 'var(--color-item-card, rgba(255, 255, 255, 0.8))', border: 'none' }}
+                                  className="p-4 rounded-xl"
                                 >
                                   <div className="flex flex-col gap-4">
                                     {/* 日期标题 - 带折叠按钮 */}
@@ -324,20 +314,19 @@ export default function MomentsPageClient() {
                                             className="flex flex-col gap-3 group/item relative"
                                           >
                                             {/* 删除按钮 - 只在hover时显示，右侧居中 */}
-                                            <div 
-                                              className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 transition-opacity z-10 cursor-pointer"
+                                            <button
+                                              type="button"
+                                              className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
                                               title={t("delete") || "删除"}
+                                              aria-label={t("delete") || "删除"}
+                                              onClick={(e) => { 
+                                                e.stopPropagation();
+                                                setSelectedMoment(moment); 
+                                                setShowConfirm(true); 
+                                              }}
                                             >
-                                              <Trash2 
-                                                size={18} 
-                                                className="text-gray-400 hover:text-red-500 transition-colors" 
-                                                onClick={(e) => { 
-                                                  e.stopPropagation();
-                                                  setSelectedMoment(moment); 
-                                                  setShowConfirm(true); 
-                                                }} 
-                                              />
-                                            </div>
+                                              <Trash2 size={18} />
+                                            </button>
                                             
                                             {/* 文字内容 */}
                                             {moment.content && (
@@ -382,32 +371,20 @@ export default function MomentsPageClient() {
 
       <MomentModal isOpen={isModalOpen} onClose={handleModalClose} onSuccess={handleModalSuccess} />
 
-      {/* 修改确认对话框 - 确保在 selectedMoment 存在时才渲染 */}
-      {showConfirm && selectedMoment && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
-            <h2 className="text-xl font-semibold mb-4 text-center text-[var(--color-text-primary)]">{t("confirmDelete") || "确认删除这条时刻吗？"}</h2>
-            <p className="text-[var(--color-text-secondary)] text-base mb-4 text-center">{t("cannotRecover") || "删除后不可恢复"}</p>
-            <div className="flex justify-center space-x-3">
-              <button 
-                onClick={() => { 
-                  setShowConfirm(false); 
-                  setSelectedMoment(null); // 点击取消也清除选中项
-                }}
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-[#003049] bg-transparent text-[var(--color-text-primary)] hover:bg-[#003049] hover:text-[var(--color-text-on-primary)] hover:border-[#003049] text-base"
-              >
-                {t("cancel") || "取消"}
-              </button>
-              <button 
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-[var(--color-text-inverse)] hover:border-red-500 text-base" 
-                onClick={handleDelete} // 点击后立即关闭面板
-              >
-                {t("confirm") || "确认删除"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={showConfirm && Boolean(selectedMoment)}
+        title={t("confirmDelete") || "确认删除这条记录吗？"}
+        description={t("cannotRecover") || "删除后不可恢复"}
+        confirmLabel={t("confirm") || "确认"}
+        cancelLabel={t("cancel") || "取消"}
+        loading={deletingMoment}
+        tone="danger"
+        onConfirm={handleDelete}
+        onCancel={() => {
+          setShowConfirm(false);
+          setSelectedMoment(null);
+        }}
+      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { ThemeInitializer } from './components/ThemeInitializer';
 import { Suspense } from 'react';
 import { LoadingState } from './components/ui/LoadingState';
+import { ToastProvider } from './components/ui/Toast';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -25,7 +26,7 @@ export default function RootLayout({
         <ThemeInitializer />
         <Suspense fallback={<LoadingState label="Loading" />}>
           <LanguageProvider>
-            {children}
+            <ToastProvider>{children}</ToastProvider>
           </LanguageProvider>
         </Suspense>
       </body>

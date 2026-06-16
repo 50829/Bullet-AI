@@ -7,6 +7,9 @@ import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext';
 import { useHabits } from "../../features/habits/hooks/useHabits";
 import { HabitList } from "../../features/habits/components/HabitList";
+import { ConfirmDialog } from "./ui/ConfirmDialog";
+import { useToast } from "./ui/Toast";
+import type { HabitView } from "../../features/habits/types";
 
 type Moment = {
   id: number;
@@ -36,6 +39,7 @@ type DayCard = {
 export default function HomePage() {
   const { moments, goals, loading, refreshGoals, updateGoal } = useAppContext();
   const { t } = useLanguage();
+  const { showToast } = useToast();
   const {
     habits,
     loading: habitsLoading,
@@ -44,6 +48,8 @@ export default function HomePage() {
     removeHabit,
   } = useHabits();
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
+  const [habitToDelete, setHabitToDelete] = useState<HabitView | null>(null);
+  const [deletingHabit, setDeletingHabit] = useState(false);
 
   // 将日期字符串转换为 YYYY-MM-DD 格式用于分组
   const getDateKey = useCallback((dateString: string): string => {
@@ -124,13 +130,31 @@ export default function HomePage() {
     return goals.filter(goal => goal.due_date === todayStr);
   }, [goals]);
 
+  const confirmDeleteHabit = async () => {
+    if (!habitToDelete) return;
+
+    setDeletingHabit(true);
+    try {
+      await removeHabit(habitToDelete.id);
+      showToast({ type: "success", message: t("deleteSuccess") || "删除成功" });
+      setHabitToDelete(null);
+    } catch (err) {
+      showToast({
+        type: "error",
+        message: err instanceof Error ? err.message : t("deleteFailed") || "删除失败",
+      });
+    } finally {
+      setDeletingHabit(false);
+    }
+  };
+
   return (
     <div className="w-full h-full overflow-y-auto -mt-8">
       <div className="max-w-7xl mx-auto pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* 左侧：近一周的记录 */}
           <div className="lg:col-span-3">
-            <Card className="p-4 rounded-[28px]" style={{ backgroundColor: 'var(--color-item-card, rgba(243, 244, 246, 1))', border: 'none' }}>
+            <Card className="p-4 rounded-xl">
               <div className="mb-4">
                 <h3 className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
                   <Camera size={20} />
@@ -150,8 +174,7 @@ export default function HomePage() {
                     return (
                       <Card 
                         key={dayCard.date} 
-                        className="p-4 rounded-[28px] shadow-md"
-                        style={{ backgroundColor: 'var(--color-item-card, rgba(255, 255, 255, 0.8))', border: 'none' }}
+                        className="p-4 rounded-xl"
                       >
                         <div className="flex flex-col gap-4">
                           {/* 日期标题 - 带折叠按钮 */}
@@ -213,31 +236,24 @@ export default function HomePage() {
 
           {/* 右侧：上半部分 - 习惯面板 */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg" style={{ border: 'none' }}>
+            <Card className="rounded-xl">
               <div className="mb-4">
                 <h3 className="text-xl font-bold text-[var(--color-text-primary)]">{t("myHabits") || "我的习惯"}</h3>
               </div>
               <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
                 <HabitList
                   habits={habits}
-                  loading={habitsLoading}
+                  loading={habitsLoading && habits.length === 0}
                   limit={5}
                   onCheckinToday={checkinToday}
                   onToggleCheckin={toggleCheckin}
-                  onDelete={async (habit) => {
-                    if (!window.confirm(`${t("confirmDelete") || "确认删除"} ${habit.name}${t("questionMark") || "吗？"}`)) return;
-                    try {
-                      await removeHabit(habit.id);
-                    } catch (err) {
-                      alert(err instanceof Error ? err.message : t("deleteFailed") || "删除失败");
-                    }
-                  }}
+                  onDelete={(habit) => setHabitToDelete(habit)}
                 />
               </div>
             </Card>
 
           {/* 右侧：下半部分 - 今日任务面板 */}
-          <Card className="rounded-[28px] shadow-lg bg-[var(--color-panel-primary)]" style={{ border: 'none' }}>
+          <Card className="rounded-xl bg-[var(--color-panel-primary)]" style={{ border: 'none' }}>
               <div className="mb-4">
                 <h3 className="text-xl font-bold flex items-center gap-2 text-[var(--color-panel-text)]">
                   <CheckCircle2 size={20} />
@@ -257,7 +273,7 @@ export default function HomePage() {
                     return (
                       <div
                         key={goal.id}
-                        className={`group p-5 rounded-[28px] border border-[color:rgba(239,238,235,0.2)] bg-[color:rgba(0,48,73,0.85)] ${
+                        className={`group rounded-xl border border-[color:rgba(239,238,235,0.2)] bg-[color:rgba(0,48,73,0.85)] p-4 ${
                           isCompleted ? 'opacity-75' : ''
                         }`}
                       >
@@ -268,8 +284,12 @@ export default function HomePage() {
                                 try {
                                   await updateGoal(goal.id, { status: 'completed' });
                                   await refreshGoals();
+                                  showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
                                 } catch (err) {
-                                  alert(err instanceof Error ? err.message : t("updateFailed") || "更新失败");
+                                  showToast({
+                                    type: "error",
+                                    message: err instanceof Error ? err.message : t("updateFailed") || "更新失败",
+                                  });
                                 }
                               }}
                               className="p-1.5 rounded-full bg-[var(--color-success)] hover:bg-[var(--color-success-hover)] transition-colors duration-200 flex items-center justify-center flex-shrink-0"
@@ -305,6 +325,17 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        isOpen={Boolean(habitToDelete)}
+        title={`${t("confirmDelete") || "确认删除"} ${habitToDelete?.name ?? ""}`}
+        description={t("cannotRecover") || "删除后不可恢复。"}
+        confirmLabel={t("confirm") || "确认"}
+        cancelLabel={t("cancel") || "取消"}
+        loading={deletingHabit}
+        tone="danger"
+        onConfirm={confirmDeleteHabit}
+        onCancel={() => setHabitToDelete(null)}
+      />
     </div>
   );
 }

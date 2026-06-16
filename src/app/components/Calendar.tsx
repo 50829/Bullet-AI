@@ -118,7 +118,7 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
   const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
 
   return (
-    <div className={`rounded-[28px] p-4 ${isMobile ? 'h-auto min-h-[400px]' : 'h-[520px]'} flex flex-col bg-[var(--color-panel-primary)]`}>
+    <div className={`rounded-xl p-4 ${isMobile ? 'h-auto min-h-[400px]' : 'h-[520px]'} flex flex-col bg-[var(--color-panel-primary)]`}>
       {/* 月份导航 */}
       <div className="flex items-center justify-between mb-3 flex-shrink-0">
         {/* 标题放在左上角 */}
@@ -179,4 +179,3 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
     </div>
   );
 };
-

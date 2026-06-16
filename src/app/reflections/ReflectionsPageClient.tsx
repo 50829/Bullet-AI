@@ -11,6 +11,8 @@ import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 import { supabase } from "../../lib/supabaseClient";
 import { useTopBar } from '../components/layout/TopBar';
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { useToast } from "../components/ui/Toast";
 
 type Reflection = {
   id: number;
@@ -28,12 +30,12 @@ type Reflection = {
 export default function ReflectionsPageClient() {
   const { reflections, loading, refreshReflections, deleteReflection, updateReflection } = useAppContext();
   const { t, language } = useLanguage(); // 获取翻译函数和语言设置
+  const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
   const [filteredReflections, setFilteredReflections] = useState<Reflection[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null); // 用于存储要删除的reflection
   const [showAIPanel, setShowAIPanel] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
@@ -41,19 +43,10 @@ export default function ReflectionsPageClient() {
   const [editingReflection, setEditingReflection] = useState<Reflection | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [deletingReflection, setDeletingReflection] = useState(false);
   
   // 折叠状态管理
   const [collapsedReflections, setCollapsedReflections] = useState<Set<number>>(new Set());
-
-  // 检测屏幕尺寸
-  useEffect(() => {
-    const checkDesktop = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-    };
-    checkDesktop();
-    window.addEventListener('resize', checkDesktop);
-    return () => window.removeEventListener('resize', checkDesktop);
-  }, []);
 
   // 切换折叠状态
   const toggleReflection = (reflectionId: number) => {
@@ -68,31 +61,10 @@ export default function ReflectionsPageClient() {
     });
   };
 
-  // 获取标题首字符用于排序
-  const getTitleFirstChar = (reflection: Reflection): string => {
-    const contentLines = reflection.content.split('\n\n');
-    const hasTitle = contentLines.length > 1 && contentLines[0].trim().length > 0 && contentLines[0].trim().length < 100;
-    const title = hasTitle ? contentLines[0].trim() : reflection.content.trim();
-    if (!title) return 'ZZZ'; // 没有标题的排在最后
-    const firstChar = title.charAt(0).toUpperCase();
-    // 如果是中文字符，返回拼音首字母或直接返回字符
-    if (/[\u4e00-\u9fa5]/.test(firstChar)) {
-      return firstChar;
-    }
-    // 如果是英文字母或数字，直接返回
-    if (/[A-Z0-9]/.test(firstChar)) {
-      return firstChar;
-    }
-    // 其他字符排在最后
-    return 'ZZZ';
-  };
-
   // 初始过滤和排序
   useEffect(() => {
     const sorted = [...reflections].sort((a, b) => {
-      const charA = getTitleFirstChar(a);
-      const charB = getTitleFirstChar(b);
-      return charA.localeCompare(charB, 'zh-CN');
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
     setFilteredReflections(sorted);
   }, [reflections]);
@@ -120,11 +92,11 @@ export default function ReflectionsPageClient() {
 
   const handleSaveNew = async () => {
     if (!newTitle.trim()) {
-      alert(t("pleaseEnterTitle") || "请填写标题");
+      showToast({ type: "error", message: t("pleaseEnterTitle") || "请填写标题" });
       return;
     }
     if (!newContent.trim()) {
-      alert(t("pleaseEnterContent") || "请填写感悟内容");
+      showToast({ type: "error", message: t("pleaseEnterContent") || "请填写感悟内容" });
       return;
     }
     
@@ -133,7 +105,7 @@ export default function ReflectionsPageClient() {
       const { data: userData } = await supabase.auth.getUser();
       const user = userData?.user;
       if (!user) {
-        alert(t("pleaseLogin") || "请先登录！");
+        showToast({ type: "error", message: t("pleaseLogin") || "请先登录！" });
         setIsSaving(false);
         return;
       }
@@ -148,16 +120,17 @@ export default function ReflectionsPageClient() {
 
       if (error) {
         console.error("写入 reflections 失败:", error);
-        alert(t("publishFailed") || "发布失败，请重试");
+        showToast({ type: "error", message: t("publishFailed") || "发布失败，请重试" });
       } else {
         refreshReflections();
         setIsCreatingNew(false);
         setNewTitle("");
         setNewContent("");
+        showToast({ type: "success", message: t("addSuccess") || "成功添加" });
       }
     } catch (err) {
       console.error("提交错误:", err);
-      alert(t("publishFailed") || "发布异常，请稍后重试");
+      showToast({ type: "error", message: t("publishFailed") || "发布异常，请稍后重试" });
     } finally {
       setIsSaving(false);
     }
@@ -184,11 +157,11 @@ export default function ReflectionsPageClient() {
     if (!editingReflection) return;
     
     if (!editTitle.trim()) {
-      alert(t("pleaseEnterTitle") || "请填写标题");
+      showToast({ type: "error", message: t("pleaseEnterTitle") || "请填写标题" });
       return;
     }
     if (!editContent.trim()) {
-      alert(t("pleaseEnterContent") || "请填写感悟内容");
+      showToast({ type: "error", message: t("pleaseEnterContent") || "请填写感悟内容" });
       return;
     }
 
@@ -200,9 +173,10 @@ export default function ReflectionsPageClient() {
       setEditingReflection(null);
       setEditTitle("");
       setEditContent("");
+      showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
     } catch (err) {
       console.error("更新错误:", err);
-      alert(t("updateFailed") || "更新失败，请重试");
+      showToast({ type: "error", message: t("updateFailed") || "更新失败，请重试" });
     } finally {
       setIsSaving(false);
     }
@@ -212,24 +186,26 @@ export default function ReflectionsPageClient() {
   const handleDelete = async () => {
     if (!selectedReflection) return;
 
-    // --- 关键修改：立即关闭确认面板和清除选中项 ---
-    setShowConfirm(false);
     const reflectionToDelete = selectedReflection; // 保存要删除的reflection引用
-    setSelectedReflection(null); // 立即清除选中项
+    setDeletingReflection(true);
 
     try {
       // 使用全局状态中的删除函数
       await deleteReflection(reflectionToDelete.id, reflectionToDelete.image_path);
-      // 乐观更新已完成，无需额外操作
+      showToast({ type: "success", message: t("deleteSuccess") || "删除成功" });
+      setShowConfirm(false);
+      setSelectedReflection(null);
     } catch (err) {
       console.error("删除异常:", err);
-      alert(t("deleteFailed") || "删除失败，请稍后重试");
+      showToast({ type: "error", message: t("deleteFailed") || "删除失败，请稍后重试" });
       // 如果删除失败，刷新数据以确保状态同步
       refreshReflections();
+    } finally {
+      setDeletingReflection(false);
     }
   };
 
-  if (loading.reflections) return <div className="text-center py-8">{t("loading.reflections") || "思考即将开始..."}</div>;
+  if (loading.reflections) return <div className="text-center py-8">{t("loadingReflectionsDetailed") || "思考即将开始..."}</div>;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -258,15 +234,14 @@ export default function ReflectionsPageClient() {
 
       {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
       <div 
-        className="flex-1 transition-all duration-300"
-        style={showAIPanel && isDesktop ? { transform: 'translateX(-300px)' } : {}}
+        className="flex-1"
       >
         <div className="p-4 pt-0"> {/* 移除顶部padding，因为头部已固定 */}
           <div className="max-w-6xl mx-auto">
             <div className="space-y-6">
               {/* 新建感悟卡片 - 显示在列表顶部 */}
               {isCreatingNew && (
-                <Card className="p-6 rounded-[28px] w-full max-w-3xl mx-auto" style={{ backgroundColor: 'var(--color-modal-card, #f3f4f6)', border: 'none' }}>
+                <Card className="p-6 rounded-xl w-full max-w-3xl mx-auto">
                   <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-xl font-semibold text-[var(--color-text-primary)]">{t("newReflection") || "记录新感悟"}</h3>
@@ -323,7 +298,7 @@ export default function ReflectionsPageClient() {
                     return (
                       <Card 
                         key={reflection.id} 
-                        className="bg-gray-100 p-6 rounded-[28px] w-full max-w-3xl mx-auto"
+                        className="p-6 rounded-xl w-full max-w-3xl mx-auto"
                       >
                         <div className="flex flex-col gap-4">
                           <div className="flex justify-between items-center mb-2">
@@ -382,8 +357,7 @@ export default function ReflectionsPageClient() {
                   return (
                     <Card 
                       key={reflection.id} 
-                      className="group p-4 rounded-[28px] w-full max-w-3xl mx-auto"
-                      style={{ backgroundColor: 'var(--color-item-card, rgba(255, 255, 255, 0.8))', border: 'none' }}
+                      className="group p-4 rounded-xl w-full max-w-3xl mx-auto"
                     >
                       <div className="flex flex-col gap-4">
                         <div className="min-w-0">
@@ -401,11 +375,11 @@ export default function ReflectionsPageClient() {
                                 )}
                               </button>
                               <h3 className="text-2xl font-semibold text-[var(--color-text-primary)] flex-1">{displayTitle}</h3>
-                              <div className="flex justify-end space-x-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <div className="flex justify-end space-x-2 text-[var(--color-text-secondary)]">
                                 <div title={t("edit") || "编辑"}>
                                   <Edit2 
                                     size={18} 
-                                    className="cursor-pointer hover:text-blue-500 transition-colors" 
+                                    className="cursor-pointer transition-colors duration-150 hover:text-[var(--color-primary)] motion-reduce:transition-none" 
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleEdit(reflection);
@@ -415,7 +389,7 @@ export default function ReflectionsPageClient() {
                                 <div title={t("delete") || "删除"}>
                                   <Trash2 
                                     size={18} 
-                                    className="cursor-pointer hover:text-red-500 transition-colors" 
+                                    className="cursor-pointer transition-colors duration-150 hover:text-red-600 motion-reduce:transition-none" 
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setSelectedReflection(reflection); 
@@ -429,18 +403,18 @@ export default function ReflectionsPageClient() {
                           
                           {/* 没有标题时显示编辑和删除按钮 */}
                           {!displayTitle && (
-                            <div className="flex justify-end mb-3 space-x-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="flex justify-end mb-3 space-x-2 text-[var(--color-text-secondary)]">
                               <div title={t("edit") || "编辑"}>
                                 <Edit2 
                                   size={18} 
-                                  className="cursor-pointer hover:text-blue-500 transition-colors" 
+                                  className="cursor-pointer transition-colors duration-150 hover:text-[var(--color-primary)] motion-reduce:transition-none" 
                                   onClick={() => handleEdit(reflection)} 
                                 />
                               </div>
                               <div title={t("delete") || "删除"}>
                                 <Trash2 
                                   size={18} 
-                                  className="cursor-pointer hover:text-red-500 transition-colors" 
+                                  className="cursor-pointer transition-colors duration-150 hover:text-red-600 motion-reduce:transition-none" 
                                   onClick={() => { 
                                     setSelectedReflection(reflection); 
                                     setShowConfirm(true);
@@ -465,36 +439,20 @@ export default function ReflectionsPageClient() {
         </div>
       </div>
 
-      {/* 修改确认对话框 - 确保在 selectedReflection 存在时才渲染 */}
-      {showConfirm && selectedReflection && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="p-4 rounded-[28px] shadow-md max-w-sm w-full mx-4" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
-            <h2 className="text-xl font-semibold mb-4 text-center text-[var(--color-text-primary)]">
-              {t("confirmDelete") || "确认删除这条感悟吗？"}
-            </h2>
-            <p className="text-[var(--color-text-secondary)] text-base mb-4 text-center">
-              {t("cannotRecover") || "删除后不可恢复"}
-            </p>
-            <div className="flex justify-center space-x-3">
-              <button 
-                onClick={() => { 
-                  setShowConfirm(false); 
-                  setSelectedReflection(null); // 点击取消也清除选中项
-                }}
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-[#003049] bg-transparent text-[var(--color-text-primary)] hover:bg-[#003049] hover:text-[var(--color-text-on-primary)] hover:border-[#003049] text-base"
-              >
-                {t("cancel") || "取消"}
-              </button>
-              <button 
-                className="px-4 py-2 rounded-3xl font-semibold transition-colors border-2 border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-[var(--color-text-inverse)] hover:border-red-500 text-base" 
-                onClick={handleDelete} // 点击后立即关闭面板
-              >
-                {t("confirm") || "确认删除"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={showConfirm && Boolean(selectedReflection)}
+        title={t("confirmDelete") || "确认删除这条感悟吗？"}
+        description={t("cannotRecover") || "删除后不可恢复"}
+        confirmLabel={t("confirm") || "确认"}
+        cancelLabel={t("cancel") || "取消"}
+        loading={deletingReflection}
+        tone="danger"
+        onConfirm={handleDelete}
+        onCancel={() => {
+          setShowConfirm(false);
+          setSelectedReflection(null);
+        }}
+      />
     </div>
   );
 }

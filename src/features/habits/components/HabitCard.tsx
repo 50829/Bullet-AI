@@ -74,7 +74,7 @@ export function HabitCard({ habit, onOpen, onCheckinToday, onDelete }: HabitCard
                 event.stopPropagation();
                 onDelete(habit);
               }}
-              className="rounded-full p-2 text-[var(--color-text-secondary)] opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+              className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
               title={t("delete") || "删除"}
             >
               <Trash2 size={16} />

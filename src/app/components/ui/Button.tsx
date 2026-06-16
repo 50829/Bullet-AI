@@ -1,81 +1,41 @@
 // src/components/ui/Button.tsx
 import React from 'react';
 
-type ButtonProps = {
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   children: React.ReactNode;
-  onClick?: () => void;
-  type?: 'button' | 'submit' | 'reset';
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
-  className?: string;
-  disabled?: boolean;
-  style?: React.CSSProperties;
-  title?: string;
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 };
 
-export const Button = ({ children, onClick, type = 'button', variant = 'primary', className = '', disabled = false, style, title }: ButtonProps) => {
-  const baseClasses = 'px-4 py-2 rounded-3xl font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center';
-  
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'primary':
-        return {
-          backgroundColor: 'var(--color-primary)',
-          color: 'var(--color-text-on-primary)',
-          borderColor: 'var(--color-primary)',
-        };
-      case 'secondary':
-        return {
-          backgroundColor: 'transparent',
-          color: 'var(--color-text-primary)',
-          borderColor: 'var(--color-primary)',
-        };
-      case 'outline':
-        return {
-          backgroundColor: 'transparent',
-          color: 'var(--color-text-primary)',
-          borderColor: 'var(--color-primary)',
-        };
-      case 'ghost':
-        return {
-          backgroundColor: 'transparent',
-          color: 'var(--color-text-primary)',
-          borderColor: 'transparent',
-        };
-      default:
-        return {};
-    }
-  };
+const variantClasses = {
+  primary:
+    "border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-primary-hover)]",
+  secondary:
+    "border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-primary)]",
+  outline:
+    "border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)] hover:bg-[var(--color-bg-primary)]",
+  ghost:
+    "border-transparent bg-transparent text-[var(--color-text-primary)] hover:bg-[var(--color-bg-primary)]",
+  danger:
+    "border-red-600 bg-red-600 text-white hover:bg-red-700",
+};
 
-  const variantStyles = getVariantStyles();
-  const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
+export const Button = ({
+  children,
+  type = 'button',
+  variant = 'primary',
+  className = '',
+  disabled = false,
+  ...props
+}: ButtonProps) => {
+  const baseClasses =
+    "inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none";
 
-  // 移除className中的text-white，确保使用style中的颜色
-  const cleanedClassName = className.replace(/\btext-white\b/g, '');
-  
   return (
-    <button 
+    <button
       type={type}
-      onClick={onClick} 
-      disabled={disabled} 
-      className={`${baseClasses} border-2 ${disabledClasses} ${cleanedClassName}`}
-      style={{...variantStyles, ...style}}
-      title={title}
-      onMouseEnter={(e) => {
-        if (!disabled && variant === 'primary') {
-          e.currentTarget.style.backgroundColor = 'transparent';
-          e.currentTarget.style.color = 'var(--color-text-primary)';
-        } else if (!disabled && variant === 'secondary') {
-          e.currentTarget.style.backgroundColor = 'transparent';
-        } else if (!disabled && variant === 'outline') {
-          e.currentTarget.style.backgroundColor = 'var(--color-primary)';
-          e.currentTarget.style.color = 'var(--color-text-on-primary)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!disabled) {
-          Object.assign(e.currentTarget.style, variantStyles);
-        }
-      }}
+      disabled={disabled}
+      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+      {...props}
     >
       {children}
     </button>

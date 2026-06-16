@@ -6,11 +6,13 @@ import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
+import { useToast } from "./ui/Toast";
 
 type Props = { isOpen: boolean; onClose: () => void; onSuccess: () => void; };
 
 export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
   const { t } = useLanguage(); // 获取翻译函数
+  const { showToast } = useToast();
   const [content, setContent] = useState("");
   const [source, setSource] = useState("");
   const [sourceType, setSourceType] = useState("");
@@ -26,7 +28,7 @@ export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) { 
-      alert(t("pleaseLogin") || "请先登录再上传图片"); 
+      showToast({ type: "error", message: t("pleaseLogin") || "请先登录再上传图片" }); 
       return null; 
     }
 
@@ -37,7 +39,7 @@ export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
     const { error: uploadError } = await supabase.storage.from("reflections").upload(filePath, imageFile, { upsert: false });
     if (uploadError) { 
       console.error("图片上传失败:", uploadError); 
-      alert(t("imageUploadFailed") || "图片上传失败"); 
+      showToast({ type: "error", message: t("imageUploadFailed") || "图片上传失败" }); 
       return null; 
     }
 
@@ -49,7 +51,7 @@ export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
 
   const handleSubmit = async () => {
     if (!content.trim()) { 
-      alert(t("pleaseEnterContent") || "请填写感悟内容"); 
+      showToast({ type: "error", message: t("pleaseEnterContent") || "请填写感悟内容" }); 
       return; 
     }
     setLoading(true);
@@ -58,7 +60,7 @@ export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
       const { data: userData } = await supabase.auth.getUser();
       const user = userData?.user;
       if (!user) { 
-        alert(t("pleaseLogin") || "请先登录！"); 
+        showToast({ type: "error", message: t("pleaseLogin") || "请先登录！" }); 
         setLoading(false); 
         return; 
       }
@@ -81,7 +83,7 @@ export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
       setLoading(false);
       if (error) { 
         console.error("写入 reflections 失败:", error); 
-        alert(t("publishFailed") || "发布失败，请重试"); 
+        showToast({ type: "error", message: t("publishFailed") || "发布失败，请重试" }); 
       }
       else { 
         onSuccess(); 
@@ -92,17 +94,18 @@ export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
         setLocation(""); 
         setImageFile(null); 
         setPreviewUrl(null); 
+        showToast({ type: "success", message: t("addSuccess") || "成功添加" });
       }
     } catch (err) {
       console.error("提交错误:", err);
-      alert(t("publishFailed") || "发布异常，请稍后重试");
+      showToast({ type: "error", message: t("publishFailed") || "发布异常，请稍后重试" });
       setLoading(false);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="rounded-[28px] p-6 w-full max-w-xl shadow-xl" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
+      <div className="w-full max-w-xl rounded-2xl bg-[var(--color-bg-surface)] p-6 shadow-xl">
         <h2 className="text-2xl font-bold mb-4">{t("newReflection") || "记录新感悟"}</h2>
 
         <label className="block text-sm text-gray-600 mb-1">{t("content") || "内容 *"}</label>

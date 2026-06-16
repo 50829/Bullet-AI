@@ -170,11 +170,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
       if (onProfileUpdate) {
         onProfileUpdate(updatedProfile);
       }
-      
-      // 刷新页面以更新显示的用户名
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+
+      window.dispatchEvent(new CustomEvent('profile-updated', {
+        detail: { username: updatedProfile.username },
+      }));
+      setLoading(false);
     } catch (err) {
       console.error("更新用户名时出错:", err);
       setMessage(t("updateError") || "发生错误，请稍后再试");
@@ -186,15 +186,14 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
     <>
       {/* 遮罩层 */}
       <div
-        className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+        className="fixed inset-0 bg-black/40 z-50 transition-opacity duration-200 motion-reduce:transition-none"
         onClick={onClose}
       />
       
       {/* 设置面板 */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="rounded-[32px] shadow-xl max-w-4xl w-full h-[80vh] transform transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col"
-          style={{ backgroundColor: 'var(--color-bg-card)' }}
+          className="flex h-[80vh] w-full max-w-4xl flex-col rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] shadow-xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* 头部 */}
@@ -204,7 +203,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
             </h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-gray-200/50 transition-colors"
+              className="rounded-lg p-2 transition-colors duration-150 hover:bg-[var(--color-bg-primary)] motion-reduce:transition-none"
               aria-label={t("close") || "关闭"}
             >
               <X size={24} style={{ color: 'var(--color-text-secondary)' }} />
@@ -218,7 +217,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
               <nav className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-2">
                 <button
                   onClick={() => setActiveSection('user')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-150 motion-reduce:transition-none ${
                     activeSection === 'user'
                       ? 'text-white'
                       : 'hover:bg-gray-200/50'
@@ -233,7 +232,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
                 </button>
                 <button
                   onClick={() => setActiveSection('theme')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-150 motion-reduce:transition-none ${
                     activeSection === 'theme'
                       ? 'text-white'
                       : 'hover:bg-gray-200/50'
@@ -248,7 +247,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
                 </button>
                 <button
                   onClick={() => setActiveSection('language')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-150 motion-reduce:transition-none ${
                     activeSection === 'language'
                       ? 'text-white'
                       : 'hover:bg-gray-200/50'
@@ -281,7 +280,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="w-full border rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 transition-all duration-300"
+                        className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
                         style={{
                           borderColor: 'var(--color-border)',
                           color: 'var(--color-text-primary)',
@@ -301,26 +300,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
                     <button
                       type="submit"
                       disabled={loading || !canChangeUsername || username.trim() === currentUsername}
-                      className="px-6 py-2.5 rounded-3xl font-bold border-2 border-transparent transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{
-                        backgroundColor: 'var(--color-primary)',
-                        color: 'var(--color-text-on-primary)',
-                        borderColor: 'var(--color-primary)',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!e.currentTarget.disabled) {
-                          e.currentTarget.style.backgroundColor = 'var(--color-bg-surface)';
-                          e.currentTarget.style.color = 'var(--color-text-primary)';
-                          e.currentTarget.style.borderColor = 'var(--color-primary)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!e.currentTarget.disabled) {
-                          e.currentTarget.style.backgroundColor = 'var(--color-primary)';
-                          e.currentTarget.style.color = 'var(--color-text-on-primary)';
-                          e.currentTarget.style.borderColor = 'var(--color-primary)';
-                        }
-                      }}
+                      className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-text-on-primary)] transition-colors duration-150 hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
                     >
                       {loading ? (t("saving") || "保存中...") : (t("save") || "保存")}
                     </button>

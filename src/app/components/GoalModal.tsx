@@ -6,6 +6,7 @@ import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 import { createGoal } from "../../features/goals/services/goalService";
+import { useToast } from "./ui/Toast";
 
 type Props = {
   isOpen: boolean;
@@ -15,16 +16,22 @@ type Props = {
 
 export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
   const { t } = useLanguage(); // 获取翻译函数
+  const { showToast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
-    if (!title.trim()) return alert(t("pleaseEnterTitle") || "请填写目标标题");
+    if (!title.trim()) {
+      setMessage(t("pleaseEnterTitle") || "请填写目标标题");
+      return;
+    }
 
     setLoading(true);
+    setMessage(null);
 
     try {
       await createGoal({
@@ -37,17 +44,18 @@ export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
       onClose();
       setTitle("");
       setDescription("");
+      showToast({ type: "success", message: t("addSuccess") || "成功添加" });
     } catch (err) {
       console.error("捕获到异常:", err);
       setLoading(false);
       const errorMsg = err instanceof Error ? err.message : String(err);
-      alert(`${t("saveFailed") || "保存失败，请重试"}: ${errorMsg}`);
+      setMessage(`${t("saveFailed") || "保存失败，请重试"}: ${errorMsg}`);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="rounded-[28px] p-6 w-full max-w-md shadow-xl transform transition-transform duration-200" style={{ backgroundColor: 'var(--color-modal-card, #efeeeb)' }}>
+      <div className="w-full max-w-md rounded-2xl bg-[var(--color-bg-surface)] p-6 shadow-xl">
         <h2 className="text-2xl font-bold mb-4">{t("newGoal") || "新建目标"}</h2>
 
         <label className="block text-sm text-gray-600 mb-1">
@@ -80,6 +88,8 @@ export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
           maxLength={70}
           rows={3}
         />
+
+        {message && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{message}</p>}
 
         <div className="flex justify-end mt-6 space-x-3">
           <Button 

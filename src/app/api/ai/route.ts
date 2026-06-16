@@ -177,15 +177,12 @@ export async function POST(req: Request) {
     }
 
     const data = await resp.json();
-    console.log("豆包 API 响应:", data);
 
     // 提取 AI 的回复内容
     let reply: string = data.choices?.[0]?.message?.content || "";
-    console.log("[AI Route] AI原始回复:", reply);
 
     // 🧠 提取 JSON 计划
     const internalPlan = extractJson(reply);
-    console.log("[AI Route] 提取的计划数据:", internalPlan);
 
     // 🧼 去掉 JSON 内容，保留纯文本回复
     // 支持多种格式的JSON代码块
@@ -196,7 +193,6 @@ export async function POST(req: Request) {
 
     // 转换计划格式以适配前端
     const frontendPlan = internalPlan ? convertPlanForFrontend(internalPlan) : undefined;
-    console.log("[AI Route] 转换后的前端计划:", frontendPlan);
 
     // 返回纯文本回复和解析出的计划（如果有的话）
     return NextResponse.json({
