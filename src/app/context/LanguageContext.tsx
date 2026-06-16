@@ -70,6 +70,12 @@ export function LanguageProvider({children}: {children: ReactNode}) {
         key={language}
         locale={language}
         messages={messages[language]}
+        getMessageFallback={({key}) => key}
+        onError={(error) => {
+          if (error.code !== "MISSING_MESSAGE") {
+            console.error(error);
+          }
+        }}
         timeZone="Asia/Shanghai"
       >
         {isHydrated ? children : children}
