@@ -1,39 +1,42 @@
-## website
-**this app is currently deployed on Vercel：<https://react-test1-kappa-ten.vercel.app/>**
+# Bullet-AI 🚀
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+**个人成长与生活管理 Web 应用** — 记录瞬间、沉淀思考、管理目标、养成习惯，AI 伴你成长。
 
-## Getting Started
+> 在线体验: [react-test1-kappa-ten.vercel.app](https://react-test1-kappa-ten.vercel.app/)
 
-First, run the development server:
+## 项目文档
+
+| 文档 | 说明 |
+|------|------|
+| [需求分析](docs/requirements-analysis.md) | 完整功能需求、用户角色、非功能需求、页面路由 |
+| [数据库 ER 图](docs/er-diagram.md) | 实体关系图、表结构、关系说明、图片存储方案 |
+| [Supabase 设置](SUPABASE_SETUP.md) | 数据库初始化 SQL、RLS 策略配置 |
+
+## 功能概览
+
+- **Moments** — 图文日记，回溯记录生活瞬间
+- **Reflections** — 结构化思想感悟，支持来源/地点标注
+- **Goals** — 日历视图目标管理 + 迁移清单
+- **Habits** — 每日/每周习惯打卡追踪
+- **AI 助手** — 树洞/生活/哲思/规划 4 种 AI 对话
+
+## 技术栈
+
+- **框架**: Next.js 15.5 + React 19 + TypeScript
+- **样式**: Tailwind CSS v4
+- **后端**: Supabase（Postgres + Auth + Storage）
+- **AI**: 可配置的第三方 LLM API
+- **部署**: Vercel
+
+## 本地开发
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+需要配置环境变量:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `LLM_API_KEY`（AI 功能）
+- `LLM_BASE_URL`（AI 功能）
