@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default function DashboardPage() {
   return (
     <AppProvider>
-      <Suspense fallback={<LoadingState label="正在准备你的空间" />}>
+      <Suspense fallback={<LoadingState />}>
         <MainDashboardClient />
       </Suspense>
     </AppProvider>

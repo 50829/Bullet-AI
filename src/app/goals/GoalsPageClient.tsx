@@ -96,7 +96,6 @@ export default function GoalsPageClient() {
       } else {
         await removeHabit(itemToDelete.id);
       }
-      showToast({ type: "success", message: t("deleteSuccess") || "删除成功" });
       setShowConfirm(false);
       setSelectedItem(null);
     } catch (err) {
@@ -125,7 +124,6 @@ export default function GoalsPageClient() {
         created_at: new Date().toISOString(),
       });
     });
-    showToast({ type: "success", message: t("goalsAddedSuccessfully") || "目标已添加" });
   };
 
 
@@ -148,26 +146,23 @@ export default function GoalsPageClient() {
   return (
     <div className="min-h-screen flex flex-col">
 
-      {/* AI智能规划面板 */}
+      {/* 规划面板 */}
       <AssistantDrawer
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
         mode="planning"
-        title={t("aiPlanning") || "AI智能规划"}
+        title={language === "en" ? "Planning" : "规划"}
         placeholder={t("aiGoalInputPlaceholder") || "输入你想完成的大目标..."}
-        greeting={t("aiPlanningGreeting") || (language === "en" 
-          ? "Hello! I'm your AI Planning Assistant. Tell me what goal you want to achieve, and I'll help you break it down into actionable sub-goals. 🎯"
-          : "你好！我是你的AI规划助手。请告诉我你想完成什么目标，我会帮你拆解成可执行的小目标。🎯")}
         systemPrompt={
           language === "en"
-            ? "You are the user's AI Planning Assistant, focused on breaking down large goals into actionable sub-goals. Please strictly follow these rules:\n" +
+            ? "You are the user's planning partner, focused on breaking down large goals into actionable sub-goals. Please strictly follow these rules:\n" +
               "1. Your responses must be clear, actionable, and structured, using the same language as the user. Please respond in English.\n" +
               "2. When users share a large goal, break it down into multiple smaller, executable sub-goals.\n" +
               "3. You must provide a structured plan in JSON format with 'tasksDaily' and 'tasksFuture' arrays.\n" +
               "4. 'tasksDaily' should contain immediate actionable tasks, 'tasksFuture' should contain medium-term sub-goals.\n" +
               "5. Each task should have a clear title (≤30 characters) and description.\n" +
               "6. Always generate the JSON plan when users express planning intentions."
-            : "你是用户的 AI 规划助手，专注于将大目标拆分成可执行的小目标。请严格遵守以下规则：\n" +
+            : "你是用户的规划伙伴，专注于将大目标拆分成可执行的小目标。请严格遵守以下规则：\n" +
               "1. 回答必须清晰、可执行、结构化，且使用与用户相同的语言。请使用中文回复。\n" +
               "2. 当用户分享大目标时，将其拆解成多个可执行的小目标。\n" +
               "3. 必须提供结构化的计划，使用 JSON 格式，包含 'tasksDaily' 和 'tasksFuture' 两个数组。\n" +
@@ -302,7 +297,6 @@ export default function GoalsPageClient() {
                                           const dateStr = formatDateToLocal(selectedDate);
                                           await updateGoal(goal.id, { due_date: dateStr });
                                           setRightViewMode("schedule");
-                                          showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
                                         } catch (err) {
                                           showToast({
                                             type: "error",
@@ -424,7 +418,6 @@ export default function GoalsPageClient() {
                                       try {
                                           await updateGoal(goal.id, { due_date: null });
                                           setRightViewMode("migration");
-                                          showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
                                         } catch (err) {
                                           showToast({
                                             type: "error",

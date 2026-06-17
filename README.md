@@ -1,6 +1,6 @@
 # Bullet-AI 🚀
 
-**个人成长与生活管理 Web 应用** — 记录瞬间、沉淀思考、管理目标、养成习惯，AI 伴你成长。
+**个人成长与生活管理 Web 应用** — 记录瞬间、沉淀思考、管理目标、养成习惯。
 
 > 在线体验: [react-test1-kappa-ten.vercel.app](https://react-test1-kappa-ten.vercel.app/)
 
@@ -18,14 +18,13 @@
 - **Reflections** — 结构化思想感悟，支持来源/地点标注
 - **Goals** — 日历视图目标管理 + 迁移清单
 - **Habits** — 基于 `habit_checkins` 的每日/每周习惯历史打卡追踪
-- **AI 助手** — 树洞/生活/哲思/规划 4 种 AI 对话
 
 ## 技术栈
 
 - **框架**: Next.js 15.5 + React 19 + TypeScript
 - **样式**: Tailwind CSS v4
 - **后端**: Supabase（Postgres + Auth + Storage）
-- **AI**: 可配置的第三方 LLM API
+- **对话服务**: 可配置的第三方 LLM API
 - **部署**: Vercel
 
 ## 本地开发
@@ -38,8 +37,8 @@ pnpm dev
 需要配置环境变量:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `LLM_API_KEY`（AI 功能）
-- `LLM_BASE_URL`（AI 功能）
+- `LLM_API_KEY`（可选对话服务）
+- `LLM_BASE_URL`（可选对话服务）
 
 ## 数据库迁移
 

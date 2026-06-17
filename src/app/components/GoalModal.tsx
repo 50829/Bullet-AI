@@ -5,7 +5,6 @@ import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
-import { useToast } from "./ui/Toast";
 import { useAppContext } from "../../context/AppContext";
 
 type Props = {
@@ -24,7 +23,6 @@ type Props = {
 
 export const GoalModal = ({ isOpen, onClose, onSuccess, initialGoal = null }: Props) => {
   const { t } = useLanguage(); // 获取翻译函数
-  const { showToast } = useToast();
   const { addGoal, updateGoal } = useAppContext();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -78,7 +76,6 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, initialGoal = null }: Pr
         setLoading(false);
         onSuccess();
         handleClose();
-        showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
         return;
       }
 
@@ -96,7 +93,6 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, initialGoal = null }: Pr
       setLoading(false);
       onSuccess();
       handleClose();
-      showToast({ type: "success", message: t("savedLocally") || "已在本地保存" });
     } catch (err) {
       console.error("捕获到异常:", err);
       setLoading(false);

@@ -130,7 +130,7 @@ export async function POST(req: Request) {
 
     // System Prompt - 如果提供了自定义 systemPrompt，使用它；否则使用默认
     const defaultSystemPrompt = 
-      "你是用户的 AI 树洞，一个温暖、理解、倾听的陪伴者。请严格遵守以下规则：\n" +
+      "你是用户的倾听伙伴，一个温暖、理解、倾听的陪伴者。请严格遵守以下规则：\n" +
       `1. 回答必须温暖、真诚、口语化，且使用与用户相同的语言。${languageInstruction}\n` +
       "2. 基于用户分享的时刻、感悟和目标，给予理解和支持。\n" +
       "3. 如果用户需要规划或安排，可以在回复后提供结构化的任务计划（使用 ```json 格式）。\n" +
@@ -173,12 +173,12 @@ export async function POST(req: Request) {
         console.error("解析错误信息失败:", e);
       }
       
-      return NextResponse.json({ error: `AI 调用失败: ${errorText}` }, { status: resp.status });
+      return NextResponse.json({ error: `调用失败: ${errorText}` }, { status: resp.status });
     }
 
     const data = await resp.json();
 
-    // 提取 AI 的回复内容
+    // 提取回复内容
     let reply: string = data.choices?.[0]?.message?.content || "";
 
     // 🧠 提取 JSON 计划

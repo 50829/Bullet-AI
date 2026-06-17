@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { CheckCircle2, Clock3, Edit2, Plus, RefreshCw, Sparkles } from "lucide-react";
+import { CheckCircle2, Clock3, Edit2, Plus } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { useHabits } from "../../features/habits/hooks/useHabits";
 import type { HabitView } from "../../features/habits/types";
@@ -33,24 +33,6 @@ function todayKey() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
     now.getDate(),
   ).padStart(2, "0")}`;
-}
-
-function SyncPill({ status }: { status: "idle" | "syncing" | "failed" }) {
-  const label =
-    status === "syncing" ? "同步中" : status === "failed" ? "同步失败" : "已本地保存";
-  const className =
-    status === "failed"
-      ? "bg-red-50 text-red-700"
-      : status === "syncing"
-        ? "bg-amber-50 text-amber-700"
-        : "bg-[var(--color-primary-light)] text-[var(--color-primary)]";
-
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${className}`}>
-      {status === "syncing" && <RefreshCw size={12} className="animate-spin motion-reduce:animate-none" />}
-      {label}
-    </span>
-  );
 }
 
 export default function HomePage() {
@@ -114,7 +96,6 @@ export default function HomePage() {
   const completeGoal = async (goal: Goal) => {
     try {
       await updateGoal(goal.id, { status: "completed", progress: 100 });
-      showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
     } catch (error) {
       showToast({
         type: "error",
@@ -127,7 +108,6 @@ export default function HomePage() {
     if (!habitToDelete) return;
     try {
       await removeHabit(habitToDelete.id);
-      showToast({ type: "success", message: t("deleteSuccess") || "删除成功" });
       setHabitToDelete(null);
     } catch (error) {
       showToast({
@@ -155,11 +135,15 @@ export default function HomePage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <SyncPill status={syncStatus} />
           {syncStatus === "failed" && (
-            <Button variant="outline" onClick={() => void retrySync()}>
-              {t("retry") || "重试"}
-            </Button>
+            <>
+              <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                {t("syncFailed") || "同步失败"}
+              </span>
+              <Button variant="outline" onClick={() => void retrySync()}>
+                {t("retry") || "重试"}
+              </Button>
+            </>
           )}
           <Button variant="secondary" onClick={() => setMomentOpen(true)}>
             <Plus size={16} />
@@ -190,11 +174,10 @@ export default function HomePage() {
           </div>
 
           {loading.goals && goals.length === 0 ? (
-            <LoadingState label={t("loadingGoals") || "目标加载中..."} />
+            <LoadingState />
           ) : todayGoals.length === 0 ? (
             <EmptyState
               title={t("noTasksToday") || "今天还没有任务"}
-              description={t("selectDateToMigrate") || "新建目标或在目标页把任务迁移到今天。"}
               action={<Button onClick={() => setGoalOpen(true)}>{t("newGoal") || "新建目标"}</Button>}
             />
           ) : (
@@ -233,11 +216,6 @@ export default function HomePage() {
                         {goal._local?.failed && (
                           <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">
                             {t("syncFailed") || "同步失败"}
-                          </span>
-                        )}
-                        {goal._local?.pending && (
-                          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
-                            {t("syncing") || "同步中"}
                           </span>
                         )}
                       </div>
@@ -286,7 +264,7 @@ export default function HomePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-3">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
@@ -304,7 +282,6 @@ export default function HomePage() {
           {recentItems.length === 0 ? (
             <EmptyState
               title={t("noRecords") || "暂无记录"}
-              description={t("recordFeelings") || "记录一点今天发生的事。"}
               action={<Button onClick={() => setMomentOpen(true)}>{t("newMoment") || "记录"}</Button>}
             />
           ) : (
@@ -324,25 +301,6 @@ export default function HomePage() {
               ))}
             </div>
           )}
-        </Card>
-
-        <Card>
-          <div className="flex h-full flex-col justify-between gap-6">
-            <div>
-              <div className="mb-3 inline-flex rounded-xl bg-[var(--color-primary-light)] p-2 text-[var(--color-primary)]">
-                <Sparkles size={20} />
-              </div>
-              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
-                {t("aiAssistant") || "AI 助手"}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
-                {t("aiAssistantHomeHint") || "AI 保持在抽屉里，适合需要整理想法或拆目标时再打开。"}
-              </p>
-            </div>
-            <p className="text-xs text-[var(--color-text-muted)]">
-              {t("localFirstHint") || "所有更改会先保存在本地，再后台同步到云端。"}
-            </p>
-          </div>
         </Card>
       </div>
 

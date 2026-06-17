@@ -205,7 +205,6 @@ export default function MomentsPageClient() {
     try {
       // 使用全局状态中的删除函数
       await deleteMoment(momentToDelete.id, momentToDelete.image_path);
-      showToast({ type: "success", message: t("deleteSuccess") || "删除成功" });
       setShowConfirm(false);
       setSelectedMoment(null);
     } catch (err) {
@@ -224,18 +223,17 @@ export default function MomentsPageClient() {
       <AssistantDrawer
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
-        title={t("aiMomentAssistant") || "AI 时刻助手"}
+        title={t("moments") || "记录"}
         placeholder={t("aiInputPlaceholder") || "输入你的想法..."}
-        greeting={t("aiMomentAssistantGreeting") || "你好！我是你的AI时刻助手，专注于和你聊生活相关的话题。让我们一起分享生活中的美好瞬间吧！🌟"}
         systemPrompt={
           language === "en"
-            ? "You are the user's AI Moment Assistant, focused on chatting about life-related topics. Please strictly follow these rules:\n" +
+            ? "You are the user's moment companion, focused on chatting about life-related topics. Please strictly follow these rules:\n" +
               "1. Your responses must be relaxed, natural, and close to life, using the same language as the user. Please respond in English.\n" +
               "2. Based on the life moments and experiences shared by the user, provide empathy and understanding.\n" +
               "3. You can share life tips, interesting stories, life insights, etc.\n" +
               "4. Keep the conversation light and pleasant, making users feel the beauty of life.\n" +
               "5. When users share joy, celebrate together; when users encounter difficulties, provide encouragement and support."
-            : "你是用户的 AI 时刻助手，专注于聊生活相关的话题。请严格遵守以下规则：\n" +
+            : "你是用户的时刻整理伙伴，专注于聊生活相关的话题。请严格遵守以下规则：\n" +
               "1. 回答必须轻松、自然、贴近生活，且使用与用户相同的语言。请使用中文回复。\n" +
               "2. 基于用户分享的生活时刻和经历，给予共鸣和理解。\n" +
               "3. 可以分享生活小贴士、有趣的故事、生活感悟等。\n" +

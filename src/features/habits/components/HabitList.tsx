@@ -35,13 +35,12 @@ export function HabitList({
   const visibleHabits = useMemo(() => (limit ? habits.slice(0, limit) : habits), [habits, limit]);
   const selectedHabit = habits.find((habit) => habit.id === selectedHabitId) ?? null;
 
-  if (loading) return <LoadingState label={t("loading") || "加载中"} />;
+  if (loading) return <LoadingState />;
 
   if (habits.length === 0) {
     return (
       <EmptyState
         title={t("noHabits") || "暂无习惯"}
-        description={t("pleaseEnterHabitName") || "添加一个想长期坚持的小行动。"}
         action={
           onCreateClick ? (
             <Button onClick={onCreateClick}>

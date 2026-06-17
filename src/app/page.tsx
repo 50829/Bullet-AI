@@ -3,7 +3,7 @@
 
 import React, { type ReactNode } from 'react';
 import type { NextPage } from 'next';
-import { Sparkles, Camera, Target, Lightbulb, Bot, Check, ArrowRight, ArrowUp, Globe } from 'lucide-react';
+import { Sparkles, Camera, Target, Lightbulb, Check, ArrowRight, ArrowUp, Globe } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from './context/LanguageContext';
@@ -157,7 +157,7 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
 
 // 2. 四大核心功能区域 - 2x2网格布局，默认显示文字，悬停显示图片
 const FeaturesSection = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // 定义功能数组，明确类型
   const features: FeatureItem[] = [
@@ -196,14 +196,10 @@ const FeaturesSection = () => {
       imagePath: "/moments.png", // 可以根据需要替换为对应的图片路径
     },
     {
-      icon: <Bot className="h-7 w-7 text-gray-700" />,
-      title: t("aiEmpowerment"),
-      description: t("aiEmpowermentDescription"),
+      icon: <Check className="h-7 w-7 text-gray-700" />,
+      title: t("habit"),
+      description: language === "en" ? "Small routines stay visible beside each day" : "把长期的小行动放在每天看得见的位置",
       items: [
-        t("aiEmpowermentItems[0]"),
-        t("aiEmpowermentItems[1]"),
-        t("aiEmpowermentItems[2]"),
-        t("aiEmpowermentItems[3]"),
       ],
       imagePath: "/moments.png", // 可以根据需要替换为对应的图片路径
     },

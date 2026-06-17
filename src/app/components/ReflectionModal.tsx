@@ -98,7 +98,6 @@ export const ReflectionModal = ({
           body: nextBody,
           content,
         });
-        showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
       } else {
         addReflection({
           id: Date.now(),
@@ -112,7 +111,6 @@ export const ReflectionModal = ({
           image_url: null,
           image_path: null,
         });
-        showToast({ type: "success", message: t("savedLocally") || "已在本地保存" });
       }
       handleClose();
       onSuccess();

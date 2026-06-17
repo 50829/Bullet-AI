@@ -24,7 +24,7 @@ export default function RootLayout({
     <html lang="zh" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
         <ThemeInitializer />
-        <Suspense fallback={<LoadingState label="Loading" />}>
+        <Suspense fallback={<LoadingState />}>
           <LanguageProvider>
             <ToastProvider>{children}</ToastProvider>
           </LanguageProvider>

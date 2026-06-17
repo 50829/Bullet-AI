@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Send } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { Drawer } from "./ui/Drawer";
@@ -23,7 +23,6 @@ type Message = {
 type AssistantDrawerProps = {
   isOpen: boolean;
   title: string;
-  greeting: string;
   systemPrompt: string;
   mode?: AssistantMode;
   placeholder?: string;
@@ -34,7 +33,6 @@ type AssistantDrawerProps = {
 export function AssistantDrawer({
   isOpen,
   title,
-  greeting,
   systemPrompt,
   mode = "chat",
   placeholder,
@@ -47,22 +45,6 @@ export function AssistantDrawer({
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    setMessages((current) =>
-      current.length > 0
-        ? current
-        : [
-            {
-              id: "greeting",
-              role: "assistant",
-              content: greeting,
-              planData: null,
-            },
-          ],
-    );
-  }, [greeting, isOpen]);
-
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -74,9 +56,7 @@ export function AssistantDrawer({
     };
 
     const nextMessages = [...messages, userMessage];
-    const messagesToSend = nextMessages
-      .filter((message) => message.id !== "greeting")
-      .map((message) => ({
+    const messagesToSend = nextMessages.map((message) => ({
         role: message.role,
         content: message.content,
       }));
@@ -135,15 +115,6 @@ export function AssistantDrawer({
     setIsAdding(true);
     try {
       await onAddGoals(plan);
-      setMessages((current) => [
-        ...current,
-        {
-          id: `assistant-added-${Date.now()}`,
-          role: "assistant",
-          content: t("goalsAddedSuccessfully") || "目标已添加到待分配任务。",
-          planData: null,
-        },
-      ]);
     } catch (error) {
       setMessages((current) => [
         ...current,
@@ -186,7 +157,7 @@ export function AssistantDrawer({
               {message.planData && (
                 <div className="mt-3 rounded-lg border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-3">
                   <p className="mb-2 text-sm font-semibold">
-                    {t("aiGeneratedPlan") || "AI 生成的计划"}
+                    {language === "en" ? "Plan" : "计划"}
                   </p>
                   {(["daily", "future"] as const).map((group) => {
                     const tasks = message.planData?.[group] ?? [];
@@ -225,8 +196,8 @@ export function AssistantDrawer({
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm">
-              {t("aiThinking") || "思考中..."}
+            <div className="rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-primary)] px-3 py-3 shadow-sm">
+              <span className="block h-2.5 w-2.5 animate-pulse rounded-full bg-[var(--color-primary)]" />
             </div>
           </div>
         )}

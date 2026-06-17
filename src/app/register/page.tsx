@@ -73,13 +73,7 @@ export default function RegisterPage() {
         return;
       }
 
-      // 注册成功，提示用户去登录
-      setMessage(t("registrationSuccess") || "注册成功！请前往登录页面输入邮箱和密码登录。");
-
-      // 等待 1.5 秒后跳转到登录页
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
+      router.push("/login");
 
     } catch (err) {
       console.error("Unexpected registration error:", err); // 记录详细错误到控制台
@@ -117,19 +111,12 @@ export default function RegisterPage() {
           {/* 密码强度提示 */}
           {password && (
             <div className="mt-1">
-              {!isPasswordStrong(password) ? (
+              {!isPasswordStrong(password) && (
                 <span className="text-xs text-red-500 flex items-center">
                   <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                   {t("passwordTooWeak") || "密码太弱，请使用至少8位，包含大小写、数字和特殊字符。"}
-                </span>
-              ) : (
-                <span className="text-xs text-green-500 flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  {t("passwordStrong") || "密码强度良好"}
                 </span>
               )}
             </div>
@@ -147,19 +134,12 @@ export default function RegisterPage() {
           {/* 密码匹配状态提示 */}
           {confirmPassword && (
             <div className="flex items-center mt-1">
-              {!isPasswordMatch ? (
+              {!isPasswordMatch && (
                 <span className="text-xs text-red-500 flex items-center">
                   <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                   {t("passwordMismatch")}
-                </span>
-              ) : (
-                <span className="text-xs text-green-500 flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  {t("passwordMatch")}
                 </span>
               )}
             </div>
@@ -178,7 +158,7 @@ export default function RegisterPage() {
             {t("login")} {/* 使用专门的“去登录”翻译 */}
           </a>
         </p>
-        {message && <p className={`text-sm mt-4 ${message.includes("成功") || message.includes("success") ? "text-green-500" : "text-red-500"}`}>{message}</p>}
+        {message && <p className="text-sm mt-4 text-red-500">{message}</p>}
       </div>
     </main>
   );

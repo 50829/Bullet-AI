@@ -30,7 +30,7 @@ type SettingsPanelProps = {
 };
 
 type SettingsSection = "user" | "appearance" | "language" | "data";
-type FormMessage = { type: "success" | "error" | "info"; text: string } | null;
+type FormMessage = { type: "error"; text: string } | null;
 
 const ACCENT_OPTIONS: Array<{
   id: AccentColor;
@@ -48,32 +48,24 @@ const COLOR_SCHEME_OPTIONS: Array<{
   id: ColorScheme;
   labelZh: string;
   labelEn: string;
-  descriptionZh: string;
-  descriptionEn: string;
   Icon: typeof Monitor;
 }> = [
   {
     id: "system",
     labelZh: "跟随系统",
     labelEn: "System",
-    descriptionZh: "跟随设备明暗模式",
-    descriptionEn: "Match device appearance",
     Icon: Monitor,
   },
   {
     id: "light",
     labelZh: "浅色",
     labelEn: "Light",
-    descriptionZh: "稳定明亮的工作台",
-    descriptionEn: "Bright steady workspace",
     Icon: Sun,
   },
   {
     id: "dark",
     labelZh: "深色",
     labelEn: "Dark",
-    descriptionZh: "低亮度长时间使用",
-    descriptionEn: "Lower brightness for long sessions",
     Icon: Moon,
   },
 ];
@@ -94,7 +86,6 @@ export default function SettingsPanel({
   const [activeSection, setActiveSection] = useState<SettingsSection>("user");
   const [username, setUsername] = useState("");
   const [currentUsername, setCurrentUsername] = useState("");
-  const [profile, setProfile] = useState<UserProfile | null>(initialProfile ?? null);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
   const [savingUsername, setSavingUsername] = useState(false);
   const [savingPreference, setSavingPreference] = useState<keyof UserPreferences | null>(null);
@@ -103,7 +94,6 @@ export default function SettingsPanel({
   const [daysRemaining, setDaysRemaining] = useState(0);
 
   const applyProfileState = useCallback((nextProfile: UserProfile) => {
-    setProfile(nextProfile);
     setCurrentUsername(nextProfile.username || "");
     setUsername(nextProfile.username || "");
     setPreferences(normalizePreferences(nextProfile.preferences));
@@ -169,27 +159,11 @@ export default function SettingsPanel({
         const mergedPreferences = normalizePreferences(savedPreferences);
         setPreferences(mergedPreferences);
         writeLocalPreferences(mergedPreferences);
-        setProfile((current) =>
-          current
-            ? {
-                ...current,
-                preferences: mergedPreferences,
-                preferences_updated_at: new Date().toISOString(),
-              }
-            : current,
-        );
-        showToast({
-          type: "success",
-          message: language === "en" ? "Preference saved." : "偏好已保存。",
-        });
       } catch (error) {
         console.error("Failed to save preferences:", error);
         showToast({
           type: "error",
-          message:
-            language === "en"
-              ? "Saved locally. Cloud sync failed and will need retry."
-              : "已在本地生效，云端同步失败，稍后需要重试。",
+          message: language === "en" ? "Cloud sync failed. Please retry." : "云端同步失败，请重试。",
         });
       } finally {
         setSavingPreference(null);
@@ -203,7 +177,6 @@ export default function SettingsPanel({
 
     const nextUsername = username.trim();
     if (nextUsername === currentUsername) {
-      setMessage({ type: "info", text: t("usernameUnchanged") });
       return;
     }
 
@@ -221,7 +194,6 @@ export default function SettingsPanel({
     try {
       const updatedProfile = await updateCurrentUserDisplayName(nextUsername);
       applyProfileState(updatedProfile);
-      setMessage({ type: "success", text: t("updateSuccess") });
       onProfileUpdate?.(updatedProfile);
       window.dispatchEvent(
         new CustomEvent("profile-updated", {
@@ -303,11 +275,6 @@ export default function SettingsPanel({
               <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
                 {t("settings")}
               </h2>
-              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                {language === "en"
-                  ? "Local-first preferences, synced quietly in the background."
-                  : "偏好先本地生效，再安静同步到云端。"}
-              </p>
             </div>
             <button
               type="button"
@@ -335,11 +302,6 @@ export default function SettingsPanel({
                   <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
                     {t("userSettings")}
                   </h3>
-                  <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
-                    {language === "en"
-                      ? "Display name is optional and only affects how BulletAI greets you."
-                      : "显示名称是可选的，只用于 BulletAI 在界面中称呼你。"}
-                  </p>
 
                   <form onSubmit={handleUsernameChange} className="mt-5 space-y-4">
                     <label className="block">
@@ -349,11 +311,7 @@ export default function SettingsPanel({
                       <Input
                         value={username}
                         onChange={(event) => setUsername(event.target.value)}
-                        placeholder={
-                          language === "en"
-                            ? "How should BulletAI call you?"
-                            : "BulletAI 可以怎么称呼你？"
-                        }
+                        placeholder={language === "en" ? "Display name" : "显示名称"}
                         disabled={savingUsername || !canChangeUsername}
                         maxLength={20}
                       />
@@ -370,26 +328,13 @@ export default function SettingsPanel({
                         type="submit"
                         disabled={savingUsername || !canChangeUsername || username.trim() === currentUsername}
                       >
-                        {savingUsername ? t("saving") : t("save")}
-                      </Button>
-                      {profile && (
-                        <span className="text-xs text-[var(--color-text-secondary)]">
-                          {language === "en" ? "Signed in profile settings" : "当前登录账户设置"}
-                        </span>
-                      )}
+                          {savingUsername ? t("saving") : t("save")}
+                        </Button>
                     </div>
                   </form>
 
                   {message && (
-                    <p
-                      className={`mt-4 text-sm ${
-                        message.type === "success"
-                          ? "text-[var(--color-success)]"
-                          : message.type === "error"
-                            ? "text-[var(--color-danger)]"
-                            : "text-[var(--color-text-secondary)]"
-                      }`}
-                    >
+                    <p className="mt-4 text-sm text-[var(--color-danger)]">
                       {message.text}
                     </p>
                   )}
@@ -401,33 +346,8 @@ export default function SettingsPanel({
                   <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
                     {t("appearance")}
                   </h3>
-                  <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
-                    {language === "en"
-                      ? "BulletAI now uses one calm interface style. Accent color is only used for key actions and selection states."
-                      : "BulletAI 现在只保留一套安静稳定的界面风格，强调色只用于关键操作和选中状态。"}
-                  </p>
 
-                  <div className="mt-5 rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-primary)] p-4">
-                    <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-4">
-                      <div>
-                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                          {language === "en" ? "Calm workspace" : "Calm 工作台"}
-                        </p>
-                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                          {language === "en"
-                            ? "Neutral surfaces, clear borders, short motion."
-                            : "中性背景、清晰边界、短促反馈。"}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="h-3 w-3 rounded-full bg-[var(--color-primary)]" />
-                        <span className="h-3 w-3 rounded-full bg-[var(--color-success)]" />
-                        <span className="h-3 w-3 rounded-full bg-[var(--color-warning)]" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
+                  <div className="mt-5">
                     <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
                       {t("colorMode")}
                     </h4>
@@ -455,9 +375,6 @@ export default function SettingsPanel({
                               </span>
                               {selected && <Check size={16} className="text-[var(--color-primary)]" />}
                             </div>
-                            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                              {language === "en" ? option.descriptionEn : option.descriptionZh}
-                            </p>
                           </button>
                         );
                       })}
@@ -506,16 +423,11 @@ export default function SettingsPanel({
                   <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
                     {language === "en" ? "Language" : "语言设置"}
                   </h3>
-                  <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
-                    {language === "en"
-                      ? "Language changes immediately and syncs to your profile in the background."
-                      : "语言会立即切换，并在后台同步到你的账户偏好。"}
-                  </p>
 
                   <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {[
-                      { id: "zh" as const, label: "中文", description: "使用中文界面" },
-                      { id: "en" as const, label: "English", description: "Use the English interface" },
+                      { id: "zh" as const, label: "中文" },
+                      { id: "en" as const, label: "English" },
                     ].map((option) => {
                       const selected = language === option.id;
                       return (
@@ -534,15 +446,8 @@ export default function SettingsPanel({
                             <span className="font-semibold text-[var(--color-text-primary)]">
                               {option.label}
                             </span>
-                            {selected && (
-                              <span className="rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-xs font-semibold text-[var(--color-text-on-primary)]">
-                                {language === "en" ? "Active" : "当前"}
-                              </span>
-                            )}
+                            {selected && <Check size={16} className="text-[var(--color-primary)]" />}
                           </div>
-                          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                            {option.description}
-                          </p>
                         </button>
                       );
                     })}
@@ -553,60 +458,25 @@ export default function SettingsPanel({
               {activeSection === "data" && (
                 <section className="max-w-2xl">
                   <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-                    {language === "en" ? "Data and sync" : "数据与同步"}
+                    {language === "en" ? "Data" : "数据"}
                   </h3>
-                  <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
-                    {language === "en"
-                      ? "BulletAI saves changes locally first, then syncs in the background."
-                      : "BulletAI 会先把更改保存在本地，再在后台同步到云端。"}
-                  </p>
 
-                  <div className="mt-5 rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                          {language === "en" ? "Sync status" : "同步状态"}
-                        </p>
-                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                          {syncStatus === "failed"
-                            ? language === "en"
-                              ? "Some changes need retry."
-                              : "有些更改需要重试同步。"
-                            : syncStatus === "syncing"
-                              ? language === "en"
-                                ? "Syncing quietly in the background."
-                                : "正在后台同步。"
-                              : language === "en"
-                                ? "Local data is ready."
-                                : "本地数据已可用。"}
-                        </p>
-                      </div>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          syncStatus === "failed"
-                            ? "bg-red-50 text-red-700"
-                            : syncStatus === "syncing"
-                              ? "bg-amber-50 text-amber-700"
-                              : "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
-                        }`}
-                      >
-                        {syncStatus === "failed"
-                          ? t("syncFailed") || "同步失败"
-                          : syncStatus === "syncing"
-                            ? t("syncing") || "同步中"
-                            : t("synced") || "已保存"}
-                      </span>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      <Button variant="outline" onClick={() => void retrySync()}>
-                        <RefreshCw size={16} />
-                        {t("retry") || "重试"}
-                      </Button>
-                      <Button variant="secondary" onClick={handleExport}>
-                        <Download size={16} />
-                        {language === "en" ? "Export JSON" : "导出 JSON"}
-                      </Button>
-                    </div>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    {syncStatus === "failed" && (
+                      <>
+                        <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                          {t("syncFailed") || "同步失败"}
+                        </span>
+                        <Button variant="outline" onClick={() => void retrySync()}>
+                          <RefreshCw size={16} />
+                          {t("retry") || "重试"}
+                        </Button>
+                      </>
+                    )}
+                    <Button variant="secondary" onClick={handleExport}>
+                      <Download size={16} />
+                      {language === "en" ? "Export JSON" : "导出 JSON"}
+                    </Button>
                   </div>
                 </section>
               )}

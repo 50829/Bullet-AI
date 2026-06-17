@@ -89,7 +89,6 @@ export const MomentModal = ({ isOpen, onClose, onSuccess, initialMoment = null }
       });
       handleClose();
       onSuccess();
-      showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
       return;
     }
 
@@ -108,7 +107,6 @@ export const MomentModal = ({ isOpen, onClose, onSuccess, initialMoment = null }
 
     handleClose();
     onSuccess();
-    showToast({ type: "success", message: t("savedLocally") || "已在本地保存" });
   };
 
   return (

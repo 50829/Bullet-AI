@@ -76,7 +76,6 @@ export default function ReflectionsPageClient() {
 
     try {
       await deleteReflection(target.id, target.image_path);
-      showToast({ type: "success", message: t("deleteSuccess") || "删除成功" });
       setReflectionToDelete(null);
     } catch (error) {
       showToast({
@@ -90,7 +89,7 @@ export default function ReflectionsPageClient() {
   };
 
   if (loading.reflections && reflections.length === 0) {
-    return <LoadingState label={t("loadingReflectionsDetailed") || "思考即将开始..."} />;
+    return <LoadingState />;
   }
 
   return (
@@ -98,9 +97,8 @@ export default function ReflectionsPageClient() {
       <AssistantDrawer
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
-        title={t("aiThoughtAssistant") || "AI 思维助手"}
+        title={t("insights") || "感悟"}
         placeholder={t("aiInputPlaceholder") || "输入你的想法..."}
-        greeting={t("aiThoughtAssistantGreeting") || "你好！我是你的 AI 思维助手。"}
         systemPrompt={
           language === "en"
             ? "You are a concise thinking partner. Help the user clarify reflections and turn vague thoughts into grounded observations."
@@ -111,7 +109,6 @@ export default function ReflectionsPageClient() {
       {sortedReflections.length === 0 ? (
         <EmptyState
           title={t("noRecords") || "暂无感悟"}
-          description={t("recordThoughts") || "记录一个今天仍然值得回想的念头。"}
           action={<Button onClick={openNewReflection}>{t("newReflection") || "记录新感悟"}</Button>}
         />
       ) : (
@@ -141,11 +138,6 @@ export default function ReflectionsPageClient() {
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
-                      {reflection._local?.pending && (
-                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
-                          {t("syncing") || "同步中"}
-                        </span>
-                      )}
                       {reflection._local?.failed && (
                         <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">
                           {t("syncFailed") || "同步失败"}

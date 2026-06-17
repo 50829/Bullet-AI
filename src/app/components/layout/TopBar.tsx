@@ -65,7 +65,7 @@ export const TopBarProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const TopBar = () => {
   const searchParams = useSearchParams();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { syncStatus } = useAppContext();
   const currentPage = searchParams.get('page') || 'home';
   const context = useContext(TopBarContext);
@@ -157,7 +157,7 @@ export const TopBar = () => {
         return {
           icon: <Camera size={24} className="text-gray-700" />,
           title: t("moments") || "记录",
-          aiButtonText: t("aiMomentAssistant") || "AI时刻助手",
+          showAssistantButton: true,
           addButtonText: t("addNewMoment") || '+ 记录新时刻',
           onAdd: onAddMoment,
         };
@@ -165,7 +165,7 @@ export const TopBar = () => {
         return {
           icon: <Target size={24} className="text-gray-700" />,
           title: t("goals") || "目标",
-          aiButtonText: t("aiPlanning") || "AI智能规划",
+          showAssistantButton: true,
           addButtonText: `+ ${t("new")} ${t("goal")}`,
           onAdd: onAddGoal,
         };
@@ -173,7 +173,7 @@ export const TopBar = () => {
         return {
           icon: <Lightbulb size={24} className="text-gray-700" />,
           title: t("insights") || "感悟",
-          aiButtonText: t("aiThoughtAssistant") || "AI思维助手",
+          showAssistantButton: true,
           addButtonText: t("addNewReflection") || '+ 记录新感悟',
           onAdd: onAddReflection,
         };
@@ -181,7 +181,7 @@ export const TopBar = () => {
         return {
           icon: null,
           title: currentPage === 'home' ? (t("today") || 'Today') : 'BulletAI',
-          aiButtonText: '',
+          showAssistantButton: false,
           addButtonText: '',
           onAdd: undefined,
         };
@@ -190,6 +190,7 @@ export const TopBar = () => {
 
   const pageInfo = getPageInfo();
   const showButtons = currentPage !== 'home';
+  const assistantButtonLabel = language === "en" ? "Open panel" : "打开面板";
 
   return (
     // 顶部栏使用透明背景，让 body 的渐变透出来
@@ -217,35 +218,22 @@ export const TopBar = () => {
 
         {/* 右侧：按钮区域 */}
         <div className={`flex items-center gap-2 flex-shrink-0 ${isMobile ? 'ml-auto' : ''}`}>
-          {!isMobile && (
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                syncStatus === 'failed'
-                  ? 'bg-red-50 text-red-700'
-                  : syncStatus === 'syncing'
-                    ? 'bg-amber-50 text-amber-700'
-                    : 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
-              }`}
-            >
-              {syncStatus === 'failed'
-                ? t("syncFailed") || "同步失败"
-                : syncStatus === 'syncing'
-                  ? t("syncing") || "同步中"
-                  : t("synced") || "已保存"}
+          {syncStatus === 'failed' && (
+            <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+              {t("syncFailed") || "同步失败"}
             </span>
           )}
           {showButtons && (
             <>
-            {/* AI助手按钮 */}
-            {pageInfo.aiButtonText && onToggleAIPanel && (
+            {pageInfo.showAssistantButton && onToggleAIPanel && (
               <Button 
                 variant="outline" 
                 onClick={onToggleAIPanel}
-                className={`flex items-center justify-center ${isMobile ? 'gap-0 px-2 min-w-[40px]' : 'gap-1'}`}
-                title={isMobile ? pageInfo.aiButtonText : undefined}
+                className="flex min-w-[40px] items-center justify-center px-2"
+                title={assistantButtonLabel}
+                aria-label={assistantButtonLabel}
               >
-                <Sparkles size={16} /> 
-                {!isMobile && <span>{pageInfo.aiButtonText}</span>}
+                <Sparkles size={16} />
               </Button>
             )}
             
