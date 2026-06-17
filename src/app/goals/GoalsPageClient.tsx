@@ -20,6 +20,7 @@ import { LoadingState } from "../components/ui/LoadingState";
 import { GoalCard } from "../../features/goals/components/GoalCard";
 import { isGoalCompleted, shouldShowGoal, sortGoalsByCompletion } from "../../features/goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
+import { useFlipList } from "../../features/goals/hooks/useFlipList";
 
 function getTodayDate() {
   const now = new Date();
@@ -85,6 +86,9 @@ export default function GoalsPageClient() {
       ),
     [completedGoalRetention, goals],
   );
+
+  const migrationFlip = useFlipList<number>(migrationListGoals.map((g) => g.id).join(","));
+  const scheduleFlip = useFlipList<number>(selectedDateGoals.map((g) => g.id).join(","));
 
   const toggleGoalCompleted = async (goal: (typeof goals)[number]) => {
     try {
@@ -237,8 +241,8 @@ export default function GoalsPageClient() {
                       )}
                       <div className="min-h-0 flex-1 divide-y divide-[var(--color-border-muted)] overflow-y-auto">
                         {migrationListGoals.map((goal) => (
+                          <div key={goal.id} ref={migrationFlip(goal.id)} className="will-change-transform">
                           <GoalCard
-                            key={goal.id}
                             goal={goal}
                             variant="list"
                             onComplete={() => toggleGoalCompleted(goal)}
@@ -276,6 +280,7 @@ export default function GoalsPageClient() {
                                 : undefined
                             }
                           />
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -288,8 +293,8 @@ export default function GoalsPageClient() {
                       )}
                       <div className="min-h-0 flex-1 divide-y divide-[var(--color-border-muted)] overflow-y-auto">
                         {selectedDateGoals.map((goal) => (
+                          <div key={goal.id} ref={scheduleFlip(goal.id)} className="will-change-transform">
                           <GoalCard
-                            key={goal.id}
                             goal={goal}
                             variant="list"
                             onComplete={() => toggleGoalCompleted(goal)}
@@ -322,6 +327,7 @@ export default function GoalsPageClient() {
                               },
                             }}
                           />
+                          </div>
                         ))}
                       </div>
                     </div>

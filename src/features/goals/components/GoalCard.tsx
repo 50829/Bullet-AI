@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, CheckCircle2, Edit2, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Edit2, Trash2 } from "lucide-react";
 import { useLanguage } from "../../../app/context/LanguageContext";
 import { isGoalCompleted } from "../goalVisibility";
 
@@ -63,7 +63,7 @@ export function GoalCard({
         }`}
         aria-label={completed ? "取消完成" : t("completeGoal") || "完成目标"}
       >
-        <CheckCircle2 size={isList ? 20 : 22} />
+        <Check size={isList ? 18 : 20} strokeWidth={2.5} />
       </button>
 
       <div className="min-w-0">
