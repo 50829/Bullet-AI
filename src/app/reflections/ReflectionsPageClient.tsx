@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Edit2, Trash2 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -47,18 +47,17 @@ export default function ReflectionsPageClient() {
     [reflections],
   );
 
-  const openNewReflection = () => {
+  const openNewReflection = useCallback(() => {
     setEditingReflection(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
   useEffect(() => {
     setTopBarHandlers({
       onAddReflection: openNewReflection,
-      onToggleAIPanel: () => setShowAIPanel(!showAIPanel),
-      showAIPanel,
+      onToggleAIPanel: () => setShowAIPanel((current) => !current),
     });
-  }, [setTopBarHandlers, showAIPanel]);
+  }, [openNewReflection, setTopBarHandlers]);
 
   const toggleReflection = (reflectionId: number) => {
     setCollapsedReflections((current) => {

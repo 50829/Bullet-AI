@@ -1,62 +1,54 @@
-// src/components/layout/Sidebar.tsx
 "use client";
 
 import React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Camera, Target, Lightbulb, Home } from 'lucide-react';
-import { useLanguage } from '../../context/LanguageContext'; // 添加语言Hook
+import { useLanguage } from '../../context/LanguageContext';
+import {
+  getWorkspacePageFromPathname,
+  getWorkspacePath,
+  WORKSPACE_PAGE_ORDER,
+  type WorkspacePage,
+} from '../../../lib/navigation/workspaceRoutes';
 
 type NavItemProps = {
-  page: string;
+  page: WorkspacePage;
   icon: React.ReactNode;
   label: string;
-  onClick?: () => void; // 添加可选的 onClick 属性
-  className?: string; // 添加可选的 className 属性
-  style?: React.CSSProperties; // 添加可选的 style 属性
+  currentPage: WorkspacePage;
 };
 
-const NavItem = ({ page, icon, label, onClick, className, style }: NavItemProps) => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  
-  // 修复：当没有page参数时，默认为home
-  const currentActivePage = searchParams.get('page') || 'home';
-  const isActive = currentActivePage === page;
-
-  const handleClick = () => {
-    router.push(`/dashboard?page=${page}`);
-    onClick?.();
-  };
+const NavItem = ({ page, icon, label, currentPage }: NavItemProps) => {
+  const isActive = currentPage === page;
 
   return (
     <li>
-      <button
-        type="button"
+      <Link
+        href={getWorkspacePath(page)}
         className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors duration-150 motion-reduce:transition-none ${
         isActive 
           ? 'bg-[var(--color-bg-primary)] text-[var(--color-primary)]' 
           : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)]'
-      } ${className || ''}`}
-        onClick={handleClick}
+      }`}
         title={label}
         aria-label={label}
-        style={style}
       >
         {icon}
-      </button>
+      </Link>
     </li>
   );
 };
 
 export const Sidebar = () => {
-  const { t } = useLanguage(); // 获取翻译函数
-  
-  const navItems = [
-    { page: 'home', label: t("today") || 'Today', icon: <Home size={20} /> },
-    { page: 'moments', label: t("records") || t("moments") || 'Records', icon: <Camera size={20} /> },
-    { page: 'goals', label: t("goals") || 'Goals', icon: <Target size={20} /> },
-    { page: 'reflections', label: t("insights") || 'Insights', icon: <Lightbulb size={20} /> },
-  ];
+  const { t } = useLanguage();
+  const currentPage = getWorkspacePageFromPathname(usePathname());
+  const navItems: Record<WorkspacePage, { label: string; icon: React.ReactNode }> = {
+    home: { label: t("today") || 'Today', icon: <Home size={20} /> },
+    goals: { label: t("goals") || 'Goals', icon: <Target size={20} /> },
+    moments: { label: t("records") || t("moments") || 'Records', icon: <Camera size={20} /> },
+    reflections: { label: t("insights") || 'Insights', icon: <Lightbulb size={20} /> },
+  };
 
   return (
     <aside 
@@ -64,8 +56,8 @@ export const Sidebar = () => {
     >
       <nav>
         <ul className="space-y-2">
-          {navItems.map((item) => (
-            <NavItem key={item.page} {...item} />
+          {WORKSPACE_PAGE_ORDER.map((page) => (
+            <NavItem key={page} page={page} currentPage={currentPage} {...navItems[page]} />
           ))}
         </ul>
       </nav>

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getWorkspacePathFromLegacyPage } from "../../lib/navigation/workspaceRoutes";
 
 type MainPageProps = {
   searchParams?: Promise<{
@@ -8,7 +9,7 @@ type MainPageProps = {
 
 export default async function MainPage({ searchParams }: MainPageProps) {
   const params = searchParams ? await searchParams : {};
-  const page = typeof params.page === "string" ? `?page=${encodeURIComponent(params.page)}` : "";
+  const page = typeof params.page === "string" ? params.page : null;
 
-  redirect(`/dashboard${page}`);
+  redirect(getWorkspacePathFromLegacyPage(page));
 }

@@ -38,7 +38,6 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({children}: {children: ReactNode}) {
   const [language, setLanguageState] = useState<Language>("zh");
-  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -46,7 +45,6 @@ export function LanguageProvider({children}: {children: ReactNode}) {
 
     setLanguageState(localPreferences.preferred_language);
     document.documentElement.lang = localPreferences.preferred_language;
-    setIsHydrated(true);
 
     getCurrentUserProfile()
       .then((profile) => {
@@ -72,7 +70,7 @@ export function LanguageProvider({children}: {children: ReactNode}) {
     writeLocalPreferences({ preferred_language: nextLanguage });
 
     void updateCurrentUserPreferences({ preferred_language: nextLanguage }).catch(() => {
-      // Unauthenticated users still get immediate local language changes.
+      return undefined;
     });
   }, []);
 
@@ -98,7 +96,7 @@ export function LanguageProvider({children}: {children: ReactNode}) {
         }}
         timeZone="Asia/Shanghai"
       >
-        {isHydrated ? children : children}
+        {children}
       </NextIntlClientProvider>
     </LanguageContext.Provider>
   );

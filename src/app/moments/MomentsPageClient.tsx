@@ -1,16 +1,18 @@
-// app/moments/page.tsx
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Card } from "../components/ui/Card";
 import { Trash2, ChevronDown, ChevronUp, Edit2 } from "lucide-react";
 import { MomentModal } from "../components/MomentModal";
 import { AssistantDrawer } from "../components/AssistantDrawer";
 import { useAppContext } from "../../context/AppContext";
-import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
+import { useLanguage } from '../context/LanguageContext';
 import { useTopBar } from '../components/layout/TopBar';
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../components/ui/Toast";
 import { PlainImage } from "../components/ui/PlainImage";
+import { Button } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/EmptyState";
+import { LoadingState } from "../components/ui/LoadingState";
 
 type Moment = {
   id: number;
@@ -21,58 +23,48 @@ type Moment = {
   date?: string;
 };
 
-// 按日期分组的卡片类型
 type DayCard = {
-  date: string; // YYYY-MM-DD 格式
-  dateDisplay: string; // 显示用的日期格式
-  moments: Moment[]; // 该天的所有时刻
+  date: string;
+  dateDisplay: string;
+  moments: Moment[];
 };
 
-// 按月份分组的卡片类型
 type MonthCard = {
-  month: string; // YYYY-MM 格式
-  monthDisplay: string; // 显示用的月份格式
-  dayCards: DayCard[]; // 该月的所有日期卡片
+  month: string;
+  monthDisplay: string;
+  dayCards: DayCard[];
 };
 
 
 export default function MomentsPageClient() {
-  const { moments, refreshMoments, deleteMoment } = useAppContext();
-  const { t, language } = useLanguage(); // 获取翻译函数和语言设置
+  const { moments, loading, refreshMoments, deleteMoment } = useAppContext();
+  const { t, language } = useLanguage();
   const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
-  const [monthCards, setMonthCards] = useState<MonthCard[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMoment, setEditingMoment] = useState<Moment | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null); // 用于存储要删除的moment
+  const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [deletingMoment, setDeletingMoment] = useState(false);
-  
-  // 折叠状态管理
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
 
-  // 格式化日期显示 - 只显示几号（使用 UTC 时间避免时区问题）
   const formatDateDisplay = (dateString: string) => {
-    // 如果日期字符串是 ISO 格式，直接提取日期部分
     if (dateString.includes('T')) {
       const datePart = dateString.split('T')[0];
-      return datePart.split('-')[2]; // 只返回日期部分
+      return datePart.split('-')[2];
     }
-    // 否则使用 UTC 时间提取日期
+
     const date = new Date(dateString);
-    const day = String(date.getUTCDate());
-    return day;
+    return String(date.getUTCDate());
   };
 
-  // 将日期字符串转换为 YYYY-MM-DD 格式用于分组（使用 UTC 时间避免时区问题）
   const getDateKey = useCallback((dateString: string): string => {
-    // 如果日期字符串是 ISO 格式，直接提取日期部分
     if (dateString.includes('T')) {
       return dateString.split('T')[0];
     }
-    // 否则使用 UTC 时间提取日期
+
     const date = new Date(dateString);
     const year = date.getUTCFullYear();
     const month = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -80,19 +72,16 @@ export default function MomentsPageClient() {
     return `${year}-${month}-${day}`;
   }, []);
 
-  // 格式化月份显示 - 显示为"月份（年份）"格式
   const formatMonthDisplay = (monthKey: string) => {
     const [year, month] = monthKey.split('-');
     return `${parseInt(month)}月（${year}）`;
   };
 
-  // 获取月份键（YYYY-MM）
   const getMonthKey = useCallback((dateString: string): string => {
     const dateKey = getDateKey(dateString);
-    return dateKey.substring(0, 7); // 提取 YYYY-MM
+    return dateKey.substring(0, 7);
   }, [getDateKey]);
 
-  // 按日期分组时刻
   const groupMomentsByDate = useCallback((moments: Moment[]): DayCard[] => {
     const grouped = new Map<string, Moment[]>();
     
@@ -104,7 +93,6 @@ export default function MomentsPageClient() {
       grouped.get(dateKey)!.push(moment);
     });
     
-    // 转换为数组并按日期排序（最新的在前）
     const cards: DayCard[] = Array.from(grouped.entries())
       .map(([dateKey, moments]) => ({
         date: dateKey,
@@ -118,7 +106,6 @@ export default function MomentsPageClient() {
     return cards;
   }, [getDateKey]);
 
-  // 按月份分组日期卡片
   const groupDaysByMonth = useCallback((dayCards: DayCard[]): MonthCard[] => {
     const grouped = new Map<string, DayCard[]>();
     
@@ -130,7 +117,6 @@ export default function MomentsPageClient() {
       grouped.get(monthKey)!.push(dayCard);
     });
     
-    // 转换为数组并按月份排序（最新的在前）
     const cards: MonthCard[] = Array.from(grouped.entries())
       .map(([monthKey, dayCards]) => ({
         month: monthKey,
@@ -142,7 +128,11 @@ export default function MomentsPageClient() {
     return cards;
   }, [getMonthKey]);
 
-  // 切换月份折叠状态
+  const monthCards = useMemo(
+    () => groupDaysByMonth(groupMomentsByDate(moments)),
+    [groupDaysByMonth, groupMomentsByDate, moments],
+  );
+
   const toggleMonth = (monthKey: string) => {
     setCollapsedMonths(prev => {
       const newSet = new Set(prev);
@@ -155,7 +145,6 @@ export default function MomentsPageClient() {
     });
   };
 
-  // 切换日期折叠状态
   const toggleDay = (dateKey: string) => {
     setCollapsedDays(prev => {
       const newSet = new Set(prev);
@@ -168,25 +157,18 @@ export default function MomentsPageClient() {
     });
   };
 
-  // 初始过滤和分组
-  useEffect(() => {
-    const days = groupMomentsByDate(moments);
-    setMonthCards(groupDaysByMonth(days));
-  }, [groupDaysByMonth, groupMomentsByDate, moments]);
-
-  const handleAddMoment = () => {
+  const handleAddMoment = useCallback(() => {
     setEditingMoment(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  // 注册 TopBar 回调
   useEffect(() => {
     setTopBarHandlers({
       onAddMoment: handleAddMoment,
-      onToggleAIPanel: () => setShowAIPanel(!showAIPanel),
-      showAIPanel,
+      onToggleAIPanel: () => setShowAIPanel((current) => !current),
     });
-  }, [setTopBarHandlers, showAIPanel]);
+  }, [handleAddMoment, setTopBarHandlers]);
+
   const handleModalClose = () => {
     setIsModalOpen(false);
     setEditingMoment(null);
@@ -195,15 +177,13 @@ export default function MomentsPageClient() {
     setIsModalOpen(false);
   };
 
-  // 修改 handleDelete 函数以实现即时关闭面板
   const handleDelete = async () => {
     if (!selectedMoment) return;
 
-    const momentToDelete = selectedMoment; // 保存要删除的moment引用
+    const momentToDelete = selectedMoment;
     setDeletingMoment(true);
 
     try {
-      // 使用全局状态中的删除函数
       await deleteMoment(momentToDelete.id, momentToDelete.image_path);
       setShowConfirm(false);
       setSelectedMoment(null);
@@ -216,10 +196,12 @@ export default function MomentsPageClient() {
     }
   };
 
+  if (loading.moments && moments.length === 0) {
+    return <LoadingState />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
-
-      {/* AI对话面板 */}
       <AssistantDrawer
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
@@ -242,7 +224,6 @@ export default function MomentsPageClient() {
         }
       />
 
-      {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
       <div 
         className="flex-1"
       >
@@ -250,9 +231,10 @@ export default function MomentsPageClient() {
           <div className="max-w-6xl mx-auto">
             <div className="space-y-6">
               {monthCards.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  {t("noRecords") || "暂无时刻记录，点击上方按钮记录第一个时刻吧！"}
-                </div>
+                <EmptyState
+                  title={t("noRecords") || "暂无记录"}
+                  action={<Button onClick={handleAddMoment}>{t("newMoment") || "记录"}</Button>}
+                />
               ) : (
                 monthCards.map((monthCard) => {
                   const isMonthCollapsed = collapsedMonths.has(monthCard.month);
@@ -267,7 +249,6 @@ export default function MomentsPageClient() {
                       }}
                     >
                       <div className="flex flex-col gap-4">
-                        {/* 月份标题 - 带折叠按钮 */}
                         <div 
                           className="flex items-center gap-2 border-b border-[var(--color-border-muted)] pb-2 cursor-pointer transition-colors"
                           onClick={() => toggleMonth(monthCard.month)}
@@ -285,7 +266,6 @@ export default function MomentsPageClient() {
                           <h2 className="text-2xl font-semibold text-theme-primary flex-1">{monthCard.monthDisplay}</h2>
                         </div>
                         
-                        {/* 该月的所有日期卡片 */}
                         {!isMonthCollapsed && (
                           <div className="space-y-4 pl-2">
                             {monthCard.dayCards.map((dayCard) => {
@@ -297,7 +277,6 @@ export default function MomentsPageClient() {
                                   className="p-4 rounded-xl"
                                 >
                                   <div className="flex flex-col gap-4">
-                                    {/* 日期标题 - 带折叠按钮 */}
                                     <div 
                                       className="flex items-center gap-2 border-b border-gray-200/50 pb-2 cursor-pointer hover:bg-gray-50/50 rounded-2xl p-2 -m-2 transition-colors"
                                       onClick={() => toggleDay(dayCard.date)}
@@ -312,7 +291,6 @@ export default function MomentsPageClient() {
                                       <h3 className="text-lg font-semibold text-[var(--color-text-primary)] flex-1">{dayCard.dateDisplay}</h3>
                                     </div>
                                     
-                                    {/* 该天的所有时刻内容 */}
                                     {!isDayCollapsed && (
                                       <div className="space-y-4">
                                         {dayCard.moments.map((moment) => (
@@ -349,7 +327,6 @@ export default function MomentsPageClient() {
                                               </button>
                                             </div>
                                             
-                                            {/* 文字内容 */}
                                             {moment.content && (
                                               <div className="min-w-0 pr-20">
                                                 <p className="text-lg text-[var(--color-text-primary)] whitespace-pre-line">
@@ -358,7 +335,6 @@ export default function MomentsPageClient() {
                                               </div>
                                             )}
                                             
-                                            {/* 图片 */}
                                             {moment.image_url && (
                                               <div className="flex justify-center">
                                                 <div className="relative">

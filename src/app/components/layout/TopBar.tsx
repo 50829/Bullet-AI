@@ -1,26 +1,19 @@
 "use client";
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Sparkles, Camera, Target, Lightbulb } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../ui/Button';
 import { supabase } from '../../../lib/supabaseClient';
 import { getCurrentUserProfile } from '../../../lib/profile/profileService';
 import { useAppContext } from '../../../context/AppContext';
+import { getWorkspacePageFromPathname } from '../../../lib/navigation/workspaceRoutes';
 
-// TopBar Context
 type TopBarHandlers = {
   onAddMoment?: () => void;
   onAddGoal?: () => void;
   onAddReflection?: () => void;
   onToggleAIPanel?: () => void;
-  onToggleSearch?: () => void;
-  showAIPanel?: boolean;
-  showSearch?: boolean;
-  searchTerm?: string;
-  onSearchChange?: (value: string) => void;
-  onSearch?: () => void;
-  onClearSearch?: () => void;
 };
 
 type TopBarContextType = TopBarHandlers & {
@@ -41,14 +34,7 @@ export const TopBarProvider = ({ children }: { children: React.ReactNode }) => {
   const [handlers, setHandlers] = useState<TopBarHandlers>({});
 
   const setTopBarHandlers = useCallback((newHandlers: TopBarHandlers) => {
-    setHandlers(prev => {
-      // 检查是否有实际变化，避免不必要的更新
-      const hasChanges = Object.keys(newHandlers).some(key => {
-        const typedKey = key as keyof TopBarHandlers;
-        return prev[typedKey] !== newHandlers[typedKey];
-      });
-      return hasChanges ? { ...prev, ...newHandlers } : prev;
-    });
+    setHandlers(newHandlers);
   }, []);
 
   const value: TopBarContextType = useMemo(() => ({
@@ -64,18 +50,17 @@ export const TopBarProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const TopBar = () => {
-  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { t, language } = useLanguage();
   const { syncStatus } = useAppContext();
-  const currentPage = searchParams.get('page') || 'home';
+  const currentPage = getWorkspacePageFromPathname(pathname);
   const context = useContext(TopBarContext);
   const [username, setUsername] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // 检测屏幕尺寸
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // 768px 以下为移动端
+      setIsMobile(window.innerWidth < 768);
     };
     
     checkMobile();
@@ -86,7 +71,6 @@ export const TopBar = () => {
     };
   }, []);
 
-  // 获取用户名
   useEffect(() => {
     const fetchUsername = async () => {
       try {
@@ -107,7 +91,6 @@ export const TopBar = () => {
 
     window.addEventListener('profile-updated', handleProfileUpdated);
 
-    // 监听认证状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         const profile = await getCurrentUserProfile();
@@ -124,7 +107,6 @@ export const TopBar = () => {
   }, []);
 
   if (!context) {
-    // 如果没有 context，返回基本布局（透明背景，显示全局渐变）
     return (
       <div className="fixed top-0 left-0 right-0 z-30 bg-transparent">
         <div className="w-full flex items-center justify-between gap-4 pl-4 pr-4 py-3">
@@ -150,17 +132,8 @@ export const TopBar = () => {
     onToggleAIPanel,
   } = context;
 
-  // 根据页面获取标题和图标
   const getPageInfo = () => {
     switch (currentPage) {
-      case 'moments':
-        return {
-          icon: <Camera size={24} className="text-gray-700" />,
-          title: t("moments") || "记录",
-          showAssistantButton: true,
-          addButtonText: t("addNewMoment") || '+ 记录新时刻',
-          onAdd: onAddMoment,
-        };
       case 'goals':
         return {
           icon: <Target size={24} className="text-gray-700" />,
@@ -168,6 +141,14 @@ export const TopBar = () => {
           showAssistantButton: true,
           addButtonText: `+ ${t("new")} ${t("goal")}`,
           onAdd: onAddGoal,
+        };
+      case 'moments':
+        return {
+          icon: <Camera size={24} className="text-gray-700" />,
+          title: t("moments") || "记录",
+          showAssistantButton: true,
+          addButtonText: t("addNewMoment") || '+ 记录新时刻',
+          onAdd: onAddMoment,
         };
       case 'reflections':
         return {
@@ -193,10 +174,8 @@ export const TopBar = () => {
   const assistantButtonLabel = language === "en" ? "Open panel" : "打开面板";
 
   return (
-    // 顶部栏使用透明背景，让 body 的渐变透出来
     <div className="fixed top-0 left-0 right-0 z-30 h-16 bg-transparent">
       <div className="w-full flex items-center justify-between gap-4 h-full pl-4 pr-4">
-        {/* 左侧：Logo 和页面名称 */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <Sparkles className="h-8 w-8" style={{ color: 'var(--color-text-secondary)' }} />
           <span className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>BulletAI</span>
@@ -216,7 +195,6 @@ export const TopBar = () => {
           )}
         </div>
 
-        {/* 右侧：按钮区域 */}
         <div className={`flex items-center gap-2 flex-shrink-0 ${isMobile ? 'ml-auto' : ''}`}>
           {syncStatus === 'failed' && (
             <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
@@ -237,7 +215,6 @@ export const TopBar = () => {
               </Button>
             )}
             
-            {/* 添加按钮 - 在移动端确保位于右上角 */}
             {pageInfo.onAdd && (
               <Button onClick={pageInfo.onAdd} className={isMobile ? 'px-3 text-sm' : ''}>
                 {isMobile ? '+' : pageInfo.addButtonText}

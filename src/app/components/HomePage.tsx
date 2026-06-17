@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { CheckCircle2, Clock3, Edit2, Plus } from "lucide-react";
+import { Clock3, Edit2, Plus } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { useHabits } from "../../features/habits/hooks/useHabits";
 import type { HabitView } from "../../features/habits/types";
 import { HabitList } from "../../features/habits/components/HabitList";
 import { HabitFormDialog } from "../../features/habits/components/HabitFormDialog";
+import { GoalCard } from "../../features/goals/components/GoalCard";
+import { shouldShowGoal } from "../../features/goals/goalVisibility";
+import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
 import { useLanguage } from "../context/LanguageContext";
 import { Card } from "./ui/Card";
 import { Button } from "./ui/Button";
@@ -25,6 +28,9 @@ type Goal = {
   status: string;
   due_date?: string | null;
   progress: number;
+  image_path?: string | null;
+  updated_at?: string;
+  created_at?: string;
   _local?: { pending?: boolean; failed?: boolean };
 };
 
@@ -43,6 +49,7 @@ export default function HomePage() {
     loading,
     syncStatus,
     updateGoal,
+    deleteGoal,
     retrySync,
   } = useAppContext();
   const {
@@ -57,12 +64,15 @@ export default function HomePage() {
   } = useHabits();
   const { t } = useLanguage();
   const { showToast } = useToast();
+  const completedGoalRetention = useCompletedGoalRetention();
   const [momentOpen, setMomentOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [reflectionOpen, setReflectionOpen] = useState(false);
   const [habitOpen, setHabitOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<HabitView | null>(null);
   const [habitToDelete, setHabitToDelete] = useState<HabitView | null>(null);
+  const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
 
   const today = todayKey();
   const todayGoals = useMemo(
@@ -70,6 +80,10 @@ export default function HomePage() {
     [goals, today],
   );
   const openTodayGoals = todayGoals.filter((goal) => goal.status !== "completed");
+  const visibleTodayGoals = useMemo(
+    () => todayGoals.filter((goal) => shouldShowGoal(goal, completedGoalRetention)),
+    [completedGoalRetention, todayGoals],
+  );
   const todayHabits = habits.slice(0, 5);
   const recentItems = useMemo(() => {
     const momentItems = moments.slice(0, 4).map((moment) => ({
@@ -109,6 +123,19 @@ export default function HomePage() {
     try {
       await removeHabit(habitToDelete.id);
       setHabitToDelete(null);
+    } catch (error) {
+      showToast({
+        type: "error",
+        message: error instanceof Error ? error.message : t("deleteFailed") || "删除失败",
+      });
+    }
+  };
+
+  const confirmDeleteGoal = async () => {
+    if (!goalToDelete) return;
+    try {
+      await deleteGoal(goalToDelete.id, goalToDelete.image_path);
+      setGoalToDelete(null);
     } catch (error) {
       showToast({
         type: "error",
@@ -175,59 +202,25 @@ export default function HomePage() {
 
           {loading.goals && goals.length === 0 ? (
             <LoadingState />
-          ) : todayGoals.length === 0 ? (
+          ) : visibleTodayGoals.length === 0 ? (
             <EmptyState
               title={t("noTasksToday") || "今天还没有任务"}
               action={<Button onClick={() => setGoalOpen(true)}>{t("newGoal") || "新建目标"}</Button>}
             />
           ) : (
             <div className="space-y-3">
-              {todayGoals.map((goal) => {
-                const completed = goal.status === "completed";
-                return (
-                  <div
-                    key={goal.id}
-                    className="flex items-start gap-3 rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-card)] p-4"
-                  >
-                    <button
-                      type="button"
-                      disabled={completed}
-                      onClick={() => void completeGoal(goal)}
-                      className={`mt-0.5 rounded-lg p-2 transition-colors duration-150 motion-reduce:transition-none ${
-                        completed
-                          ? "bg-[var(--color-bg-primary)] text-[var(--color-success)]"
-                          : "bg-[var(--color-primary-light)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-on-primary)]"
-                      }`}
-                      aria-label={t("completeGoal") || "完成目标"}
-                    >
-                      <CheckCircle2 size={18} />
-                    </button>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3
-                          className={`font-semibold ${
-                            completed
-                              ? "text-[var(--color-text-secondary)] line-through"
-                              : "text-[var(--color-text-primary)]"
-                          }`}
-                        >
-                          {goal.title}
-                        </h3>
-                        {goal._local?.failed && (
-                          <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">
-                            {t("syncFailed") || "同步失败"}
-                          </span>
-                        )}
-                      </div>
-                      {goal.description && (
-                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                          {goal.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              {visibleTodayGoals.map((goal) => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  onComplete={() => completeGoal(goal)}
+                  onEdit={() => {
+                    setEditingGoal(goal);
+                    setGoalOpen(true);
+                  }}
+                  onDelete={() => setGoalToDelete(goal)}
+                />
+              ))}
             </div>
           )}
         </Card>
@@ -305,7 +298,15 @@ export default function HomePage() {
       </div>
 
       <MomentModal isOpen={momentOpen} onClose={() => setMomentOpen(false)} onSuccess={() => undefined} />
-      <GoalModal isOpen={goalOpen} onClose={() => setGoalOpen(false)} onSuccess={() => undefined} />
+      <GoalModal
+        isOpen={goalOpen}
+        initialGoal={editingGoal}
+        onClose={() => {
+          setGoalOpen(false);
+          setEditingGoal(null);
+        }}
+        onSuccess={() => undefined}
+      />
       <ReflectionModal
         isOpen={reflectionOpen}
         onClose={() => setReflectionOpen(false)}
@@ -331,6 +332,16 @@ export default function HomePage() {
         tone="danger"
         onConfirm={confirmDeleteHabit}
         onCancel={() => setHabitToDelete(null)}
+      />
+      <ConfirmDialog
+        isOpen={Boolean(goalToDelete)}
+        title={`${t("confirmDelete") || "确认删除"} ${goalToDelete?.title ?? ""}`}
+        description={t("cannotRecover") || "删除后不可恢复。"}
+        confirmLabel={t("confirm") || "确认"}
+        cancelLabel={t("cancel") || "取消"}
+        tone="danger"
+        onConfirm={confirmDeleteGoal}
+        onCancel={() => setGoalToDelete(null)}
       />
     </div>
   );

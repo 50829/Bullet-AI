@@ -1,9 +1,8 @@
 // app/goals/page.tsx
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { Trash2, CheckCircle2, ArrowRight, ArrowLeft, Edit2 } from "lucide-react";
 import { GoalModal } from "../components/GoalModal";
 import { Calendar } from "../components/Calendar";
 import { AssistantDrawer } from "../components/AssistantDrawer";
@@ -16,10 +15,22 @@ import { HabitFormDialog } from "../../features/habits/components/HabitFormDialo
 import type { GoalPlan } from "../../features/goals/types";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../components/ui/Toast";
+import { EmptyState } from "../components/ui/EmptyState";
+import { LoadingState } from "../components/ui/LoadingState";
+import { GoalCard } from "../../features/goals/components/GoalCard";
+import { shouldShowGoal } from "../../features/goals/goalVisibility";
+import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
 
 function getTodayDate() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function formatDateToLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export default function GoalsPageClient() {
@@ -38,6 +49,7 @@ export default function GoalsPageClient() {
   const { t, language } = useLanguage();
   const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
+  const completedGoalRetention = useCompletedGoalRetention();
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<(typeof goals)[number] | null>(null);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
@@ -55,29 +67,20 @@ export default function GoalsPageClient() {
     imagePath?: string | null 
   } | null>(null);
 
-  // 将Date对象转换为YYYY-MM-DD格式（本地时间）
-  const formatDateToLocal = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  // 根据选中日期过滤目标
-  const getGoalsForDate = (date: Date | null) => {
-    if (!date) return [];
-    const dateStr = formatDateToLocal(date);
-    return goals.filter(goal => {
-      if (!goal.due_date) return false;
-      // 直接比较字符串，避免时区转换问题
-      return goal.due_date === dateStr;
+  const selectedDateGoals = useMemo(() => {
+    if (!selectedDate) return [];
+    const dateStr = formatDateToLocal(selectedDate);
+    return goals.filter((goal) => {
+      if (goal.due_date !== dateStr) return false;
+      return shouldShowGoal(goal, completedGoalRetention);
     });
-  };
-
-  const selectedDateGoals = getGoalsForDate(selectedDate);
+  }, [completedGoalRetention, goals, selectedDate]);
   
   // 获取待分配任务（无日期的目标）
-  const migrationListGoals = goals.filter(g => !g.due_date);
+  const migrationListGoals = useMemo(
+    () => goals.filter((goal) => !goal.due_date && shouldShowGoal(goal, completedGoalRetention)),
+    [completedGoalRetention, goals],
+  );
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
@@ -109,7 +112,6 @@ export default function GoalsPageClient() {
     }
   };
 
-  // 从AI回复中解析任务并添加到迁移列表（不设置日期）
   const addTasksFromAIReply = async (plan: GoalPlan) => {
     [...plan.daily, ...plan.future].forEach((task) => {
       addGoal({
@@ -126,22 +128,19 @@ export default function GoalsPageClient() {
     });
   };
 
-
-  // 注册 TopBar 回调
   useEffect(() => {
     setTopBarHandlers({
       onAddGoal: () => {
         setEditingGoal(null);
         setIsGoalModalOpen(true);
       },
-      onToggleAIPanel: () => setShowAIPanel(!showAIPanel),
-      showAIPanel,
+      onToggleAIPanel: () => setShowAIPanel((current) => !current),
     });
-  }, [setTopBarHandlers, showAIPanel]);
+  }, [setTopBarHandlers]);
 
   const isInitialLoading = (loading.goals && goals.length === 0) || (habitsLoading && habits.length === 0);
 
-  if (isInitialLoading) return <div className="text-center py-8">{t("loadingGoals") || "目标加载中..."}</div>;
+  if (isInitialLoading) return <LoadingState />;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -223,120 +222,58 @@ export default function GoalsPageClient() {
                   {rightViewMode === "migration" && (
                     <div className="flex-1 flex flex-col min-h-0">
                       {migrationListGoals.length === 0 && (
-                        <div className="flex-1 flex items-center justify-center">
-                          <p className="text-theme-primary text-2xl font-semibold">{t("noMigrationGoals") || "待分配任务为空，新建目标将自动添加到这里"}</p>
-                        </div>
+                        <EmptyState title={language === "en" ? "No tasks" : "暂无任务"} />
                       )}
-                      <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
-                        {migrationListGoals.map(goal => {
-                          const isCompleted = goal.status === 'completed';
-                          return (
-                            <div
-                              key={goal.id}
-                              className={`group rounded-xl p-4 ${
-                                isCompleted ? 'opacity-75' : ''
-                              }`}
-                              style={{ 
-                                backgroundColor: 'var(--color-bg-card)',
-                                border: '1px solid var(--color-border-muted)'
-                              }}
-                            >
-                              <div className="flex justify-between items-center gap-4">
-                                {!isCompleted && (
-                                  <button
-                                    onClick={async () => {
+                      <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
+                        {migrationListGoals.map((goal) => (
+                          <GoalCard
+                            key={goal.id}
+                            goal={goal}
+                            onComplete={async () => {
+                              try {
+                                await updateGoal(goal.id, { status: "completed", progress: 100 });
+                              } catch (err) {
+                                showToast({
+                                  type: "error",
+                                  message: err instanceof Error ? err.message : t("updateFailed") || "更新失败",
+                                });
+                              }
+                            }}
+                            onEdit={() => {
+                              setEditingGoal(goal);
+                              setIsGoalModalOpen(true);
+                            }}
+                            onDelete={() => {
+                              setSelectedItem({
+                                type: "goal",
+                                id: goal.id,
+                                name: goal.title,
+                                imagePath: goal.image_path,
+                              });
+                              setShowConfirm(true);
+                            }}
+                            moveAction={
+                              selectedDate
+                                ? {
+                                    direction: "forward",
+                                    label: t("migrate") || "迁移",
+                                    onClick: async () => {
                                       try {
-                                        await updateGoal(goal.id, { status: 'completed' });
+                                        const dateStr = formatDateToLocal(selectedDate);
+                                        await updateGoal(goal.id, { due_date: dateStr });
+                                        setRightViewMode("schedule");
                                       } catch (err) {
                                         showToast({
                                           type: "error",
-                                          message: err instanceof Error ? err.message : t("updateFailed") || "更新失败",
+                                          message: err instanceof Error ? err.message : t("migrateFailed") || "迁移失败",
                                         });
                                       }
-                                    }}
-                                    className="flex flex-shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-light)] p-2 text-[var(--color-primary)] transition-colors duration-150 hover:bg-[var(--color-primary)] hover:text-[var(--color-text-on-primary)] motion-reduce:transition-none"
-                                    title={t("completeGoal") || "完成目标"}
-                                  >
-                                    <CheckCircle2 size={18} />
-                                  </button>
-                                )}
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[var(--color-text-primary)]/50' : 'text-[var(--color-text-primary)]'}`}>
-                                      {goal.title}
-                                    </h4>
-                                    {isCompleted && (
-                                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                                        {t("completed") || "已完成"}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {goal.description && (
-                                    <p className={`text-sm ${isCompleted ? 'text-[var(--color-text-primary)]/50 line-through' : 'text-[var(--color-text-primary)]'}`}>
-                                      {goal.description}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
-                                    title={t("edit") || "编辑"}
-                                    aria-label={t("edit") || "编辑"}
-                                    onClick={() => {
-                                      setEditingGoal(goal);
-                                      setIsGoalModalOpen(true);
-                                    }}
-                                  >
-                                    <Edit2 size={18} />
-                                  </button>
-                                  {!isCompleted && selectedDate && (
-                                    <button
-                                      onClick={async () => {
-                                        try {
-                                          const dateStr = formatDateToLocal(selectedDate);
-                                          await updateGoal(goal.id, { due_date: dateStr });
-                                          setRightViewMode("schedule");
-                                        } catch (err) {
-                                          showToast({
-                                            type: "error",
-                                            message: err instanceof Error ? err.message : t("migrateFailed") || "迁移失败",
-                                          });
-                                        }
-                                      }}
-                                      className="flex items-center justify-center rounded-lg bg-[var(--color-primary)] p-2 text-[var(--color-text-on-primary)] transition-colors duration-150 hover:bg-[var(--color-primary-hover)] motion-reduce:transition-none"
-                                      title={t("migrate") || "迁移"}
-                                    >
-                                      <ArrowRight size={18} />
-                                    </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
-                                    title={t("delete") || "删除"}
-                                    aria-label={t("delete") || "删除"}
-                                    onClick={() => {
-                                      setSelectedItem({ 
-                                        type: 'goal', 
-                                        id: goal.id, 
-                                        name: goal.title,
-                                        imagePath: goal.image_path 
-                                      });
-                                      setShowConfirm(true);
-                                    }}
-                                  >
-                                    <Trash2 size={18} />
-                                  </button>
-                                </div>
-                              </div>
-                              {!selectedDate && !isCompleted && (
-                                  <p className="text-xs text-theme-primary mt-2">
-                                  {t("selectDateToMigrate") || "请先选择日历中的日期，然后点击迁移按钮"}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })}
+                                    },
+                                  }
+                                : undefined
+                            }
+                          />
+                        ))}
                       </div>
                     </div>
                   )}
@@ -345,114 +282,53 @@ export default function GoalsPageClient() {
                   {rightViewMode === "schedule" && (
                     <div className="flex-1 flex flex-col min-h-0 relative">
                       {selectedDateGoals.length === 0 && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <p className="text-theme-primary text-2xl font-semibold">{t("noGoalsForDate") || "该日期暂无目标"}</p>
-                        </div>
+                        <EmptyState title={language === "en" ? "No goals" : "暂无目标"} />
                       )}
-                      <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
-                        {selectedDateGoals.map(goal => {
-                          const isCompleted = goal.status === 'completed';
-                          return (
-                            <div
-                              key={goal.id}
-                              className={`group rounded-xl p-4 ${
-                                isCompleted ? 'opacity-75' : ''
-                              }`}
-                              style={{ 
-                                backgroundColor: 'var(--color-bg-card)',
-                                border: '1px solid var(--color-border-muted)'
-                              }}
-                            >
-                              <div className="flex justify-between items-center gap-4">
-                                {!isCompleted && (
-                                  <button
-                                    onClick={async () => {
-                                      try {
-                                        await updateGoal(goal.id, { status: 'completed' });
-                                      } catch (err) {
-                                        showToast({
-                                          type: "error",
-                                          message: err instanceof Error ? err.message : t("updateFailed") || "更新失败",
-                                        });
-                                      }
-                                    }}
-                                    className="flex flex-shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-light)] p-2 text-[var(--color-primary)] transition-colors duration-150 hover:bg-[var(--color-primary)] hover:text-[var(--color-text-on-primary)] motion-reduce:transition-none"
-                                    title={t("completeGoal") || "完成目标"}
-                                  >
-                                    <CheckCircle2 size={18} />
-                                  </button>
-                                )}
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[var(--color-text-primary)]/50' : 'text-[var(--color-text-primary)]'}`}>
-                                      {goal.title}
-                                    </h4>
-                                    {isCompleted && (
-                                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                                        {t("completed") || "已完成"}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {goal.description && (
-                                    <p className={`text-sm ${isCompleted ? 'text-[var(--color-text-primary)]/50 line-through' : 'text-[var(--color-text-primary)]'}`}>
-                                      {goal.description}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
-                                    title={t("edit") || "编辑"}
-                                    aria-label={t("edit") || "编辑"}
-                                    onClick={() => {
-                                      setEditingGoal(goal);
-                                      setIsGoalModalOpen(true);
-                                    }}
-                                  >
-                                    <Edit2 size={18} />
-                                  </button>
-                                  {!isCompleted && (
-                                    <button
-                                      onClick={async () => {
-                                      try {
-                                          await updateGoal(goal.id, { due_date: null });
-                                          setRightViewMode("migration");
-                                        } catch (err) {
-                                          showToast({
-                                            type: "error",
-                                            message: err instanceof Error ? err.message : t("moveBackFailed") || "迁回失败",
-                                          });
-                                        }
-                                      }}
-                                      className="flex items-center justify-center rounded-lg bg-[var(--color-primary)] p-2 text-[var(--color-text-on-primary)] transition-colors duration-150 hover:bg-[var(--color-primary-hover)] motion-reduce:transition-none"
-                                      title={t("moveBack") || "迁回"}
-                                    >
-                                      <ArrowLeft size={18} />
-                                    </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
-                                    title={t("delete") || "删除"}
-                                    aria-label={t("delete") || "删除"}
-                                    onClick={() => {
-                                      setSelectedItem({ 
-                                        type: 'goal', 
-                                        id: goal.id, 
-                                        name: goal.title,
-                                        imagePath: goal.image_path 
-                                      });
-                                      setShowConfirm(true);
-                                    }}
-                                  >
-                                    <Trash2 size={18} />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
+                        {selectedDateGoals.map((goal) => (
+                          <GoalCard
+                            key={goal.id}
+                            goal={goal}
+                            onComplete={async () => {
+                              try {
+                                await updateGoal(goal.id, { status: "completed", progress: 100 });
+                              } catch (err) {
+                                showToast({
+                                  type: "error",
+                                  message: err instanceof Error ? err.message : t("updateFailed") || "更新失败",
+                                });
+                              }
+                            }}
+                            onEdit={() => {
+                              setEditingGoal(goal);
+                              setIsGoalModalOpen(true);
+                            }}
+                            onDelete={() => {
+                              setSelectedItem({
+                                type: "goal",
+                                id: goal.id,
+                                name: goal.title,
+                                imagePath: goal.image_path,
+                              });
+                              setShowConfirm(true);
+                            }}
+                            moveAction={{
+                              direction: "back",
+                              label: t("moveBack") || "迁回",
+                              onClick: async () => {
+                                try {
+                                  await updateGoal(goal.id, { due_date: null });
+                                  setRightViewMode("migration");
+                                } catch (err) {
+                                  showToast({
+                                    type: "error",
+                                    message: err instanceof Error ? err.message : t("moveBackFailed") || "迁回失败",
+                                  });
+                                }
+                              },
+                            }}
+                          />
+                        ))}
                       </div>
                     </div>
                   )}

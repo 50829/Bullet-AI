@@ -1,10 +1,9 @@
-// components/GoalModal.tsx
 "use client";
 import React, { useEffect, useState } from "react";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
-import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
+import { useLanguage } from '../context/LanguageContext';
 import { useAppContext } from "../../context/AppContext";
 
 type Props = {
@@ -22,7 +21,7 @@ type Props = {
 };
 
 export const GoalModal = ({ isOpen, onClose, onSuccess, initialGoal = null }: Props) => {
-  const { t } = useLanguage(); // 获取翻译函数
+  const { t } = useLanguage();
   const { addGoal, updateGoal } = useAppContext();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

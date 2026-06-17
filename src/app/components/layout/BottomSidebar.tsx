@@ -1,34 +1,38 @@
-// src/components/layout/BottomSidebar.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Camera, Home, Lightbulb, LogOut, Settings, Target } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../../lib/supabaseClient';
 import LogoutConfirmDialog from './LogoutConfirmDialog';
 import SettingsPanel from './SettingsPanel';
 import { getCurrentUserProfile, type UserProfile } from '../../../lib/profile/profileService';
 import { useToast } from '../ui/Toast';
+import {
+  getWorkspacePageFromPathname,
+  getWorkspacePath,
+  WORKSPACE_PAGE_ORDER,
+  type WorkspacePage,
+} from '../../../lib/navigation/workspaceRoutes';
 
 export const BottomSidebar = () => {
   const { t } = useLanguage();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const currentPage = searchParams.get('page') || 'home';
+  const currentPage = getWorkspacePageFromPathname(usePathname());
 
-  const navItems = [
-    { page: 'home', label: t("today") || 'Today', icon: <Home size={19} /> },
-    { page: 'moments', label: t("records") || t("moments") || '记录', icon: <Camera size={19} /> },
-    { page: 'goals', label: t("goals") || '目标', icon: <Target size={19} /> },
-    { page: 'reflections', label: t("insights") || '感悟', icon: <Lightbulb size={19} /> },
-  ];
+  const navItems: Record<WorkspacePage, { label: string; icon: React.ReactNode }> = {
+    home: { label: t("today") || 'Today', icon: <Home size={19} /> },
+    goals: { label: t("goals") || '目标', icon: <Target size={19} /> },
+    moments: { label: t("records") || t("moments") || '记录', icon: <Camera size={19} /> },
+    reflections: { label: t("insights") || '感悟', icon: <Lightbulb size={19} /> },
+  };
 
-  // 预先加载用户数据
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -41,7 +45,6 @@ export const BottomSidebar = () => {
 
     fetchUserProfile();
 
-    // 监听认证状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         const profile = await getCurrentUserProfile();
@@ -96,9 +99,7 @@ export const BottomSidebar = () => {
       >
         <nav>
           <ul className="space-y-2">
-            {/* 设置按钮 */}
-            <li
-            >
+            <li>
               <button
                 type="button"
                 className="flex h-11 w-11 items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
@@ -110,7 +111,6 @@ export const BottomSidebar = () => {
               </button>
             </li>
             
-            {/* 退出登录按钮 */}
             <li>
               <button
                 type="button"
@@ -128,13 +128,13 @@ export const BottomSidebar = () => {
 
       <nav className="fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-2 shadow-md lg:hidden">
         <ul className="grid grid-cols-5 gap-1">
-          {navItems.map((item) => {
-            const isActive = currentPage === item.page;
+          {WORKSPACE_PAGE_ORDER.map((page) => {
+            const item = navItems[page];
+            const isActive = currentPage === page;
             return (
-              <li key={item.page}>
-                <button
-                  type="button"
-                  onClick={() => router.push(`/dashboard?page=${item.page}`)}
+              <li key={page}>
+                <Link
+                  href={getWorkspacePath(page)}
                   className={`flex h-11 w-full items-center justify-center rounded-xl transition-colors duration-150 motion-reduce:transition-none ${
                     isActive
                       ? 'bg-[var(--color-bg-primary)] text-[var(--color-primary)]'
@@ -144,7 +144,7 @@ export const BottomSidebar = () => {
                   aria-label={item.label}
                 >
                   {item.icon}
-                </button>
+                </Link>
               </li>
             );
           })}
@@ -162,7 +162,6 @@ export const BottomSidebar = () => {
         </ul>
       </nav>
 
-      {/* 退出登录确认对话框 */}
       {showLogoutDialog && (
         <LogoutConfirmDialog
           onConfirm={handleLogoutConfirm}
@@ -170,7 +169,6 @@ export const BottomSidebar = () => {
         />
       )}
 
-      {/* 设置面板 */}
       {showSettingsPanel && (
         <SettingsPanel 
           onClose={() => setShowSettingsPanel(false)}

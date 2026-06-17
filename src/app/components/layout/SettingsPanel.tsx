@@ -18,6 +18,7 @@ import {
   writeLocalPreferences,
   type AccentColor,
   type ColorScheme,
+  type CompletedGoalRetention,
   type UserPreferences,
 } from "../../../lib/profile/preferences";
 import { useAppContext } from "../../../context/AppContext";
@@ -68,6 +69,16 @@ const COLOR_SCHEME_OPTIONS: Array<{
     labelEn: "Dark",
     Icon: Moon,
   },
+];
+
+const COMPLETED_GOAL_RETENTION_OPTIONS: Array<{
+  id: CompletedGoalRetention;
+  labelZh: string;
+  labelEn: string;
+}> = [
+  { id: "instant", labelZh: "立即归档", labelEn: "Archive now" },
+  { id: "next_day", labelZh: "次日归档", labelEn: "Archive tomorrow" },
+  { id: "never", labelZh: "保留", labelEn: "Keep" },
 ];
 
 function getUsernameTimestamp(profile: Pick<UserProfile, "username_updated_at" | "updated_at">) {
@@ -222,6 +233,13 @@ export default function SettingsPanel({
 
   const handleColorSchemeChange = (colorScheme: ColorScheme) => {
     void savePreferences({ color_scheme: colorScheme }, "color_scheme");
+  };
+
+  const handleCompletedGoalRetentionChange = (completedGoalRetention: CompletedGoalRetention) => {
+    void savePreferences(
+      { completed_goal_retention: completedGoalRetention },
+      "completed_goal_retention",
+    );
   };
 
   const handleExport = () => {
@@ -461,7 +479,38 @@ export default function SettingsPanel({
                     {language === "en" ? "Data" : "数据"}
                   </h3>
 
-                  <div className="mt-5 flex flex-wrap gap-3">
+                  <div className="mt-5">
+                    <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                      {language === "en" ? "Completed goals" : "完成目标"}
+                    </h4>
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      {COMPLETED_GOAL_RETENTION_OPTIONS.map((option) => {
+                        const selected = preferences.completed_goal_retention === option.id;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => handleCompletedGoalRetentionChange(option.id)}
+                            disabled={savingPreference === "completed_goal_retention"}
+                            className={`rounded-xl border p-4 text-left transition-colors duration-150 disabled:cursor-wait disabled:opacity-70 motion-reduce:transition-none ${
+                              selected
+                                ? "border-[var(--color-primary)] bg-[var(--color-primary-light)]"
+                                : "border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-primary)]"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                                {language === "en" ? option.labelEn : option.labelZh}
+                              </span>
+                              {selected && <Check size={16} className="text-[var(--color-primary)]" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex flex-wrap gap-3">
                     {syncStatus === "failed" && (
                       <>
                         <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">

@@ -1,4 +1,3 @@
-// components/Calendar.tsx
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -28,10 +27,9 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
   const todayKey = toDateKey(today);
   const todayLabel = `${today.getMonth() + 1}月${today.getDate()}日`;
 
-  // 检测屏幕尺寸
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // 768px 以下为移动端
+      setIsMobile(window.innerWidth < 768);
     };
     
     checkMobile();
@@ -42,26 +40,21 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
     };
   }, []);
 
-  // 获取月份的第一天和最后一天
   const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
   const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
   const firstDayOfWeek = firstDayOfMonth.getDay();
   const daysInMonth = lastDayOfMonth.getDate();
   
-  // 创建日期数组
   const days: (number | null)[] = [];
   
-  // 上个月的日期
   for (let i = firstDayOfWeek - 1; i >= 0; i--) {
     days.push(null);
   }
   
-  // 本月的日期
   for (let i = 1; i <= daysInMonth; i++) {
     days.push(i);
   }
   
-  // 下个月的日期（填充到42个格子）
   const remainingDays = 42 - days.length;
   for (let i = 1; i <= remainingDays; i++) {
     days.push(null);
@@ -72,30 +65,42 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
     return `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   };
 
-  const goalCountByDate = useMemo(() => {
-    const counts = new Map<string, number>();
+  const goalDotsByDate = useMemo(() => {
+    const counts = new Map<string, { open: number; completed: number }>();
 
     goals.forEach((goal) => {
       if (!goal.due_date) return;
-      counts.set(goal.due_date, (counts.get(goal.due_date) ?? 0) + 1);
+      const current = counts.get(goal.due_date) ?? { open: 0, completed: 0 };
+      if (goal.status === "completed") {
+        current.completed += 1;
+      } else {
+        current.open += 1;
+      }
+      counts.set(goal.due_date, current);
     });
 
     return counts;
   }, [goals]);
 
-  const getGoalCountOnDate = (day: number | null): number => {
+  const getGoalDotsOnDate = (day: number | null) => {
     const dateKey = getDateKeyForDay(day);
-    if (!dateKey) return 0;
-    return goalCountByDate.get(dateKey) ?? 0;
+    if (!dateKey) return [];
+
+    const counts = goalDotsByDate.get(dateKey) ?? { open: 0, completed: 0 };
+    const openDots = Math.min(counts.open, 3);
+    const completedDots = Math.min(counts.completed, 3 - openDots);
+
+    return [
+      ...Array.from({ length: completedDots }, () => "completed" as const),
+      ...Array.from({ length: openDots }, () => "open" as const),
+    ];
   };
 
-  // 检查是否是今天
   const isToday = (day: number | null): boolean => {
     if (day === null) return false;
     return getDateKeyForDay(day) === todayKey;
   };
 
-  // 检查是否是选中的日期
   const isSelected = (day: number | null): boolean => {
     if (day === null || !selectedDate) return false;
     return (
@@ -105,19 +110,16 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
     );
   };
 
-  // 处理日期点击
   const handleDayClick = (day: number | null) => {
     if (day === null) return;
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
     onDateSelect(date);
   };
 
-  // 切换到上一个月
   const prevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
 
-  // 切换到下一个月
   const nextMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
@@ -127,9 +129,7 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
 
   return (
     <div className={`rounded-xl p-4 ${isMobile ? 'h-auto min-h-[400px]' : 'h-[520px]'} flex flex-col bg-[var(--color-panel-primary)]`}>
-      {/* 月份导航 */}
       <div className="flex items-start justify-between mb-3 flex-shrink-0">
-        {/* 标题放在左上角 */}
         <div>
           <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-[var(--color-panel-text)]`}>
             {currentMonth.getFullYear()}年 {monthNames[currentMonth.getMonth()]}
@@ -138,7 +138,6 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
             今天 {todayLabel}
           </p>
         </div>
-        {/* 月份切换按钮放在右上角 */}
         <div className="flex items-center gap-2">
           <button
             onClick={prevMonth}
@@ -155,7 +154,6 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
         </div>
       </div>
 
-      {/* 星期标题 */}
       <div className="grid grid-cols-7 gap-1 mb-2 flex-shrink-0">
         {weekDays.map((day) => (
           <div key={day} className={`text-center ${isMobile ? 'text-sm' : 'text-lg'} font-medium text-[var(--color-panel-text)] py-1`}>
@@ -164,12 +162,10 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
         ))}
       </div>
 
-      {/* 日期网格 */}
       <div className={`grid grid-cols-7 gap-1 ${isMobile ? '' : 'flex-1 min-h-0'}`}>
         {days.map((day, index) => {
-          const goalCount = getGoalCountOnDate(day);
-          const visibleDots = Math.min(goalCount, 3);
-          const today = isToday(day);
+          const goalDots = getGoalDotsOnDate(day);
+          const dayIsToday = isToday(day);
           const selected = isSelected(day);
 
           return (
@@ -181,16 +177,21 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
                 aspect-square ${isMobile ? 'p-1' : 'p-2'} rounded-xl ${isMobile ? 'text-sm' : 'text-lg'} flex flex-col items-center justify-center gap-1
                 ${day === null ? 'cursor-default opacity-0' : 'cursor-pointer'}
                 ${selected ? 'border-2 border-[var(--color-panel-text)] bg-white/15' : 'border-2 border-transparent'}
-                ${today ? 'font-semibold' : ''}
+                ${dayIsToday && !selected ? 'bg-white/10 font-semibold' : ''}
+                ${dayIsToday && selected ? 'font-semibold' : ''}
                 ${day !== null ? 'text-[var(--color-panel-text)] hover:bg-white/10' : ''}
               `}
             >
               <span>{day}</span>
               <span className="flex h-2 items-center justify-center gap-0.5">
-                {Array.from({ length: visibleDots }).map((_, dotIndex) => (
+                {goalDots.map((dot, dotIndex) => (
                   <span
                     key={dotIndex}
-                    className="h-1.5 w-1.5 rounded-full bg-[var(--color-panel-text)]"
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      dot === "completed"
+                        ? "bg-[var(--color-panel-text)]"
+                        : "border border-[var(--color-panel-text)]"
+                    }`}
                   />
                 ))}
               </span>

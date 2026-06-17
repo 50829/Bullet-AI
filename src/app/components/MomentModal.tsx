@@ -1,11 +1,10 @@
-// components/MomentModal.tsx
 "use client";
 import React, { useEffect, useState } from "react";
 import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { Input } from "./ui/Input";
-import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
-import { useAppContext } from '../../context/AppContext'; // 添加 AppContext
+import { useLanguage } from '../context/LanguageContext';
+import { useAppContext } from '../../context/AppContext';
 import { useToast } from "./ui/Toast";
 import { PlainImage } from "./ui/PlainImage";
 
@@ -31,8 +30,8 @@ function toDateInputValue(value?: string) {
 }
 
 export const MomentModal = ({ isOpen, onClose, onSuccess, initialMoment = null }: Props) => {
-  const { t } = useLanguage(); // 获取翻译函数
-  const { addMoment, updateMoment } = useAppContext(); // 获取添加函数
+  const { t } = useLanguage();
+  const { addMoment, updateMoment } = useAppContext();
   const { showToast } = useToast();
   const [content, setContent] = useState("");
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue());
@@ -69,10 +68,8 @@ export const MomentModal = ({ isOpen, onClose, onSuccess, initialMoment = null }
       return; 
     }
 
-    // 将选择的日期转换为 ISO 字符串，设置为 UTC 时间的当天 00:00:00
     const dateISO = `${selectedDate}T00:00:00.000Z`;
 
-    // 如果有图片文件，创建本地预览 URL
     let localImageUrl: string | null = null;
     if (imageFile) {
       localImageUrl = URL.createObjectURL(imageFile);

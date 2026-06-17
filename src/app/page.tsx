@@ -1,4 +1,3 @@
-// app/page.tsx
 "use client";
 
 import React, { type ReactNode } from 'react';
@@ -8,16 +7,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from './context/LanguageContext';
 
-// 定义功能项的类型
 type FeatureItem = {
   icon: ReactNode;
   title: string;
   description: string;
-  items: string[];
-  imagePath: string;
 };
 
-// 主页面组件
 const LandingPage: NextPage = () => {
   const [isVisible, setIsVisible] = useState({
     hero: false,
@@ -40,7 +35,6 @@ const LandingPage: NextPage = () => {
     };
   }, []);
 
-  // 添加一个 ref 来引用页面顶部
   const topRef = useRef<HTMLDivElement>(null);
 
   const scrollToTop = () => {
@@ -50,32 +44,23 @@ const LandingPage: NextPage = () => {
   };
 
   return (
-    // 1. 固定背景层
     <div className="relative h-screen overflow-hidden bg-[#efeeeb]">
-      {/* 2. 滚动内容层 */}
       <div className="absolute inset-0 overflow-y-auto">
-        {/* 在内容最顶部添加一个空 div 作为滚动目标 */}
         <div ref={topRef} />
         <main>
           <HeroSection isVisible={isVisible.hero} />
-          
-          {/* Features 部分将在这里开始，现在没有视频了 */}
           <FeaturesSection />
-
-          {/* Pricing 和其余部分保持原有逻辑 */}
-          <div className="-mt-20"> {/* Adjust this margin if needed after adding video */}
+          <div className="-mt-20">
             <PricingSection />
-            {/* 调整 CTA 部分的间距，拉近与上方标题的距离 */}
             <CallToActionSection />
           </div>
         </main>
-        <Footer scrollToTop={scrollToTop} /> {/* 传递函数到 Footer */}
+        <Footer scrollToTop={scrollToTop} />
       </div>
     </div>
   );
 };
 
-// 1. 顶部英雄区域 - 修改后的 HeroSection
 const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
@@ -84,12 +69,8 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
     router.push('/login');
   };
 
-  // 移除独立的动画状态，使用 isVisible 统一控制
-
   return (
-    // 减少最小高度，让内容更紧凑，并允许与其他部分重叠
     <section className={`relative z-10 flex flex-col items-center justify-center p-4 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-      {/* 保留 Logo 和标题在左上角 */}
       <div className="absolute top-4 left-4 flex items-center gap-3 z-20">
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
           <Sparkles className="h-6 w-6 text-gray-700" />
@@ -97,7 +78,6 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
         <span className="text-xl font-bold text-theme-primary">BulletAI</span>
       </div>
 
-      {/* 保留语言切换在右上角 */}
       <div className="absolute top-4 right-4 flex items-center space-x-2 z-20">
         <button
           onClick={() => setLanguage("en")}
@@ -124,20 +104,15 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
         </button>
       </div>
 
-      {/* 内容容器 - 包含居中的大标题、Slogan 和按钮 */}
-      {/* 修改：增加 min-height 和 pt 值，让 Hero 部分更高，内容往下挪，同时让下方标题露出一半 */}
-      <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto pt-12 pb-20 min-h-[75vh]"> {/* 调整：min-h-[75vh] 和 pt-12 */}
-        {/* 新增：原来的黑色大标题，居中放置 */}
+      <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto pt-12 pb-20 min-h-[75vh]">
         <h1 className={`text-6xl md:text-7xl font-bold text-theme-primary tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
         {t("heroTitle")}
         </h1>
         
-        {/* Slogan 居中 */}
         <div className={`mt-4 flex justify-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <p className="text-2xl md:text-3xl text-gray-600">{t("slogan")}</p>
         </div>
         
-        {/* 按钮居中 */}
         <div className={`mt-10 flex flex-col sm:flex-row gap-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <button 
             onClick={goToLogin}
@@ -145,63 +120,35 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
           >
             {t("getStarted")}
           </button>
-          {/* 移除了 "Learn More" 按钮 */}
         </div>
       </div>
-      
-      {/* 移除了底部的跳动箭头 */}
-      
     </section>
   );
 };
 
-// 2. 四大核心功能区域 - 2x2网格布局，默认显示文字，悬停显示图片
 const FeaturesSection = () => {
   const { t, language } = useLanguage();
 
-  // 定义功能数组，明确类型
   const features: FeatureItem[] = [
     {
       icon: <Camera className="h-7 w-7 text-gray-700" />,
       title: t("moments"),
       description: t("momentsDescription"),
-      items: [
-        t("momentsItems[0]"),
-        t("momentsItems[1]"),
-        t("momentsItems[2]"),
-      ],
-      imagePath: "/moments.png",
     },
     {
       icon: <Target className="h-7 w-7 text-gray-700" />,
       title: t("goals"),
       description: t("goalsDescription"),
-      items: [
-        t("goalsItems[0]"),
-        t("goalsItems[1]"),
-        t("goalsItems[2]"),
-        t("goalsItems[3]"),
-      ],
-      imagePath: "/moments.png", // 可以根据需要替换为对应的图片路径
     },
     {
       icon: <Lightbulb className="h-7 w-7 text-gray-700" />,
       title: t("insights"),
       description: t("insightsDescription"),
-      items: [
-        t("insightsItems[0]"),
-        t("insightsItems[1]"),
-        t("insightsItems[2]"),
-      ],
-      imagePath: "/moments.png", // 可以根据需要替换为对应的图片路径
     },
     {
       icon: <Check className="h-7 w-7 text-gray-700" />,
       title: t("habit"),
       description: language === "en" ? "Small routines stay visible beside each day" : "把长期的小行动放在每天看得见的位置",
-      items: [
-      ],
-      imagePath: "/moments.png", // 可以根据需要替换为对应的图片路径
     },
   ];
 
@@ -213,13 +160,9 @@ const FeaturesSection = () => {
           <p className="mt-4 text-xl text-gray-600">{t("featuresDescription")}</p>
         </div>
 
-        {/* 十字四象限布局：中间用细线分成四块，保留悬浮图片效果 */}
         <div className="relative max-w-6xl mx-auto">
-          {/* 十字分割线：使用与卡片 hover 相同色系的柔和线条，仅在中大屏显示 */}
           <div className="pointer-events-none absolute inset-0 hidden md:block">
-            {/* 竖线 */}
             <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-gradient-to-b from-orange-100 via-orange-200 to-orange-100" />
-            {/* 横线 */}
             <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-orange-100 via-orange-200 to-orange-100" />
           </div>
 
@@ -230,19 +173,15 @@ const FeaturesSection = () => {
                 className="relative flex flex-col justify-center items-start p-4 md:p-6 rounded-3xl overflow-hidden"
               >
                 <div className="relative w-full h-full min-h-[200px] flex items-center justify-center">
-                  {/* 显示：标题和描述 */}
                   <div className="flex flex-col justify-center items-center text-center p-6 md:p-8">
-                    {/* 图标 */}
                     <div className="mb-6">
                       <div className="bg-white/70 p-4 rounded-full flex-shrink-0 shadow-sm">
                         {feature.icon}
                       </div>
                     </div>
-                    {/* 标题 */}
                     <h3 className="text-3xl md:text-4xl font-bold text-theme-primary mb-4">
                       {feature.title}
                     </h3>
-                    {/* 描述 */}
                     <p className="text-gray-600 text-lg md:text-xl max-w-md leading-relaxed">
                       {feature.description}
                     </p>
@@ -258,7 +197,6 @@ const FeaturesSection = () => {
 };
 
 
-// 3. 定价方案区域 - 移除背景类
 const PricingSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -353,7 +291,6 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
   );
 };
 
-// 4. 最终行动号召区域 - 移除背景类，进一步调整间距
 const CallToActionSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -390,7 +327,6 @@ const CallToActionSection = () => {
   };
 
   return (
-    // 修改：将 py-8 改为 py-4，进一步拉近距离
     <section ref={sectionRef} className={`py-4 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
       <div className="max-w-4xl mx-auto">
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-12 rounded-3xl text-center shadow-lg hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
@@ -408,7 +344,6 @@ const CallToActionSection = () => {
   );
 };
 
-// Footer 组件 - 移除背景类
 const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -461,7 +396,7 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
         </div>
       </div>
       <button 
-        onClick={scrollToTop} // 使用从父组件传递下来的函数
+        onClick={scrollToTop}
         className="fixed bottom-10 right-10 z-50 rounded-full border border-[var(--color-primary)] bg-[var(--color-primary)] p-3 text-[var(--color-text-on-primary)] shadow-sm transition-colors duration-150 hover:bg-[var(--color-primary-hover)]"
         aria-label="返回顶部"
       >

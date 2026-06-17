@@ -2,12 +2,14 @@ export type PreferredLanguage = "zh" | "en";
 export type UiTheme = "calm";
 export type AccentColor = "sage" | "green" | "purple" | "amber";
 export type ColorScheme = "system" | "light" | "dark";
+export type CompletedGoalRetention = "instant" | "next_day" | "never";
 
 export type UserPreferences = {
   preferred_language: PreferredLanguage;
   ui_theme: UiTheme;
   accent_color: AccentColor;
   color_scheme: ColorScheme;
+  completed_goal_retention: CompletedGoalRetention;
 };
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
@@ -15,13 +17,14 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   ui_theme: "calm",
   accent_color: "sage",
   color_scheme: "system",
+  completed_goal_retention: "next_day",
 };
 
 export const LANGUAGE_STORAGE_KEY = "language";
 export const UI_THEME_STORAGE_KEY = "ui-theme";
 export const ACCENT_COLOR_STORAGE_KEY = "accent-color";
 export const COLOR_SCHEME_STORAGE_KEY = "color-scheme";
-export const LEGACY_THEME_STORAGE_KEY = "app-theme";
+export const COMPLETED_GOAL_RETENTION_STORAGE_KEY = "completed-goal-retention";
 
 export function normalizeLanguage(value: unknown): PreferredLanguage {
   return value === "en" ? "en" : "zh";
@@ -45,6 +48,11 @@ export function normalizeColorScheme(value: unknown): ColorScheme {
   return "system";
 }
 
+export function normalizeCompletedGoalRetention(value: unknown): CompletedGoalRetention {
+  if (value === "instant" || value === "next_day" || value === "never") return value;
+  return "next_day";
+}
+
 export function normalizePreferences(
   value: Partial<Record<keyof UserPreferences, unknown>> | null | undefined,
 ): UserPreferences {
@@ -53,6 +61,7 @@ export function normalizePreferences(
     ui_theme: normalizeUiTheme(value?.ui_theme),
     accent_color: normalizeAccentColor(value?.accent_color),
     color_scheme: normalizeColorScheme(value?.color_scheme),
+    completed_goal_retention: normalizeCompletedGoalRetention(value?.completed_goal_retention),
   };
 }
 
@@ -88,14 +97,12 @@ export function applyAppearancePreference(
 export function readLocalPreferences(): UserPreferences {
   if (typeof window === "undefined") return DEFAULT_USER_PREFERENCES;
 
-  const legacyTheme = window.localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
-  const storedAccent = window.localStorage.getItem(ACCENT_COLOR_STORAGE_KEY);
-
   return normalizePreferences({
     preferred_language: window.localStorage.getItem(LANGUAGE_STORAGE_KEY),
-    ui_theme: window.localStorage.getItem(UI_THEME_STORAGE_KEY) ?? legacyTheme,
-    accent_color: storedAccent ?? (legacyTheme === "sky" ? "sage" : null),
+    ui_theme: window.localStorage.getItem(UI_THEME_STORAGE_KEY),
+    accent_color: window.localStorage.getItem(ACCENT_COLOR_STORAGE_KEY),
     color_scheme: window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY),
+    completed_goal_retention: window.localStorage.getItem(COMPLETED_GOAL_RETENTION_STORAGE_KEY),
   });
 }
 
@@ -109,7 +116,7 @@ export function writeLocalPreferences(preferences: Partial<UserPreferences>) {
   window.localStorage.setItem(UI_THEME_STORAGE_KEY, next.ui_theme);
   window.localStorage.setItem(ACCENT_COLOR_STORAGE_KEY, next.accent_color);
   window.localStorage.setItem(COLOR_SCHEME_STORAGE_KEY, next.color_scheme);
-  window.localStorage.removeItem(LEGACY_THEME_STORAGE_KEY);
+  window.localStorage.setItem(COMPLETED_GOAL_RETENTION_STORAGE_KEY, next.completed_goal_retention);
   document.documentElement.lang = next.preferred_language;
   applyAppearancePreference(next);
 

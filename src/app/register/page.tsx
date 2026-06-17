@@ -1,6 +1,5 @@
-// RegisterPage.tsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { useLanguage } from '../context/LanguageContext';
@@ -14,19 +13,9 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  // 兼容旧主题类，注册页使用统一 calm 外观
-  useEffect(() => {
-    const root = document.documentElement;
-    // 移除所有主题类
-    root.className = root.className.split(' ').filter(cls => !cls.startsWith('theme-')).join(' ').trim();
-  }, []);
-
-  // 检查密码是否匹配
   const isPasswordMatch = password === confirmPassword && password !== "";
 
-  // 检查密码强度
   const isPasswordStrong = (password: string): boolean => {
-    // 至少8位，包含大小写字母、数字和特殊字符
     const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     return strongRegex.test(password);
   };
@@ -36,21 +25,18 @@ export default function RegisterPage() {
     setLoading(true);
     setMessage(null);
 
-    // 检查密码是否一致
     if (password !== confirmPassword) {
       setMessage(t("passwordMismatch"));
       setLoading(false);
       return;
     }
 
-    // 检查密码强度
     if (!isPasswordStrong(password)) {
       setMessage(t("passwordTooWeak") || "密码太弱，请使用至少8位，包含大小写、数字和特殊字符。");
       setLoading(false);
       return;
     }
 
-    // 检查密码是否为空
     if (!password || !confirmPassword) {
       setMessage(t("pleaseEnterPassword") || "请输入密码");
       setLoading(false);
@@ -61,13 +47,11 @@ export default function RegisterPage() {
       const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
-        console.error("Registration error:", error); // 记录详细错误到控制台
-        // 给用户一个通用的提示
+        console.error("Registration error:", error);
         setMessage(t("registrationFailedGeneric") || "注册失败，请稍后再试或检查您的输入。");
         return;
       }
 
-      // 检查是否需要邮箱确认
       if (data.user?.identities?.length === 0) {
         setMessage(t("emailAlreadyRegistered") || "该邮箱已被注册，请检查邮箱或尝试登录。");
         return;
@@ -76,8 +60,8 @@ export default function RegisterPage() {
       router.push("/login");
 
     } catch (err) {
-      console.error("Unexpected registration error:", err); // 记录详细错误到控制台
-      setMessage(t("registrationFailedGeneric") || "注册过程中发生未知错误，请稍后再试。"); // 通用用户提示
+      console.error("Unexpected registration error:", err);
+      setMessage(t("registrationFailedGeneric") || "注册过程中发生未知错误，请稍后再试。");
     } finally {
       setLoading(false);
     }
@@ -108,7 +92,6 @@ export default function RegisterPage() {
             disabled={loading}
             required
           />
-          {/* 密码强度提示 */}
           {password && (
             <div className="mt-1">
               {!isPasswordStrong(password) && (
@@ -131,7 +114,6 @@ export default function RegisterPage() {
             disabled={loading}
             required
           />
-          {/* 密码匹配状态提示 */}
           {confirmPassword && (
             <div className="flex items-center mt-1">
               {!isPasswordMatch && (
@@ -155,7 +137,7 @@ export default function RegisterPage() {
         <p className="text-sm">
           {t("alreadyAccount")}{" "}
           <a href="/login" className="text-[var(--color-primary)] hover:underline">
-            {t("login")} {/* 使用专门的“去登录”翻译 */}
+            {t("login")}
           </a>
         </p>
         {message && <p className="text-sm mt-4 text-red-500">{message}</p>}

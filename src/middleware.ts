@@ -1,17 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "./lib/supabase/middleware";
+import {
+  getWorkspacePathFromLegacyPage,
+  isWorkspacePath,
+  WORKSPACE_HOME_PATH,
+} from "./lib/navigation/workspaceRoutes";
 
-const DASHBOARD_PATH = "/dashboard";
 const LOGIN_PATH = "/login";
-const LEGACY_REDIRECTS: Record<string, string> = {
-  "/goals": "/dashboard?page=goals",
-  "/moments": "/dashboard?page=moments",
-  "/reflections": "/dashboard?page=reflections",
-  "/username": DASHBOARD_PATH,
-};
 
 function isProtectedPath(pathname: string) {
-  return pathname === DASHBOARD_PATH || pathname.startsWith(`${DASHBOARD_PATH}/`);
+  return isWorkspacePath(pathname);
 }
 
 function isAuthPath(pathname: string) {
@@ -21,15 +19,18 @@ function isAuthPath(pathname: string) {
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  if (pathname === "/main" || pathname.startsWith("/main/")) {
+  if (pathname === "/dashboard" || pathname === "/main") {
     const url = request.nextUrl.clone();
-    url.pathname = pathname.replace(/^\/main/, DASHBOARD_PATH);
+    url.pathname = getWorkspacePathFromLegacyPage(url.searchParams.get("page"));
+    url.search = "";
     return NextResponse.redirect(url);
   }
 
-  const legacyRedirect = LEGACY_REDIRECTS[pathname];
-  if (legacyRedirect) {
-    return NextResponse.redirect(new URL(legacyRedirect, request.url));
+  if (pathname === "/username") {
+    const url = request.nextUrl.clone();
+    url.pathname = WORKSPACE_HOME_PATH;
+    url.search = "";
+    return NextResponse.redirect(url);
   }
 
   const { response, user } = await updateSession(request);
@@ -43,7 +44,7 @@ export async function middleware(request: NextRequest) {
 
   if (isAuthPath(pathname) && user) {
     const url = request.nextUrl.clone();
-    url.pathname = DASHBOARD_PATH;
+    url.pathname = WORKSPACE_HOME_PATH;
     url.search = "";
     return NextResponse.redirect(url);
   }

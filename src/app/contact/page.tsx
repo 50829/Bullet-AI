@@ -1,10 +1,8 @@
-// app/contact/page.tsx
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from '../context/LanguageContext';
 import { ArrowLeft, User } from "lucide-react";
-import { PlainImage } from "../components/ui/PlainImage";
 
 export default function ContactPage() {
   const router = useRouter();
@@ -14,19 +12,16 @@ export default function ContactPage() {
     {
       name: "operator",
       universityKey: "universityHIT",
-      avatar: null, // 预留头像位置
     },
     {
       name: "wind",
       universityKey: "universityUSTC",
-      avatar: null, // 预留头像位置
     },
   ];
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)]">
       <div className="max-w-4xl mx-auto px-4 py-12">
-        {/* 返回按钮 */}
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 mb-8 transition-colors text-[var(--color-text-primary)] hover:text-[var(--color-text-secondary)]"
@@ -35,7 +30,6 @@ export default function ContactPage() {
           <span>{t("back") || "返回"}</span>
         </button>
 
-        {/* 标题 */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-[var(--color-text-primary)]">
             {t("contactUs") || "联系我们"}
@@ -45,29 +39,18 @@ export default function ContactPage() {
           </p>
         </div>
 
-        {/* 联系人列表 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {contacts.map((contact, index) => (
             <div
               key={index}
               className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm transition-shadow duration-200 hover:shadow-md"
             >
-              {/* 头像区域 */}
               <div className="flex justify-center mb-6">
-                {contact.avatar ? (
-                  <PlainImage
-                    src={contact.avatar}
-                    alt={contact.name}
-                    className="w-24 h-24 rounded-full object-cover border-4 border-orange-200"
-                  />
-                ) : (
-                  <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-                    <User className="w-12 h-12 text-gray-600" />
-                  </div>
-                )}
+                <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+                  <User className="w-12 h-12 text-gray-600" />
+                </div>
               </div>
 
-              {/* 联系人信息 */}
               <div className="text-center">
                 <h3 className="text-2xl font-bold mb-2 text-[var(--color-text-primary)]">
                   {contact.name}

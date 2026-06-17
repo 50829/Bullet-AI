@@ -1,28 +1,20 @@
-// app/login/page.tsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "../../lib/supabaseClient"; // 更新路径
-import { useLanguage } from '../context/LanguageContext'; // 更新路径
+import { supabase } from "../../lib/supabaseClient";
+import { useLanguage } from '../context/LanguageContext';
 import { getPostLoginRedirect } from "../../lib/auth/getPostLoginRedirect";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useLanguage(); // 从 LanguageContext 获取翻译函数
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const nextPath = getPostLoginRedirect(searchParams.get("next"));
-
-  // 兼容旧主题类，登录页使用统一 calm 外观
-  useEffect(() => {
-    const root = document.documentElement;
-    // 移除所有主题类
-    root.className = root.className.split(' ').filter(cls => !cls.startsWith('theme-')).join(' ').trim();
-  }, []);
 
   const getOrigin = () =>
     typeof window !== "undefined"
@@ -32,7 +24,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setMessage(t("passwordMismatch")); // 重用注册页的错误信息
+      setMessage(t("passwordMismatch"));
       return;
     }
     setLoading(true);
@@ -66,16 +58,13 @@ export default function LoginPage() {
       setLoading(false);
       setMessage(error.message);
     }
-    // 注意：OAuth 登录不会返回到当前函数，而是重定向到回调页面
   };
 
   return (
     <main className="min-h-screen flex items-center justify-center relative bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
       <div className="w-full max-w-md rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-8 text-center shadow-sm mx-4">
-        {/* 移除了语言切换按钮 */}
         <h1 className="text-3xl font-bold mb-6 text-[var(--color-text-primary)]">{t("loginTitle")}</h1>
 
-        {/* Google 登录 */}
         <button
           onClick={() => signInWithProvider("google")}
           disabled={loading}
@@ -87,7 +76,6 @@ export default function LoginPage() {
           {t("googleLogin")}
         </button>
 
-        {/* GitHub 登录 */}
         <button
           onClick={() => signInWithProvider("github")}
           disabled={loading}
@@ -105,7 +93,6 @@ export default function LoginPage() {
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
-        {/* 邮箱+密码登录 */}
         <form onSubmit={handleLogin} className="space-y-3 mb-6 text-left">
           <label className="block text-sm text-[var(--color-text-primary)]">{t("emailLabel")}</label>
           <input
