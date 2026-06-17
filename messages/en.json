@@ -163,8 +163,11 @@
   "pleaseEnterPassword": "Please enter a password",
   "registrationFailedGeneric": "Registration failed. Please try again later.",
   "registrationSuccess": "Registration successful. Please go to login and sign in with your email and password.",
-  "theme": "Theme",
-  "themeSettings": "Theme Settings",
+  "theme": "Appearance",
+  "themeSettings": "Appearance Settings",
+  "appearance": "Appearance",
+  "accentColor": "Accent color",
+  "colorMode": "Color mode",
   "newHabit": "New Habit",
   "habitName": "Habit Name",
   "habitPlaceholder": "e.g., Morning Reading, Exercise Check-in...",
@@ -251,5 +254,10 @@
   "updateFailed": "Update failed, please try again later",
   "updateError": "An error occurred, please try again later",
   "save": "Save",
-  "saving": "Saving..."
+  "saving": "Saving...",
+  "syncing": "Syncing",
+  "syncFailed": "Sync failed",
+  "retrySync": "Retry sync",
+  "savedLocally": "Saved locally",
+  "cloudSyncFailed": "Cloud sync failed. Please retry later"
 }

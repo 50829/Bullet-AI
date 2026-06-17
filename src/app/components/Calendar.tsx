@@ -1,7 +1,8 @@
 // components/Calendar.tsx
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { toDateKey } from "../../lib/date/dateUtils";
 
 type Goal = {
   id: number;
@@ -23,6 +24,9 @@ type CalendarProps = {
 export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isMobile, setIsMobile] = useState(false);
+  const today = useMemo(() => new Date(), []);
+  const todayKey = toDateKey(today);
+  const todayLabel = `${today.getMonth() + 1}月${today.getDate()}日`;
 
   // 检测屏幕尺寸
   useEffect(() => {
@@ -63,28 +67,32 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
     days.push(null);
   }
 
-  // 检查某天是否有未完成的目标
-  const hasIncompleteGoalOnDate = (day: number | null): boolean => {
-    if (day === null) return false;
-    const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return goals.some(goal => {
-      if (!goal.due_date) return false;
-      // 直接比较字符串，避免时区转换问题
-      if (goal.due_date !== dateStr) return false;
-      // 只返回未完成的目标
-      return goal.status !== 'completed';
+  const getDateKeyForDay = (day: number | null) => {
+    if (day === null) return null;
+    return `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
+  const goalCountByDate = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    goals.forEach((goal) => {
+      if (!goal.due_date) return;
+      counts.set(goal.due_date, (counts.get(goal.due_date) ?? 0) + 1);
     });
+
+    return counts;
+  }, [goals]);
+
+  const getGoalCountOnDate = (day: number | null): number => {
+    const dateKey = getDateKeyForDay(day);
+    if (!dateKey) return 0;
+    return goalCountByDate.get(dateKey) ?? 0;
   };
 
   // 检查是否是今天
   const isToday = (day: number | null): boolean => {
     if (day === null) return false;
-    const today = new Date();
-    return (
-      day === today.getDate() &&
-      currentMonth.getMonth() === today.getMonth() &&
-      currentMonth.getFullYear() === today.getFullYear()
-    );
+    return getDateKeyForDay(day) === todayKey;
   };
 
   // 检查是否是选中的日期
@@ -120,11 +128,16 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
   return (
     <div className={`rounded-xl p-4 ${isMobile ? 'h-auto min-h-[400px]' : 'h-[520px]'} flex flex-col bg-[var(--color-panel-primary)]`}>
       {/* 月份导航 */}
-      <div className="flex items-center justify-between mb-3 flex-shrink-0">
+      <div className="flex items-start justify-between mb-3 flex-shrink-0">
         {/* 标题放在左上角 */}
-        <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-[var(--color-panel-text)]`}>
-          {currentMonth.getFullYear()}年 {monthNames[currentMonth.getMonth()]}
-        </h3>
+        <div>
+          <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-[var(--color-panel-text)]`}>
+            {currentMonth.getFullYear()}年 {monthNames[currentMonth.getMonth()]}
+          </h3>
+          <p className="mt-1 text-sm font-medium text-[var(--color-panel-text)] opacity-80">
+            今天 {todayLabel}
+          </p>
+        </div>
         {/* 月份切换按钮放在右上角 */}
         <div className="flex items-center gap-2">
           <button
@@ -154,7 +167,8 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
       {/* 日期网格 */}
       <div className={`grid grid-cols-7 gap-1 ${isMobile ? '' : 'flex-1 min-h-0'}`}>
         {days.map((day, index) => {
-          const hasIncompleteGoal = hasIncompleteGoalOnDate(day);
+          const goalCount = getGoalCountOnDate(day);
+          const visibleDots = Math.min(goalCount, 3);
           const today = isToday(day);
           const selected = isSelected(day);
 
@@ -164,14 +178,22 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
               onClick={() => handleDayClick(day)}
               disabled={day === null}
               className={`
-                aspect-square ${isMobile ? 'p-1' : 'p-2'} rounded-full ${isMobile ? 'text-sm' : 'text-lg'} flex items-center justify-center
+                aspect-square ${isMobile ? 'p-1' : 'p-2'} rounded-xl ${isMobile ? 'text-sm' : 'text-lg'} flex flex-col items-center justify-center gap-1
                 ${day === null ? 'cursor-default opacity-0' : 'cursor-pointer'}
-                ${selected ? 'border-2 border-[var(--color-accent)]' : 'border-2 border-transparent'}
-                ${today ? 'text-[var(--color-accent)] font-semibold' : day !== null ? 'text-[var(--color-panel-text)]' : ''}
-                ${hasIncompleteGoal ? 'bg-blue-50/20' : ''}
+                ${selected ? 'border-2 border-[var(--color-panel-text)] bg-white/15' : 'border-2 border-transparent'}
+                ${today ? 'font-semibold' : ''}
+                ${day !== null ? 'text-[var(--color-panel-text)] hover:bg-white/10' : ''}
               `}
             >
-              {day}
+              <span>{day}</span>
+              <span className="flex h-2 items-center justify-center gap-0.5">
+                {Array.from({ length: visibleDots }).map((_, dotIndex) => (
+                  <span
+                    key={dotIndex}
+                    className="h-1.5 w-1.5 rounded-full bg-[var(--color-panel-text)]"
+                  />
+                ))}
+              </span>
             </button>
           );
         })}

@@ -163,8 +163,11 @@
   "pleaseEnterPassword": "请输入密码",
   "registrationFailedGeneric": "注册失败，请稍后重试。",
   "registrationSuccess": "注册成功！请前往登录页面输入邮箱和密码登录。",
-  "theme": "主题",
-  "themeSettings": "主题设置",
+  "theme": "外观",
+  "themeSettings": "外观设置",
+  "appearance": "外观",
+  "accentColor": "强调色",
+  "colorMode": "颜色模式",
   "newHabit": "新建习惯",
   "habitName": "习惯名称",
   "habitPlaceholder": "例如：晨间阅读、运动打卡...",
@@ -251,5 +254,10 @@
   "updateFailed": "更新失败，请稍后再试",
   "updateError": "发生错误，请稍后再试",
   "save": "保存",
-  "saving": "保存中..."
+  "saving": "保存中...",
+  "syncing": "同步中",
+  "syncFailed": "同步失败",
+  "retrySync": "重试同步",
+  "savedLocally": "已在本地保存",
+  "cloudSyncFailed": "云端同步失败，稍后需要重试"
 }

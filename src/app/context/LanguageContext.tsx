@@ -12,15 +12,22 @@ import {
 } from "react";
 import enMessages from "../../../messages/en.json";
 import zhMessages from "../../../messages/zh.json";
+import {
+  readLocalPreferences,
+  writeLocalPreferences,
+  type PreferredLanguage,
+} from "../../lib/profile/preferences";
+import {
+  getCurrentUserProfile,
+  updateCurrentUserPreferences,
+} from "../../lib/profile/profileService";
 
-export type Language = "zh" | "en";
+export type Language = PreferredLanguage;
 
 type LanguageContextType = {
   language: Language;
   setLanguage: (language: Language) => void;
 };
-
-const LANGUAGE_STORAGE_KEY = "language";
 
 const messages: Record<Language, Record<string, string>> = {
   zh: zhMessages,
@@ -29,31 +36,44 @@ const messages: Record<Language, Record<string, string>> = {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-function getInitialLanguage(): Language {
-  if (typeof window === "undefined") return "zh";
-
-  const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  if (stored === "zh" || stored === "en") return stored;
-
-  const browserLanguage = window.navigator.language.toLowerCase();
-  return browserLanguage.startsWith("en") ? "en" : "zh";
-}
-
 export function LanguageProvider({children}: {children: ReactNode}) {
   const [language, setLanguageState] = useState<Language>("zh");
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    const initialLanguage = getInitialLanguage();
-    setLanguageState(initialLanguage);
-    document.documentElement.lang = initialLanguage;
+    let isMounted = true;
+    const localPreferences = readLocalPreferences();
+
+    setLanguageState(localPreferences.preferred_language);
+    document.documentElement.lang = localPreferences.preferred_language;
     setIsHydrated(true);
+
+    getCurrentUserProfile()
+      .then((profile) => {
+        if (!isMounted || !profile) return;
+
+        const remoteLanguage = profile.preferences.preferred_language;
+        writeLocalPreferences(profile.preferences);
+        if (remoteLanguage !== localPreferences.preferred_language) {
+          setLanguageState(remoteLanguage);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to sync language preference:", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const setLanguage = useCallback((nextLanguage: Language) => {
     setLanguageState(nextLanguage);
-    document.documentElement.lang = nextLanguage;
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+    writeLocalPreferences({ preferred_language: nextLanguage });
+
+    void updateCurrentUserPreferences({ preferred_language: nextLanguage }).catch(() => {
+      // Unauthenticated users still get immediate local language changes.
+    });
   }, []);
 
   const value = useMemo(

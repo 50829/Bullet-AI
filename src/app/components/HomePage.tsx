@@ -9,6 +9,7 @@ import { useHabits } from "../../features/habits/hooks/useHabits";
 import { HabitList } from "../../features/habits/components/HabitList";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { useToast } from "./ui/Toast";
+import { PlainImage } from "./ui/PlainImage";
 import type { HabitView } from "../../features/habits/types";
 
 type Moment = {
@@ -37,7 +38,7 @@ type DayCard = {
 };
 
 export default function HomePage() {
-  const { moments, goals, loading, refreshGoals, updateGoal } = useAppContext();
+  const { moments, goals, loading, updateGoal } = useAppContext();
   const { t } = useLanguage();
   const { showToast } = useToast();
   const {
@@ -213,7 +214,7 @@ export default function HomePage() {
                                   {moment.image_url && (
                                     <div className="flex justify-center">
                                       <div className="relative">
-                                        <img 
+                                        <PlainImage
                                           src={moment.image_url} 
                                           alt="时刻图片" 
                                           className="w-full max-w-md h-auto rounded-lg object-cover" 
@@ -273,7 +274,7 @@ export default function HomePage() {
                     return (
                       <div
                         key={goal.id}
-                        className={`group rounded-xl border border-[color:rgba(239,238,235,0.2)] bg-[color:rgba(0,48,73,0.85)] p-4 ${
+                        className={`group rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-4 ${
                           isCompleted ? 'opacity-75' : ''
                         }`}
                       >
@@ -283,7 +284,6 @@ export default function HomePage() {
                               onClick={async () => {
                                 try {
                                   await updateGoal(goal.id, { status: 'completed' });
-                                  await refreshGoals();
                                   showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
                                 } catch (err) {
                                   showToast({

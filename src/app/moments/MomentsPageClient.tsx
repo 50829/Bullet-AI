@@ -10,6 +10,7 @@ import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 import { useTopBar } from '../components/layout/TopBar';
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../components/ui/Toast";
+import { PlainImage } from "../components/ui/PlainImage";
 
 type Moment = {
   id: number;
@@ -184,7 +185,6 @@ export default function MomentsPageClient() {
   }, [setTopBarHandlers, showAIPanel]);
   const handleModalClose = () => setIsModalOpen(false);
   const handleModalSuccess = () => {
-    refreshMoments();
     setIsModalOpen(false);
   };
 
@@ -204,7 +204,7 @@ export default function MomentsPageClient() {
     } catch (err) {
       console.error("删除异常:", err);
       showToast({ type: "error", message: t("deleteFailed") || "删除失败，请稍后重试" });
-      refreshMoments();
+      void refreshMoments();
     } finally {
       setDeletingMoment(false);
     }
@@ -262,7 +262,7 @@ export default function MomentsPageClient() {
                       <div className="flex flex-col gap-4">
                         {/* 月份标题 - 带折叠按钮 */}
                         <div 
-                          className="flex items-center gap-2 border-b border-[#003049]/30 pb-2 cursor-pointer transition-colors"
+                          className="flex items-center gap-2 border-b border-[var(--color-border-muted)] pb-2 cursor-pointer transition-colors"
                           onClick={() => toggleMonth(monthCard.month)}
                         >
                           <button 
@@ -341,7 +341,7 @@ export default function MomentsPageClient() {
                                             {moment.image_url && (
                                               <div className="flex justify-center">
                                                 <div className="relative">
-                                                  <img 
+                                                  <PlainImage
                                                     src={moment.image_url} 
                                                     alt="时刻图片" 
                                                     className="w-full max-w-md h-auto rounded-lg object-cover" 

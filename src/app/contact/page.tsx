@@ -4,6 +4,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from '../context/LanguageContext';
 import { ArrowLeft, User } from "lucide-react";
+import { PlainImage } from "../components/ui/PlainImage";
 
 export default function ContactPage() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function ContactPage() {
               {/* 头像区域 */}
               <div className="flex justify-center mb-6">
                 {contact.avatar ? (
-                  <img
+                  <PlainImage
                     src={contact.avatar}
                     alt={contact.name}
                     className="w-24 h-24 rounded-full object-cover border-4 border-orange-200"

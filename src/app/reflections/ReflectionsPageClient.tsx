@@ -9,7 +9,6 @@ import { Trash2, Save, Edit2, ChevronDown, ChevronUp } from "lucide-react";
 import { AIChatPanel } from "../components/AIChatPanel";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
-import { supabase } from "../../lib/supabaseClient";
 import { useTopBar } from '../components/layout/TopBar';
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../components/ui/Toast";
@@ -28,7 +27,7 @@ type Reflection = {
 
 
 export default function ReflectionsPageClient() {
-  const { reflections, loading, refreshReflections, deleteReflection, updateReflection } = useAppContext();
+  const { reflections, loading, refreshReflections, deleteReflection, updateReflection, addReflection } = useAppContext();
   const { t, language } = useLanguage(); // 获取翻译函数和语言设置
   const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
@@ -102,32 +101,22 @@ export default function ReflectionsPageClient() {
     
     setIsSaving(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData?.user;
-      if (!user) {
-        showToast({ type: "error", message: t("pleaseLogin") || "请先登录！" });
-        setIsSaving(false);
-        return;
-      }
-
       // 标题和正文合并到content中
       const contentToSave = `${newTitle.trim()}\n\n${newContent.trim()}`;
-
-      const { error } = await supabase.from("reflections").insert({
-        user_id: user.id,
+      addReflection({
+        id: Date.now(),
         content: contentToSave,
+        created_at: new Date().toISOString(),
+        source: null,
+        source_type: null,
+        location: null,
+        image_url: null,
+        image_path: null,
       });
-
-      if (error) {
-        console.error("写入 reflections 失败:", error);
-        showToast({ type: "error", message: t("publishFailed") || "发布失败，请重试" });
-      } else {
-        refreshReflections();
-        setIsCreatingNew(false);
-        setNewTitle("");
-        setNewContent("");
-        showToast({ type: "success", message: t("addSuccess") || "成功添加" });
-      }
+      setIsCreatingNew(false);
+      setNewTitle("");
+      setNewContent("");
+      showToast({ type: "success", message: t("savedLocally") || "已在本地保存" });
     } catch (err) {
       console.error("提交错误:", err);
       showToast({ type: "error", message: t("publishFailed") || "发布异常，请稍后重试" });
@@ -169,7 +158,6 @@ export default function ReflectionsPageClient() {
     try {
       const contentToSave = `${editTitle.trim()}\n\n${editContent.trim()}`;
       await updateReflection(editingReflection.id, { content: contentToSave });
-      await refreshReflections();
       setEditingReflection(null);
       setEditTitle("");
       setEditContent("");
@@ -199,7 +187,7 @@ export default function ReflectionsPageClient() {
       console.error("删除异常:", err);
       showToast({ type: "error", message: t("deleteFailed") || "删除失败，请稍后重试" });
       // 如果删除失败，刷新数据以确保状态同步
-      refreshReflections();
+      void refreshReflections();
     } finally {
       setDeletingReflection(false);
     }

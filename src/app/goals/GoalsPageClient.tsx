@@ -18,6 +18,11 @@ import type { GoalPlan } from "../../features/goals/types";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../components/ui/Toast";
 
+function getTodayDate() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
 export default function GoalsPageClient() {
   const { goals, loading, refreshGoals, deleteGoal, updateGoal } = useAppContext();
   const {
@@ -36,7 +41,7 @@ export default function GoalsPageClient() {
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => getTodayDate());
   const [rightViewMode, setRightViewMode] = useState<"migration" | "schedule">("migration");
   
   const [showConfirm, setShowConfirm] = useState(false);
@@ -72,6 +77,11 @@ export default function GoalsPageClient() {
   // 获取待分配任务（无日期的目标）
   const migrationListGoals = goals.filter(g => !g.due_date);
 
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setRightViewMode("schedule");
+  };
+
   const handleDelete = async () => {
     if (!selectedItem) return;
     const itemToDelete = selectedItem;
@@ -91,7 +101,7 @@ export default function GoalsPageClient() {
       console.error("删除异常:", err);
       showToast({ type: "error", message: t("deleteFailed") || "删除失败，请稍后重试" });
       if (itemToDelete.type === 'goal') {
-        refreshGoals();
+        void refreshGoals();
       }
     } finally {
       setDeleting(false);
@@ -101,7 +111,7 @@ export default function GoalsPageClient() {
   // 从AI回复中解析任务并添加到迁移列表（不设置日期）
   const addTasksFromAIReply = async (plan: GoalPlan) => {
     await addGoalPlanToMigrationList(plan);
-    await refreshGoals();
+    void refreshGoals();
   };
 
 
@@ -159,7 +169,7 @@ export default function GoalsPageClient() {
               <div className="lg:h-[520px]">
                 <Calendar
                   selectedDate={selectedDate}
-                  onDateSelect={setSelectedDate}
+                  onDateSelect={handleDateSelect}
                   goals={goals}
                 />
               </div>
@@ -222,7 +232,6 @@ export default function GoalsPageClient() {
                                     onClick={async () => {
                                       try {
                                         await updateGoal(goal.id, { status: 'completed' });
-                                        refreshGoals();
                                       } catch (err) {
                                         showToast({
                                           type: "error",
@@ -260,7 +269,6 @@ export default function GoalsPageClient() {
                                         try {
                                           const dateStr = formatDateToLocal(selectedDate);
                                           await updateGoal(goal.id, { due_date: dateStr });
-                                          refreshGoals();
                                           setRightViewMode("schedule");
                                           showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
                                         } catch (err) {
@@ -336,7 +344,6 @@ export default function GoalsPageClient() {
                                     onClick={async () => {
                                       try {
                                         await updateGoal(goal.id, { status: 'completed' });
-                                        refreshGoals();
                                       } catch (err) {
                                         showToast({
                                           type: "error",
@@ -371,9 +378,8 @@ export default function GoalsPageClient() {
                                   {!isCompleted && (
                                     <button
                                       onClick={async () => {
-                                        try {
+                                      try {
                                           await updateGoal(goal.id, { due_date: null });
-                                          refreshGoals();
                                           setRightViewMode("migration");
                                           showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
                                         } catch (err) {
@@ -456,7 +462,7 @@ export default function GoalsPageClient() {
       <GoalModal
         isOpen={isGoalModalOpen}
         onClose={() => setIsGoalModalOpen(false)}
-        onSuccess={refreshGoals}
+        onSuccess={() => undefined}
       />
 
       <HabitFormDialog

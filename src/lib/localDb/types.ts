@@ -1,0 +1,53 @@
+export type LocalCollection =
+  | "moments"
+  | "reflections"
+  | "goals"
+  | "habits"
+  | "habit_checkins"
+  | "profiles";
+
+export type SyncOperation = "upsert" | "update" | "delete";
+export type SyncStatus = "idle" | "syncing" | "failed";
+export type OutboxStatus = "pending" | "syncing" | "failed";
+
+export type LocalEntity<T = unknown> = {
+  key: string;
+  userId: string;
+  collection: LocalCollection;
+  entityId: string;
+  data: T;
+  updatedAt: string;
+  pending?: boolean;
+  failed?: boolean;
+  deleted?: boolean;
+};
+
+export type OutboxItem<T = unknown> = {
+  id: string;
+  userId: string;
+  collection: LocalCollection;
+  entityId: string;
+  operation: SyncOperation;
+  payload: T;
+  status: OutboxStatus;
+  createdAt: string;
+  updatedAt: string;
+  error?: string;
+};
+
+export type LocalFile = {
+  id: string;
+  userId: string;
+  bucket: string;
+  path: string;
+  blob: Blob;
+  createdAt: string;
+};
+
+export type LocalMeta = {
+  key: string;
+  userId: string;
+  collection: LocalCollection;
+  lastFetchedAt: string | null;
+  schemaVersion: number;
+};

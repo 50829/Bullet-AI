@@ -103,7 +103,7 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
           onClick={() => setLanguage("en")}
           className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
             language === "en" 
-              ? "bg-[#003049] text-white" 
+              ? "bg-[var(--color-primary)] text-[var(--color-text-on-primary)]" 
               : "text-gray-500 hover:text-amber-500"
           }`}
         >
@@ -115,7 +115,7 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
           onClick={() => setLanguage("zh")}
           className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
             language === "zh" 
-              ? "bg-[#003049] text-white" 
+              ? "bg-[var(--color-primary)] text-[var(--color-text-on-primary)]" 
               : "text-gray-500 hover:text-amber-500"
           }`}
         >
@@ -141,7 +141,7 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
         <div className={`mt-10 flex flex-col sm:flex-row gap-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <button 
             onClick={goToLogin}
-            className="bg-[#003049] text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-[var(--color-text-primary)] hover:border-2 border-[#003049] transition-all duration-500 text-lg min-w-[200px] h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
+            className="flex h-14 min-w-[200px] items-center justify-center rounded-full border border-[var(--color-primary)] bg-[var(--color-primary)] px-10 py-4 text-lg font-semibold text-[var(--color-text-on-primary)] shadow-sm transition-colors duration-150 hover:bg-[var(--color-primary-hover)]"
           >
             {t("getStarted")}
           </button>
@@ -349,7 +349,7 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
       </ul>
       <button 
         onClick={goToLogin}
-        className="mt-8 w-full text-lg font-semibold py-4 px-4 rounded-full bg-[#003049] text-white hover:bg-transparent hover:text-[var(--color-text-primary)] hover:border-2 border-[#003049] transition-all duration-500 h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
+        className="mt-8 flex h-14 w-full items-center justify-center rounded-full border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-4 text-lg font-semibold text-[var(--color-text-on-primary)] transition-colors duration-150 hover:bg-[var(--color-primary-hover)]"
       >
         {buttonText}
       </button>
@@ -402,7 +402,7 @@ const CallToActionSection = () => {
           <p className="mt-4 text-xl text-gray-600">{t("storyDescription")}</p>
           <button 
             onClick={goToLogin}
-            className="mt-12 bg-[#003049] text-white font-semibold py-4 px-10 rounded-full shadow-lg hover:bg-transparent hover:text-[var(--color-text-primary)] hover:border-2 border-[#003049] transition-all duration-500 inline-flex items-center gap-2 text-lg h-14 flex items-center justify-center hover:-translate-y-1 hover:shadow-xl"
+            className="mt-12 inline-flex h-14 items-center justify-center gap-2 rounded-full border border-[var(--color-primary)] bg-[var(--color-primary)] px-10 py-4 text-lg font-semibold text-[var(--color-text-on-primary)] shadow-sm transition-colors duration-150 hover:bg-[var(--color-primary-hover)]"
           >
             {t("startNow")} <ArrowRight className="h-5 w-5" />
           </button>
@@ -466,7 +466,7 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
       </div>
       <button 
         onClick={scrollToTop} // 使用从父组件传递下来的函数
-        className="fixed bottom-10 right-10 bg-[#003049] text-white p-3 rounded-full shadow-lg hover:bg-transparent hover:text-[var(--color-text-primary)] hover:border-2 border-[#003049] transition-all duration-500 z-50 hover:-translate-y-1 hover:shadow-xl"
+        className="fixed bottom-10 right-10 z-50 rounded-full border border-[var(--color-primary)] bg-[var(--color-primary)] p-3 text-[var(--color-text-on-primary)] shadow-sm transition-colors duration-150 hover:bg-[var(--color-primary-hover)]"
         aria-label="返回顶部"
       >
         <ArrowUp className="h-6 w-6" />

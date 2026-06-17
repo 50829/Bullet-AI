@@ -1,111 +1,115 @@
-// src/components/layout/SettingsPanel.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Languages, X, User, Palette } from 'lucide-react';
-import { useLanguage } from '../../context/LanguageContext';
-import { getCurrentUserProfile, updateCurrentUserDisplayName } from '../../../lib/profile/profileService';
+import React, { useCallback, useEffect, useState } from "react";
+import { Check, Languages, Moon, Palette, Sun, Monitor, User, X } from "lucide-react";
+import { useLanguage, type Language } from "../../context/LanguageContext";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { useToast } from "../ui/Toast";
+import {
+  getCurrentUserProfile,
+  updateCurrentUserDisplayName,
+  updateCurrentUserPreferences,
+  type UserProfile,
+} from "../../../lib/profile/profileService";
+import {
+  DEFAULT_USER_PREFERENCES,
+  normalizePreferences,
+  writeLocalPreferences,
+  type AccentColor,
+  type ColorScheme,
+  type UserPreferences,
+} from "../../../lib/profile/preferences";
 
-interface SettingsPanelProps {
+type SettingsPanelProps = {
   onClose: () => void;
-  initialProfile?: {
-    username: string;
-    updated_at: string | null;
-  } | null;
-  onProfileUpdate?: (profile: { username: string; updated_at: string | null }) => void;
-}
-
-type SettingsSection = 'user' | 'theme' | 'language';
-
-type ThemeName = 'default' | 'sky';
-
-interface ThemeOption {
-  id: ThemeName;
-  name: string;
-  bgColor: string;
-  primaryColor: string;
-  bgGradient?: string; // 可选的渐变背景
-}
-
-// 将十六进制颜色转换为带透明度的 rgba
-const hexToRgba = (hex: string, alpha: number = 1): string => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  initialProfile?: UserProfile | null;
+  onProfileUpdate?: (profile: UserProfile) => void;
 };
 
-const THEMES: ThemeOption[] = [
-  { id: 'default', name: '经典', bgColor: '#efeeeb', primaryColor: '#003049' },
-  { 
-    id: 'sky', 
-    name: '天空', 
-    bgColor: '#8ca4dc', 
-    primaryColor: '#13100d', 
-    bgGradient: 'linear-gradient(135deg, #8ca4dc 0%, #cad8e5 45%, #6899fa 100%)' 
+type SettingsSection = "user" | "appearance" | "language";
+type FormMessage = { type: "success" | "error" | "info"; text: string } | null;
+
+const ACCENT_OPTIONS: Array<{
+  id: AccentColor;
+  labelZh: string;
+  labelEn: string;
+  color: string;
+}> = [
+  { id: "sage", labelZh: "鼠尾草", labelEn: "Sage", color: "#2f6f5e" },
+  { id: "green", labelZh: "森林绿", labelEn: "Forest", color: "#2f7d52" },
+  { id: "purple", labelZh: "雾紫", labelEn: "Mauve", color: "#7c5c9e" },
+  { id: "amber", labelZh: "琥珀", labelEn: "Amber", color: "#a16207" },
+];
+
+const COLOR_SCHEME_OPTIONS: Array<{
+  id: ColorScheme;
+  labelZh: string;
+  labelEn: string;
+  descriptionZh: string;
+  descriptionEn: string;
+  Icon: typeof Monitor;
+}> = [
+  {
+    id: "system",
+    labelZh: "跟随系统",
+    labelEn: "System",
+    descriptionZh: "跟随设备明暗模式",
+    descriptionEn: "Match device appearance",
+    Icon: Monitor,
+  },
+  {
+    id: "light",
+    labelZh: "浅色",
+    labelEn: "Light",
+    descriptionZh: "稳定明亮的工作台",
+    descriptionEn: "Bright steady workspace",
+    Icon: Sun,
+  },
+  {
+    id: "dark",
+    labelZh: "深色",
+    labelEn: "Dark",
+    descriptionZh: "低亮度长时间使用",
+    descriptionEn: "Lower brightness for long sessions",
+    Icon: Moon,
   },
 ];
 
-const applyTheme = (theme: ThemeName) => {
-  const root = document.documentElement;
-  
-  const currentClasses = root.className.split(' ').filter(cls => !cls.startsWith('theme-'));
-  root.className = currentClasses.join(' ').trim();
-  
-  if (theme !== 'default') {
-    root.className = root.className ? `${root.className} theme-${theme}` : `theme-${theme}`;
-  }
-  
-  void root.offsetHeight;
-};
+function getUsernameTimestamp(profile: Pick<UserProfile, "username_updated_at" | "updated_at">) {
+  return profile.username_updated_at || profile.updated_at;
+}
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, onProfileUpdate }) => {
+export default function SettingsPanel({
+  onClose,
+  initialProfile,
+  onProfileUpdate,
+}: SettingsPanelProps) {
   const { t, language, setLanguage } = useLanguage();
-  const [activeSection, setActiveSection] = useState<SettingsSection>('user');
-  const [username, setUsername] = useState('');
-  const [currentUsername, setCurrentUsername] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const [activeSection, setActiveSection] = useState<SettingsSection>("user");
+  const [username, setUsername] = useState("");
+  const [currentUsername, setCurrentUsername] = useState("");
+  const [profile, setProfile] = useState<UserProfile | null>(initialProfile ?? null);
+  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
+  const [savingUsername, setSavingUsername] = useState(false);
+  const [savingPreference, setSavingPreference] = useState<keyof UserPreferences | null>(null);
+  const [message, setMessage] = useState<FormMessage>(null);
   const [canChangeUsername, setCanChangeUsername] = useState(true);
   const [daysRemaining, setDaysRemaining] = useState(0);
-  const [currentTheme, setCurrentTheme] = useState<ThemeName>('default');
 
-  // 加载保存的主题
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('app-theme') as ThemeName;
-    if (savedTheme && THEMES.find(t => t.id === savedTheme)) {
-      setCurrentTheme(savedTheme);
-      applyTheme(savedTheme);
-    }
-  }, []);
+  const applyProfileState = useCallback((nextProfile: UserProfile) => {
+    setProfile(nextProfile);
+    setCurrentUsername(nextProfile.username || "");
+    setUsername(nextProfile.username || "");
+    setPreferences(normalizePreferences(nextProfile.preferences));
 
-  // 切换主题
-  const handleThemeChange = (theme: ThemeName) => {
-    setCurrentTheme(theme);
-    applyTheme(theme);
-    localStorage.setItem('app-theme', theme);
-    
-    // 触发自定义事件，让 ThemeInitializer 立即更新
-    window.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
-    
-    // 触发 storage 事件，以便在多个标签页之间同步
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'app-theme',
-      newValue: theme,
-      storageArea: localStorage,
-    }));
-  };
-
-  const applyProfileState = useCallback((profile: { username?: string | null; updated_at?: string | null }) => {
-    setCurrentUsername(profile.username || '');
-    setUsername(profile.username || '');
-    
-    if (profile.updated_at) {
-      const lastUpdate = new Date(profile.updated_at);
+    const usernameUpdatedAt = getUsernameTimestamp(nextProfile);
+    if (usernameUpdatedAt) {
+      const lastUpdate = new Date(usernameUpdatedAt);
       const now = new Date();
-      const diffTime = now.getTime() - lastUpdate.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      
+      const diffDays = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+
       if (diffDays < 3) {
         setCanChangeUsername(false);
         setDaysRemaining(3 - diffDays);
@@ -117,328 +121,416 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose, initialProfile, 
     setDaysRemaining(0);
   }, []);
 
-  const fetchUserProfile = useCallback(async () => {
-    try {
-      const profile = await getCurrentUserProfile();
-      if (!profile) {
-        onClose();
-        return;
-      }
-
-      applyProfileState(profile);
-    } catch (error) {
-      console.error("获取用户信息时出错:", error);
-    }
-  }, [applyProfileState, onClose]);
-
   useEffect(() => {
+    let isMounted = true;
+
     if (initialProfile) {
       applyProfileState(initialProfile);
-    } else {
-      fetchUserProfile();
+      return () => {
+        isMounted = false;
+      };
     }
-  }, [applyProfileState, fetchUserProfile, initialProfile]);
 
-  const handleUsernameChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+    getCurrentUserProfile()
+      .then((nextProfile) => {
+        if (!isMounted) return;
+        if (!nextProfile) {
+          onClose();
+          return;
+        }
+        applyProfileState(nextProfile);
+      })
+      .catch((error) => {
+        console.error("Failed to load profile:", error);
+        showToast({
+          type: "error",
+          message: language === "en" ? "Failed to load settings." : "设置加载失败。",
+        });
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [applyProfileState, initialProfile, language, onClose, showToast]);
+
+  const savePreferences = useCallback(
+    async (nextPartial: Partial<UserPreferences>, savingKey: keyof UserPreferences) => {
+      const nextPreferences = normalizePreferences({ ...preferences, ...nextPartial });
+      setPreferences(nextPreferences);
+      writeLocalPreferences(nextPreferences);
+      setSavingPreference(savingKey);
+
+      try {
+        const savedPreferences = await updateCurrentUserPreferences(nextPartial);
+        const mergedPreferences = normalizePreferences(savedPreferences);
+        setPreferences(mergedPreferences);
+        writeLocalPreferences(mergedPreferences);
+        setProfile((current) =>
+          current
+            ? {
+                ...current,
+                preferences: mergedPreferences,
+                preferences_updated_at: new Date().toISOString(),
+              }
+            : current,
+        );
+        showToast({
+          type: "success",
+          message: language === "en" ? "Preference saved." : "偏好已保存。",
+        });
+      } catch (error) {
+        console.error("Failed to save preferences:", error);
+        showToast({
+          type: "error",
+          message:
+            language === "en"
+              ? "Saved locally. Cloud sync failed and will need retry."
+              : "已在本地生效，云端同步失败，稍后需要重试。",
+        });
+      } finally {
+        setSavingPreference(null);
+      }
+    },
+    [language, preferences, showToast],
+  );
+
+  const handleUsernameChange = async (event: React.FormEvent) => {
+    event.preventDefault();
+
     const nextUsername = username.trim();
-
     if (nextUsername === currentUsername) {
-      setMessage(t("usernameUnchanged") || "用户名未更改");
+      setMessage({ type: "info", text: t("usernameUnchanged") });
       return;
     }
 
     if (!canChangeUsername) {
-      const cooldownMsg = (t("usernameChangeCooldown") || "您需要等待 {days} 天才能再次修改用户名").replace("{days}", daysRemaining.toString());
-      setMessage(cooldownMsg);
+      setMessage({
+        type: "error",
+        text: t("usernameChangeCooldown").replace("{days}", daysRemaining.toString()),
+      });
       return;
     }
 
-    setLoading(true);
+    setSavingUsername(true);
     setMessage(null);
 
     try {
       const updatedProfile = await updateCurrentUserDisplayName(nextUsername);
-      setCurrentUsername(updatedProfile.username);
-      setUsername(updatedProfile.username);
-      setMessage(t("updateSuccess") || "用户名更新成功！");
-      setCanChangeUsername(false);
-      setDaysRemaining(3);
-      
-      // 通知父组件更新数据
-      if (onProfileUpdate) {
-        onProfileUpdate(updatedProfile);
-      }
-
-      window.dispatchEvent(new CustomEvent('profile-updated', {
-        detail: { username: updatedProfile.username },
-      }));
-      setLoading(false);
-    } catch (err) {
-      console.error("更新用户名时出错:", err);
-      setMessage(t("updateError") || "发生错误，请稍后再试");
-      setLoading(false);
+      applyProfileState(updatedProfile);
+      setMessage({ type: "success", text: t("updateSuccess") });
+      onProfileUpdate?.(updatedProfile);
+      window.dispatchEvent(
+        new CustomEvent("profile-updated", {
+          detail: { username: updatedProfile.username },
+        }),
+      );
+    } catch (error) {
+      console.error("Failed to update display name:", error);
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : t("updateError"),
+      });
+    } finally {
+      setSavingUsername(false);
     }
+  };
+
+  const handleLanguageChange = (nextLanguage: Language) => {
+    setLanguage(nextLanguage);
+    void savePreferences({ preferred_language: nextLanguage }, "preferred_language");
+  };
+
+  const handleAccentChange = (accentColor: AccentColor) => {
+    void savePreferences({ ui_theme: "calm", accent_color: accentColor }, "accent_color");
+  };
+
+  const handleColorSchemeChange = (colorScheme: ColorScheme) => {
+    void savePreferences({ color_scheme: colorScheme }, "color_scheme");
+  };
+
+  const sectionButton = (section: SettingsSection, Icon: typeof User, label: string) => {
+    const isActive = activeSection === section;
+    return (
+      <button
+        type="button"
+        onClick={() => setActiveSection(section)}
+        className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-colors duration-150 motion-reduce:transition-none ${
+          isActive
+            ? "bg-[var(--color-primary)] text-[var(--color-text-on-primary)]"
+            : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-text-primary)]"
+        }`}
+      >
+        <Icon size={18} />
+        <span>{label}</span>
+      </button>
+    );
   };
 
   return (
     <>
-      {/* 遮罩层 */}
       <div
-        className="fixed inset-0 bg-black/40 z-50 transition-opacity duration-200 motion-reduce:transition-none"
+        className="fixed inset-0 z-50 bg-slate-900/35 transition-opacity duration-200 motion-reduce:transition-none"
         onClick={onClose}
       />
-      
-      {/* 设置面板 */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="flex h-[80vh] w-full max-w-4xl flex-col rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] shadow-xl"
-          onClick={(e) => e.stopPropagation()}
+          className="flex h-[82vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] shadow-xl"
+          onClick={(event) => event.stopPropagation()}
         >
-          {/* 头部 */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200/50">
-            <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-              {t("settings") || "设置"}
-            </h2>
+          <div className="flex items-center justify-between border-b border-[var(--color-border-muted)] px-5 py-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+                {t("settings")}
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                {language === "en"
+                  ? "Local-first preferences, synced quietly in the background."
+                  : "偏好先本地生效，再安静同步到云端。"}
+              </p>
+            </div>
             <button
+              type="button"
               onClick={onClose}
-              className="rounded-lg p-2 transition-colors duration-150 hover:bg-[var(--color-bg-primary)] motion-reduce:transition-none"
-              aria-label={t("close") || "关闭"}
+              className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-text-primary)] motion-reduce:transition-none"
+              aria-label={t("close")}
             >
-              <X size={24} style={{ color: 'var(--color-text-secondary)' }} />
+              <X size={22} />
             </button>
           </div>
 
-          {/* 内容区域 */}
-          <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-            {/* 左侧栏 */}
-            <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-gray-200/50 p-4">
-              <nav className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-2">
-                <button
-                  onClick={() => setActiveSection('user')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-150 motion-reduce:transition-none ${
-                    activeSection === 'user'
-                      ? 'text-white'
-                      : 'hover:bg-gray-200/50'
-                  }`}
-                  style={{
-                    backgroundColor: activeSection === 'user' ? 'var(--color-primary)' : 'transparent',
-                    color: activeSection === 'user' ? 'var(--color-text-on-primary)' : 'var(--color-text-secondary)',
-                  }}
-                >
-                  <User size={20} />
-                  <span className="font-medium">{t("user") || "用户"}</span>
-                </button>
-                <button
-                  onClick={() => setActiveSection('theme')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-150 motion-reduce:transition-none ${
-                    activeSection === 'theme'
-                      ? 'text-white'
-                      : 'hover:bg-gray-200/50'
-                  }`}
-                  style={{
-                    backgroundColor: activeSection === 'theme' ? 'var(--color-primary)' : 'transparent',
-                    color: activeSection === 'theme' ? 'var(--color-text-on-primary)' : 'var(--color-text-secondary)',
-                  }}
-                >
-                  <Palette size={20} />
-                  <span className="font-medium">{t("theme") || "主题"}</span>
-                </button>
-                <button
-                  onClick={() => setActiveSection('language')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-150 motion-reduce:transition-none ${
-                    activeSection === 'language'
-                      ? 'text-white'
-                      : 'hover:bg-gray-200/50'
-                  }`}
-                  style={{
-                    backgroundColor: activeSection === 'language' ? 'var(--color-primary)' : 'transparent',
-                    color: activeSection === 'language' ? 'var(--color-text-on-primary)' : 'var(--color-text-secondary)',
-                  }}
-                >
-                  <Languages size={20} />
-                  <span className="font-medium">{language === 'en' ? 'Language' : '语言'}</span>
-                </button>
+          <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+            <aside className="border-b border-[var(--color-border-muted)] p-3 md:w-64 md:border-b-0 md:border-r">
+              <nav className="grid grid-cols-3 gap-2 md:grid-cols-1">
+                {sectionButton("user", User, t("user"))}
+                {sectionButton("appearance", Palette, t("appearance"))}
+                {sectionButton("language", Languages, language === "en" ? "Language" : "语言")}
               </nav>
-            </div>
+            </aside>
 
-            {/* 右侧内容 */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-6">
-              {activeSection === 'user' && (
-                <div className="max-w-2xl">
-                  <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--color-text-primary)' }}>
-                    {t("userSettings") || "用户设置"}
+            <main className="min-h-0 flex-1 overflow-y-auto p-5 md:p-6">
+              {activeSection === "user" && (
+                <section className="max-w-2xl">
+                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                    {t("userSettings")}
                   </h3>
+                  <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
+                    {language === "en"
+                      ? "Display name is optional and only affects how BulletAI greets you."
+                      : "显示名称是可选的，只用于 BulletAI 在界面中称呼你。"}
+                  </p>
 
-                  <form onSubmit={handleUsernameChange} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {language === 'en' ? 'Display name (optional)' : '显示名称（可选）'}
-                      </label>
-                      <input
-                        type="text"
+                  <form onSubmit={handleUsernameChange} className="mt-5 space-y-4">
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
+                        {language === "en" ? "Display name" : "显示名称"}
+                      </span>
+                      <Input
                         value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                        style={{
-                          borderColor: 'var(--color-border)',
-                          color: 'var(--color-text-primary)',
-                          '--tw-ring-color': 'var(--color-primary)',
-                        } as React.CSSProperties & { '--tw-ring-color': string }}
-                        placeholder={language === 'en' ? 'How should BulletAI call you?' : 'BulletAI 可以怎么称呼你？'}
-                        disabled={loading || !canChangeUsername}
+                        onChange={(event) => setUsername(event.target.value)}
+                        placeholder={
+                          language === "en"
+                            ? "How should BulletAI call you?"
+                            : "BulletAI 可以怎么称呼你？"
+                        }
+                        disabled={savingUsername || !canChangeUsername}
                         maxLength={20}
                       />
-                      {!canChangeUsername && (
-                        <p className="mt-2 text-sm" style={{ color: 'var(--color-accent)' }}>
-                          {(t("usernameChangeCooldown") || "您需要等待 {days} 天才能再次修改用户名").replace("{days}", daysRemaining.toString())}
-                        </p>
+                    </label>
+
+                    {!canChangeUsername && (
+                      <p className="text-sm text-[var(--color-warning)]">
+                        {t("usernameChangeCooldown").replace("{days}", daysRemaining.toString())}
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        type="submit"
+                        disabled={savingUsername || !canChangeUsername || username.trim() === currentUsername}
+                      >
+                        {savingUsername ? t("saving") : t("save")}
+                      </Button>
+                      {profile && (
+                        <span className="text-xs text-[var(--color-text-secondary)]">
+                          {language === "en" ? "Signed in profile settings" : "当前登录账户设置"}
+                        </span>
                       )}
                     </div>
-
-                    <button
-                      type="submit"
-                      disabled={loading || !canChangeUsername || username.trim() === currentUsername}
-                      className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-text-on-primary)] transition-colors duration-150 hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
-                    >
-                      {loading ? (t("saving") || "保存中...") : (t("save") || "保存")}
-                    </button>
                   </form>
 
                   {message && (
-                    <p className={`mt-4 text-sm ${
-                      message.includes(t("updateSuccess") || "成功") 
-                        ? "text-green-500" 
-                        : ""
-                    }`}
-                    style={!message.includes(t("updateSuccess") || "成功") ? { color: 'var(--color-accent)' } : undefined}
+                    <p
+                      className={`mt-4 text-sm ${
+                        message.type === "success"
+                          ? "text-[var(--color-success)]"
+                          : message.type === "error"
+                            ? "text-[var(--color-danger)]"
+                            : "text-[var(--color-text-secondary)]"
+                      }`}
                     >
-                      {message}
+                      {message.text}
                     </p>
                   )}
-                </div>
+                </section>
               )}
 
-              {activeSection === 'theme' && (
-                <div className="max-w-2xl">
-                  <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--color-text-primary)' }}>
-                    {t("themeSettings") || "主题设置"}
+              {activeSection === "appearance" && (
+                <section className="max-w-3xl">
+                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                    {t("appearance")}
                   </h3>
+                  <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
+                    {language === "en"
+                      ? "BulletAI now uses one calm interface style. Accent color is only used for key actions and selection states."
+                      : "BulletAI 现在只保留一套安静稳定的界面风格，强调色只用于关键操作和选中状态。"}
+                  </p>
 
-                  <div className="grid grid-cols-2 md:grid-cols-2 gap-4 max-w-md">
-                    {THEMES.map((theme) => (
-                      <button
-                        key={theme.id}
-                        onClick={() => handleThemeChange(theme.id)}
-                        className={`relative overflow-hidden rounded-2xl border-2 transition-all duration-300 ${
-                          currentTheme === theme.id
-                            ? 'scale-105 shadow-lg'
-                            : 'border-gray-200 hover:border-gray-300 hover:scale-102'
-                        }`}
-                        style={{
-                          aspectRatio: '1',
-                          borderColor: currentTheme === theme.id ? theme.primaryColor : undefined,
-                          boxShadow: currentTheme === theme.id 
-                            ? `0 0 0 2px ${hexToRgba(theme.primaryColor, 0.25)}, 0 4px 6px rgba(0, 0, 0, 0.1)` 
-                            : undefined,
-                        } as React.CSSProperties}
-                      >
-                        {/* 颜色预览卡片 */}
-                        <div className="absolute inset-0 flex">
-                          {/* 左侧：背景色（支持渐变） */}
-                          <div
-                            className="flex-1"
-                            style={theme.bgGradient 
-                              ? { background: theme.bgGradient }
-                              : { backgroundColor: theme.bgColor }
-                            }
-                          />
-                          {/* 右侧：主色 */}
-                          <div
-                            className="flex-1"
-                            style={{ backgroundColor: theme.primaryColor }}
-                          />
-                        </div>
-                        
-                        {/* 主题名称 */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm py-2 px-3">
-                          <span
-                            className="text-sm font-medium"
-                            style={{ color: theme.primaryColor }}
-                          >
-                            {theme.name}
-                          </span>
-                        </div>
+                  <div className="mt-5 rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-primary)] p-4">
+                    <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-4">
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                          {language === "en" ? "Calm workspace" : "Calm 工作台"}
+                        </p>
+                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                          {language === "en"
+                            ? "Neutral surfaces, clear borders, short motion."
+                            : "中性背景、清晰边界、短促反馈。"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full bg-[var(--color-primary)]" />
+                        <span className="h-3 w-3 rounded-full bg-[var(--color-success)]" />
+                        <span className="h-3 w-3 rounded-full bg-[var(--color-warning)]" />
+                      </div>
+                    </div>
+                  </div>
 
-                        {/* 选中指示器 */}
-                        {currentTheme === theme.id && (
-                          <div
-                            className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                            style={{ backgroundColor: theme.primaryColor }}
+                  <div className="mt-6">
+                    <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                      {t("colorMode")}
+                    </h4>
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      {COLOR_SCHEME_OPTIONS.map((option) => {
+                        const selected = preferences.color_scheme === option.id;
+                        const Icon = option.Icon;
+
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => handleColorSchemeChange(option.id)}
+                            disabled={savingPreference === "color_scheme"}
+                            className={`rounded-xl border p-4 text-left transition-colors duration-150 hover:bg-[var(--color-bg-primary)] disabled:cursor-wait disabled:opacity-70 motion-reduce:transition-none ${
+                              selected
+                                ? "border-[var(--color-primary)] bg-[var(--color-primary-light)]"
+                                : "border-[var(--color-border-muted)] bg-[var(--color-bg-surface)]"
+                            }`}
                           >
-                            <svg
-                              className="w-3 h-3 text-white"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={3}
-                                d="M5 13l4 4L19 7"
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
+                                <Icon size={16} />
+                                {language === "en" ? option.labelEn : option.labelZh}
+                              </span>
+                              {selected && <Check size={16} className="text-[var(--color-primary)]" />}
+                            </div>
+                            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                              {language === "en" ? option.descriptionEn : option.descriptionZh}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                      {t("accentColor")}
+                    </h4>
+                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {ACCENT_OPTIONS.map((option) => {
+                        const selected = preferences.accent_color === option.id;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => handleAccentChange(option.id)}
+                            disabled={savingPreference === "accent_color"}
+                            className={`flex items-center justify-between rounded-xl border p-3 text-left transition-colors duration-150 hover:bg-[var(--color-bg-primary)] disabled:cursor-wait disabled:opacity-70 motion-reduce:transition-none ${
+                              selected
+                                ? "border-[var(--color-primary)] bg-[var(--color-primary-light)]"
+                                : "border-[var(--color-border-muted)] bg-[var(--color-bg-surface)]"
+                            }`}
+                          >
+                            <span className="flex items-center gap-3">
+                              <span
+                                className="h-6 w-6 rounded-full border border-black/10"
+                                style={{ backgroundColor: option.color }}
                               />
-                            </svg>
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeSection === 'language' && (
-                <div className="max-w-2xl">
-                  <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--color-text-primary)' }}>
-                    {language === 'en' ? 'Language' : '语言设置'}
-                  </h3>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
-                    {[
-                      { id: 'zh' as const, label: '中文', description: '使用中文界面' },
-                      { id: 'en' as const, label: 'English', description: 'Use the English interface' },
-                    ].map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => setLanguage(option.id)}
-                        className="rounded-2xl border p-4 text-left transition hover:shadow-sm"
-                        style={{
-                          borderColor: language === option.id ? 'var(--color-primary)' : 'var(--color-border)',
-                          backgroundColor: language === option.id ? 'var(--color-bg-surface)' : 'transparent',
-                        }}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>{option.label}</span>
-                          {language === option.id && (
-                            <span className="rounded-full px-2 py-0.5 text-xs" style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-text-on-primary)' }}>
-                              {language === 'en' ? 'Active' : '当前'}
+                              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                                {language === "en" ? option.labelEn : option.labelZh}
+                              </span>
                             </span>
-                          )}
-                        </div>
-                        <p className="mt-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>{option.description}</p>
-                      </button>
-                    ))}
+                            {selected && <Check size={16} className="text-[var(--color-primary)]" />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                </section>
               )}
-            </div>
+
+              {activeSection === "language" && (
+                <section className="max-w-2xl">
+                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                    {language === "en" ? "Language" : "语言设置"}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
+                    {language === "en"
+                      ? "Language changes immediately and syncs to your profile in the background."
+                      : "语言会立即切换，并在后台同步到你的账户偏好。"}
+                  </p>
+
+                  <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {[
+                      { id: "zh" as const, label: "中文", description: "使用中文界面" },
+                      { id: "en" as const, label: "English", description: "Use the English interface" },
+                    ].map((option) => {
+                      const selected = language === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => handleLanguageChange(option.id)}
+                          disabled={savingPreference === "preferred_language"}
+                          className={`rounded-xl border p-4 text-left transition-colors duration-150 disabled:cursor-wait disabled:opacity-70 motion-reduce:transition-none ${
+                            selected
+                              ? "border-[var(--color-primary)] bg-[var(--color-primary-light)]"
+                              : "border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-primary)]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-semibold text-[var(--color-text-primary)]">
+                              {option.label}
+                            </span>
+                            {selected && (
+                              <span className="rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-xs font-semibold text-[var(--color-text-on-primary)]">
+                                {language === "en" ? "Active" : "当前"}
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                            {option.description}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+            </main>
           </div>
         </div>
       </div>
     </>
   );
-};
-
-export default SettingsPanel;
+}

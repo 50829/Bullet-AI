@@ -1,21 +1,52 @@
-// src/context/AppContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { supabase } from "../lib/supabaseClient";
+import {
+  cacheRemoteEntities,
+  markEntityDeleted,
+  readEntities,
+  upsertEntity,
+} from "../lib/localDb/repository";
+import { enqueueOutbox } from "../lib/localDb/syncQueue";
+import {
+  flushOutbox,
+  installSyncTriggers,
+  subscribeSyncStatus,
+} from "../lib/localDb/syncEngine";
+import type { LocalCollection, SyncStatus } from "../lib/localDb/types";
 
-// 定义数据类型
-type Moment = {
+type LocalMeta = {
+  _local?: {
+    pending?: boolean;
+    failed?: boolean;
+    deleted?: boolean;
+  };
+};
+
+type Moment = LocalMeta & {
   id: number;
+  user_id?: string;
   created_at: string;
   content: string;
   image_url?: string | null;
   image_path?: string | null;
+  local_file?: File | Blob | null;
+  local_file_name?: string | null;
   date?: string;
 };
 
-type Reflection = {
+type Reflection = LocalMeta & {
   id: number;
+  user_id?: string;
   created_at: string;
   content: string;
   source?: string | null;
@@ -26,8 +57,9 @@ type Reflection = {
   date?: string;
 };
 
-type Goal = {
+type Goal = LocalMeta & {
   id: number;
+  user_id?: string;
   created_at: string;
   title: string;
   description: string;
@@ -39,16 +71,18 @@ type Goal = {
   date?: string;
 };
 
-// 定义上下文类型
-interface AppContextType {
+type LoadingState = {
+  moments: boolean;
+  reflections: boolean;
+  goals: boolean;
+};
+
+type AppContextType = {
   moments: Moment[];
   reflections: Reflection[];
   goals: Goal[];
-  loading: {
-    moments: boolean;
-    reflections: boolean;
-    goals: boolean;
-  };
+  loading: LoadingState;
+  syncStatus: SyncStatus;
   refreshMoments: () => Promise<void>;
   refreshReflections: () => Promise<void>;
   refreshGoals: () => Promise<void>;
@@ -57,466 +91,478 @@ interface AppContextType {
   addGoal: (goal: Goal) => void;
   updateMoment: (id: number, updates: Partial<Moment>) => void;
   updateReflection: (id: number, updates: Partial<Reflection>) => Promise<void>;
-  updateGoal: (id: number, updates: Partial<Goal>) => Promise<void>; // 更新为 Promise<void>
+  updateGoal: (id: number, updates: Partial<Goal>) => Promise<void>;
   deleteMoment: (id: number, imagePath?: string | null) => Promise<void>;
   deleteReflection: (id: number, imagePath?: string | null) => Promise<void>;
   deleteGoal: (id: number, imagePath?: string | null) => Promise<void>;
-}
+};
 
-// 创建上下文
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// 创建 Provider 组件
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function sortByCreatedAtDesc<T extends { created_at?: string }>(items: T[]) {
+  return [...items].sort(
+    (a, b) =>
+      new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
+  );
+}
+
+function withFormattedDate<T extends { created_at?: string }>(item: T) {
+  const createdAt = item.created_at || new Date().toISOString();
+  return {
+    ...item,
+    created_at: createdAt,
+    date: formatDate(createdAt),
+  };
+}
+
+async function getSignedImageUrl(bucket: string, imagePath?: string | null) {
+  if (!imagePath) return null;
+
+  const result = await supabase.storage.from(bucket).createSignedUrl(imagePath, 60 * 60);
+  if (result.error || !result.data) return null;
+  return result.data.signedUrl ?? null;
+}
+
+async function attachSignedUrls<T extends { image_path?: string | null; created_at?: string }>(
+  bucket: "moments" | "reflections" | "goals",
+  items: T[],
+) {
+  return Promise.all(
+    items.map(async (item) => ({
+      ...withFormattedDate(item),
+      image_url: item.image_path ? await getSignedImageUrl(bucket, item.image_path) : null,
+    })),
+  );
+}
+
+function stripLocalFields<T extends Record<string, unknown>>(value: T) {
+  const payload = { ...value };
+  delete payload._local;
+  delete payload.date;
+  delete payload.image_url;
+  return payload;
+}
+
+export const AppProvider = ({ children }: { children: ReactNode }) => {
+  const [userId, setUserId] = useState<string | null>(null);
   const [moments, setMoments] = useState<Moment[]>([]);
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
-  
-  const [loading, setLoading] = useState({
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
+  const [loading, setLoading] = useState<LoadingState>({
     moments: true,
     reflections: true,
     goals: true,
   });
 
-  // 格式化日期函数
-  const formatDate = useCallback((dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("zh-CN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const setCollectionLoading = useCallback((collection: keyof LoadingState, value: boolean) => {
+    setLoading((current) => ({ ...current, [collection]: value }));
   }, []);
 
-  // 获取 Moments 数据
-  const fetchMoments = useCallback(async () => {
-    setLoading(prev => ({ ...prev, moments: true }));
-    const userResponse = await supabase.auth.getUser();
-    const user = userResponse.data?.user;
-    if (!user) {
-      setLoading(prev => ({ ...prev, moments: false }));
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("moments")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("获取时刻失败:", error);
-      setLoading(prev => ({ ...prev, moments: false }));
-      return;
-    }
-
-    const withUrls = await Promise.all(
-      (data || []).map(async (item: Moment) => {
-        let signedUrl: string | null = null;
-        if (item.image_path) {
-          const result = await supabase.storage
-            .from("moments")
-            .createSignedUrl(item.image_path, 60 * 60); // 1 小时
-          if (!result.error && result.data) signedUrl = result.data.signedUrl ?? null;
+  const loadCachedCollection = useCallback(
+    async <T extends { created_at?: string }>(
+      activeUserId: string,
+      collection: LocalCollection,
+      setItems: React.Dispatch<React.SetStateAction<T[]>>,
+      loadingKey: keyof LoadingState,
+    ) => {
+      try {
+        const cached = await readEntities<T>(activeUserId, collection);
+        if (cached.length > 0) {
+          setItems(sortByCreatedAtDesc(cached.map(withFormattedDate) as T[]));
+          setCollectionLoading(loadingKey, false);
         }
-        return {
-          ...item,
-          image_url: signedUrl,
-          date: formatDate(item.created_at),
-        };
-      })
-    );
+      } catch (error) {
+        console.error(`Failed to read ${collection} cache:`, error);
+      }
+    },
+    [setCollectionLoading],
+  );
 
-    setMoments(withUrls);
-    setLoading(prev => ({ ...prev, moments: false }));
-  }, [formatDate]);
+  const revalidateMoments = useCallback(
+    async (activeUserId = userId, options?: { showLoading?: boolean }) => {
+      if (!activeUserId) return;
+      if (options?.showLoading) setCollectionLoading("moments", true);
 
-  // 获取 Reflections 数据
-  const fetchReflections = useCallback(async () => {
-    setLoading(prev => ({ ...prev, reflections: true }));
-    const userResponse = await supabase.auth.getUser();
-    const user = userResponse.data?.user;
-    if (!user) {
-      setLoading(prev => ({ ...prev, reflections: false }));
-      return;
-    }
+      try {
+        const { data, error } = await supabase
+          .from("moments")
+          .select("*")
+          .eq("user_id", activeUserId)
+          .order("created_at", { ascending: false });
 
-    try {
-      const { data, error } = await supabase
-        .from("reflections")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("id", { ascending: false }); // 使用 id 排序，因为 created_at 列可能不存在
+        if (error) throw new Error(error.message);
 
-      // 优先检查数据是否存在 - 如果数据存在，即使有错误也继续处理
-      if (data && Array.isArray(data)) {
-        // 数据存在，继续处理（即使可能有错误对象）
-        if (error) {
-          // 记录警告但不阻止处理 - 可能是 Supabase 客户端的误报
-          console.warn("获取感悟时检测到错误对象，但数据存在，继续处理。数据数量:", data.length);
-        }
-        // 继续执行下面的处理逻辑
-      } else {
-        // 数据不存在，检查是否有错误
-        if (error) {
-          // 尝试获取错误信息
-          const errorMessage = error.message || error.code || error.details || "未知错误";
-          console.error("获取感悟失败:", errorMessage);
-        } else {
-          console.warn("获取感悟返回空数据，用户ID:", user.id);
-        }
-        setLoading(prev => ({ ...prev, reflections: false }));
+        const remote = await attachSignedUrls("moments", data ?? []);
+        await cacheRemoteEntities(activeUserId, "moments", remote);
+        const merged = await readEntities<Moment>(activeUserId, "moments");
+        setMoments(sortByCreatedAtDesc(merged.map(withFormattedDate)));
+      } catch (error) {
+        console.error("Failed to revalidate moments:", error);
+      } finally {
+        setCollectionLoading("moments", false);
+      }
+    },
+    [setCollectionLoading, userId],
+  );
+
+  const revalidateReflections = useCallback(
+    async (activeUserId = userId, options?: { showLoading?: boolean }) => {
+      if (!activeUserId) return;
+      if (options?.showLoading) setCollectionLoading("reflections", true);
+
+      try {
+        const { data, error } = await supabase
+          .from("reflections")
+          .select("*")
+          .eq("user_id", activeUserId)
+          .order("created_at", { ascending: false });
+
+        if (error) throw new Error(error.message);
+
+        const remote = await attachSignedUrls("reflections", data ?? []);
+        await cacheRemoteEntities(activeUserId, "reflections", remote);
+        const merged = await readEntities<Reflection>(activeUserId, "reflections");
+        setReflections(sortByCreatedAtDesc(merged.map(withFormattedDate)));
+      } catch (error) {
+        console.error("Failed to revalidate reflections:", error);
+      } finally {
+        setCollectionLoading("reflections", false);
+      }
+    },
+    [setCollectionLoading, userId],
+  );
+
+  const revalidateGoals = useCallback(
+    async (activeUserId = userId, options?: { showLoading?: boolean }) => {
+      if (!activeUserId) return;
+      if (options?.showLoading) setCollectionLoading("goals", true);
+
+      try {
+        const { data, error } = await supabase
+          .from("goals")
+          .select("*")
+          .eq("user_id", activeUserId)
+          .order("created_at", { ascending: false });
+
+        if (error) throw new Error(error.message);
+
+        const remote = await attachSignedUrls("goals", data ?? []);
+        await cacheRemoteEntities(activeUserId, "goals", remote);
+        const merged = await readEntities<Goal>(activeUserId, "goals");
+        setGoals(sortByCreatedAtDesc(merged.map(withFormattedDate)));
+      } catch (error) {
+        console.error("Failed to revalidate goals:", error);
+      } finally {
+        setCollectionLoading("goals", false);
+      }
+    },
+    [setCollectionLoading, userId],
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    const unsubscribeSync = subscribeSyncStatus(setSyncStatus);
+    const uninstallSyncTriggers = installSyncTriggers();
+
+    async function load() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const activeUserId = session?.user?.id ?? null;
+
+      if (!isMounted) return;
+
+      if (!activeUserId) {
+        setUserId(null);
+        setMoments([]);
         setReflections([]);
+        setGoals([]);
+        setLoading({ moments: false, reflections: false, goals: false });
         return;
       }
 
-      const withUrls = await Promise.all(
-        (data || []).map(async (item: Reflection) => {
-          try {
-            let signedUrl: string | null = item.image_url ?? null;
-            if (!signedUrl && item.image_path) {
-              const result = await supabase.storage
-                .from("reflections")
-                .createSignedUrl(item.image_path, 60 * 60);
-              
-              if (!result.error && result.data) {
-                signedUrl = result.data.signedUrl;
-              }
-            }
-            // 处理 created_at 可能不存在的情况
-            const dateString = item.created_at || new Date().toISOString();
-            return {
-              ...item,
-              image_url: signedUrl,
-              date: formatDate(dateString),
-            };
-          } catch (itemError) {
-            console.error("处理感悟项失败:", itemError, item);
-            // 即使处理单个项失败，也返回基本数据
-            const dateString = item.created_at || new Date().toISOString();
-            return {
-              ...item,
-              image_url: item.image_url ?? null,
-              date: formatDate(dateString),
-            };
-          }
-        })
-      );
-
-      setReflections(withUrls);
-      setLoading(prev => ({ ...prev, reflections: false }));
-    } catch (err) {
-      // 捕获任何未预期的错误
-      console.error("获取感悟时发生异常:", err);
-      if (err instanceof Error) {
-        console.error("错误消息:", err.message);
-        console.error("错误堆栈:", err.stack);
-      }
-      setReflections([]);
-      setLoading(prev => ({ ...prev, reflections: false }));
-    }
-  }, [formatDate]);
-
-  // 获取 Goals 数据
-  const fetchGoals = useCallback(async (options?: { silent?: boolean }) => {
-    const silent = options?.silent ?? false;
-
-    if (!silent) {
-      setLoading(prev => ({ ...prev, goals: true }));
-    }
-
-    const userResponse = await supabase.auth.getUser();
-    const user = userResponse.data?.user;
-    if (!user) {
-      if (!silent) {
-        setLoading(prev => ({ ...prev, goals: false }));
-      }
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("goals")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("获取目标失败:", error);
-      if (!silent) {
-        setLoading(prev => ({ ...prev, goals: false }));
-      }
-      return;
-    }
-
-    const withUrls = await Promise.all(
-      (data || []).map(async (item: Goal) => {
-        let signedUrl: string | null = null;
-        if (item.image_path) {
-          const result = await supabase.storage
-            .from("goals")
-            .createSignedUrl(item.image_path, 60 * 60); // 1 小时
-          if (!result.error && result.data) signedUrl = result.data.signedUrl ?? null;
-        }
-        return {
-          ...item,
-          image_url: signedUrl,
-          date: formatDate(item.created_at),
-        };
-      })
-    );
-
-    setGoals(withUrls);
-    if (!silent) {
-      setLoading(prev => ({ ...prev, goals: false }));
-    }
-  }, [formatDate]);
-
-  // 初始化加载所有数据
-  useEffect(() => {
-    const loadAllData = async () => {
+      setUserId(activeUserId);
       await Promise.all([
-        fetchMoments(),
-        fetchReflections(),
-        fetchGoals()
+        loadCachedCollection<Moment>(activeUserId, "moments", setMoments, "moments"),
+        loadCachedCollection<Reflection>(
+          activeUserId,
+          "reflections",
+          setReflections,
+          "reflections",
+        ),
+        loadCachedCollection<Goal>(activeUserId, "goals", setGoals, "goals"),
       ]);
+
+      void Promise.all([
+        revalidateMoments(activeUserId),
+        revalidateReflections(activeUserId),
+        revalidateGoals(activeUserId),
+        flushOutbox(),
+      ]);
+    }
+
+    void load();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      const activeUserId = session?.user?.id ?? null;
+      setUserId(activeUserId);
+      if (activeUserId) {
+        void Promise.all([
+          loadCachedCollection<Moment>(activeUserId, "moments", setMoments, "moments"),
+          loadCachedCollection<Reflection>(
+            activeUserId,
+            "reflections",
+            setReflections,
+            "reflections",
+          ),
+          loadCachedCollection<Goal>(activeUserId, "goals", setGoals, "goals"),
+        ]).then(() =>
+          Promise.all([
+            revalidateMoments(activeUserId),
+            revalidateReflections(activeUserId),
+            revalidateGoals(activeUserId),
+            flushOutbox(),
+          ]),
+        );
+      } else {
+        setMoments([]);
+        setReflections([]);
+        setGoals([]);
+        setLoading({ moments: false, reflections: false, goals: false });
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+      unsubscribeSync();
+      uninstallSyncTriggers();
     };
-    
-    loadAllData();
-    
-    // 设置定时刷新（可选）
-    const interval = setInterval(() => {
-      fetchMoments();
-      fetchReflections();
-      fetchGoals({ silent: true });
-    }, 50 * 60 * 1000); // 每 50 分钟刷新一次签名 URL
-    
-    return () => clearInterval(interval);
-  }, [fetchGoals, fetchMoments, fetchReflections]);
+  }, [
+    loadCachedCollection,
+    revalidateGoals,
+    revalidateMoments,
+    revalidateReflections,
+  ]);
 
-  // 刷新函数
-  const refreshMoments = async () => {
-    await fetchMoments();
-  };
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      void revalidateMoments();
+      void revalidateReflections();
+      void revalidateGoals();
+    }, 50 * 60 * 1000);
 
-  const refreshReflections = async () => {
-    await fetchReflections();
-  };
+    return () => window.clearInterval(interval);
+  }, [revalidateGoals, revalidateMoments, revalidateReflections]);
 
-  const refreshGoals = async () => {
-    await fetchGoals({ silent: true });
-  };
+  const queueUpdate = useCallback(
+    async <T extends { id: number | string; user_id?: string }>(
+      collection: LocalCollection,
+      entity: T,
+      operation: "upsert" | "update" = "update",
+    ) => {
+      if (!userId) return;
 
-  // 更新函数 - 修改 updateGoal 使其异步并与 Supabase 交互，添加日志
-  const updateMoment = (id: number, updates: Partial<Moment>) => {
-    setMoments(prev => prev.map(moment => 
-      moment.id === id ? { ...moment, ...updates } : moment
-    ));
-  };
+      const payload = {
+        ...stripLocalFields(entity as Record<string, unknown>),
+        user_id: entity.user_id ?? userId,
+      };
 
-  const updateReflection = async (id: number, updates: Partial<Reflection>) => {
-    // 1. 先更新前端状态，提供即时反馈
-    setReflections(prev => prev.map(reflection => 
-      reflection.id === id ? { ...reflection, ...updates } : reflection
-    ));
-
-    // 2. 更新数据库
-    try {
-      const userResponse = await supabase.auth.getUser();
-      const user = userResponse.data?.user;
-      if (!user) {
-        throw new Error("用户未登录，无法更新感悟");
-      }
-
-      const { error: dbError } = await supabase
-        .from("reflections")
-        .update(updates)
-        .eq("id", id)
-        .eq("user_id", user.id);
-
-      if (dbError) {
-        console.error("更新感悟失败:", dbError);
-        // 如果更新失败，刷新数据以恢复状态
-        refreshReflections();
-        throw new Error(`更新失败: ${dbError.message}`);
-      }
-    } catch (err) {
-      console.error("更新感悟异常:", err);
-      // 如果更新失败，刷新数据以恢复状态
-      refreshReflections();
-      throw err;
-    }
-  };
-
-  const updateGoal = async (id: number, updates: Partial<Goal>) => {
-    // 1. 先更新前端状态，提供即时反馈
-    setGoals(prev => prev.map(goal => 
-      goal.id === id ? { ...goal, ...updates } : goal
-    ));
-
-    // 2. 尝试更新 Supabase 数据库
-    try {
-      const userResponse = await supabase.auth.getUser();
-      const user = userResponse.data?.user;
-      if (!user) {
-        throw new Error("用户未登录，无法更新目标");
-      }
-
-      const { error: dbError } = await supabase
-        .from("goals")
-        .update(updates) // 更新指定字段
-        .eq("id", id)     // 通过 ID 匹配目标
-        .eq("user_id", user.id); // 确保只能更新自己的目标
-
-      if (dbError) {
-        console.error("[AppContext ERROR] 更新数据库失败:", dbError);
-        throw new Error(`更新数据库失败: ${dbError.message}`);
-      }
-    } catch (err) {
-      console.error("[AppContext ERROR] 更新目标失败:", err);
-      throw err; // 抛出错误，让调用者 (handleMoveGoal) 能够捕获
-    }
-  };
-
-  // 删除函数 - 实现乐观更新
-  const deleteMoment = async (id: number, imagePath?: string | null) => {
-    // 1. 先从全局状态中删除（乐观更新）
-    setMoments(prev => prev.filter(moment => moment.id !== id));
-
-    try {
-      // 2. 如果有图片路径，先删除图片
-      if (imagePath) {
-        const { error: storageError } = await supabase.storage
-          .from("moments")
-          .remove([imagePath]);
-        if (storageError) console.error("删除图片失败:", storageError);
-      }
-
-      // 3. 从数据库删除
-      const { error: dbError } = await supabase
-        .from("moments")
-        .delete()
-        .eq("id", id);
-
-      if (dbError) {
-        console.error("删除时刻失败:", dbError);
-        throw new Error("删除时刻失败");
-      }
-    } catch (err) {
-      console.error("删除异常:", err);
-      // 如果删除失败，将数据恢复到状态中
-      refreshMoments(); // 或者重新获取数据
-      throw new Error("删除失败");
-    }
-  };
-
-  const deleteReflection = async (id: number, imagePath?: string | null) => {
-    // 1. 先从全局状态中删除（乐观更新）
-    setReflections(prev => prev.filter(reflection => reflection.id !== id));
-
-    try {
-      // 2. 如果有图片路径，先删除图片
-      if (imagePath) {
-        const { error: storageError } = await supabase.storage
-          .from("reflections")
-          .remove([imagePath]);
-        if (storageError) console.error("删除图片失败:", storageError);
-      }
-
-      // 3. 从数据库删除
-      const { error: dbError } = await supabase
-        .from("reflections")
-        .delete()
-        .eq("id", id);
-
-      if (dbError) {
-        console.error("删除感悟失败:", dbError);
-        throw new Error("删除感悟失败");
-      }
-    } catch (err) {
-      console.error("删除异常:", err);
-      // 如果删除失败，将数据恢复到状态中
-      refreshReflections(); // 或者重新获取数据
-      throw new Error("删除失败");
-    }
-  };
-
-  const deleteGoal = async (id: number, imagePath?: string | null) => {
-    // 1. 先从全局状态中删除（乐观更新）
-    setGoals(prev => prev.filter(goal => goal.id !== id));
-
-    try {
-      // 2. 如果有图片路径，先删除图片
-      if (imagePath) {
-        const { error: storageError } = await supabase.storage
-          .from("goals")
-          .remove([imagePath]);
-        if (storageError) console.error("删除图片失败:", storageError);
-      }
-
-      // 3. 从数据库删除
-      const { error: dbError } = await supabase
-        .from("goals")
-        .delete()
-        .eq("id", id);
-
-      if (dbError) {
-        console.error("删除目标失败:", dbError);
-        throw new Error("删除目标失败");
-      }
-    } catch (err) {
-      console.error("删除异常:", err);
-      // 如果删除失败，将数据恢复到状态中
-      refreshGoals(); // 或者重新获取数据
-      throw new Error("删除失败");
-    }
-  };
-
-  // 添加函数
-  const addMoment = (moment: Moment) => {
-    setMoments(prev => [moment, ...prev]);
-  };
-
-  const addReflection = (reflection: Reflection) => {
-    setReflections(prev => [reflection, ...prev]);
-  };
-
-  const addGoal = (goal: Goal) => {
-    setGoals(prev => [goal, ...prev]);
-  };
-
-  return (
-    <AppContext.Provider
-      value={{
-        moments,
-        reflections,
-        goals,
-        loading,
-        refreshMoments,
-        refreshReflections,
-        refreshGoals,
-        addMoment,
-        addReflection,
-        addGoal,
-        updateMoment,
-        updateReflection,
-        updateGoal, // 使用修改后的函数
-        deleteMoment,
-        deleteReflection,
-        deleteGoal,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+      await upsertEntity(userId, collection, payload, { pending: true });
+      await enqueueOutbox({
+        userId,
+        collection,
+        entityId: entity.id,
+        operation,
+        payload,
+      });
+      void flushOutbox();
+    },
+    [userId],
   );
+
+  const addMoment = useCallback(
+    (moment: Moment) => {
+      const nextMoment = withFormattedDate({
+        ...moment,
+        user_id: moment.user_id ?? userId ?? undefined,
+      });
+      setMoments((current) => sortByCreatedAtDesc([nextMoment, ...current]));
+      void queueUpdate("moments", nextMoment, "upsert");
+    },
+    [queueUpdate, userId],
+  );
+
+  const addReflection = useCallback(
+    (reflection: Reflection) => {
+      const nextReflection = withFormattedDate({
+        ...reflection,
+        user_id: reflection.user_id ?? userId ?? undefined,
+      });
+      setReflections((current) => sortByCreatedAtDesc([nextReflection, ...current]));
+      void queueUpdate("reflections", nextReflection, "upsert");
+    },
+    [queueUpdate, userId],
+  );
+
+  const addGoal = useCallback(
+    (goal: Goal) => {
+      const nextGoal = withFormattedDate({
+        ...goal,
+        user_id: goal.user_id ?? userId ?? undefined,
+      });
+      setGoals((current) => sortByCreatedAtDesc([nextGoal, ...current]));
+      void queueUpdate("goals", nextGoal, "upsert");
+    },
+    [queueUpdate, userId],
+  );
+
+  const updateMoment = useCallback(
+    (id: number, updates: Partial<Moment>) => {
+      setMoments((current) => {
+        const next = current.map((moment) =>
+          moment.id === id ? withFormattedDate({ ...moment, ...updates }) : moment,
+        );
+        const updated = next.find((moment) => moment.id === id);
+        if (updated) void queueUpdate("moments", updated, "update");
+        return sortByCreatedAtDesc(next);
+      });
+    },
+    [queueUpdate],
+  );
+
+  const updateReflection = useCallback(
+    async (id: number, updates: Partial<Reflection>) => {
+      setReflections((current) => {
+        const next = current.map((reflection) =>
+          reflection.id === id ? withFormattedDate({ ...reflection, ...updates }) : reflection,
+        );
+        const updated = next.find((reflection) => reflection.id === id);
+        if (updated) void queueUpdate("reflections", updated, "update");
+        return sortByCreatedAtDesc(next);
+      });
+    },
+    [queueUpdate],
+  );
+
+  const updateGoal = useCallback(
+    async (id: number, updates: Partial<Goal>) => {
+      setGoals((current) => {
+        const next = current.map((goal) =>
+          goal.id === id ? withFormattedDate({ ...goal, ...updates }) : goal,
+        );
+        const updated = next.find((goal) => goal.id === id);
+        if (updated) void queueUpdate("goals", updated, "update");
+        return sortByCreatedAtDesc(next);
+      });
+    },
+    [queueUpdate],
+  );
+
+  const queueDelete = useCallback(
+    async (collection: LocalCollection, id: number, imagePath?: string | null) => {
+      if (!userId) return;
+
+      await markEntityDeleted(userId, collection, id);
+      await enqueueOutbox({
+        userId,
+        collection,
+        entityId: id,
+        operation: "delete",
+        payload: { id, user_id: userId, image_path: imagePath ?? null },
+      });
+      void flushOutbox();
+    },
+    [userId],
+  );
+
+  const deleteMoment = useCallback(
+    async (id: number, imagePath?: string | null) => {
+      setMoments((current) => current.filter((moment) => moment.id !== id));
+      await queueDelete("moments", id, imagePath);
+    },
+    [queueDelete],
+  );
+
+  const deleteReflection = useCallback(
+    async (id: number, imagePath?: string | null) => {
+      setReflections((current) => current.filter((reflection) => reflection.id !== id));
+      await queueDelete("reflections", id, imagePath);
+    },
+    [queueDelete],
+  );
+
+  const deleteGoal = useCallback(
+    async (id: number, imagePath?: string | null) => {
+      setGoals((current) => current.filter((goal) => goal.id !== id));
+      await queueDelete("goals", id, imagePath);
+    },
+    [queueDelete],
+  );
+
+  const value = useMemo<AppContextType>(
+    () => ({
+      moments,
+      reflections,
+      goals,
+      loading,
+      syncStatus,
+      refreshMoments: () => revalidateMoments(),
+      refreshReflections: () => revalidateReflections(),
+      refreshGoals: () => revalidateGoals(),
+      addMoment,
+      addReflection,
+      addGoal,
+      updateMoment,
+      updateReflection,
+      updateGoal,
+      deleteMoment,
+      deleteReflection,
+      deleteGoal,
+    }),
+    [
+      addGoal,
+      addMoment,
+      addReflection,
+      deleteGoal,
+      deleteMoment,
+      deleteReflection,
+      goals,
+      loading,
+      moments,
+      reflections,
+      revalidateGoals,
+      revalidateMoments,
+      revalidateReflections,
+      syncStatus,
+      updateGoal,
+      updateMoment,
+      updateReflection,
+    ],
+  );
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
-// 自定义 Hook
 export const useAppContext = () => {
   const context = useContext(AppContext);
-  if (context === undefined) {
-    throw new Error('useAppContext must be used within an AppProvider');
+  if (!context) {
+    throw new Error("useAppContext must be used within an AppProvider");
   }
   return context;
 };

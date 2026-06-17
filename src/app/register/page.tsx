@@ -14,7 +14,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  // 确保注册页始终使用经典配色
+  // 兼容旧主题类，注册页使用统一 calm 外观
   useEffect(() => {
     const root = document.documentElement;
     // 移除所有主题类
@@ -91,7 +91,7 @@ export default function RegisterPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
-      <div className="bg-transparent rounded-3xl p-8 text-center w-full max-w-md mx-4">
+      <div className="w-full max-w-md rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-8 text-center shadow-sm mx-4">
         <h1 className="text-3xl font-bold mb-6 text-[var(--color-text-primary)]">{t("registerTitle")}</h1>
         <form onSubmit={handleRegister} className="space-y-3 mb-6 text-left">
           <label className="block text-sm text-[var(--color-text-primary)]">{t("setEmail")}</label>
@@ -99,7 +99,7 @@ export default function RegisterPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-[#003049] rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-theme-primary"
+            className="w-full rounded-lg border border-[var(--color-border-muted)] px-4 py-2 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
             placeholder={t("confirmEmailPlaceholder")}
             disabled={loading}
             required
@@ -109,7 +109,7 @@ export default function RegisterPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={`w-full border ${password && (!isPasswordMatch || !isPasswordStrong(password)) ? 'border-red-500' : 'border-[#003049]'} rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-theme-primary`}
+            className={`w-full rounded-lg border ${password && (!isPasswordMatch || !isPasswordStrong(password)) ? 'border-red-500' : 'border-[var(--color-border-muted)]'} px-4 py-2 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]`}
             placeholder={t("setPasswordPlaceholder")}
             disabled={loading}
             required
@@ -139,7 +139,7 @@ export default function RegisterPage() {
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className={`w-full border ${confirmPassword && !isPasswordMatch ? 'border-red-500' : 'border-[#003049]'} rounded-3xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#003049] text-theme-primary`}
+            className={`w-full rounded-lg border ${confirmPassword && !isPasswordMatch ? 'border-red-500' : 'border-[var(--color-border-muted)]'} px-4 py-2 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]`}
             placeholder={t("confirmPasswordPlaceholder")}
             disabled={loading}
             required
@@ -167,7 +167,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading || !isPasswordMatch || !isPasswordStrong(password)}
-            className="w-full mt-4 px-4 py-2.5 rounded-3xl bg-[#003049] text-white font-bold border-2 border-transparent hover:bg-white hover:text-[var(--color-text-primary)] hover:border-[#003049] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-4 w-full rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-2.5 font-bold text-[var(--color-text-on-primary)] transition-colors duration-150 hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? t("registering") : t("register")}
           </button>

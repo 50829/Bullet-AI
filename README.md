@@ -43,18 +43,20 @@ pnpm dev
 
 ## 数据库迁移
 
-本版本的习惯打卡不再依赖 `habits.last_checkin` / `habits.checkin_count`，需要先在 Supabase 执行：
+在 Supabase SQL Editor 执行这一个文件即可。它同时支持新库建表和旧库修复：
 
 ```sql
-db/migrations/001_habit_checkins.sql
+db/migrations/000_current_schema.sql
 ```
 
-该迁移会：
+这个脚本会：
 
 - 创建 `habit_checkins` 历史打卡表。
 - 为同一用户、同一习惯、同一日期添加唯一约束。
 - 启用 RLS，限制用户只能读写自己的打卡记录。
 - 将旧 `habits.last_checkin` 最近一次打卡兼容迁移为一条历史记录。
+- 将语言、强调色、浅色/深色/跟随系统等偏好保存到 `profiles`。
+- 刷新 Supabase/PostgREST schema cache。
 
 ## 验证命令
 

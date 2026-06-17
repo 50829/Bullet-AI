@@ -1,145 +1,163 @@
 @import "tailwindcss";
 
-/* ============================================
-   主题颜色系统 - Theme Color System
-   ============================================ */
-
-/* 默认主题（蓝色主题） */
 :root {
-  /* 基础颜色 */
-  --background: #ffffff;
-  --foreground: #171717;
-  
-  /* 品牌主色 - Primary Brand Colors */
-  --color-primary: #003049;           /* 主要品牌色（深蓝色） */
-  --color-primary-hover: #002439;     /* 主色悬停状态 */
-  --color-primary-light: rgba(0, 48, 73, 0.9);  /* 主色浅色（带透明度） */
-  --color-primary-dark: #001a26;      /* 主色深色 */
-  
-  /* 背景色 - Background Colors */
-  --color-bg-primary: #f6f7f8;        /* 主背景色 */
-  --color-bg-secondary: #eef1f3;      /* 次背景色 */
-  --color-bg-card: #ffffff;           /* 卡片背景色 */
-  --color-bg-surface: #ffffff;        /* 表面背景色 */
-  --color-bg-active: #efeeeb;         /* 激活状态背景 */
-  
-  /* 文字颜色 - Text Colors */
-  --color-text-primary: #003049;      /* 主要文字色 */
-  --color-text-secondary: #6c757d;    /* 次要文字色（灰色） */
-  --color-text-inverse: #ffffff;      /* 反色文字（白色） */
-  --color-text-muted: #6c757d;        /* 弱化文字 */
-  --color-text-on-primary: #ffffff;   /* 主色上的文字 */
-  
-  /* 强调色 - Accent Colors */
-  --color-accent: #B8860B;            /* 强调色（金色） */
-  --color-accent-hover: #9a7009;      /* 强调色悬停 */
-  --color-accent-light: #b8860b;      /* 强调色浅色 */
-  
-  /* 状态颜色 - State Colors */
-  --color-success: #16a34a;           /* 成功/完成状态 */
-  --color-success-hover: #15803d;    /* 成功色悬停 */
-  --color-warning: #d97706;           /* 警告色 */
-  --color-danger: #dc2626;            /* 危险/错误色 */
-  --color-info: #3b82f6;              /* 信息色 */
+  --background: #f7f8fa;
+  --foreground: #0f172a;
 
-  /* 专用面板颜色 - e.g. 日历 / 今日待办 */
-  --color-panel-primary: #003049;
-  --color-panel-text: #efeeeb;
-  
-  /* 边框颜色 - Border Colors */
-  --color-border: #cbd5e1;            /* 主要边框色 */
-  --color-border-light: rgba(0, 48, 73, 0.3);   /* 浅边框色 */
-  --color-border-muted: #e2e8f0;      /* 弱化边框色 */
-  
-  /* 阴影和效果 - Shadows & Effects */
+  --color-primary: #2f6f5e;
+  --color-primary-hover: #275d4f;
+  --color-primary-light: rgba(47, 111, 94, 0.12);
+  --color-primary-dark: #1f4d42;
+
+  --color-bg-primary: #f7f8fa;
+  --color-bg-secondary: #eef2f6;
+  --color-bg-card: #ffffff;
+  --color-bg-surface: #ffffff;
+  --color-bg-active: #eaf1f7;
+
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-muted: #94a3b8;
+  --color-text-inverse: #ffffff;
+  --color-text-on-primary: #ffffff;
+
+  --color-accent: #2f6f5e;
+  --color-accent-hover: #275d4f;
+  --color-accent-light: rgba(47, 111, 94, 0.12);
+
+  --color-success: #16a34a;
+  --color-success-hover: #15803d;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --color-info: #2563eb;
+
+  --color-panel-primary: #2f6f5e;
+  --color-panel-text: #ffffff;
+
+  --color-border: #cbd5e1;
+  --color-border-light: #e2e8f0;
+  --color-border-muted: #e2e8f0;
+
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 6px 18px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 16px 36px rgba(15, 23, 42, 0.12);
-  
-  /* 旧版兼容变量（保留以兼容现有代码） */
-  --brand-color: #d6c7b5;
-  --brand-color-hover: #c9b8a1;
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.12);
+
+  --radius-card: 12px;
+  --radius-dialog: 16px;
+  --radius-control: 8px;
+
+  --brand-color: var(--color-primary);
+  --brand-color-hover: var(--color-primary-hover);
   --surface-soft: var(--color-bg-secondary);
   --surface-alt: var(--color-bg-surface);
   --text-primary: var(--color-text-primary);
   --text-inverse: var(--color-text-inverse);
-  --state-success: #16a34a;
+  --state-success: var(--color-success);
   --state-warning: var(--color-warning);
   --state-danger: var(--color-danger);
 }
 
-/* 绿色主题示例（未来可扩展） */
-:root.theme-green {
-  --color-primary: #16a34a;
-  --color-primary-hover: #15803d;
-  --color-primary-light: rgba(22, 163, 74, 0.9);
-  --color-bg-primary: #f0fdf4;
-  --color-bg-card: #dcfce7;
-  --color-text-primary: #166534;
-  --color-accent: #84cc16;
-  --color-success: #86efac;
+:root[data-accent="green"] {
+  --color-primary: #166534;
+  --color-primary-hover: #14532d;
+  --color-primary-light: rgba(22, 101, 52, 0.12);
+  --color-accent: #166534;
+  --color-accent-hover: #14532d;
+  --color-accent-light: rgba(22, 101, 52, 0.12);
+  --color-panel-primary: #166534;
 }
 
-/* 紫色主题示例（未来可扩展） */
-:root.theme-purple {
-  --color-primary: #7c3aed;
-  --color-primary-hover: #6d28d9;
-  --color-primary-light: rgba(124, 58, 237, 0.9);
-  --color-bg-primary: #faf5ff;
-  --color-bg-card: #f3e8ff;
-  --color-text-primary: #6b21a8;
-  --color-accent: #a855f7;
-  --color-success: #c084fc;
+:root[data-accent="purple"] {
+  --color-primary: #6d28d9;
+  --color-primary-hover: #5b21b6;
+  --color-primary-light: rgba(109, 40, 217, 0.12);
+  --color-accent: #6d28d9;
+  --color-accent-hover: #5b21b6;
+  --color-accent-light: rgba(109, 40, 217, 0.12);
+  --color-panel-primary: #6d28d9;
 }
 
-/* 橙色主题示例（未来可扩展） */
-:root.theme-orange {
-  --color-primary: #ea580c;
-  --color-primary-hover: #c2410c;
-  --color-primary-light: rgba(234, 88, 12, 0.9);
-  --color-bg-primary: #fff7ed;
-  --color-bg-card: #ffedd5;
-  --color-text-primary: #9a3412;
-  --color-accent: #f97316;
-  --color-success: #fdba74;
+:root[data-accent="amber"] {
+  --color-primary: #b45309;
+  --color-primary-hover: #92400e;
+  --color-primary-light: rgba(180, 83, 9, 0.12);
+  --color-accent: #b45309;
+  --color-accent-hover: #92400e;
+  --color-accent-light: rgba(180, 83, 9, 0.12);
+  --color-panel-primary: #92400e;
 }
 
-/* 天空主题 */
-:root.theme-sky {
-  --color-primary: #13100d;
-  --color-primary-hover: #0a0806;
-  --color-primary-light: rgba(19, 16, 13, 0.9);
-  --color-bg-primary: #cad8e5;
-  --color-bg-card: #D8E2EE;
-  --color-text-primary: #13100d;
-  --color-accent: #cad8e5;
-  --color-success: #b2ff9e;
-  /* 背景渐变 */
-  --bg-gradient: linear-gradient(135deg, #8ca4dc 0%, #cad8e5 100%);
+:root[data-color-scheme="dark"] {
+  --background: #101412;
+  --foreground: #e5ece8;
 
-  /* 天空主题下的专用面板颜色（例如日历、今日待办） */
-  --color-panel-primary: #6899fa;
-  --color-panel-text: #cad8e5;
-  
-  /* 天空主题下的侧边栏和任务面板颜色 */
-  --color-sidebar: #D8E2EE;
-  --color-task-panel-card: #D8E2EE;
-  
-  /* 天空主题下的习惯/记录/感悟卡片颜色 */
-  --color-item-card: #D8E2EE;
-  
-  /* 天空主题下的新建/删除面板和任务卡片颜色（与设置面板同款） */
-  --color-modal-card: var(--color-bg-card);
-  
-  /* 天空主题下的任务卡片边框颜色（与日历选中日期相同） */
-  --color-task-card-border: var(--color-accent);
-  
-  /* 天空主题下的月度记录卡片样式 */
-  --color-month-card-bg: rgba(216, 226, 238, 0.6);
-  --color-month-card-border: rgba(202, 216, 229, 0.3);
-  
-  /* 天空主题下的按钮文字颜色（主色是深色，文字应该是白色，但在浅色背景上应该是深色） */
-  --color-text-on-primary: #ffffff;
+  --color-primary: #74b59f;
+  --color-primary-hover: #8bc7b4;
+  --color-primary-light: rgba(116, 181, 159, 0.16);
+  --color-primary-dark: #4f927f;
+
+  --color-bg-primary: #101412;
+  --color-bg-secondary: #151b18;
+  --color-bg-card: #181f1c;
+  --color-bg-surface: #181f1c;
+  --color-bg-active: #203029;
+
+  --color-text-primary: #e5ece8;
+  --color-text-secondary: #a4b3ad;
+  --color-text-muted: #73827c;
+  --color-text-inverse: #0f172a;
+  --color-text-on-primary: #08110e;
+
+  --color-accent: #74b59f;
+  --color-accent-hover: #8bc7b4;
+  --color-accent-light: rgba(116, 181, 159, 0.16);
+
+  --color-success: #4ade80;
+  --color-success-hover: #86efac;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+  --color-info: #93c5fd;
+
+  --color-panel-primary: #74b59f;
+  --color-panel-text: #08110e;
+
+  --color-border: #33413b;
+  --color-border-light: #293631;
+  --color-border-muted: #26312d;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.34);
+  --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.42);
+}
+
+:root[data-color-scheme="dark"][data-accent="green"] {
+  --color-primary: #86efac;
+  --color-primary-hover: #bbf7d0;
+  --color-primary-light: rgba(134, 239, 172, 0.16);
+  --color-accent: #86efac;
+  --color-accent-hover: #bbf7d0;
+  --color-accent-light: rgba(134, 239, 172, 0.16);
+  --color-panel-primary: #86efac;
+}
+
+:root[data-color-scheme="dark"][data-accent="purple"] {
+  --color-primary: #c4b5fd;
+  --color-primary-hover: #ddd6fe;
+  --color-primary-light: rgba(196, 181, 253, 0.16);
+  --color-accent: #c4b5fd;
+  --color-accent-hover: #ddd6fe;
+  --color-accent-light: rgba(196, 181, 253, 0.16);
+  --color-panel-primary: #c4b5fd;
+}
+
+:root[data-color-scheme="dark"][data-accent="amber"] {
+  --color-primary: #fbbf24;
+  --color-primary-hover: #fcd34d;
+  --color-primary-light: rgba(251, 191, 36, 0.16);
+  --color-accent: #fbbf24;
+  --color-accent-hover: #fcd34d;
+  --color-accent-light: rgba(251, 191, 36, 0.16);
+  --color-panel-primary: #fbbf24;
 }
 
 @theme inline {
@@ -149,54 +167,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* 深色模式支持 */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --color-bg-primary: #1a1a1a;
-    --color-bg-secondary: #0f0f0f;
-    --color-bg-card: #1a1a1a;
-    --color-text-primary: #ededed;
-    --color-text-secondary: #a3a3a3;
-    --color-border: #404040;
-  }
-  
-  /* 深色模式下的主题覆盖 */
-  :root.theme-green {
-    --color-bg-primary: #0f1f14;
-    --color-bg-card: #1a2e1f;
-  }
-  
-  :root.theme-purple {
-    --color-bg-primary: #1a0f1f;
-    --color-bg-card: #2e1a2e;
-  }
-  
-  :root.theme-orange {
-    --color-bg-primary: #1f140f;
-    --color-bg-card: #2e1f1a;
-  }
-  
-  :root.theme-sky {
-    --color-bg-primary: #1a1f2e;
-    --color-bg-card: #2a3440;
-    --bg-gradient: linear-gradient(135deg, #1a1f2e 0%, #2a3440 100%);
-  }
-}
-
 body {
-  background: var(--bg-gradient, var(--color-bg-primary));
+  background: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-family: Arial, Helvetica, sans-serif;
-  transition: background-color 0.3s ease, background 0.3s ease, color 0.3s ease;
 }
 
-/* ============================================
-   主题工具类 - Theme Utility Classes
-   ============================================ */
-
-/* 背景色工具类 */
 .bg-theme-primary {
   background-color: var(--color-primary);
 }
@@ -217,7 +193,6 @@ body {
   background-color: var(--color-bg-active);
 }
 
-/* 文字颜色工具类 */
 .text-theme-primary {
   color: var(--color-text-primary);
 }
@@ -238,7 +213,6 @@ body {
   color: var(--color-accent);
 }
 
-/* 边框颜色工具类 */
 .border-theme-primary {
   border-color: var(--color-border);
 }
@@ -251,7 +225,6 @@ body {
   border-color: var(--color-border-muted);
 }
 
-/* 状态颜色工具类 */
 .bg-theme-success {
   background-color: var(--color-success);
 }
@@ -276,7 +249,6 @@ body {
   color: var(--color-danger);
 }
 
-/* 悬停效果工具类 */
 .hover-theme-primary:hover {
   background-color: var(--color-primary);
   color: var(--color-text-on-primary);
@@ -286,16 +258,14 @@ body {
   color: var(--color-accent);
 }
 
-/* 渐变背景工具类 */
 .bg-theme-gradient {
-  background: var(--bg-gradient, linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%));
+  background: var(--color-primary);
 }
 
-/* ✅ 动画写在这里 */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -303,28 +273,8 @@ body {
   }
 }
 
-/* 侧边栏按钮平滑动画 */
-@keyframes buttonPulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-/* 平滑的颜色过渡 */
-.sidebar-button {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar-button-icon {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 确保 fadeInUp 动画可用 */
 .animate-fadeInUp {
-  animation: fadeInUp 0.4s ease-out;
+  animation: fadeInUp 180ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -48,68 +48,24 @@ https://your-domain.com/auth/callback
 
 当前版本不再强制用户设置用户名。`username` 是可选显示名，在设置里修改。
 
-在 Supabase SQL Editor 中执行：
+## 推荐执行方式
+
+无论是新 Supabase 项目，还是已经有旧版 BulletAI 表的项目，都直接执行这一个文件：
 
 ```sql
-create table if not exists public.profiles (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  username text unique,
-  created_at timestamptz not null default timezone('utc'::text, now()),
-  updated_at timestamptz not null default timezone('utc'::text, now())
-);
-
-create index if not exists profiles_username_idx on public.profiles(username);
-create index if not exists profiles_user_id_idx on public.profiles(user_id);
-
-alter table public.profiles enable row level security;
-
-drop policy if exists "Users can view own profile" on public.profiles;
-create policy "Users can view own profile"
-  on public.profiles for select
-  using (auth.uid() = user_id);
-
-drop policy if exists "Users can insert own profile" on public.profiles;
-create policy "Users can insert own profile"
-  on public.profiles for insert
-  with check (auth.uid() = user_id);
-
-drop policy if exists "Users can update own profile" on public.profiles;
-create policy "Users can update own profile"
-  on public.profiles for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
-
-create or replace function public.update_updated_at_column()
-returns trigger as $$
-begin
-  new.updated_at = timezone('utc'::text, now());
-  return new;
-end;
-$$ language plpgsql;
-
-drop trigger if exists update_profiles_updated_at on public.profiles;
-create trigger update_profiles_updated_at
-  before update on public.profiles
-  for each row
-  execute function public.update_updated_at_column();
+db/migrations/000_current_schema.sql
 ```
 
-如果你已经按旧文档创建了 `profiles.username not null`，需要执行：
+这个文件会创建缺失表、修补旧表字段、配置 RLS、创建 Storage buckets 和 policies，并在最后执行 `notify pgrst, 'reload schema';` 刷新 Supabase PostgREST schema cache。
 
-```sql
-alter table public.profiles
-  alter column username drop not null;
-```
+`001` 到 `004` 是历史增量迁移，保留给版本追踪；你手动配置数据库时不要逐个运行它们，直接复制并运行 `000_current_schema.sql` 这一个文件。
 
-## habit_checkins 迁移
+说明：
 
-习惯打卡历史需要执行：
-
-```sql
-db/migrations/001_habit_checkins.sql
-```
-
-它会创建 `habit_checkins`、唯一约束、RLS，并把旧 `habits.last_checkin` 兼容迁移成最近一次历史记录。
+- cookie 只用于 Supabase auth session，不存主题、语言或业务数据。
+- 语言、外观、强调色和颜色模式保存在 `profiles.preferred_language/ui_theme/accent_color/color_scheme`，前端会先读 localStorage，再用云端偏好校准。
+- 显示名冷却使用 `username_updated_at`，不要用通用 `updated_at` 判断，因为偏好保存也会更新 profiles 行。
+- 习惯打卡历史表 `habit_checkins`、唯一约束、RLS、旧 `habits.last_checkin` 兼容迁移都已经包含在 `000_current_schema.sql` 里。
 
 ## 验证
 

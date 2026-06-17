@@ -5,8 +5,8 @@ import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
-import { createGoal } from "../../features/goals/services/goalService";
 import { useToast } from "./ui/Toast";
+import { useAppContext } from "../../context/AppContext";
 
 type Props = {
   isOpen: boolean;
@@ -17,6 +17,7 @@ type Props = {
 export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
   const { t } = useLanguage(); // 获取翻译函数
   const { showToast } = useToast();
+  const { addGoal } = useAppContext();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,17 +35,23 @@ export const GoalModal = ({ isOpen, onClose, onSuccess }: Props) => {
     setMessage(null);
 
     try {
-      await createGoal({
+      addGoal({
+        id: Date.now(),
         title,
         description,
-        dueDate: null,
+        due_date: null,
+        status: "pending",
+        progress: 0,
+        image_url: null,
+        image_path: null,
+        created_at: new Date().toISOString(),
       });
       setLoading(false);
       onSuccess();
       onClose();
       setTitle("");
       setDescription("");
-      showToast({ type: "success", message: t("addSuccess") || "成功添加" });
+      showToast({ type: "success", message: t("savedLocally") || "已在本地保存" });
     } catch (err) {
       console.error("捕获到异常:", err);
       setLoading(false);

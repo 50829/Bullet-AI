@@ -7,6 +7,7 @@ import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 import { useToast } from "./ui/Toast";
+import { PlainImage } from "./ui/PlainImage";
 
 type Props = { isOpen: boolean; onClose: () => void; onSuccess: () => void; };
 
@@ -134,7 +135,7 @@ export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
             }} 
             className="block w-full border border-dashed rounded-3xl p-3 text-sm text-gray-500" 
           />
-          {previewUrl && <img src={previewUrl} alt="preview" className="mt-3 w-48 h-48 object-cover rounded" />}
+          {previewUrl && <PlainImage src={previewUrl} alt="preview" className="mt-3 w-48 h-48 object-cover rounded" />}
         </div>
 
         <div className="grid grid-cols-2 gap-4 mt-4">

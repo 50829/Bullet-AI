@@ -12,6 +12,19 @@ type HabitRecord = {
   created_at: string;
 };
 
+const HABIT_CHECKINS_MIGRATION_MESSAGE =
+  "数据库还没有 habit_checkins 表。请在 Supabase SQL Editor 执行 db/migrations/000_current_schema.sql。";
+
+function isMissingHabitCheckinsTableError(error: { code?: string; message?: string } | null | undefined) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return (
+    error?.code === "42P01" ||
+    error?.code === "PGRST205" ||
+    (message.includes("habit_checkins") && message.includes("schema cache")) ||
+    message.includes('relation "public.habit_checkins" does not exist')
+  );
+}
+
 function normalizeFrequency(value: string | null | undefined): HabitFrequency {
   if (value === "weekly" || value === "Weekly" || value === "每周") return "weekly";
   return "daily";
@@ -84,7 +97,14 @@ export async function fetchHabitViews(): Promise<HabitView[]> {
     .in("habit_id", habitIds)
     .order("checked_on", { ascending: false });
 
-  if (checkinError) throw new Error(checkinError.message);
+  if (checkinError) {
+    if (isMissingHabitCheckinsTableError(checkinError)) {
+      console.warn(HABIT_CHECKINS_MIGRATION_MESSAGE);
+      return habits.map((habit) => toHabitView(habit, []));
+    }
+
+    throw new Error(checkinError.message);
+  }
 
   const checkinsByHabit = new Map<number, HabitCheckin[]>();
   (checkins ?? []).forEach((checkin) => {
@@ -142,7 +162,13 @@ export async function toggleHabitCheckin(habit: HabitView, checkedOn: string) {
       .eq("id", existing.id)
       .eq("user_id", user.id);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (isMissingHabitCheckinsTableError(error)) {
+        throw new Error(HABIT_CHECKINS_MIGRATION_MESSAGE);
+      }
+
+      throw new Error(error.message);
+    }
     return;
   }
 
@@ -153,6 +179,10 @@ export async function toggleHabitCheckin(habit: HabitView, checkedOn: string) {
   });
 
   if (error) {
+    if (isMissingHabitCheckinsTableError(error)) {
+      throw new Error(HABIT_CHECKINS_MIGRATION_MESSAGE);
+    }
+
     if (error.code === "23505") {
       throw new Error("这一天已经打过卡了");
     }
