@@ -201,7 +201,7 @@ export default function MomentsPageClient() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-full flex-col">
       <AssistantDrawer
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
@@ -224,10 +224,8 @@ export default function MomentsPageClient() {
         }
       />
 
-      <div 
-        className="flex-1"
-      >
-        <div className="p-4 pt-0">
+      <div className="flex-1">
+        <div className="px-0 pb-4">
           <div className="max-w-6xl mx-auto">
             <div className="space-y-6">
               {monthCards.length === 0 ? (

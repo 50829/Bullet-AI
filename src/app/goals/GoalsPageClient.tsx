@@ -18,7 +18,7 @@ import { useToast } from "../components/ui/Toast";
 import { EmptyState } from "../components/ui/EmptyState";
 import { LoadingState } from "../components/ui/LoadingState";
 import { GoalCard } from "../../features/goals/components/GoalCard";
-import { shouldShowGoal } from "../../features/goals/goalVisibility";
+import { isGoalCompleted, shouldShowGoal, sortGoalsByCompletion } from "../../features/goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
 
 function getTodayDate() {
@@ -70,17 +70,36 @@ export default function GoalsPageClient() {
   const selectedDateGoals = useMemo(() => {
     if (!selectedDate) return [];
     const dateStr = formatDateToLocal(selectedDate);
-    return goals.filter((goal) => {
-      if (goal.due_date !== dateStr) return false;
-      return shouldShowGoal(goal, completedGoalRetention);
-    });
+    return sortGoalsByCompletion(
+      goals.filter((goal) => {
+        if (goal.due_date !== dateStr) return false;
+        return shouldShowGoal(goal, completedGoalRetention);
+      }),
+    );
   }, [completedGoalRetention, goals, selectedDate]);
   
-  // 获取待分配任务（无日期的目标）
   const migrationListGoals = useMemo(
-    () => goals.filter((goal) => !goal.due_date && shouldShowGoal(goal, completedGoalRetention)),
+    () =>
+      sortGoalsByCompletion(
+        goals.filter((goal) => !goal.due_date && shouldShowGoal(goal, completedGoalRetention)),
+      ),
     [completedGoalRetention, goals],
   );
+
+  const toggleGoalCompleted = async (goal: (typeof goals)[number]) => {
+    try {
+      const completed = isGoalCompleted(goal);
+      await updateGoal(goal.id, {
+        status: completed ? "pending" : "completed",
+        progress: completed ? 0 : 100,
+      });
+    } catch (err) {
+      showToast({
+        type: "error",
+        message: err instanceof Error ? err.message : t("updateFailed") || "更新失败",
+      });
+    }
+  };
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
@@ -143,9 +162,8 @@ export default function GoalsPageClient() {
   if (isInitialLoading) return <LoadingState />;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-full flex-col">
 
-      {/* 规划面板 */}
       <AssistantDrawer
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
@@ -172,14 +190,10 @@ export default function GoalsPageClient() {
         onAddGoals={addTasksFromAIReply}
       />
 
-      {/* 内容区域 - 直接撑开页面，使用浏览器滚动 */}
-      <div 
-        className="flex-1"
-      >
-        <div className="p-4 pt-0">
+      <div className="flex-1">
+        <div className="px-0 pb-4">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* 左侧日历 */}
               <div className="lg:h-[520px]">
                 <Calendar
                   selectedDate={selectedDate}
@@ -188,10 +202,8 @@ export default function GoalsPageClient() {
                 />
               </div>
               
-              {/* 右侧目标列表 */}
-              <div className="lg:h-[520px]">
-                <Card className="relative flex min-h-[400px] flex-col rounded-xl lg:h-full" style={{ backgroundColor: 'var(--color-task-panel-card, var(--color-bg-card))' }}>
-                  {/* 标题和切换按钮 */}
+              <div className="lg:h-[min(520px,calc(100dvh-6rem))]">
+                <Card className="relative flex min-h-[400px] flex-col rounded-xl p-5 lg:h-full" style={{ backgroundColor: 'var(--color-task-panel-card, var(--color-bg-card))' }}>
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between flex-shrink-0">
                     <h3 className="text-2xl font-semibold text-theme-primary">
                       {rightViewMode === "migration" 
@@ -218,27 +230,18 @@ export default function GoalsPageClient() {
                     </div>
                   </div>
 
-                  {/* 待分配任务视图 */}
                   {rightViewMode === "migration" && (
                     <div className="flex-1 flex flex-col min-h-0">
                       {migrationListGoals.length === 0 && (
                         <EmptyState title={language === "en" ? "No tasks" : "暂无任务"} />
                       )}
-                      <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
+                      <div className="min-h-0 flex-1 divide-y divide-[var(--color-border-muted)] overflow-y-auto">
                         {migrationListGoals.map((goal) => (
                           <GoalCard
                             key={goal.id}
                             goal={goal}
-                            onComplete={async () => {
-                              try {
-                                await updateGoal(goal.id, { status: "completed", progress: 100 });
-                              } catch (err) {
-                                showToast({
-                                  type: "error",
-                                  message: err instanceof Error ? err.message : t("updateFailed") || "更新失败",
-                                });
-                              }
-                            }}
+                            variant="list"
+                            onComplete={() => toggleGoalCompleted(goal)}
                             onEdit={() => {
                               setEditingGoal(goal);
                               setIsGoalModalOpen(true);
@@ -278,27 +281,18 @@ export default function GoalsPageClient() {
                     </div>
                   )}
 
-                  {/* 日程视图 */}
                   {rightViewMode === "schedule" && (
                     <div className="flex-1 flex flex-col min-h-0 relative">
                       {selectedDateGoals.length === 0 && (
                         <EmptyState title={language === "en" ? "No goals" : "暂无目标"} />
                       )}
-                      <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
+                      <div className="min-h-0 flex-1 divide-y divide-[var(--color-border-muted)] overflow-y-auto">
                         {selectedDateGoals.map((goal) => (
                           <GoalCard
                             key={goal.id}
                             goal={goal}
-                            onComplete={async () => {
-                              try {
-                                await updateGoal(goal.id, { status: "completed", progress: 100 });
-                              } catch (err) {
-                                showToast({
-                                  type: "error",
-                                  message: err instanceof Error ? err.message : t("updateFailed") || "更新失败",
-                                });
-                              }
-                            }}
+                            variant="list"
+                            onComplete={() => toggleGoalCompleted(goal)}
                             onEdit={() => {
                               setEditingGoal(goal);
                               setIsGoalModalOpen(true);
@@ -336,7 +330,6 @@ export default function GoalsPageClient() {
               </div>
             </div>
 
-            {/* 我的习惯卡片 - 放在日历下方 */}
             <div className="mt-6">
               <Card className="rounded-xl">
                 <div className="mb-4 flex items-center justify-between">

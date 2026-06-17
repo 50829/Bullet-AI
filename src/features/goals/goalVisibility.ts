@@ -10,6 +10,18 @@ export function isGoalCompleted(goal: GoalVisibilityItem) {
   return goal.status === "completed";
 }
 
+export function sortGoalsByCompletion<T extends GoalVisibilityItem>(goals: T[]) {
+  return goals
+    .map((goal, index) => ({ goal, index }))
+    .sort((a, b) => {
+      const aCompleted = isGoalCompleted(a.goal);
+      const bCompleted = isGoalCompleted(b.goal);
+      if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+      return a.index - b.index;
+    })
+    .map(({ goal }) => goal);
+}
+
 function startOfLocalDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }

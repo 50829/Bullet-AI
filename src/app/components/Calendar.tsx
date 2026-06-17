@@ -25,7 +25,6 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
   const [isMobile, setIsMobile] = useState(false);
   const today = useMemo(() => new Date(), []);
   const todayKey = toDateKey(today);
-  const todayLabel = `${today.getMonth() + 1}月${today.getDate()}日`;
 
   useEffect(() => {
     const checkMobile = () => {
@@ -134,9 +133,6 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
           <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-[var(--color-panel-text)]`}>
             {currentMonth.getFullYear()}年 {monthNames[currentMonth.getMonth()]}
           </h3>
-          <p className="mt-1 text-sm font-medium text-[var(--color-panel-text)] opacity-80">
-            今天 {todayLabel}
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <button

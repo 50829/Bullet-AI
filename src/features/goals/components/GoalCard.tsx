@@ -24,32 +24,59 @@ type GoalCardProps = {
   onEdit: () => void;
   onDelete: () => void;
   moveAction?: GoalCardMoveAction;
+  variant?: "card" | "list";
 };
 
-export function GoalCard({ goal, onComplete, onEdit, onDelete, moveAction }: GoalCardProps) {
+export function GoalCard({
+  goal,
+  onComplete,
+  onEdit,
+  onDelete,
+  moveAction,
+  variant = "card",
+}: GoalCardProps) {
   const { t } = useLanguage();
   const completed = isGoalCompleted(goal);
   const MoveIcon = moveAction?.direction === "back" ? ArrowLeft : ArrowRight;
+  const isList = variant === "list";
+  const showMoveAction = Boolean(moveAction && !completed);
+  const actionGrid = showMoveAction ? "grid-cols-3" : "grid-cols-2";
+  const listGrid = showMoveAction
+    ? "grid-cols-[36px_minmax(0,1fr)_116px]"
+    : "grid-cols-[36px_minmax(0,1fr)_76px]";
 
   return (
-    <div className="grid min-h-[112px] grid-cols-[44px_minmax(0,1fr)] items-center gap-4 rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-card)] p-4 sm:grid-cols-[44px_minmax(0,1fr)_128px]">
+    <div
+      className={
+        isList
+          ? `grid min-h-[68px] ${listGrid} items-center gap-3 rounded-lg px-2 py-2.5 transition-colors duration-150 hover:bg-[var(--color-bg-primary)] motion-reduce:transition-none`
+          : "grid min-h-[112px] grid-cols-[44px_minmax(0,1fr)] items-center gap-4 rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-card)] p-4 sm:grid-cols-[44px_minmax(0,1fr)_128px]"
+      }
+    >
       <button
         type="button"
-        disabled={completed}
         onClick={() => void onComplete()}
-        className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors duration-150 motion-reduce:transition-none ${
+        className={`flex items-center justify-center transition-colors duration-150 motion-reduce:transition-none ${
           completed
-            ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
-            : "bg-[var(--color-bg-surface)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-on-primary)]"
+            ? `${isList ? "h-8 w-8 rounded-full" : "h-11 w-11 rounded-xl"} bg-[var(--color-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-primary-hover)]`
+            : `${isList ? "h-8 w-8 rounded-full" : "h-11 w-11 rounded-xl"} text-[var(--color-primary)] ring-2 ring-inset ring-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-on-primary)]`
         }`}
-        aria-label={t("completeGoal") || "完成目标"}
+        aria-label={completed ? "取消完成" : t("completeGoal") || "完成目标"}
       >
-        <CheckCircle2 size={22} />
+        <CheckCircle2 size={isList ? 20 : 22} />
       </button>
 
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-2">
-          <h4 className="truncate text-lg font-semibold text-[var(--color-text-primary)]">
+          <h4
+            className={`truncate font-semibold ${
+              isList ? "text-base" : "text-lg"
+            } ${
+              completed
+                ? "text-[var(--color-text-secondary)] line-through decoration-[var(--color-text-secondary)] decoration-2"
+                : "text-[var(--color-text-primary)]"
+            }`}
+          >
             {goal.title}
           </h4>
           {goal._local?.failed && (
@@ -59,16 +86,32 @@ export function GoalCard({ goal, onComplete, onEdit, onDelete, moveAction }: Goa
           )}
         </div>
         {goal.description && (
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--color-text-secondary)]">
+          <p
+            className={`line-clamp-2 text-sm text-[var(--color-text-secondary)] ${
+              isList ? "mt-1 leading-5" : "mt-2 leading-6"
+            } ${completed ? "line-through decoration-[var(--color-text-secondary)]" : ""}`}
+          >
             {goal.description}
           </p>
         )}
       </div>
 
-      <div className="col-span-2 grid grid-cols-3 justify-self-end gap-2 sm:col-span-1">
+      <div className={`${isList ? "" : "col-span-2 sm:col-span-1"} grid ${actionGrid} justify-self-end gap-1`}>
+        {showMoveAction && moveAction ? (
+          <button
+            type="button"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
+            title={moveAction.label}
+            aria-label={moveAction.label}
+            onClick={() => void moveAction.onClick()}
+          >
+            <MoveIcon size={19} />
+          </button>
+        ) : null}
+
         <button
           type="button"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
           title={t("edit") || "编辑"}
           aria-label={t("edit") || "编辑"}
           onClick={onEdit}
@@ -76,23 +119,9 @@ export function GoalCard({ goal, onComplete, onEdit, onDelete, moveAction }: Goa
           <Edit2 size={19} />
         </button>
 
-        {moveAction && !completed ? (
-          <button
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
-            title={moveAction.label}
-            aria-label={moveAction.label}
-            onClick={() => void moveAction.onClick()}
-          >
-            <MoveIcon size={19} />
-          </button>
-        ) : (
-          <span aria-hidden="true" className="h-10 w-10" />
-        )}
-
         <button
           type="button"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
           title={t("delete") || "删除"}
           aria-label={t("delete") || "删除"}
           onClick={onDelete}

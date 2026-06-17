@@ -8,7 +8,7 @@ import type { HabitView } from "../../features/habits/types";
 import { HabitList } from "../../features/habits/components/HabitList";
 import { HabitFormDialog } from "../../features/habits/components/HabitFormDialog";
 import { GoalCard } from "../../features/goals/components/GoalCard";
-import { shouldShowGoal } from "../../features/goals/goalVisibility";
+import { isGoalCompleted, shouldShowGoal, sortGoalsByCompletion } from "../../features/goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
 import { useLanguage } from "../context/LanguageContext";
 import { Card } from "./ui/Card";
@@ -81,7 +81,10 @@ export default function HomePage() {
   );
   const openTodayGoals = todayGoals.filter((goal) => goal.status !== "completed");
   const visibleTodayGoals = useMemo(
-    () => todayGoals.filter((goal) => shouldShowGoal(goal, completedGoalRetention)),
+    () =>
+      sortGoalsByCompletion(
+        todayGoals.filter((goal) => shouldShowGoal(goal, completedGoalRetention)),
+      ),
     [completedGoalRetention, todayGoals],
   );
   const todayHabits = habits.slice(0, 5);
@@ -107,9 +110,13 @@ export default function HomePage() {
       .slice(0, 5);
   }, [moments, reflections, t]);
 
-  const completeGoal = async (goal: Goal) => {
+  const toggleGoalCompleted = async (goal: Goal) => {
     try {
-      await updateGoal(goal.id, { status: "completed", progress: 100 });
+      const completed = isGoalCompleted(goal);
+      await updateGoal(goal.id, {
+        status: completed ? "pending" : "completed",
+        progress: completed ? 0 : 100,
+      });
     } catch (error) {
       showToast({
         type: "error",
@@ -208,12 +215,13 @@ export default function HomePage() {
               action={<Button onClick={() => setGoalOpen(true)}>{t("newGoal") || "新建目标"}</Button>}
             />
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-[var(--color-border-muted)]">
               {visibleTodayGoals.map((goal) => (
                 <GoalCard
                   key={goal.id}
                   goal={goal}
-                  onComplete={() => completeGoal(goal)}
+                  variant="list"
+                  onComplete={() => toggleGoalCompleted(goal)}
                   onEdit={() => {
                     setEditingGoal(goal);
                     setGoalOpen(true);
