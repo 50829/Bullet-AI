@@ -18,9 +18,9 @@ import { useToast } from "../components/ui/Toast";
 import { EmptyState } from "../components/ui/EmptyState";
 import { LoadingState } from "../components/ui/LoadingState";
 import { GoalCard } from "../../features/goals/components/GoalCard";
-import { isGoalCompleted, shouldShowGoal, sortGoalsByCompletion } from "../../features/goals/goalVisibility";
+import { SortableGoalList, SortableGoalItem } from "../../features/goals/components/SortableGoalList";
+import { isGoalCompleted, shouldShowGoal, sortGoalsByCompletion, sortGoalsByOrder } from "../../features/goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
-import { useFlipList } from "../../features/goals/hooks/useFlipList";
 
 function getTodayDate() {
   const now = new Date();
@@ -35,7 +35,7 @@ function formatDateToLocal(date: Date): string {
 }
 
 export default function GoalsPageClient() {
-  const { goals, loading, refreshGoals, addGoal, deleteGoal, updateGoal } = useAppContext();
+  const { goals, loading, refreshGoals, addGoal, deleteGoal, updateGoal, reorderGoals } = useAppContext();
   const {
     habits,
     loading: habitsLoading,
@@ -72,23 +72,24 @@ export default function GoalsPageClient() {
     if (!selectedDate) return [];
     const dateStr = formatDateToLocal(selectedDate);
     return sortGoalsByCompletion(
-      goals.filter((goal) => {
-        if (goal.due_date !== dateStr) return false;
-        return shouldShowGoal(goal, completedGoalRetention);
-      }),
+      sortGoalsByOrder(
+        goals.filter((goal) => {
+          if (goal.due_date !== dateStr) return false;
+          return shouldShowGoal(goal, completedGoalRetention);
+        }),
+      ),
     );
   }, [completedGoalRetention, goals, selectedDate]);
-  
+
   const migrationListGoals = useMemo(
     () =>
       sortGoalsByCompletion(
-        goals.filter((goal) => !goal.due_date && shouldShowGoal(goal, completedGoalRetention)),
+        sortGoalsByOrder(
+          goals.filter((goal) => !goal.due_date && shouldShowGoal(goal, completedGoalRetention)),
+        ),
       ),
     [completedGoalRetention, goals],
   );
-
-  const migrationFlip = useFlipList<number>(migrationListGoals.map((g) => g.id).join(","));
-  const scheduleFlip = useFlipList<number>(selectedDateGoals.map((g) => g.id).join(","));
 
   const toggleGoalCompleted = async (goal: (typeof goals)[number]) => {
     try {
@@ -240,48 +241,53 @@ export default function GoalsPageClient() {
                         <EmptyState title={language === "en" ? "No tasks" : "暂无任务"} />
                       )}
                       <div className="min-h-0 flex-1 divide-y divide-[var(--color-border-muted)] overflow-y-auto">
-                        {migrationListGoals.map((goal) => (
-                          <div key={goal.id} ref={migrationFlip(goal.id)} className="will-change-transform">
-                          <GoalCard
-                            goal={goal}
-                            variant="list"
-                            onComplete={() => toggleGoalCompleted(goal)}
-                            onEdit={() => {
-                              setEditingGoal(goal);
-                              setIsGoalModalOpen(true);
-                            }}
-                            onDelete={() => {
-                              setSelectedItem({
-                                type: "goal",
-                                id: goal.id,
-                                name: goal.title,
-                                imagePath: goal.image_path,
-                              });
-                              setShowConfirm(true);
-                            }}
-                            moveAction={
-                              selectedDate
-                                ? {
-                                    direction: "forward",
-                                    label: t("migrate") || "迁移",
-                                    onClick: async () => {
-                                      try {
-                                        const dateStr = formatDateToLocal(selectedDate);
-                                        await updateGoal(goal.id, { due_date: dateStr });
-                                        setRightViewMode("schedule");
-                                      } catch (err) {
-                                        showToast({
-                                          type: "error",
-                                          message: err instanceof Error ? err.message : t("migrateFailed") || "迁移失败",
-                                        });
+                        <SortableGoalList
+                          ids={migrationListGoals.map((goal) => goal.id)}
+                          onReorder={(orderedIds) => void reorderGoals(orderedIds)}
+                        >
+                          {migrationListGoals.map((goal) => (
+                            <SortableGoalItem key={goal.id} id={goal.id}>
+                              <GoalCard
+                                goal={goal}
+                                variant="list"
+                                onComplete={() => toggleGoalCompleted(goal)}
+                                onEdit={() => {
+                                  setEditingGoal(goal);
+                                  setIsGoalModalOpen(true);
+                                }}
+                                onDelete={() => {
+                                  setSelectedItem({
+                                    type: "goal",
+                                    id: goal.id,
+                                    name: goal.title,
+                                    imagePath: goal.image_path,
+                                  });
+                                  setShowConfirm(true);
+                                }}
+                                moveAction={
+                                  selectedDate
+                                    ? {
+                                        direction: "forward",
+                                        label: t("migrate") || "迁移",
+                                        onClick: async () => {
+                                          try {
+                                            const dateStr = formatDateToLocal(selectedDate);
+                                            await updateGoal(goal.id, { due_date: dateStr });
+                                            setRightViewMode("schedule");
+                                          } catch (err) {
+                                            showToast({
+                                              type: "error",
+                                              message: err instanceof Error ? err.message : t("migrateFailed") || "迁移失败",
+                                            });
+                                          }
+                                        },
                                       }
-                                    },
-                                  }
-                                : undefined
-                            }
-                          />
-                          </div>
-                        ))}
+                                    : undefined
+                                }
+                              />
+                            </SortableGoalItem>
+                          ))}
+                        </SortableGoalList>
                       </div>
                     </div>
                   )}
@@ -292,43 +298,48 @@ export default function GoalsPageClient() {
                         <EmptyState title={language === "en" ? "No goals" : "暂无目标"} />
                       )}
                       <div className="min-h-0 flex-1 divide-y divide-[var(--color-border-muted)] overflow-y-auto">
-                        {selectedDateGoals.map((goal) => (
-                          <div key={goal.id} ref={scheduleFlip(goal.id)} className="will-change-transform">
-                          <GoalCard
-                            goal={goal}
-                            variant="list"
-                            onComplete={() => toggleGoalCompleted(goal)}
-                            onEdit={() => {
-                              setEditingGoal(goal);
-                              setIsGoalModalOpen(true);
-                            }}
-                            onDelete={() => {
-                              setSelectedItem({
-                                type: "goal",
-                                id: goal.id,
-                                name: goal.title,
-                                imagePath: goal.image_path,
-                              });
-                              setShowConfirm(true);
-                            }}
-                            moveAction={{
-                              direction: "back",
-                              label: t("moveBack") || "迁回",
-                              onClick: async () => {
-                                try {
-                                  await updateGoal(goal.id, { due_date: null });
-                                  setRightViewMode("migration");
-                                } catch (err) {
-                                  showToast({
-                                    type: "error",
-                                    message: err instanceof Error ? err.message : t("moveBackFailed") || "迁回失败",
+                        <SortableGoalList
+                          ids={selectedDateGoals.map((goal) => goal.id)}
+                          onReorder={(orderedIds) => void reorderGoals(orderedIds)}
+                        >
+                          {selectedDateGoals.map((goal) => (
+                            <SortableGoalItem key={goal.id} id={goal.id}>
+                              <GoalCard
+                                goal={goal}
+                                variant="list"
+                                onComplete={() => toggleGoalCompleted(goal)}
+                                onEdit={() => {
+                                  setEditingGoal(goal);
+                                  setIsGoalModalOpen(true);
+                                }}
+                                onDelete={() => {
+                                  setSelectedItem({
+                                    type: "goal",
+                                    id: goal.id,
+                                    name: goal.title,
+                                    imagePath: goal.image_path,
                                   });
-                                }
-                              },
-                            }}
-                          />
-                          </div>
-                        ))}
+                                  setShowConfirm(true);
+                                }}
+                                moveAction={{
+                                  direction: "back",
+                                  label: t("moveBack") || "迁回",
+                                  onClick: async () => {
+                                    try {
+                                      await updateGoal(goal.id, { due_date: null });
+                                      setRightViewMode("migration");
+                                    } catch (err) {
+                                      showToast({
+                                        type: "error",
+                                        message: err instanceof Error ? err.message : t("moveBackFailed") || "迁回失败",
+                                      });
+                                    }
+                                  },
+                                }}
+                              />
+                            </SortableGoalItem>
+                          ))}
+                        </SortableGoalList>
                       </div>
                     </div>
                   )}

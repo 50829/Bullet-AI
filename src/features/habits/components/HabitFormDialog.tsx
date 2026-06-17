@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { Button } from "../../../app/components/ui/Button";
 import { Input } from "../../../app/components/ui/Input";
 import { Textarea } from "../../../app/components/ui/Textarea";
+import { Modal } from "../../../app/components/ui/Modal";
 import { useLanguage } from "../../../app/context/LanguageContext";
 import type { CreateHabitInput, HabitFrequency, HabitView, UpdateHabitInput } from "../types";
 
@@ -41,8 +42,6 @@ export function HabitFormDialog({
     setColor(habit?.color ?? "#2f6f5e");
     setMessage(null);
   }, [habit, isOpen]);
-
-  if (!isOpen) return null;
 
   const reset = () => {
     setName("");
@@ -85,10 +84,10 @@ export function HabitFormDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-md">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-2xl bg-[var(--color-bg-card)] p-5 shadow-xl"
+        className="w-full rounded-2xl bg-[var(--color-bg-card)] p-5 shadow-xl"
       >
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
@@ -155,7 +154,7 @@ export function HabitFormDialog({
               key={value}
               type="button"
               onClick={() => setColor(value)}
-              className={`h-8 w-8 rounded-lg border transition-colors duration-150 motion-reduce:transition-none ${
+              className={`h-8 w-8 rounded-lg border-2 transition-colors duration-150 motion-reduce:transition-none ${
                 color === value ? "border-[var(--color-text-primary)]" : "border-transparent"
               }`}
               style={{ backgroundColor: value }}
@@ -179,6 +178,6 @@ export function HabitFormDialog({
           </Button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 }

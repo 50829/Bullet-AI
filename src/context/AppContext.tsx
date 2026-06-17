@@ -73,6 +73,8 @@ type Goal = LocalMeta & {
   status: string;
   due_date?: string | null;
   progress: number;
+  color?: string | null;
+  sort_order?: number | null;
   image_url?: string | null;
   image_path?: string | null;
   date?: string;
@@ -100,6 +102,7 @@ type AppContextType = {
   updateMoment: (id: number, updates: Partial<Moment>) => void;
   updateReflection: (id: number, updates: Partial<Reflection>) => Promise<void>;
   updateGoal: (id: number, updates: Partial<Goal>) => Promise<void>;
+  reorderGoals: (orderedIds: number[]) => Promise<void>;
   deleteMoment: (id: number, imagePath?: string | null) => Promise<void>;
   deleteReflection: (id: number, imagePath?: string | null) => Promise<void>;
   deleteGoal: (id: number, imagePath?: string | null) => Promise<void>;
@@ -503,6 +506,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     [queueUpdate],
   );
 
+  const reorderGoals = useCallback(
+    async (orderedIds: number[]) => {
+      const orderMap = new Map(orderedIds.map((id, index) => [id, index]));
+      setGoals((current) => {
+        const updatedAt = new Date().toISOString();
+        const next = current.map((goal) =>
+          orderMap.has(goal.id)
+            ? withFormattedDate({ ...goal, sort_order: orderMap.get(goal.id)!, updated_at: updatedAt })
+            : goal,
+        );
+        orderedIds.forEach((id) => {
+          const updated = next.find((goal) => goal.id === id);
+          if (updated) void queueUpdate("goals", updated, "update");
+        });
+        return sortByCreatedAtDesc(next);
+      });
+    },
+    [queueUpdate],
+  );
+
   const queueDelete = useCallback(
     async (collection: LocalCollection, id: number, imagePath?: string | null) => {
       if (!userId) return;
@@ -588,6 +611,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       updateMoment,
       updateReflection,
       updateGoal,
+      reorderGoals,
       deleteMoment,
       deleteReflection,
       deleteGoal,
@@ -609,6 +633,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       revalidateGoals,
       revalidateMoments,
       revalidateReflections,
+      reorderGoals,
       retrySync,
       syncStatus,
       updateGoal,

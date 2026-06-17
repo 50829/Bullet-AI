@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { ArrowLeft, ArrowRight, Check, Edit2, Trash2 } from "lucide-react";
 import { useLanguage } from "../../../app/context/LanguageContext";
 import { isGoalCompleted } from "../goalVisibility";
@@ -9,6 +10,7 @@ export type GoalCardGoal = {
   title: string;
   description?: string | null;
   status?: string;
+  color?: string | null;
   _local?: { failed?: boolean };
 };
 
@@ -37,6 +39,7 @@ export function GoalCard({
 }: GoalCardProps) {
   const { t } = useLanguage();
   const completed = isGoalCompleted(goal);
+  const accent = goal.color || "var(--color-primary)";
   const MoveIcon = moveAction?.direction === "back" ? ArrowLeft : ArrowRight;
   const isList = variant === "list";
   const showMoveAction = Boolean(moveAction && !completed);
@@ -56,10 +59,13 @@ export function GoalCard({
       <button
         type="button"
         onClick={() => void onComplete()}
+        style={{ "--goal-accent": accent } as CSSProperties}
         className={`flex items-center justify-center transition-colors duration-150 motion-reduce:transition-none ${
+          isList ? "h-8 w-8 rounded-full" : "h-11 w-11 rounded-xl"
+        } ${
           completed
-            ? `${isList ? "h-8 w-8 rounded-full" : "h-11 w-11 rounded-xl"} bg-[var(--color-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-primary-hover)]`
-            : `${isList ? "h-8 w-8 rounded-full" : "h-11 w-11 rounded-xl"} text-[var(--color-primary)] ring-2 ring-inset ring-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-on-primary)]`
+            ? "bg-[var(--goal-accent)] text-[var(--color-text-on-primary)] hover:opacity-90"
+            : "text-[var(--goal-accent)] ring-2 ring-inset ring-[var(--goal-accent)] hover:bg-[var(--goal-accent)] hover:text-[var(--color-text-on-primary)]"
         }`}
         aria-label={completed ? "取消完成" : t("completeGoal") || "完成目标"}
       >

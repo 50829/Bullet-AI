@@ -54,7 +54,7 @@ export function HabitList({
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-3">
+      <div className="divide-y divide-[var(--color-border-muted)]">
         {visibleHabits.map((habit) => (
           <HabitCard
             key={habit.id}

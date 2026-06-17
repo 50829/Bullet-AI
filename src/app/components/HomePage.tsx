@@ -8,7 +8,7 @@ import type { HabitView } from "../../features/habits/types";
 import { HabitList } from "../../features/habits/components/HabitList";
 import { HabitFormDialog } from "../../features/habits/components/HabitFormDialog";
 import { GoalCard } from "../../features/goals/components/GoalCard";
-import { isGoalCompleted, shouldShowGoal, sortGoalsByCompletion } from "../../features/goals/goalVisibility";
+import { isGoalCompleted, shouldShowGoal, sortGoalsByCompletion, sortGoalsByOrder } from "../../features/goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
 import { useLanguage } from "../context/LanguageContext";
 import { Card } from "./ui/Card";
@@ -28,6 +28,8 @@ type Goal = {
   status: string;
   due_date?: string | null;
   progress: number;
+  color?: string | null;
+  sort_order?: number | null;
   image_path?: string | null;
   updated_at?: string;
   created_at?: string;
@@ -83,7 +85,7 @@ export default function HomePage() {
   const visibleTodayGoals = useMemo(
     () =>
       sortGoalsByCompletion(
-        todayGoals.filter((goal) => shouldShowGoal(goal, completedGoalRetention)),
+        sortGoalsByOrder(todayGoals.filter((goal) => shouldShowGoal(goal, completedGoalRetention))),
       ),
     [completedGoalRetention, todayGoals],
   );
