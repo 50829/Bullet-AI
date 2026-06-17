@@ -8,7 +8,18 @@ export type LocalCollection =
 
 export type SyncOperation = "upsert" | "update" | "delete";
 export type SyncStatus = "idle" | "syncing" | "failed";
+export type SyncState = "synced" | "pending" | "failed";
 export type OutboxStatus = "pending" | "syncing" | "failed";
+
+export type LocalEntityBase = {
+  id?: number;
+  client_id: string;
+  user_id?: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+  sync_state?: SyncState;
+};
 
 export type LocalEntity<T = unknown> = {
   key: string;

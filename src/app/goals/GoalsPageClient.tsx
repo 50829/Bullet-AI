@@ -3,17 +3,16 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { Trash2, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
+import { Trash2, CheckCircle2, ArrowRight, ArrowLeft, Edit2 } from "lucide-react";
 import { GoalModal } from "../components/GoalModal";
 import { Calendar } from "../components/Calendar";
-import { AIGoalPlanningPanel } from "../components/AIGoalPlanningPanel";
+import { AssistantDrawer } from "../components/AssistantDrawer";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext';
 import { useTopBar } from '../components/layout/TopBar';
 import { useHabits } from "../../features/habits/hooks/useHabits";
 import { HabitList } from "../../features/habits/components/HabitList";
 import { HabitFormDialog } from "../../features/habits/components/HabitFormDialog";
-import { addGoalPlanToMigrationList } from "../../features/goals/services/goalService";
 import type { GoalPlan } from "../../features/goals/types";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../components/ui/Toast";
@@ -24,13 +23,14 @@ function getTodayDate() {
 }
 
 export default function GoalsPageClient() {
-  const { goals, loading, refreshGoals, deleteGoal, updateGoal } = useAppContext();
+  const { goals, loading, refreshGoals, addGoal, deleteGoal, updateGoal } = useAppContext();
   const {
     habits,
     loading: habitsLoading,
     saving: habitsSaving,
     error: habitsError,
     createHabit,
+    updateHabit,
     removeHabit,
     checkinToday,
     toggleCheckin,
@@ -39,7 +39,9 @@ export default function GoalsPageClient() {
   const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<(typeof goals)[number] | null>(null);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<(typeof habits)[number] | null>(null);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(() => getTodayDate());
   const [rightViewMode, setRightViewMode] = useState<"migration" | "schedule">("migration");
@@ -110,15 +112,30 @@ export default function GoalsPageClient() {
 
   // 从AI回复中解析任务并添加到迁移列表（不设置日期）
   const addTasksFromAIReply = async (plan: GoalPlan) => {
-    await addGoalPlanToMigrationList(plan);
-    void refreshGoals();
+    [...plan.daily, ...plan.future].forEach((task) => {
+      addGoal({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        title: task.title,
+        description: task.description,
+        due_date: null,
+        status: "pending",
+        progress: 0,
+        image_url: null,
+        image_path: null,
+        created_at: new Date().toISOString(),
+      });
+    });
+    showToast({ type: "success", message: t("goalsAddedSuccessfully") || "目标已添加" });
   };
 
 
   // 注册 TopBar 回调
   useEffect(() => {
     setTopBarHandlers({
-      onAddGoal: () => setIsGoalModalOpen(true),
+      onAddGoal: () => {
+        setEditingGoal(null);
+        setIsGoalModalOpen(true);
+      },
       onToggleAIPanel: () => setShowAIPanel(!showAIPanel),
       showAIPanel,
     });
@@ -132,9 +149,12 @@ export default function GoalsPageClient() {
     <div className="min-h-screen flex flex-col">
 
       {/* AI智能规划面板 */}
-      <AIGoalPlanningPanel
+      <AssistantDrawer
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
+        mode="planning"
+        title={t("aiPlanning") || "AI智能规划"}
+        placeholder={t("aiGoalInputPlaceholder") || "输入你想完成的大目标..."}
         greeting={t("aiPlanningGreeting") || (language === "en" 
           ? "Hello! I'm your AI Planning Assistant. Tell me what goal you want to achieve, and I'll help you break it down into actionable sub-goals. 🎯"
           : "你好！我是你的AI规划助手。请告诉我你想完成什么目标，我会帮你拆解成可执行的小目标。🎯")}
@@ -222,8 +242,8 @@ export default function GoalsPageClient() {
                                 isCompleted ? 'opacity-75' : ''
                               }`}
                               style={{ 
-                                backgroundColor: 'var(--color-modal-card, #efeeeb)',
-                                border: '2px solid var(--color-task-card-border, transparent)'
+                                backgroundColor: 'var(--color-bg-card)',
+                                border: '1px solid var(--color-border-muted)'
                               }}
                             >
                               <div className="flex justify-between items-center gap-4">
@@ -239,10 +259,10 @@ export default function GoalsPageClient() {
                                         });
                                       }
                                     }}
-                                    className="p-1.5 rounded-full bg-[#b2ff9e] hover:bg-[#b2ff9e]/80 transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                                    className="flex flex-shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-light)] p-2 text-[var(--color-primary)] transition-colors duration-150 hover:bg-[var(--color-primary)] hover:text-[var(--color-text-on-primary)] motion-reduce:transition-none"
                                     title={t("completeGoal") || "完成目标"}
                                   >
-                                    <CheckCircle2 size={18} className="text-theme-primary" />
+                                    <CheckCircle2 size={18} />
                                   </button>
                                 )}
                                 <div className="flex-1">
@@ -263,6 +283,18 @@ export default function GoalsPageClient() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
+                                    title={t("edit") || "编辑"}
+                                    aria-label={t("edit") || "编辑"}
+                                    onClick={() => {
+                                      setEditingGoal(goal);
+                                      setIsGoalModalOpen(true);
+                                    }}
+                                  >
+                                    <Edit2 size={18} />
+                                  </button>
                                   {!isCompleted && selectedDate && (
                                     <button
                                       onClick={async () => {
@@ -278,8 +310,7 @@ export default function GoalsPageClient() {
                                           });
                                         }
                                       }}
-                                      className="p-2 rounded-2xl bg-theme-primary hover:bg-theme-primary-hover transition-colors duration-200 flex items-center justify-center"
-                                      style={{ color: 'var(--color-text-on-primary)' }}
+                                      className="flex items-center justify-center rounded-lg bg-[var(--color-primary)] p-2 text-[var(--color-text-on-primary)] transition-colors duration-150 hover:bg-[var(--color-primary-hover)] motion-reduce:transition-none"
                                       title={t("migrate") || "迁移"}
                                     >
                                       <ArrowRight size={18} />
@@ -334,8 +365,8 @@ export default function GoalsPageClient() {
                                 isCompleted ? 'opacity-75' : ''
                               }`}
                               style={{ 
-                                backgroundColor: 'var(--color-modal-card, #efeeeb)',
-                                border: '2px solid var(--color-task-card-border, transparent)'
+                                backgroundColor: 'var(--color-bg-card)',
+                                border: '1px solid var(--color-border-muted)'
                               }}
                             >
                               <div className="flex justify-between items-center gap-4">
@@ -351,10 +382,10 @@ export default function GoalsPageClient() {
                                         });
                                       }
                                     }}
-                                    className="p-1.5 rounded-full bg-[#b2ff9e] hover:bg-[#b2ff9e]/80 transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                                    className="flex flex-shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-light)] p-2 text-[var(--color-primary)] transition-colors duration-150 hover:bg-[var(--color-primary)] hover:text-[var(--color-text-on-primary)] motion-reduce:transition-none"
                                     title={t("completeGoal") || "完成目标"}
                                   >
-                                    <CheckCircle2 size={18} className="text-theme-primary" />
+                                    <CheckCircle2 size={18} />
                                   </button>
                                 )}
                                 <div className="flex-1">
@@ -375,6 +406,18 @@ export default function GoalsPageClient() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
+                                    title={t("edit") || "编辑"}
+                                    aria-label={t("edit") || "编辑"}
+                                    onClick={() => {
+                                      setEditingGoal(goal);
+                                      setIsGoalModalOpen(true);
+                                    }}
+                                  >
+                                    <Edit2 size={18} />
+                                  </button>
                                   {!isCompleted && (
                                     <button
                                       onClick={async () => {
@@ -389,8 +432,7 @@ export default function GoalsPageClient() {
                                           });
                                         }
                                       }}
-                                      className="p-2 rounded-2xl bg-theme-primary hover:bg-theme-primary-hover transition-colors duration-200 flex items-center justify-center"
-                                      style={{ color: 'var(--color-text-on-primary)' }}
+                                      className="flex items-center justify-center rounded-lg bg-[var(--color-primary)] p-2 text-[var(--color-text-on-primary)] transition-colors duration-150 hover:bg-[var(--color-primary-hover)] motion-reduce:transition-none"
                                       title={t("moveBack") || "迁回"}
                                     >
                                       <ArrowLeft size={18} />
@@ -430,7 +472,7 @@ export default function GoalsPageClient() {
               <Card className="rounded-xl">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-xl font-bold text-[var(--color-text-primary)]">{t("myHabits") || "我的习惯"}</h3>
-                  <Button onClick={() => setIsHabitModalOpen(true)} className="border-2 border-transparent hover:!border-gray-800">
+                  <Button onClick={() => setIsHabitModalOpen(true)} variant="outline">
                     + {t("new")} {t("habit")}
                   </Button>
                 </div>
@@ -443,6 +485,10 @@ export default function GoalsPageClient() {
                   onCreateClick={() => setIsHabitModalOpen(true)}
                   onCheckinToday={checkinToday}
                   onToggleCheckin={toggleCheckin}
+                  onEdit={(habit) => {
+                    setEditingHabit(habit);
+                    setIsHabitModalOpen(true);
+                  }}
                   onDelete={(habit) => {
                     setSelectedItem({
                       type: 'habit',
@@ -461,15 +507,24 @@ export default function GoalsPageClient() {
 
       <GoalModal
         isOpen={isGoalModalOpen}
-        onClose={() => setIsGoalModalOpen(false)}
+        initialGoal={editingGoal}
+        onClose={() => {
+          setIsGoalModalOpen(false);
+          setEditingGoal(null);
+        }}
         onSuccess={() => undefined}
       />
 
       <HabitFormDialog
         isOpen={isHabitModalOpen}
         saving={habitsSaving}
-        onClose={() => setIsHabitModalOpen(false)}
+        habit={editingHabit}
+        onClose={() => {
+          setIsHabitModalOpen(false);
+          setEditingHabit(null);
+        }}
         onCreate={createHabit}
+        onUpdate={updateHabit}
       />
 
       <ConfirmDialog

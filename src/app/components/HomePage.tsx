@@ -1,25 +1,22 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
-import { Card } from "./ui/Card";
-import { CheckCircle2, Camera, ChevronDown, ChevronUp } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { CheckCircle2, Clock3, Edit2, Plus, RefreshCw, Sparkles } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
-import { useLanguage } from '../context/LanguageContext';
 import { useHabits } from "../../features/habits/hooks/useHabits";
-import { HabitList } from "../../features/habits/components/HabitList";
-import { ConfirmDialog } from "./ui/ConfirmDialog";
-import { useToast } from "./ui/Toast";
-import { PlainImage } from "./ui/PlainImage";
 import type { HabitView } from "../../features/habits/types";
-
-type Moment = {
-  id: number;
-  created_at: string;
-  content: string;
-  image_url?: string | null;
-  image_path?: string | null;
-  date?: string;
-};
+import { HabitList } from "../../features/habits/components/HabitList";
+import { HabitFormDialog } from "../../features/habits/components/HabitFormDialog";
+import { useLanguage } from "../context/LanguageContext";
+import { Card } from "./ui/Card";
+import { Button } from "./ui/Button";
+import { EmptyState } from "./ui/EmptyState";
+import { LoadingState } from "./ui/LoadingState";
+import { ConfirmDialog } from "./ui/ConfirmDialog";
+import { MomentModal } from "./MomentModal";
+import { GoalModal } from "./GoalModal";
+import { ReflectionModal, parseReflectionContent } from "./ReflectionModal";
+import { useToast } from "./ui/Toast";
 
 type Goal = {
   id: number;
@@ -28,310 +25,351 @@ type Goal = {
   status: string;
   due_date?: string | null;
   progress: number;
+  _local?: { pending?: boolean; failed?: boolean };
 };
 
-// 按日期分组的卡片类型
-type DayCard = {
-  date: string; // YYYY-MM-DD 格式
-  dateDisplay: string; // 显示用的日期格式
-  moments: Moment[]; // 该天的所有时刻
-};
+function todayKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+function SyncPill({ status }: { status: "idle" | "syncing" | "failed" }) {
+  const label =
+    status === "syncing" ? "同步中" : status === "failed" ? "同步失败" : "已本地保存";
+  const className =
+    status === "failed"
+      ? "bg-red-50 text-red-700"
+      : status === "syncing"
+        ? "bg-amber-50 text-amber-700"
+        : "bg-[var(--color-primary-light)] text-[var(--color-primary)]";
+
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${className}`}>
+      {status === "syncing" && <RefreshCw size={12} className="animate-spin motion-reduce:animate-none" />}
+      {label}
+    </span>
+  );
+}
 
 export default function HomePage() {
-  const { moments, goals, loading, updateGoal } = useAppContext();
-  const { t } = useLanguage();
-  const { showToast } = useToast();
+  const {
+    moments,
+    reflections,
+    goals,
+    loading,
+    syncStatus,
+    updateGoal,
+    retrySync,
+  } = useAppContext();
   const {
     habits,
     loading: habitsLoading,
+    saving: habitsSaving,
+    createHabit,
+    updateHabit,
     checkinToday,
     toggleCheckin,
     removeHabit,
   } = useHabits();
-  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
+  const { t } = useLanguage();
+  const { showToast } = useToast();
+  const [momentOpen, setMomentOpen] = useState(false);
+  const [goalOpen, setGoalOpen] = useState(false);
+  const [reflectionOpen, setReflectionOpen] = useState(false);
+  const [habitOpen, setHabitOpen] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<HabitView | null>(null);
   const [habitToDelete, setHabitToDelete] = useState<HabitView | null>(null);
-  const [deletingHabit, setDeletingHabit] = useState(false);
 
-  // 将日期字符串转换为 YYYY-MM-DD 格式用于分组
-  const getDateKey = useCallback((dateString: string): string => {
-    if (dateString.includes('T')) {
-      return dateString.split('T')[0];
+  const today = todayKey();
+  const todayGoals = useMemo(
+    () => goals.filter((goal) => goal.due_date === today),
+    [goals, today],
+  );
+  const openTodayGoals = todayGoals.filter((goal) => goal.status !== "completed");
+  const todayHabits = habits.slice(0, 5);
+  const recentItems = useMemo(() => {
+    const momentItems = moments.slice(0, 4).map((moment) => ({
+      id: `moment-${moment.id}`,
+      type: t("moments") || "记录",
+      title: moment.content.slice(0, 42) || t("newMoment") || "记录",
+      time: moment.created_at,
+    }));
+    const reflectionItems = reflections.slice(0, 3).map((reflection) => {
+      const parsed = parseReflectionContent(reflection);
+      return {
+        id: `reflection-${reflection.id}`,
+        type: t("insights") || "感悟",
+        title: parsed.title || parsed.body.slice(0, 42),
+        time: reflection.updated_at || reflection.created_at,
+      };
+    });
+
+    return [...momentItems, ...reflectionItems]
+      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+      .slice(0, 5);
+  }, [moments, reflections, t]);
+
+  const completeGoal = async (goal: Goal) => {
+    try {
+      await updateGoal(goal.id, { status: "completed", progress: 100 });
+      showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
+    } catch (error) {
+      showToast({
+        type: "error",
+        message: error instanceof Error ? error.message : t("updateFailed") || "更新失败",
+      });
     }
-    const date = new Date(dateString);
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }, []);
-
-  // 格式化完整日期显示
-  const formatFullDateDisplay = useCallback((dateString: string) => {
-    const date = new Date(dateString);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    return `${month}月${day}日`;
-  }, []);
-
-  // 按日期分组时刻
-  const groupMomentsByDate = useCallback((moments: Moment[]): DayCard[] => {
-    const grouped = new Map<string, Moment[]>();
-    
-    moments.forEach(moment => {
-      const dateKey = getDateKey(moment.created_at);
-      if (!grouped.has(dateKey)) {
-        grouped.set(dateKey, []);
-      }
-      grouped.get(dateKey)!.push(moment);
-    });
-    
-    const cards: DayCard[] = Array.from(grouped.entries())
-      .map(([dateKey, moments]) => ({
-        date: dateKey,
-        dateDisplay: formatFullDateDisplay(moments[0].created_at),
-        moments: moments.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        ),
-      }))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    return cards;
-  }, [formatFullDateDisplay, getDateKey]);
-
-  // 切换日期折叠状态
-  const toggleDay = (dateKey: string) => {
-    setCollapsedDays(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(dateKey)) {
-        newSet.delete(dateKey);
-      } else {
-        newSet.add(dateKey);
-      }
-      return newSet;
-    });
   };
-
-  // 获取近一周的moments并按日期分组
-  const recentMomentsByDate = useMemo(() => {
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    
-    const filtered = moments.filter(moment => {
-      const momentDate = new Date(moment.created_at);
-      return momentDate >= oneWeekAgo;
-    });
-    
-    return groupMomentsByDate(filtered);
-  }, [groupMomentsByDate, moments]);
-
-  // 获取今日的goals
-  const todayGoals = useMemo(() => {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    
-    return goals.filter(goal => goal.due_date === todayStr);
-  }, [goals]);
 
   const confirmDeleteHabit = async () => {
     if (!habitToDelete) return;
-
-    setDeletingHabit(true);
     try {
       await removeHabit(habitToDelete.id);
       showToast({ type: "success", message: t("deleteSuccess") || "删除成功" });
       setHabitToDelete(null);
-    } catch (err) {
+    } catch (error) {
       showToast({
         type: "error",
-        message: err instanceof Error ? err.message : t("deleteFailed") || "删除失败",
+        message: error instanceof Error ? error.message : t("deleteFailed") || "删除失败",
       });
-    } finally {
-      setDeletingHabit(false);
     }
   };
 
   return (
-    <div className="w-full h-full overflow-y-auto -mt-8">
-      <div className="max-w-7xl mx-auto pt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* 左侧：近一周的记录 */}
-          <div className="lg:col-span-3">
-            <Card className="p-4 rounded-xl">
-              <div className="mb-4">
-                <h3 className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-                  <Camera size={20} />
-                  {t("recentRecords") || "近一周记录"}
-                </h3>
-              </div>
-              <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
-                {loading.moments ? (
-                  <div className="text-center py-8 text-gray-500">{t("loading") || "加载中..."}</div>
-                ) : recentMomentsByDate.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    {t("noRecentRecords") || "暂无近一周的记录"}
-                  </div>
-                ) : (
-                  recentMomentsByDate.map((dayCard) => {
-                    const isDayCollapsed = collapsedDays.has(dayCard.date);
-                    return (
-                      <Card 
-                        key={dayCard.date} 
-                        className="p-4 rounded-xl"
-                      >
-                        <div className="flex flex-col gap-4">
-                          {/* 日期标题 - 带折叠按钮 */}
-                          <div 
-                            className="flex items-center gap-2 border-b border-gray-200/50 pb-2 cursor-pointer hover:bg-gray-50/50 rounded-2xl p-2 -m-2 transition-colors"
-                            onClick={() => toggleDay(dayCard.date)}
-                          >
-                            <button className="flex items-center justify-center w-5 h-5 hover:bg-gray-200 rounded transition-colors">
-                              {isDayCollapsed ? (
-                                <ChevronDown size={14} className="text-gray-600" />
-                              ) : (
-                                <ChevronUp size={14} className="text-gray-600" />
-                              )}
-                            </button>
-                            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] flex-1">{dayCard.dateDisplay}</h3>
-                          </div>
-                          
-                          {/* 该天的所有时刻内容 */}
-                          {!isDayCollapsed && (
-                            <div className="space-y-4">
-                              {dayCard.moments.map((moment) => (
-                                <div 
-                                  key={moment.id} 
-                                  className="flex flex-col gap-3 group/item relative"
-                                >
-                                  {/* 文字内容 */}
-                                  {moment.content && (
-                                    <div className="min-w-0 pr-8">
-                                      <p className="text-lg text-[var(--color-text-primary)] whitespace-pre-line">
-                                        {moment.content}
-                                      </p>
-                                    </div>
-                                  )}
-                                  
-                                  {/* 图片 */}
-                                  {moment.image_url && (
-                                    <div className="flex justify-center">
-                                      <div className="relative">
-                                        <PlainImage
-                                          src={moment.image_url} 
-                                          alt="时刻图片" 
-                                          className="w-full max-w-md h-auto rounded-lg object-cover" 
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </Card>
-                    );
-                  })
-                )}
-              </div>
-            </Card>
-          </div>
-
-          {/* 右侧：上半部分 - 习惯面板 */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="rounded-xl">
-              <div className="mb-4">
-                <h3 className="text-xl font-bold text-[var(--color-text-primary)]">{t("myHabits") || "我的习惯"}</h3>
-              </div>
-              <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
-                <HabitList
-                  habits={habits}
-                  loading={habitsLoading && habits.length === 0}
-                  limit={5}
-                  onCheckinToday={checkinToday}
-                  onToggleCheckin={toggleCheckin}
-                  onDelete={(habit) => setHabitToDelete(habit)}
-                />
-              </div>
-            </Card>
-
-          {/* 右侧：下半部分 - 今日任务面板 */}
-          <Card className="rounded-xl bg-[var(--color-panel-primary)]" style={{ border: 'none' }}>
-              <div className="mb-4">
-                <h3 className="text-xl font-bold flex items-center gap-2 text-[var(--color-panel-text)]">
-                  <CheckCircle2 size={20} />
-                  {t("todayTasks") || "今日任务"}
-                </h3>
-              </div>
-              <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto relative min-h-[200px]">
-                {loading.goals ? (
-                  <div className="text-center py-4 text-[var(--color-panel-text)] text-sm">{t("loading") || "加载中..."}</div>
-                ) : todayGoals.length === 0 ? (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <p className="text-[var(--color-panel-text)] text-2xl font-semibold">{t("noTasksToday") || "今日暂无任务"}</p>
-                  </div>
-                ) : (
-                  todayGoals.map((goal: Goal) => {
-                    const isCompleted = goal.status === 'completed';
-                    return (
-                      <div
-                        key={goal.id}
-                        className={`group rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-4 ${
-                          isCompleted ? 'opacity-75' : ''
-                        }`}
-                      >
-                        <div className="flex justify-between items-center gap-4">
-                          {!isCompleted && (
-                            <button
-                              onClick={async () => {
-                                try {
-                                  await updateGoal(goal.id, { status: 'completed' });
-                                  showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
-                                } catch (err) {
-                                  showToast({
-                                    type: "error",
-                                    message: err instanceof Error ? err.message : t("updateFailed") || "更新失败",
-                                  });
-                                }
-                              }}
-                              className="p-1.5 rounded-full bg-[var(--color-success)] hover:bg-[var(--color-success-hover)] transition-colors duration-200 flex items-center justify-center flex-shrink-0"
-                              title={t("completeGoal") || "完成目标"}
-                            >
-                              <CheckCircle2 size={18} className="text-[var(--color-text-primary)]" />
-                            </button>
-                          )}
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h4 className={`font-bold text-lg ${isCompleted ? 'line-through text-[color:rgba(239,238,235,0.5)]' : 'text-[var(--color-panel-text)]'}`}>
-                                {goal.title}
-                              </h4>
-                              {isCompleted && (
-                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                                  {t("completed") || "已完成"}
-                                </span>
-                              )}
-                            </div>
-                            {goal.description && (
-                              <p className={`text-sm ${isCompleted ? 'text-[color:rgba(239,238,235,0.5)] line-through' : 'text-[var(--color-panel-text)]'}`}>
-                                {goal.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </Card>
-          </div>
+    <div className="mx-auto w-full max-w-7xl space-y-6">
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-[var(--color-primary)]">Today</p>
+          <h1 className="mt-1 text-3xl font-bold text-[var(--color-text-primary)]">
+            {t("todayWorkbench") || "今天的成长工作台"}
+          </h1>
+          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+            {new Date().toLocaleDateString("zh-CN", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              weekday: "long",
+            })}
+          </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <SyncPill status={syncStatus} />
+          {syncStatus === "failed" && (
+            <Button variant="outline" onClick={() => void retrySync()}>
+              {t("retry") || "重试"}
+            </Button>
+          )}
+          <Button variant="secondary" onClick={() => setMomentOpen(true)}>
+            <Plus size={16} />
+            {t("newMoment") || "记录"}
+          </Button>
+          <Button onClick={() => setGoalOpen(true)}>
+            <Plus size={16} />
+            {t("newGoal") || "目标"}
+          </Button>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <Card className="min-h-[360px]">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+                {t("todayTasks") || "今日任务"}
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                {openTodayGoals.length} {t("remainingTasks") || "项待完成"}
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => setGoalOpen(true)}>
+              <Plus size={16} />
+              {t("new") || "新建"}
+            </Button>
+          </div>
+
+          {loading.goals && goals.length === 0 ? (
+            <LoadingState label={t("loadingGoals") || "目标加载中..."} />
+          ) : todayGoals.length === 0 ? (
+            <EmptyState
+              title={t("noTasksToday") || "今天还没有任务"}
+              description={t("selectDateToMigrate") || "新建目标或在目标页把任务迁移到今天。"}
+              action={<Button onClick={() => setGoalOpen(true)}>{t("newGoal") || "新建目标"}</Button>}
+            />
+          ) : (
+            <div className="space-y-3">
+              {todayGoals.map((goal) => {
+                const completed = goal.status === "completed";
+                return (
+                  <div
+                    key={goal.id}
+                    className="flex items-start gap-3 rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-card)] p-4"
+                  >
+                    <button
+                      type="button"
+                      disabled={completed}
+                      onClick={() => void completeGoal(goal)}
+                      className={`mt-0.5 rounded-lg p-2 transition-colors duration-150 motion-reduce:transition-none ${
+                        completed
+                          ? "bg-[var(--color-bg-primary)] text-[var(--color-success)]"
+                          : "bg-[var(--color-primary-light)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-on-primary)]"
+                      }`}
+                      aria-label={t("completeGoal") || "完成目标"}
+                    >
+                      <CheckCircle2 size={18} />
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3
+                          className={`font-semibold ${
+                            completed
+                              ? "text-[var(--color-text-secondary)] line-through"
+                              : "text-[var(--color-text-primary)]"
+                          }`}
+                        >
+                          {goal.title}
+                        </h3>
+                        {goal._local?.failed && (
+                          <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">
+                            {t("syncFailed") || "同步失败"}
+                          </span>
+                        )}
+                        {goal._local?.pending && (
+                          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
+                            {t("syncing") || "同步中"}
+                          </span>
+                        )}
+                      </div>
+                      {goal.description && (
+                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                          {goal.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+
+        <Card className="min-h-[360px]">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+                {t("myHabits") || "今日习惯"}
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                {habits.filter((habit) => habit.checkedToday).length}/{habits.length}{" "}
+                {t("checkedIn") || "已打卡"}
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => setHabitOpen(true)}>
+              <Plus size={16} />
+              {t("habit") || "习惯"}
+            </Button>
+          </div>
+          <HabitList
+            habits={todayHabits}
+            loading={habitsLoading && todayHabits.length === 0}
+            onCreateClick={() => setHabitOpen(true)}
+            onCheckinToday={checkinToday}
+            onToggleCheckin={toggleCheckin}
+            onEdit={(habit) => {
+              setEditingHabit(habit);
+              setHabitOpen(true);
+            }}
+            onDelete={setHabitToDelete}
+          />
+        </Card>
       </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+                {t("recentRecords") || "最近更新"}
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                {t("recentRecordsDescription") || "生活记录和感悟会在这里汇总。"}
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => setReflectionOpen(true)}>
+              <Edit2 size={16} />
+              {t("newReflection") || "感悟"}
+            </Button>
+          </div>
+          {recentItems.length === 0 ? (
+            <EmptyState
+              title={t("noRecords") || "暂无记录"}
+              description={t("recordFeelings") || "记录一点今天发生的事。"}
+              action={<Button onClick={() => setMomentOpen(true)}>{t("newMoment") || "记录"}</Button>}
+            />
+          ) : (
+            <div className="divide-y divide-[var(--color-border-muted)]">
+              {recentItems.map((item) => (
+                <div key={item.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                  <span className="mt-1 rounded-full bg-[var(--color-primary-light)] p-2 text-[var(--color-primary)]">
+                    <Clock3 size={14} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-[var(--color-text-secondary)]">{item.type}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-[var(--color-text-primary)]">
+                      {item.title}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <Card>
+          <div className="flex h-full flex-col justify-between gap-6">
+            <div>
+              <div className="mb-3 inline-flex rounded-xl bg-[var(--color-primary-light)] p-2 text-[var(--color-primary)]">
+                <Sparkles size={20} />
+              </div>
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+                {t("aiAssistant") || "AI 助手"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
+                {t("aiAssistantHomeHint") || "AI 保持在抽屉里，适合需要整理想法或拆目标时再打开。"}
+              </p>
+            </div>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              {t("localFirstHint") || "所有更改会先保存在本地，再后台同步到云端。"}
+            </p>
+          </div>
+        </Card>
+      </div>
+
+      <MomentModal isOpen={momentOpen} onClose={() => setMomentOpen(false)} onSuccess={() => undefined} />
+      <GoalModal isOpen={goalOpen} onClose={() => setGoalOpen(false)} onSuccess={() => undefined} />
+      <ReflectionModal
+        isOpen={reflectionOpen}
+        onClose={() => setReflectionOpen(false)}
+        onSuccess={() => undefined}
+      />
+      <HabitFormDialog
+        isOpen={habitOpen}
+        saving={habitsSaving}
+        habit={editingHabit}
+        onClose={() => {
+          setHabitOpen(false);
+          setEditingHabit(null);
+        }}
+        onCreate={createHabit}
+        onUpdate={updateHabit}
+      />
       <ConfirmDialog
         isOpen={Boolean(habitToDelete)}
         title={`${t("confirmDelete") || "确认删除"} ${habitToDelete?.name ?? ""}`}
         description={t("cannotRecover") || "删除后不可恢复。"}
         confirmLabel={t("confirm") || "确认"}
         cancelLabel={t("cancel") || "取消"}
-        loading={deletingHabit}
         tone="danger"
         onConfirm={confirmDeleteHabit}
         onCancel={() => setHabitToDelete(null)}

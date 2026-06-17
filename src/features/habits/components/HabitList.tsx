@@ -16,6 +16,7 @@ type HabitListProps = {
   onCreateClick?: () => void;
   onCheckinToday: (habit: HabitView) => Promise<void>;
   onToggleCheckin: (habit: HabitView, dateKey: string) => Promise<void>;
+  onEdit?: (habit: HabitView) => void;
   onDelete?: (habit: HabitView) => void;
 };
 
@@ -26,6 +27,7 @@ export function HabitList({
   onCreateClick,
   onCheckinToday,
   onToggleCheckin,
+  onEdit,
   onDelete,
 }: HabitListProps) {
   const { t } = useLanguage();
@@ -60,6 +62,7 @@ export function HabitList({
             habit={habit}
             onOpen={() => setSelectedHabitId(habit.id)}
             onCheckinToday={onCheckinToday}
+            onEdit={onEdit}
             onDelete={onDelete}
           />
         ))}

@@ -174,7 +174,7 @@ export default function RegisterPage() {
         </form>
         <p className="text-sm">
           {t("alreadyAccount")}{" "}
-          <a href="/login" className="text-[#B8860B] hover:underline">
+          <a href="/login" className="text-[var(--color-primary)] hover:underline">
             {t("login")} {/* 使用专门的“去登录”翻译 */}
           </a>
         </p>

@@ -257,7 +257,16 @@
   "saving": "保存中...",
   "syncing": "同步中",
   "syncFailed": "同步失败",
+  "synced": "已保存",
   "retrySync": "重试同步",
   "savedLocally": "已在本地保存",
-  "cloudSyncFailed": "云端同步失败，稍后需要重试"
+  "cloudSyncFailed": "云端同步失败，稍后需要重试",
+  "today": "今天",
+  "records": "记录",
+  "todayWorkbench": "今天的成长工作台",
+  "remainingTasks": "项待完成",
+  "recentRecordsDescription": "生活记录和感悟会在这里汇总。",
+  "aiAssistantHomeHint": "AI 保持在抽屉里，适合需要整理想法或拆目标时再打开。",
+  "localFirstHint": "所有更改会先保存在本地，再后台同步到云端。",
+  "progress": "进度"
 }

@@ -1,6 +1,6 @@
 // components/MomentModal.tsx
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { Input } from "./ui/Input";
@@ -9,22 +9,59 @@ import { useAppContext } from '../../context/AppContext'; // 添加 AppContext
 import { useToast } from "./ui/Toast";
 import { PlainImage } from "./ui/PlainImage";
 
-type Props = { isOpen: boolean; onClose: () => void; onSuccess: () => void; };
+type MomentDraft = {
+  id: number;
+  content: string;
+  created_at: string;
+  image_url?: string | null;
+  image_path?: string | null;
+};
 
-export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  initialMoment?: MomentDraft | null;
+};
+
+function toDateInputValue(value?: string) {
+  if (!value) return new Date().toISOString().split("T")[0];
+  if (value.includes("T")) return value.split("T")[0];
+  return value;
+}
+
+export const MomentModal = ({ isOpen, onClose, onSuccess, initialMoment = null }: Props) => {
   const { t } = useLanguage(); // 获取翻译函数
-  const { addMoment } = useAppContext(); // 获取添加函数
+  const { addMoment, updateMoment } = useAppContext(); // 获取添加函数
   const { showToast } = useToast();
   const [content, setContent] = useState("");
-  const [selectedDate, setSelectedDate] = useState(() => {
-    // 默认使用今天的日期，格式为 YYYY-MM-DD
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
+  const [selectedDate, setSelectedDate] = useState(() => toDateInputValue());
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const isEditing = Boolean(initialMoment);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setContent(initialMoment?.content ?? "");
+    setSelectedDate(toDateInputValue(initialMoment?.created_at));
+    setImageFile(null);
+    setPreviewUrl(initialMoment?.image_url ?? null);
+  }, [initialMoment, isOpen]);
 
   if (!isOpen) return null;
+
+  const resetForm = () => {
+    setContent("");
+    setImageFile(null);
+    setPreviewUrl(null);
+    setSelectedDate(toDateInputValue());
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   const handleSubmit = async () => {
     if (!content.trim()) { 
@@ -41,30 +78,35 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
       localImageUrl = URL.createObjectURL(imageFile);
     }
 
-    // 创建临时 moment 对象（乐观更新）
+    if (isEditing && initialMoment) {
+      updateMoment(initialMoment.id, {
+        content,
+        created_at: dateISO,
+        image_path: imageFile ? null : initialMoment.image_path ?? null,
+        image_url: localImageUrl || previewUrl || initialMoment.image_url || null,
+        local_file: imageFile,
+        local_file_name: imageFile?.name ?? null,
+      });
+      handleClose();
+      onSuccess();
+      showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
+      return;
+    }
+
     const tempMoment = {
-      id: Date.now(), // 使用时间戳作为临时 ID
+      id: Date.now(),
       content,
-      image_path: null, // 暂时为 null,上传后更新
-      image_url: localImageUrl || previewUrl, // 优先使用本地预览 URL
+      image_path: null,
+      image_url: localImageUrl || previewUrl,
       local_file: imageFile,
       local_file_name: imageFile?.name ?? null,
       created_at: dateISO,
       date: dateISO.split('T')[0],
     };
 
-    // 立即添加到列表（乐观更新）
     addMoment(tempMoment);
 
-    // 立即关闭模态框并重置表单
-    onClose();
-    setContent(""); 
-    setImageFile(null); 
-    setPreviewUrl(null);
-    const today = new Date();
-    setSelectedDate(today.toISOString().split('T')[0]);
-
-    // 调用成功回调
+    handleClose();
     onSuccess();
     showToast({ type: "success", message: t("savedLocally") || "已在本地保存" });
   };
@@ -72,7 +114,9 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="w-full max-w-xl rounded-2xl bg-[var(--color-bg-surface)] p-6 shadow-xl">
-        <h2 className="text-2xl font-bold mb-4">{t("newMoment") || "记录新时刻"}</h2>
+        <h2 className="text-2xl font-bold mb-4">
+          {isEditing ? t("edit") || "编辑" : t("newMoment") || "记录新时刻"}
+        </h2>
 
         <div className="mb-4">
           <label className="block text-sm text-gray-600 mb-1">{t("date") || "日期"}</label>
@@ -102,7 +146,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
             onChange={(e) => {
               const file = e.target.files?.[0] || null;
               setImageFile(file);
-              setPreviewUrl(file ? URL.createObjectURL(file) : null);
+              setPreviewUrl(file ? URL.createObjectURL(file) : initialMoment?.image_url ?? null);
             }} 
             className="block w-full rounded-lg border border-dashed border-[var(--color-border-muted)] p-3 text-sm text-[var(--color-text-secondary)]" 
           />
@@ -112,7 +156,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
         <div className="flex justify-end mt-6 space-x-3">
           <Button 
             variant="secondary" 
-            onClick={onClose} 
+            onClick={handleClose} 
             className="min-w-[60px] h-10"
           >
             {t("cancel") || "取消"}
@@ -121,7 +165,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess }: Props) => {
             onClick={handleSubmit} 
             className="min-w-[60px] h-10"
           >
-            {t("save") || "记录"}
+            {isEditing ? t("update") || "更新" : t("save") || "记录"}
           </Button>
         </div>
       </div>

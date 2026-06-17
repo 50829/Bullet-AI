@@ -53,31 +53,45 @@ alter table public.profiles
   add column if not exists updated_at timestamptz default timezone('utc'::text, now());
 
 alter table public.moments
+  add column if not exists client_id text,
   add column if not exists image_path text,
-  add column if not exists created_at timestamptz default timezone('utc'::text, now());
+  add column if not exists created_at timestamptz default timezone('utc'::text, now()),
+  add column if not exists updated_at timestamptz default timezone('utc'::text, now()),
+  add column if not exists deleted_at timestamptz;
 
 alter table public.reflections
+  add column if not exists client_id text,
+  add column if not exists title text,
+  add column if not exists body text,
   add column if not exists source text,
   add column if not exists source_type text,
   add column if not exists location text,
   add column if not exists image_path text,
-  add column if not exists created_at timestamptz default timezone('utc'::text, now());
+  add column if not exists created_at timestamptz default timezone('utc'::text, now()),
+  add column if not exists updated_at timestamptz default timezone('utc'::text, now()),
+  add column if not exists deleted_at timestamptz;
 
 alter table public.goals
+  add column if not exists client_id text,
   add column if not exists description text,
   add column if not exists status text,
   add column if not exists due_date date,
   add column if not exists progress int,
   add column if not exists image_path text,
-  add column if not exists created_at timestamptz default timezone('utc'::text, now());
+  add column if not exists created_at timestamptz default timezone('utc'::text, now()),
+  add column if not exists updated_at timestamptz default timezone('utc'::text, now()),
+  add column if not exists deleted_at timestamptz;
 
 alter table public.habits
+  add column if not exists client_id text,
   add column if not exists description text,
   add column if not exists frequency text,
   add column if not exists color text,
   add column if not exists last_checkin timestamptz,
   add column if not exists checkin_count int,
-  add column if not exists created_at timestamptz default timezone('utc'::text, now());
+  add column if not exists created_at timestamptz default timezone('utc'::text, now()),
+  add column if not exists updated_at timestamptz default timezone('utc'::text, now()),
+  add column if not exists deleted_at timestamptz;
 
 -- Drop old check constraints before data cleanup.
 -- Existing projects may have constraints that reject the normalized values below.
@@ -121,29 +135,55 @@ where profiles.ctid = ranked_usernames.ctid
   and ranked_usernames.row_number > 1;
 
 update public.moments
-set created_at = coalesce(created_at, timezone('utc'::text, now()))
+set
+  client_id = coalesce(nullif(client_id, ''), 'moment-' || id::text),
+  created_at = coalesce(created_at, timezone('utc'::text, now())),
+  updated_at = coalesce(updated_at, created_at, timezone('utc'::text, now()))
 where true;
 
 update public.reflections
-set created_at = coalesce(created_at, timezone('utc'::text, now()))
+set
+  client_id = coalesce(nullif(client_id, ''), 'reflection-' || id::text),
+  title = coalesce(
+    nullif(title, ''),
+    case
+      when position(E'\n\n' in content) > 0 and char_length(split_part(content, E'\n\n', 1)) <= 100
+        then nullif(split_part(content, E'\n\n', 1), '')
+      else null
+    end
+  ),
+  body = coalesce(
+    nullif(body, ''),
+    case
+      when position(E'\n\n' in content) > 0 and char_length(split_part(content, E'\n\n', 1)) <= 100
+        then nullif(substring(content from position(E'\n\n' in content) + 2), '')
+      else content
+    end
+  ),
+  created_at = coalesce(created_at, timezone('utc'::text, now())),
+  updated_at = coalesce(updated_at, created_at, timezone('utc'::text, now()))
 where true;
 
 update public.goals
 set
+  client_id = coalesce(nullif(client_id, ''), 'goal-' || id::text),
   description = coalesce(description, ''),
   status = case when status in ('pending', 'default', 'completed') then status else 'pending' end,
   progress = least(greatest(coalesce(progress, 0), 0), 100),
-  created_at = coalesce(created_at, timezone('utc'::text, now()))
+  created_at = coalesce(created_at, timezone('utc'::text, now())),
+  updated_at = coalesce(updated_at, created_at, timezone('utc'::text, now()))
 where true;
 
 update public.habits
 set
+  client_id = coalesce(nullif(client_id, ''), 'habit-' || id::text),
   frequency = case
     when frequency in ('weekly', 'Weekly', '每周') then 'weekly'
     else 'daily'
   end,
   checkin_count = coalesce(checkin_count, 0),
-  created_at = coalesce(created_at, timezone('utc'::text, now()))
+  created_at = coalesce(created_at, timezone('utc'::text, now())),
+  updated_at = coalesce(updated_at, created_at, timezone('utc'::text, now()))
 where true;
 
 -- 4. Align column types/defaults/nullability
@@ -168,12 +208,20 @@ alter table public.profiles
 alter table public.moments
   alter column created_at type timestamptz using created_at::timestamptz,
   alter column created_at set default timezone('utc'::text, now()),
-  alter column created_at set not null;
+  alter column created_at set not null,
+  alter column updated_at type timestamptz using updated_at::timestamptz,
+  alter column updated_at set default timezone('utc'::text, now()),
+  alter column updated_at set not null,
+  alter column client_id set not null;
 
 alter table public.reflections
   alter column created_at type timestamptz using created_at::timestamptz,
   alter column created_at set default timezone('utc'::text, now()),
-  alter column created_at set not null;
+  alter column created_at set not null,
+  alter column updated_at type timestamptz using updated_at::timestamptz,
+  alter column updated_at set default timezone('utc'::text, now()),
+  alter column updated_at set not null,
+  alter column client_id set not null;
 
 alter table public.goals
   alter column description set default '',
@@ -184,7 +232,11 @@ alter table public.goals
   alter column progress set not null,
   alter column created_at type timestamptz using created_at::timestamptz,
   alter column created_at set default timezone('utc'::text, now()),
-  alter column created_at set not null;
+  alter column created_at set not null,
+  alter column updated_at type timestamptz using updated_at::timestamptz,
+  alter column updated_at set default timezone('utc'::text, now()),
+  alter column updated_at set not null,
+  alter column client_id set not null;
 
 alter table public.habits
   alter column frequency set default 'daily',
@@ -193,7 +245,11 @@ alter table public.habits
   alter column checkin_count set not null,
   alter column created_at type timestamptz using created_at::timestamptz,
   alter column created_at set default timezone('utc'::text, now()),
-  alter column created_at set not null;
+  alter column created_at set not null,
+  alter column updated_at type timestamptz using updated_at::timestamptz,
+  alter column updated_at set default timezone('utc'::text, now()),
+  alter column updated_at set not null,
+  alter column client_id set not null;
 
 -- 5. Habit check-in history
 
@@ -280,10 +336,14 @@ alter table public.habit_checkins
 create unique index if not exists profiles_username_idx on public.profiles(username);
 create index if not exists profiles_user_id_idx on public.profiles(user_id);
 create index if not exists moments_user_id_idx on public.moments(user_id);
+create unique index if not exists moments_client_id_idx on public.moments(client_id);
 create index if not exists reflections_user_id_idx on public.reflections(user_id);
+create unique index if not exists reflections_client_id_idx on public.reflections(client_id);
 create index if not exists goals_user_id_idx on public.goals(user_id);
+create unique index if not exists goals_client_id_idx on public.goals(client_id);
 create index if not exists goals_user_due_date_idx on public.goals(user_id, due_date);
 create index if not exists habits_user_id_idx on public.habits(user_id);
+create unique index if not exists habits_client_id_idx on public.habits(client_id);
 create index if not exists habit_checkins_user_checked_on_idx
   on public.habit_checkins(user_id, checked_on desc);
 create index if not exists habit_checkins_habit_checked_on_idx
@@ -302,6 +362,30 @@ $$ language plpgsql;
 drop trigger if exists update_profiles_updated_at on public.profiles;
 create trigger update_profiles_updated_at
   before update on public.profiles
+  for each row
+  execute function public.update_updated_at_column();
+
+drop trigger if exists update_moments_updated_at on public.moments;
+create trigger update_moments_updated_at
+  before update on public.moments
+  for each row
+  execute function public.update_updated_at_column();
+
+drop trigger if exists update_reflections_updated_at on public.reflections;
+create trigger update_reflections_updated_at
+  before update on public.reflections
+  for each row
+  execute function public.update_updated_at_column();
+
+drop trigger if exists update_goals_updated_at on public.goals;
+create trigger update_goals_updated_at
+  before update on public.goals
+  for each row
+  execute function public.update_updated_at_column();
+
+drop trigger if exists update_habits_updated_at on public.habits;
+create trigger update_habits_updated_at
+  before update on public.habits
   for each row
   execute function public.update_updated_at_column();
 

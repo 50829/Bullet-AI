@@ -9,12 +9,23 @@ export function metaKey(userId: string, collection: LocalCollection) {
   return `${userId}:${collection}`;
 }
 
+export function createClientId(prefix = "entity") {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function getEntityId(entity: unknown) {
   if (entity && typeof entity === "object" && "id" in entity) {
     return String((entity as { id: string | number }).id);
   }
 
-  throw new Error("Local entity must include an id");
+  if (entity && typeof entity === "object" && "client_id" in entity) {
+    return String((entity as { client_id: string }).client_id);
+  }
+
+  throw new Error("Local entity must include an id or client_id");
 }
 
 export async function readEntities<T>(

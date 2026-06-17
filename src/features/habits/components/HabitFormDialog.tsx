@@ -1,26 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "../../../app/components/ui/Button";
 import { Input } from "../../../app/components/ui/Input";
 import { Textarea } from "../../../app/components/ui/Textarea";
 import { useLanguage } from "../../../app/context/LanguageContext";
-import type { CreateHabitInput, HabitFrequency } from "../types";
+import type { CreateHabitInput, HabitFrequency, HabitView, UpdateHabitInput } from "../types";
 
 type HabitFormDialogProps = {
   isOpen: boolean;
   saving?: boolean;
+  habit?: HabitView | null;
   onClose: () => void;
   onCreate: (input: CreateHabitInput) => Promise<void>;
+  onUpdate?: (habitId: number, input: UpdateHabitInput) => Promise<void>;
 };
 
-export function HabitFormDialog({ isOpen, saving = false, onClose, onCreate }: HabitFormDialogProps) {
+export function HabitFormDialog({
+  isOpen,
+  saving = false,
+  habit = null,
+  onClose,
+  onCreate,
+  onUpdate,
+}: HabitFormDialogProps) {
   const { t, language } = useLanguage();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [frequency, setFrequency] = useState<HabitFrequency>("daily");
+  const [color, setColor] = useState<string | null>("#2f6f5e");
   const [message, setMessage] = useState<string | null>(null);
+  const isEditing = Boolean(habit);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setName(habit?.name ?? "");
+    setDescription(habit?.description ?? "");
+    setFrequency(habit?.frequency ?? "daily");
+    setColor(habit?.color ?? "#2f6f5e");
+    setMessage(null);
+  }, [habit, isOpen]);
 
   if (!isOpen) return null;
 
@@ -28,6 +48,7 @@ export function HabitFormDialog({ isOpen, saving = false, onClose, onCreate }: H
     setName("");
     setDescription("");
     setFrequency("daily");
+    setColor("#2f6f5e");
     setMessage(null);
   };
 
@@ -47,11 +68,16 @@ export function HabitFormDialog({ isOpen, saving = false, onClose, onCreate }: H
     setMessage(null);
 
     try {
-      await onCreate({
-        name,
-        description,
-        frequency,
-      });
+      if (isEditing && habit && onUpdate) {
+        await onUpdate(habit.id, { name, description, frequency, color });
+      } else {
+        await onCreate({
+          name,
+          description,
+          frequency,
+          color,
+        });
+      }
       handleClose();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : t("saveFailed") || "保存失败");
@@ -65,7 +91,9 @@ export function HabitFormDialog({ isOpen, saving = false, onClose, onCreate }: H
         className="w-full max-w-md rounded-2xl bg-[var(--color-bg-card)] p-5 shadow-xl"
       >
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">{t("newHabit") || "新建习惯"}</h2>
+          <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+            {isEditing ? t("edit") || "编辑" : t("newHabit") || "新建习惯"}
+          </h2>
           <button
             type="button"
             onClick={handleClose}
@@ -118,6 +146,24 @@ export function HabitFormDialog({ isOpen, saving = false, onClose, onCreate }: H
           ))}
         </div>
 
+        <label className="mt-4 block text-sm font-medium text-[var(--color-text-primary)]">
+          {t("color") || "颜色"}
+        </label>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {["#2f6f5e", "#4f7c8a", "#7c5c9e", "#a16207", "#64748b"].map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setColor(value)}
+              className={`h-8 w-8 rounded-lg border transition-colors duration-150 motion-reduce:transition-none ${
+                color === value ? "border-[var(--color-text-primary)]" : "border-transparent"
+              }`}
+              style={{ backgroundColor: value }}
+              aria-label={value}
+            />
+          ))}
+        </div>
+
         {message && <p className="mt-3 text-sm text-red-500">{message}</p>}
 
         <div className="mt-6 flex justify-end gap-3">
@@ -125,7 +171,11 @@ export function HabitFormDialog({ isOpen, saving = false, onClose, onCreate }: H
             {t("cancel") || "取消"}
           </Button>
           <Button type="submit" disabled={saving || !name.trim()}>
-            {saving ? t("saving") || "保存中" : t("save") || "保存"}
+            {saving
+              ? t("saving") || "保存中"
+              : isEditing
+                ? t("update") || "更新"
+                : t("save") || "保存"}
           </Button>
         </div>
       </form>

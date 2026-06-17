@@ -10,6 +10,7 @@ export type HabitCheckin = {
 
 export type HabitView = {
   id: number;
+  client_id?: string;
   name: string;
   description: string | null;
   frequency: HabitFrequency;
@@ -24,8 +25,11 @@ export type HabitView = {
 };
 
 export type CreateHabitInput = {
+  client_id?: string;
   name: string;
   description?: string;
   frequency: HabitFrequency;
   color?: string | null;
 };
+
+export type UpdateHabitInput = Partial<Pick<CreateHabitInput, "name" | "description" | "frequency" | "color">>;

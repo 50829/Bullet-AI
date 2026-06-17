@@ -257,7 +257,16 @@
   "saving": "Saving...",
   "syncing": "Syncing",
   "syncFailed": "Sync failed",
+  "synced": "Saved",
   "retrySync": "Retry sync",
   "savedLocally": "Saved locally",
-  "cloudSyncFailed": "Cloud sync failed. Please retry later"
+  "cloudSyncFailed": "Cloud sync failed. Please retry later",
+  "today": "Today",
+  "records": "Records",
+  "todayWorkbench": "Today's growth workspace",
+  "remainingTasks": "remaining",
+  "recentRecordsDescription": "Moments and insights are gathered here.",
+  "aiAssistantHomeHint": "AI stays in a drawer and is there when you want help sorting thoughts or breaking down goals.",
+  "localFirstHint": "Changes are saved locally first, then synced to the cloud in the background.",
+  "progress": "Progress"
 }

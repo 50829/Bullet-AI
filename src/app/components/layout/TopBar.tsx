@@ -6,6 +6,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../ui/Button';
 import { supabase } from '../../../lib/supabaseClient';
 import { getCurrentUserProfile } from '../../../lib/profile/profileService';
+import { useAppContext } from '../../../context/AppContext';
 
 // TopBar Context
 type TopBarHandlers = {
@@ -65,6 +66,7 @@ export const TopBarProvider = ({ children }: { children: React.ReactNode }) => {
 export const TopBar = () => {
   const searchParams = useSearchParams();
   const { t } = useLanguage();
+  const { syncStatus } = useAppContext();
   const currentPage = searchParams.get('page') || 'home';
   const context = useContext(TopBarContext);
   const [username, setUsername] = useState<string | null>(null);
@@ -178,7 +180,7 @@ export const TopBar = () => {
       default:
         return {
           icon: null,
-          title: 'BulletAI',
+          title: currentPage === 'home' ? (t("today") || 'Today') : 'BulletAI',
           aiButtonText: '',
           addButtonText: '',
           onAdd: undefined,
@@ -214,8 +216,26 @@ export const TopBar = () => {
         </div>
 
         {/* 右侧：按钮区域 */}
-        {showButtons && (
-          <div className={`flex items-center gap-2 flex-shrink-0 ${isMobile ? 'ml-auto' : ''}`}>
+        <div className={`flex items-center gap-2 flex-shrink-0 ${isMobile ? 'ml-auto' : ''}`}>
+          {!isMobile && (
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                syncStatus === 'failed'
+                  ? 'bg-red-50 text-red-700'
+                  : syncStatus === 'syncing'
+                    ? 'bg-amber-50 text-amber-700'
+                    : 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
+              }`}
+            >
+              {syncStatus === 'failed'
+                ? t("syncFailed") || "同步失败"
+                : syncStatus === 'syncing'
+                  ? t("syncing") || "同步中"
+                  : t("synced") || "已保存"}
+            </span>
+          )}
+          {showButtons && (
+            <>
             {/* AI助手按钮 */}
             {pageInfo.aiButtonText && onToggleAIPanel && (
               <Button 
@@ -235,8 +255,9 @@ export const TopBar = () => {
                 {isMobile ? '+' : pageInfo.addButtonText}
               </Button>
             )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
     </div>

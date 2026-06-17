@@ -1,9 +1,10 @@
 import { supabase } from "../../../lib/supabase/client";
 import { addDays, toDateKey } from "../../../lib/date/dateUtils";
-import type { CreateHabitInput, HabitCheckin, HabitFrequency, HabitView } from "../types";
+import type { CreateHabitInput, HabitCheckin, HabitFrequency, HabitView, UpdateHabitInput } from "../types";
 
 type HabitRecord = {
   id: number;
+  client_id?: string | null;
   user_id: string;
   name: string;
   description: string | null;
@@ -51,6 +52,7 @@ function toHabitView(habit: HabitRecord, checkins: HabitCheckin[]): HabitView {
 
   return {
     id: habit.id,
+    client_id: habit.client_id ?? undefined,
     name: habit.name,
     description: habit.description,
     frequency,
@@ -82,7 +84,7 @@ export async function fetchHabitViews(): Promise<HabitView[]> {
 
   const { data: habits, error: habitError } = await supabase
     .from("habits")
-    .select("id,user_id,name,description,frequency,color,created_at")
+    .select("id,client_id,user_id,name,description,frequency,color,created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -120,11 +122,30 @@ export async function createHabit(input: CreateHabitInput) {
   const user = await getCurrentUser();
   const { error } = await supabase.from("habits").insert({
     user_id: user.id,
+    client_id: input.client_id,
     name: input.name.trim(),
     description: input.description?.trim() || null,
     frequency: input.frequency,
     color: input.color ?? null,
   });
+
+  if (error) throw new Error(error.message);
+}
+
+export async function updateHabit(habitId: number, input: UpdateHabitInput) {
+  const user = await getCurrentUser();
+  const updates: Record<string, string | null> = {};
+
+  if (typeof input.name === "string") updates.name = input.name.trim();
+  if (typeof input.description === "string") updates.description = input.description.trim() || null;
+  if (input.frequency) updates.frequency = input.frequency;
+  if ("color" in input) updates.color = input.color ?? null;
+
+  const { error } = await supabase
+    .from("habits")
+    .update(updates)
+    .eq("id", habitId)
+    .eq("user_id", user.id);
 
   if (error) throw new Error(error.message);
 }

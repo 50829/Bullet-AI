@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CheckCircle2, Flame, Trash2 } from "lucide-react";
+import { CalendarDays, CheckCircle2, Edit2, Flame, Trash2 } from "lucide-react";
 import { Button } from "../../../app/components/ui/Button";
 import { formatDateKey } from "../../../lib/date/dateUtils";
 import { useLanguage } from "../../../app/context/LanguageContext";
@@ -10,10 +10,11 @@ type HabitCardProps = {
   habit: HabitView;
   onOpen: (habit: HabitView) => void;
   onCheckinToday: (habit: HabitView) => Promise<void>;
+  onEdit?: (habit: HabitView) => void;
   onDelete?: (habit: HabitView) => void;
 };
 
-export function HabitCard({ habit, onOpen, onCheckinToday, onDelete }: HabitCardProps) {
+export function HabitCard({ habit, onOpen, onCheckinToday, onEdit, onDelete }: HabitCardProps) {
   const { t, language } = useLanguage();
   const frequencyLabel = habit.frequency === "daily" ? t("daily") || "每日" : t("weekly") || "每周";
 
@@ -25,11 +26,15 @@ export function HabitCard({ habit, onOpen, onCheckinToday, onDelete }: HabitCard
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") onOpen(habit);
       }}
-      className="group w-full cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className="group w-full cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 text-left shadow-sm transition-shadow duration-150 hover:shadow-md motion-reduce:transition-none"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ backgroundColor: habit.color || "var(--color-primary)" }}
+            />
             <h4 className="truncate text-base font-semibold text-[var(--color-text-primary)]">{habit.name}</h4>
             <span className="rounded-full bg-[var(--color-bg-surface)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)]">
               {frequencyLabel}
@@ -67,6 +72,20 @@ export function HabitCard({ habit, onOpen, onCheckinToday, onDelete }: HabitCard
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit(habit);
+              }}
+              className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
+              title={t("edit") || "编辑"}
+              aria-label={t("edit") || "编辑"}
+            >
+              <Edit2 size={16} />
+            </button>
+          )}
           {onDelete && (
             <button
               type="button"

@@ -52,10 +52,10 @@ export const Sidebar = () => {
   const { t } = useLanguage(); // 获取翻译函数
   
   const navItems = [
-    { page: 'home', label: 'Home', icon: <Home size={20} /> },
-    { page: 'moments', label: t("moments") || '我的时刻', icon: <Camera size={20} /> },
-    { page: 'goals', label: t("goals") || '我的目标', icon: <Target size={20} /> },
-    { page: 'reflections', label: t("insights") || '我的感悟', icon: <Lightbulb size={20} /> },
+    { page: 'home', label: t("today") || 'Today', icon: <Home size={20} /> },
+    { page: 'moments', label: t("records") || t("moments") || 'Records', icon: <Camera size={20} /> },
+    { page: 'goals', label: t("goals") || 'Goals', icon: <Target size={20} /> },
+    { page: 'reflections', label: t("insights") || 'Insights', icon: <Lightbulb size={20} /> },
   ];
 
   return (

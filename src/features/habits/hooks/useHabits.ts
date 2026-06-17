@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { addDays, toDateKey } from "../../../lib/date/dateUtils";
-import type { CreateHabitInput, HabitCheckin, HabitView } from "../types";
+import { createClientId } from "../../../lib/localDb/repository";
+import type { CreateHabitInput, HabitCheckin, HabitView, UpdateHabitInput } from "../types";
 import {
   createHabit as createHabitRecord,
   deleteHabit as deleteHabitRecord,
   fetchHabitViews,
   toggleHabitCheckin,
+  updateHabit as updateHabitRecord,
 } from "../services/habitService";
 
 type HabitState = {
@@ -149,6 +151,7 @@ export function useHabits() {
 
     const optimisticHabit: HabitView = {
       id: Date.now(),
+      client_id: input.client_id ?? createClientId("habit"),
       name: input.name.trim(),
       description: input.description?.trim() || null,
       frequency: input.frequency,
@@ -166,7 +169,7 @@ export function useHabits() {
     setState({ habits: [optimisticHabit, ...state.habits] });
 
     try {
-      await createHabitRecord(input);
+      await createHabitRecord({ ...input, client_id: optimisticHabit.client_id });
       setState({ saving: false });
       void refreshHabitStore({ silent: true });
     } catch (err) {
@@ -176,6 +179,39 @@ export function useHabits() {
         saving: false,
         error: message,
       });
+      throw err;
+    }
+  }, []);
+
+  const updateHabit = useCallback(async (habitId: number, input: UpdateHabitInput) => {
+    const previous = state.habits;
+    setState({
+      habits: state.habits.map((habit) =>
+        habit.id === habitId
+          ? {
+              ...habit,
+              name: input.name?.trim() ?? habit.name,
+              description:
+                typeof input.description === "string"
+                  ? input.description.trim() || null
+                  : habit.description,
+              frequency: input.frequency ?? habit.frequency,
+              color: "color" in input ? input.color ?? null : habit.color,
+              _local: { pending: true },
+            }
+          : habit,
+      ),
+      saving: true,
+      error: null,
+    });
+
+    try {
+      await updateHabitRecord(habitId, input);
+      setState({ saving: false });
+      void refreshHabitStore({ silent: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "更新习惯失败";
+      setState({ habits: previous, saving: false, error: message });
       throw err;
     }
   }, []);
@@ -233,6 +269,7 @@ export function useHabits() {
     error: snapshot.error,
     refresh,
     createHabit,
+    updateHabit,
     removeHabit,
     toggleCheckin,
     checkinToday,

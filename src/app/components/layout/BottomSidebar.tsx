@@ -22,8 +22,8 @@ export const BottomSidebar = () => {
   const currentPage = searchParams.get('page') || 'home';
 
   const navItems = [
-    { page: 'home', label: 'Home', icon: <Home size={19} /> },
-    { page: 'moments', label: t("moments") || '记录', icon: <Camera size={19} /> },
+    { page: 'home', label: t("today") || 'Today', icon: <Home size={19} /> },
+    { page: 'moments', label: t("records") || t("moments") || '记录', icon: <Camera size={19} /> },
     { page: 'goals', label: t("goals") || '目标', icon: <Target size={19} /> },
     { page: 'reflections', label: t("insights") || '感悟', icon: <Lightbulb size={19} /> },
   ];
@@ -127,7 +127,7 @@ export const BottomSidebar = () => {
       </aside>
 
       <nav className="fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-2 shadow-md lg:hidden">
-        <ul className="grid grid-cols-6 gap-1">
+        <ul className="grid grid-cols-5 gap-1">
           {navItems.map((item) => {
             const isActive = currentPage === item.page;
             return (
@@ -157,17 +157,6 @@ export const BottomSidebar = () => {
               aria-label={t("settings") || "设置"}
             >
               <Settings size={19} />
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              onClick={handleLogoutClick}
-              className="flex h-11 w-full items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
-              title={t("logout") || "退出登录"}
-              aria-label={t("logout") || "退出登录"}
-            >
-              <LogOut size={19} />
             </button>
           </li>
         </ul>

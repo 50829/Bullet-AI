@@ -2,9 +2,9 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
 import { Card } from "../components/ui/Card";
-import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, Edit2 } from "lucide-react";
 import { MomentModal } from "../components/MomentModal";
-import { AIChatPanel } from "../components/AIChatPanel";
+import { AssistantDrawer } from "../components/AssistantDrawer";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
 import { useTopBar } from '../components/layout/TopBar';
@@ -43,6 +43,7 @@ export default function MomentsPageClient() {
   const { setTopBarHandlers } = useTopBar();
   const [monthCards, setMonthCards] = useState<MonthCard[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingMoment, setEditingMoment] = useState<Moment | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null); // 用于存储要删除的moment
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -173,7 +174,10 @@ export default function MomentsPageClient() {
     setMonthCards(groupDaysByMonth(days));
   }, [groupDaysByMonth, groupMomentsByDate, moments]);
 
-  const handleAddMoment = () => setIsModalOpen(true);
+  const handleAddMoment = () => {
+    setEditingMoment(null);
+    setIsModalOpen(true);
+  };
 
   // 注册 TopBar 回调
   useEffect(() => {
@@ -183,7 +187,10 @@ export default function MomentsPageClient() {
       showAIPanel,
     });
   }, [setTopBarHandlers, showAIPanel]);
-  const handleModalClose = () => setIsModalOpen(false);
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setEditingMoment(null);
+  };
   const handleModalSuccess = () => {
     setIsModalOpen(false);
   };
@@ -214,9 +221,11 @@ export default function MomentsPageClient() {
     <div className="min-h-screen flex flex-col">
 
       {/* AI对话面板 */}
-      <AIChatPanel
+      <AssistantDrawer
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
+        title={t("aiMomentAssistant") || "AI 时刻助手"}
+        placeholder={t("aiInputPlaceholder") || "输入你的想法..."}
         greeting={t("aiMomentAssistantGreeting") || "你好！我是你的AI时刻助手，专注于和你聊生活相关的话题。让我们一起分享生活中的美好瞬间吧！🌟"}
         systemPrompt={
           language === "en"
@@ -313,24 +322,38 @@ export default function MomentsPageClient() {
                                             key={moment.id} 
                                             className="flex flex-col gap-3 group/item relative"
                                           >
-                                            {/* 删除按钮 - 只在hover时显示，右侧居中 */}
-                                            <button
-                                              type="button"
-                                              className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
-                                              title={t("delete") || "删除"}
-                                              aria-label={t("delete") || "删除"}
-                                              onClick={(e) => { 
-                                                e.stopPropagation();
-                                                setSelectedMoment(moment); 
-                                                setShowConfirm(true); 
-                                              }}
-                                            >
-                                              <Trash2 size={18} />
-                                            </button>
+                                            <div className="absolute right-0 top-0 z-10 flex items-center gap-1">
+                                              <button
+                                                type="button"
+                                                className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
+                                                title={t("edit") || "编辑"}
+                                                aria-label={t("edit") || "编辑"}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setEditingMoment(moment);
+                                                  setIsModalOpen(true);
+                                                }}
+                                              >
+                                                <Edit2 size={18} />
+                                              </button>
+                                              <button
+                                                type="button"
+                                                className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
+                                                title={t("delete") || "删除"}
+                                                aria-label={t("delete") || "删除"}
+                                                onClick={(e) => { 
+                                                  e.stopPropagation();
+                                                  setSelectedMoment(moment); 
+                                                  setShowConfirm(true); 
+                                                }}
+                                              >
+                                                <Trash2 size={18} />
+                                              </button>
+                                            </div>
                                             
                                             {/* 文字内容 */}
                                             {moment.content && (
-                                              <div className="min-w-0 pr-8">
+                                              <div className="min-w-0 pr-20">
                                                 <p className="text-lg text-[var(--color-text-primary)] whitespace-pre-line">
                                                   {moment.content}
                                                 </p>
@@ -369,7 +392,12 @@ export default function MomentsPageClient() {
         </div>
       </div>
 
-      <MomentModal isOpen={isModalOpen} onClose={handleModalClose} onSuccess={handleModalSuccess} />
+      <MomentModal
+        isOpen={isModalOpen}
+        initialMoment={editingMoment}
+        onClose={handleModalClose}
+        onSuccess={handleModalSuccess}
+      />
 
       <ConfirmDialog
         isOpen={showConfirm && Boolean(selectedMoment)}

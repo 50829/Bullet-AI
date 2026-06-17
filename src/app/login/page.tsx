@@ -137,12 +137,12 @@ export default function LoginPage() {
         </form>
 
         <p className="text-sm">
-          <a href="/register" className="text-[#B8860B] hover:underline">
+          <a href="/register" className="text-[var(--color-primary)] hover:underline">
             {t("registerTip")}
           </a>
         </p>
 
-        {message && <p className="text-sm text-[#B8860B] mt-4">{message}</p>}
+        {message && <p className="mt-4 text-sm text-[var(--color-primary)]">{message}</p>}
       </div>
     </main>
   );

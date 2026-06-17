@@ -70,9 +70,14 @@ async function applyOutboxItem(item: OutboxItem) {
     item,
     sanitizePayload(item.payload) as Record<string, unknown>,
   );
+  const clientId =
+    typeof payload.client_id === "string" && payload.client_id ? payload.client_id : null;
 
   if (item.operation === "delete") {
-    const { error } = await table.delete().eq("id", item.entityId).eq("user_id", item.userId);
+    const query = table.delete().eq("user_id", item.userId);
+    const { error } = clientId
+      ? await query.eq("client_id", clientId)
+      : await query.eq("id", item.entityId);
     if (error) throw new Error(error.message);
     await removeEntity(item.userId, item.collection, item.entityId);
     return;
@@ -82,16 +87,21 @@ async function applyOutboxItem(item: OutboxItem) {
     const updates = { ...payload };
     delete updates.id;
     delete updates.user_id;
-    const { error } = await table.update(updates).eq("id", item.entityId).eq("user_id", item.userId);
+    const query = table.update(updates).eq("user_id", item.userId);
+    const { error } = clientId
+      ? await query.eq("client_id", clientId)
+      : await query.eq("id", item.entityId);
     if (error) throw new Error(error.message);
   } else {
-    const { error } = await table.upsert(payload, { onConflict: "id" });
+    const insertPayload = { ...payload };
+    if (clientId) delete insertPayload.id;
+    const { error } = await table.upsert(insertPayload, { onConflict: clientId ? "client_id" : "id" });
     if (error && !isDuplicateSuccess(error)) throw new Error(error.message);
   }
 
   const currentEntity = await readEntity(item.userId, item.collection, item.entityId);
   if (currentEntity) {
-    await upsertEntity(item.userId, item.collection, currentEntity.data, {
+    await upsertEntity(item.userId, item.collection, { ...(currentEntity.data as object), ...payload }, {
       pending: false,
       failed: false,
       deleted: false,

@@ -1,176 +1,169 @@
-// src/components/ReflectionModal.tsx
 "use client";
-import React, { useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
+
+import React, { useEffect, useState } from "react";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
-import { useLanguage } from '../context/LanguageContext'; // 添加语言Hook
+import { useLanguage } from "../context/LanguageContext";
+import { useAppContext } from "../../context/AppContext";
 import { useToast } from "./ui/Toast";
-import { PlainImage } from "./ui/PlainImage";
 
-type Props = { isOpen: boolean; onClose: () => void; onSuccess: () => void; };
+type ReflectionDraft = {
+  id: number;
+  content: string;
+  title?: string | null;
+  body?: string | null;
+  created_at: string;
+};
 
-export const ReflectionModal = ({ isOpen, onClose, onSuccess }: Props) => {
-  const { t } = useLanguage(); // 获取翻译函数
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  initialReflection?: ReflectionDraft | null;
+};
+
+export function parseReflectionContent(reflection: Pick<ReflectionDraft, "content" | "title" | "body">) {
+  if (reflection.title || reflection.body) {
+    return {
+      title: reflection.title ?? "",
+      body: reflection.body ?? reflection.content,
+    };
+  }
+
+  const parts = reflection.content.split("\n\n");
+  const hasTitle = parts.length > 1 && parts[0].trim().length > 0 && parts[0].trim().length <= 100;
+
+  return {
+    title: hasTitle ? parts[0].trim() : "",
+    body: hasTitle ? parts.slice(1).join("\n\n") : reflection.content,
+  };
+}
+
+export const ReflectionModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialReflection = null,
+}: Props) => {
+  const { t } = useLanguage();
+  const { addReflection, updateReflection } = useAppContext();
   const { showToast } = useToast();
-  const [content, setContent] = useState("");
-  const [source, setSource] = useState("");
-  const [sourceType, setSourceType] = useState("");
-  const [location, setLocation] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const isEditing = Boolean(initialReflection);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const parsed = initialReflection
+      ? parseReflectionContent(initialReflection)
+      : { title: "", body: "" };
+    setTitle(parsed.title);
+    setBody(parsed.body);
+  }, [initialReflection, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleUpload = async () => {
-    if (!imageFile) return null;
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData?.user;
-    if (!user) { 
-      showToast({ type: "error", message: t("pleaseLogin") || "请先登录再上传图片" }); 
-      return null; 
-    }
+  const reset = () => {
+    setTitle("");
+    setBody("");
+  };
 
-    const ext = (imageFile.name.split(".").pop() || "jpg").replace(/\?.*$/,'');
-    const safeFileName = `${Date.now()}.${ext}`;
-    const filePath = `${user.id}/${safeFileName}`;
-
-    const { error: uploadError } = await supabase.storage.from("reflections").upload(filePath, imageFile, { upsert: false });
-    if (uploadError) { 
-      console.error("图片上传失败:", uploadError); 
-      showToast({ type: "error", message: t("imageUploadFailed") || "图片上传失败" }); 
-      return null; 
-    }
-
-    const { data: signedData, error: signedError } = await supabase.storage.from("reflections").createSignedUrl(filePath, 60 * 60);
-    if (!signedError && signedData) setPreviewUrl(signedData.signedUrl as string);
-
-    return { path: filePath };
+  const handleClose = () => {
+    reset();
+    onClose();
   };
 
   const handleSubmit = async () => {
-    if (!content.trim()) { 
-      showToast({ type: "error", message: t("pleaseEnterContent") || "请填写感悟内容" }); 
-      return; 
+    if (!title.trim()) {
+      showToast({ type: "error", message: t("pleaseEnterTitle") || "请填写标题" });
+      return;
     }
-    setLoading(true);
 
+    if (!body.trim()) {
+      showToast({ type: "error", message: t("pleaseEnterContent") || "请填写感悟内容" });
+      return;
+    }
+
+    const nextTitle = title.trim();
+    const nextBody = body.trim();
+    const content = `${nextTitle}\n\n${nextBody}`;
+
+    setSaving(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData?.user;
-      if (!user) { 
-        showToast({ type: "error", message: t("pleaseLogin") || "请先登录！" }); 
-        setLoading(false); 
-        return; 
+      if (isEditing && initialReflection) {
+        await updateReflection(initialReflection.id, {
+          title: nextTitle,
+          body: nextBody,
+          content,
+        });
+        showToast({ type: "success", message: t("operationSuccess") || "更新成功" });
+      } else {
+        addReflection({
+          id: Date.now(),
+          title: nextTitle,
+          body: nextBody,
+          content,
+          created_at: new Date().toISOString(),
+          source: null,
+          source_type: null,
+          location: null,
+          image_url: null,
+          image_path: null,
+        });
+        showToast({ type: "success", message: t("savedLocally") || "已在本地保存" });
       }
-
-      let imagePath: string | null = null;
-      if (imageFile) {
-        const uploaded = await handleUpload();
-        imagePath = uploaded?.path ?? null;
-      }
-
-      const { error } = await supabase.from("reflections").insert({
-        user_id: user.id,
-        content,
-        source,
-        source_type: sourceType,
-        location,
-        image_path: imagePath,
+      handleClose();
+      onSuccess();
+    } catch (error) {
+      showToast({
+        type: "error",
+        message: error instanceof Error ? error.message : t("saveFailed") || "保存失败",
       });
-
-      setLoading(false);
-      if (error) { 
-        console.error("写入 reflections 失败:", error); 
-        showToast({ type: "error", message: t("publishFailed") || "发布失败，请重试" }); 
-      }
-      else { 
-        onSuccess(); 
-        onClose(); 
-        setContent(""); 
-        setSource(""); 
-        setSourceType(""); 
-        setLocation(""); 
-        setImageFile(null); 
-        setPreviewUrl(null); 
-        showToast({ type: "success", message: t("addSuccess") || "成功添加" });
-      }
-    } catch (err) {
-      console.error("提交错误:", err);
-      showToast({ type: "error", message: t("publishFailed") || "发布异常，请稍后重试" });
-      setLoading(false);
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="w-full max-w-xl rounded-2xl bg-[var(--color-bg-surface)] p-6 shadow-xl">
-        <h2 className="text-2xl font-bold mb-4">{t("newReflection") || "记录新感悟"}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-xl rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-6 shadow-xl">
+        <h2 className="mb-4 text-2xl font-bold text-[var(--color-text-primary)]">
+          {isEditing ? t("editReflection") || "编辑感悟" : t("newReflection") || "记录新感悟"}
+        </h2>
 
-        <label className="block text-sm text-gray-600 mb-1">{t("content") || "内容 *"}</label>
-        <Textarea 
-          placeholder={t("recordThoughts") || "记录你的思考和感悟..."} 
-          value={content} 
-          onChange={(e) => setContent(e.target.value)} 
-          className="min-h-[120px] h-auto"
+        <label className="block text-sm text-[var(--color-text-secondary)]">
+          {t("title") || "标题"} *
+        </label>
+        <Input
+          className="mt-1"
+          placeholder={t("enterTitle") || "输入标题（必填）"}
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          maxLength={100}
         />
 
-        <label className="block text-sm text-gray-600 mt-4 mb-1">{t("inspirationSource") || "灵感来源"}</label>
-        <Input 
-          placeholder={t("inspirationSourcePlaceholder") || "是什么触发了这个想法？"} 
-          value={source} 
-          onChange={(e) => setSource(e.target.value)} 
+        <label className="mt-4 block text-sm text-[var(--color-text-secondary)]">
+          {t("content") || "内容"} *
+        </label>
+        <Textarea
+          className="mt-1 min-h-[180px]"
+          placeholder={t("recordThoughts") || "记录你的思考和感悟..."}
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
         />
 
-        <div className="mt-3">
-          <label className="block text-sm text-gray-600 mb-1">{t("uploadMedia") || "上传图片/视频"}</label>
-          <input 
-            type="file" 
-            accept="image/*" 
-            onChange={(e) => { 
-              setImageFile(e.target.files?.[0] || null); 
-              setPreviewUrl(null); 
-            }} 
-            className="block w-full border border-dashed rounded-3xl p-3 text-sm text-gray-500" 
-          />
-          {previewUrl && <PlainImage src={previewUrl} alt="preview" className="mt-3 w-48 h-48 object-cover rounded" />}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">{t("eventType") || "事件类型"}</label>
-            <Input 
-              placeholder={t("eventPlaceholder") || "例如：读书、电影、思考..."} 
-              value={sourceType} 
-              onChange={(e) => setSourceType(e.target.value)} 
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">{t("location") || "地点"}</label>
-            <Input 
-              placeholder={t("locationPlaceholder") || "在哪里获得的灵感？"} 
-              value={location} 
-              onChange={(e) => setLocation(e.target.value)} 
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end mt-6 space-x-3">
-          <Button 
-            variant="secondary" 
-            onClick={onClose} 
-            className="min-w-[60px] h-10"
-          >
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="secondary" onClick={handleClose} disabled={saving}>
             {t("cancel") || "取消"}
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            className={`min-w-[60px] h-10 ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-          >
-            {loading ? t("saving") || "记录中..." : t("save") || "记录"}
+          <Button onClick={handleSubmit} disabled={saving || !title.trim() || !body.trim()}>
+            {saving
+              ? t("saving") || "保存中..."
+              : isEditing
+                ? t("update") || "更新"
+                : t("save") || "保存"}
           </Button>
         </div>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Check, Languages, Moon, Palette, Sun, Monitor, User, X } from "lucide-react";
+import { Check, Download, Languages, Moon, Palette, RefreshCw, Sun, Monitor, User, X } from "lucide-react";
 import { useLanguage, type Language } from "../../context/LanguageContext";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -20,6 +20,8 @@ import {
   type ColorScheme,
   type UserPreferences,
 } from "../../../lib/profile/preferences";
+import { useAppContext } from "../../../context/AppContext";
+import { useHabits } from "../../../features/habits/hooks/useHabits";
 
 type SettingsPanelProps = {
   onClose: () => void;
@@ -27,7 +29,7 @@ type SettingsPanelProps = {
   onProfileUpdate?: (profile: UserProfile) => void;
 };
 
-type SettingsSection = "user" | "appearance" | "language";
+type SettingsSection = "user" | "appearance" | "language" | "data";
 type FormMessage = { type: "success" | "error" | "info"; text: string } | null;
 
 const ACCENT_OPTIONS: Array<{
@@ -86,6 +88,8 @@ export default function SettingsPanel({
   onProfileUpdate,
 }: SettingsPanelProps) {
   const { t, language, setLanguage } = useLanguage();
+  const { syncStatus, retrySync, exportData } = useAppContext();
+  const { habits } = useHabits();
   const { showToast } = useToast();
   const [activeSection, setActiveSection] = useState<SettingsSection>("user");
   const [username, setUsername] = useState("");
@@ -248,6 +252,23 @@ export default function SettingsPanel({
     void savePreferences({ color_scheme: colorScheme }, "color_scheme");
   };
 
+  const handleExport = () => {
+    const base = JSON.parse(exportData()) as Record<string, unknown>;
+    const payload = {
+      ...base,
+      habits,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `bullet-ai-export-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   const sectionButton = (section: SettingsSection, Icon: typeof User, label: string) => {
     const isActive = activeSection === section;
     return (
@@ -300,10 +321,11 @@ export default function SettingsPanel({
 
           <div className="flex min-h-0 flex-1 flex-col md:flex-row">
             <aside className="border-b border-[var(--color-border-muted)] p-3 md:w-64 md:border-b-0 md:border-r">
-              <nav className="grid grid-cols-3 gap-2 md:grid-cols-1">
+              <nav className="grid grid-cols-4 gap-2 md:grid-cols-1">
                 {sectionButton("user", User, t("user"))}
                 {sectionButton("appearance", Palette, t("appearance"))}
                 {sectionButton("language", Languages, language === "en" ? "Language" : "语言")}
+                {sectionButton("data", Download, language === "en" ? "Data" : "数据")}
               </nav>
             </aside>
 
@@ -524,6 +546,67 @@ export default function SettingsPanel({
                         </button>
                       );
                     })}
+                  </div>
+                </section>
+              )}
+
+              {activeSection === "data" && (
+                <section className="max-w-2xl">
+                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                    {language === "en" ? "Data and sync" : "数据与同步"}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
+                    {language === "en"
+                      ? "BulletAI saves changes locally first, then syncs in the background."
+                      : "BulletAI 会先把更改保存在本地，再在后台同步到云端。"}
+                  </p>
+
+                  <div className="mt-5 rounded-xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                          {language === "en" ? "Sync status" : "同步状态"}
+                        </p>
+                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                          {syncStatus === "failed"
+                            ? language === "en"
+                              ? "Some changes need retry."
+                              : "有些更改需要重试同步。"
+                            : syncStatus === "syncing"
+                              ? language === "en"
+                                ? "Syncing quietly in the background."
+                                : "正在后台同步。"
+                              : language === "en"
+                                ? "Local data is ready."
+                                : "本地数据已可用。"}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          syncStatus === "failed"
+                            ? "bg-red-50 text-red-700"
+                            : syncStatus === "syncing"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
+                        }`}
+                      >
+                        {syncStatus === "failed"
+                          ? t("syncFailed") || "同步失败"
+                          : syncStatus === "syncing"
+                            ? t("syncing") || "同步中"
+                            : t("synced") || "已保存"}
+                      </span>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Button variant="outline" onClick={() => void retrySync()}>
+                        <RefreshCw size={16} />
+                        {t("retry") || "重试"}
+                      </Button>
+                      <Button variant="secondary" onClick={handleExport}>
+                        <Download size={16} />
+                        {language === "en" ? "Export JSON" : "导出 JSON"}
+                      </Button>
+                    </div>
                   </div>
                 </section>
               )}

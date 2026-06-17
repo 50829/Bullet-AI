@@ -50,7 +50,7 @@ export default function ContactPage() {
           {contacts.map((contact, index) => (
             <div
               key={index}
-              className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 rounded-3xl shadow-lg p-8 hover:-translate-y-1 hover:shadow-xl transition-all duration-500"
+              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm transition-shadow duration-200 hover:shadow-md"
             >
               {/* 头像区域 */}
               <div className="flex justify-center mb-6">
@@ -61,7 +61,7 @@ export default function ContactPage() {
                     className="w-24 h-24 rounded-full object-cover border-4 border-orange-200"
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-200 to-orange-200 flex items-center justify-center border-4 border-orange-200">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
                     <User className="w-12 h-12 text-gray-600" />
                   </div>
                 )}
