@@ -51,10 +51,12 @@ db/migrations/000_current_schema.sql
 这个脚本会：
 
 - 创建 `habit_checkins` 历史打卡表。
+- 创建 `ai_usage_events`，用于限制登录用户的 AI 调用频率。
 - 为同一用户、同一习惯、同一日期添加唯一约束。
+- 为目标补齐颜色和手动排序字段。
 - 启用 RLS，限制用户只能读写自己的打卡记录。
 - 将旧 `habits.last_checkin` 最近一次打卡兼容迁移为一条历史记录。
-- 将语言、强调色、浅色/深色/跟随系统等偏好保存到 `profiles`。
+- 将语言、强调色、浅色/深色/跟随系统、完成目标保留策略等偏好保存到 `profiles`。
 - 刷新 Supabase/PostgREST schema cache。
 
 ## 验证命令

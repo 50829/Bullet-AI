@@ -4,6 +4,12 @@ import {
   removePlanFromReply,
   toFrontendPlan,
 } from "../../../lib/ai/planParser";
+import {
+  AI_RATE_LIMIT_WINDOW_MS,
+  getAiRateLimitPerHour,
+  validateAiMessages,
+} from "../../../lib/ai/requestPolicy";
+import { createClient } from "../../../lib/supabase/server";
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -12,15 +18,63 @@ interface ChatMessage {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
+
+    const body = await req.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
     const { messages: userMessages, language, systemPrompt } = body as {
-      messages: ChatMessage[];
+      messages: unknown;
       language?: string;
       systemPrompt?: string;
     };
+    const validation = validateAiMessages(userMessages);
+
+    if ("error" in validation) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    if (typeof systemPrompt === "string" && systemPrompt.length > 6000) {
+      return NextResponse.json({ error: "systemPrompt is too long" }, { status: 400 });
+    }
+
+    const windowStart = new Date(Date.now() - AI_RATE_LIMIT_WINDOW_MS).toISOString();
+    const { count, error: countError } = await supabase
+      .from("ai_usage_events")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", windowStart);
+
+    if (countError) {
+      console.error("[AI Route] 限流计数失败:", countError);
+      return NextResponse.json({ error: "AI rate limit unavailable" }, { status: 500 });
+    }
+
+    if ((count ?? 0) >= getAiRateLimitPerHour()) {
+      return NextResponse.json({ error: "请求过于频繁，请稍后再试" }, { status: 429 });
+    }
+
+    const { error: usageError } = await supabase.from("ai_usage_events").insert({
+      user_id: user.id,
+    });
+
+    if (usageError) {
+      console.error("[AI Route] 限流记录写入失败:", usageError);
+      return NextResponse.json({ error: "AI rate limit unavailable" }, { status: 500 });
+    }
 
     const apiKey = process.env.LLM_API_KEY;
-    const model = process.env.LLM_MODEL || "doubao-seed-1-6-flash-250715";
+    const model = process.env.LLM_MODEL;
     let baseUrl = process.env.LLM_BASE_URL;
 
     if (!apiKey) {
@@ -59,7 +113,7 @@ export async function POST(req: Request) {
       content: systemPrompt || defaultSystemPrompt,
     };
 
-    const messages: ChatMessage[] = [system, ...userMessages];
+    const messages: ChatMessage[] = [system, ...validation.messages];
 
     const resp = await fetch(endpoint, {
       method: "POST",

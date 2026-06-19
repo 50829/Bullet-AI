@@ -58,14 +58,15 @@ db/migrations/000_current_schema.sql
 
 这个文件会创建缺失表、修补旧表字段、配置 RLS、创建 Storage buckets 和 policies，并在最后执行 `notify pgrst, 'reload schema';` 刷新 Supabase PostgREST schema cache。
 
-`001` 到 `004` 是历史增量迁移，保留给版本追踪；你手动配置数据库时不要逐个运行它们，直接复制并运行 `000_current_schema.sql` 这一个文件。
+`001_goal_color_and_sort_order.sql` 是历史增量迁移，相关字段已经合入 `000_current_schema.sql`；你手动配置数据库时直接复制并运行 `000_current_schema.sql` 这一个文件即可。
 
 说明：
 
 - cookie 只用于 Supabase auth session，不存主题、语言或业务数据。
-- 语言、外观、强调色和颜色模式保存在 `profiles.preferred_language/ui_theme/accent_color/color_scheme`，前端会先读 localStorage，再用云端偏好校准。
+- 语言、外观、强调色、颜色模式和完成目标保留策略保存在 `profiles.preferred_language/ui_theme/accent_color/color_scheme/completed_goal_retention`，前端会先读 localStorage，再用云端偏好校准。
 - 显示名冷却使用 `username_updated_at`，不要用通用 `updated_at` 判断，因为偏好保存也会更新 profiles 行。
 - 习惯打卡历史表 `habit_checkins`、唯一约束、RLS、旧 `habits.last_checkin` 兼容迁移都已经包含在 `000_current_schema.sql` 里。
+- AI 调用频率记录表 `ai_usage_events` 已经包含在 `000_current_schema.sql` 里，默认用于每个登录用户每小时 20 次的限流。
 
 ## 验证
 

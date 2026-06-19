@@ -111,6 +111,8 @@ type AppContextType = {
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+const signedImageUrlCache = new Map<string, { url: string; expiresAt: number }>();
+const SIGNED_IMAGE_URL_TTL_MS = 55 * 60 * 1000;
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
@@ -167,9 +169,21 @@ function visibleRemoteRows<T extends { deleted_at?: string | null }>(items: T[] 
 async function getSignedImageUrl(bucket: string, imagePath?: string | null) {
   if (!imagePath) return null;
 
+  const cacheKey = `${bucket}:${imagePath}`;
+  const cached = signedImageUrlCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+
   const result = await supabase.storage.from(bucket).createSignedUrl(imagePath, 60 * 60);
   if (result.error || !result.data) return null;
-  return result.data.signedUrl ?? null;
+  const signedUrl = result.data.signedUrl ?? null;
+  if (signedUrl) {
+    signedImageUrlCache.set(cacheKey, {
+      url: signedUrl,
+      expiresAt: Date.now() + SIGNED_IMAGE_URL_TTL_MS,
+    });
+  }
+
+  return signedUrl;
 }
 
 async function attachSignedUrls<T extends { image_path?: string | null; created_at?: string }>(
