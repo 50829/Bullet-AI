@@ -1,5 +1,6 @@
--- BulletAI migration: add identifier color + manual sort order to goals.
--- Run this in the Supabase SQL Editor after 000_current_schema.sql.
+-- Historical BulletAI migration: add identifier color + manual sort order to goals.
+-- These columns are now included in 000_current_schema.sql for fresh installs.
+-- Keep this file for older deployments that already ran a previous 000 script.
 -- Safe to run multiple times.
 
 alter table public.goals

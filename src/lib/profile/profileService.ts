@@ -45,6 +45,8 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
       ui_theme: data?.ui_theme ?? DEFAULT_USER_PREFERENCES.ui_theme,
       accent_color: data?.accent_color ?? DEFAULT_USER_PREFERENCES.accent_color,
       color_scheme: data?.color_scheme ?? DEFAULT_USER_PREFERENCES.color_scheme,
+      completed_goal_retention:
+        data?.completed_goal_retention ?? DEFAULT_USER_PREFERENCES.completed_goal_retention,
     }),
   };
 }
@@ -111,6 +113,7 @@ export async function updateCurrentUserPreferences(
       ui_theme: nextPreferences.ui_theme,
       accent_color: nextPreferences.accent_color,
       color_scheme: nextPreferences.color_scheme,
+      completed_goal_retention: nextPreferences.completed_goal_retention,
       preferences_updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" },

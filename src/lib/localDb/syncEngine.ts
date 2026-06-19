@@ -1,5 +1,11 @@
 import { supabase } from "../supabaseClient";
-import { readEntity, removeEntity, upsertEntity } from "./repository";
+import {
+  readEntity,
+  removeEntitiesByClientId,
+  removeEntity,
+  upsertEntity,
+  upsertSyncedEntity,
+} from "./repository";
 import { getOutboxItems, markOutboxItem, removeOutboxItem } from "./syncQueue";
 import type { LocalCollection, OutboxItem, SyncStatus } from "./types";
 
@@ -79,7 +85,11 @@ async function applyOutboxItem(item: OutboxItem) {
       ? await query.eq("client_id", clientId)
       : await query.eq("id", item.entityId);
     if (error) throw new Error(error.message);
-    await removeEntity(item.userId, item.collection, item.entityId);
+    if (clientId) {
+      await removeEntitiesByClientId(item.userId, item.collection, clientId);
+    } else {
+      await removeEntity(item.userId, item.collection, item.entityId);
+    }
     return;
   }
 
@@ -95,16 +105,23 @@ async function applyOutboxItem(item: OutboxItem) {
   } else {
     const insertPayload = { ...payload };
     if (clientId) delete insertPayload.id;
-    const { error } = await table.upsert(insertPayload, { onConflict: clientId ? "client_id" : "id" });
+    const { data, error } = await table
+      .upsert(insertPayload, { onConflict: clientId ? "client_id" : "id" })
+      .select("*")
+      .maybeSingle();
     if (error && !isDuplicateSuccess(error)) throw new Error(error.message);
+    if (data) {
+      await upsertSyncedEntity(item.userId, item.collection, data, {
+        localEntityId: item.entityId,
+      });
+      return;
+    }
   }
 
   const currentEntity = await readEntity(item.userId, item.collection, item.entityId);
   if (currentEntity) {
-    await upsertEntity(item.userId, item.collection, { ...(currentEntity.data as object), ...payload }, {
-      pending: false,
-      failed: false,
-      deleted: false,
+    await upsertSyncedEntity(item.userId, item.collection, payload, {
+      localEntityId: item.entityId,
     });
   }
 }
