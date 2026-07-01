@@ -275,19 +275,77 @@ create table if not exists public.habit_checkins (
 alter table public.habit_checkins
   add column if not exists user_id uuid,
   add column if not exists habit_id bigint,
+  add column if not exists client_id text,
+  add column if not exists habit_client_id text,
   add column if not exists checked_on date,
-  add column if not exists created_at timestamptz default timezone('utc'::text, now());
+  add column if not exists checked boolean default true,
+  add column if not exists created_at timestamptz default timezone('utc'::text, now()),
+  add column if not exists updated_at timestamptz default timezone('utc'::text, now()),
+  add column if not exists deleted_at timestamptz;
+
+update public.habit_checkins checkins
+set
+  client_id = coalesce(checkins.client_id, 'habit-checkin-' || checkins.id::text),
+  habit_client_id = coalesce(checkins.habit_client_id, habits.client_id),
+  checked = coalesce(checkins.checked, true),
+  updated_at = coalesce(checkins.updated_at, checkins.created_at, timezone('utc'::text, now()))
+from public.habits habits
+where checkins.habit_id = habits.id;
 
 alter table public.habit_checkins
   alter column created_at type timestamptz using created_at::timestamptz,
   alter column created_at set default timezone('utc'::text, now()),
-  alter column created_at set not null;
+  alter column created_at set not null,
+  alter column updated_at type timestamptz using updated_at::timestamptz,
+  alter column updated_at set default timezone('utc'::text, now()),
+  alter column updated_at set not null,
+  alter column client_id set not null,
+  alter column habit_client_id set not null,
+  alter column checked set default true,
+  alter column checked set not null;
 
-insert into public.habit_checkins (user_id, habit_id, checked_on, created_at)
+create or replace function public.resolve_habit_checkin_reference()
+returns trigger as $$
+begin
+  if new.habit_client_id is null and new.habit_id is not null then
+    select client_id into new.habit_client_id
+    from public.habits
+    where id = new.habit_id and user_id = new.user_id;
+  end if;
+
+  if new.habit_client_id is not null then
+    select id into new.habit_id
+    from public.habits
+    where client_id = new.habit_client_id and user_id = new.user_id;
+  end if;
+
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists resolve_habit_checkin_reference on public.habit_checkins;
+create trigger resolve_habit_checkin_reference
+  before insert or update on public.habit_checkins
+  for each row execute function public.resolve_habit_checkin_reference();
+
+insert into public.habit_checkins (
+  user_id,
+  habit_id,
+  client_id,
+  habit_client_id,
+  checked_on,
+  checked,
+  created_at,
+  updated_at
+)
 select
   user_id,
   id,
+  'habit-checkin-legacy-' || id::text || '-' || last_checkin::date::text,
+  client_id,
   last_checkin::date,
+  true,
+  coalesce(last_checkin, timezone('utc'::text, now())),
   coalesce(last_checkin, timezone('utc'::text, now()))
 from public.habits
 where last_checkin is not null
@@ -345,7 +403,7 @@ alter table public.habits
 alter table public.habit_checkins drop constraint if exists habit_checkins_user_habit_day_unique;
 alter table public.habit_checkins
   add constraint habit_checkins_user_habit_day_unique
-  unique (user_id, habit_id, checked_on);
+  unique (user_id, habit_client_id, checked_on);
 
 -- 7. Indexes
 
@@ -361,6 +419,17 @@ create index if not exists goals_user_due_date_idx on public.goals(user_id, due_
 create index if not exists goals_user_sort_order_idx on public.goals(user_id, sort_order);
 create index if not exists habits_user_id_idx on public.habits(user_id);
 create unique index if not exists habits_client_id_idx on public.habits(client_id);
+create unique index if not exists habit_checkins_client_id_idx on public.habit_checkins(client_id);
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'habit_checkins_habit_client_id_fkey'
+  ) then
+    alter table public.habit_checkins
+      add constraint habit_checkins_habit_client_id_fkey
+      foreign key (habit_client_id) references public.habits(client_id) on delete cascade;
+  end if;
+end $$;
 create index if not exists habit_checkins_user_checked_on_idx
   on public.habit_checkins(user_id, checked_on desc);
 create index if not exists habit_checkins_habit_checked_on_idx
@@ -414,6 +483,12 @@ create trigger update_goals_updated_at
 drop trigger if exists update_habits_updated_at on public.habits;
 create trigger update_habits_updated_at
   before update on public.habits
+  for each row
+  execute function public.update_updated_at_column();
+
+drop trigger if exists update_habit_checkins_updated_at on public.habit_checkins;
+create trigger update_habit_checkins_updated_at
+  before update on public.habit_checkins
   for each row
   execute function public.update_updated_at_column();
 
@@ -541,6 +616,12 @@ drop policy if exists "Users can delete own habit checkins" on public.habit_chec
 create policy "Users can delete own habit checkins"
   on public.habit_checkins for delete
   using (auth.uid() = user_id);
+
+drop policy if exists "Users can update own habit checkins" on public.habit_checkins;
+create policy "Users can update own habit checkins"
+  on public.habit_checkins for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 drop policy if exists "Users can select own AI usage events" on public.ai_usage_events;
 create policy "Users can select own AI usage events"

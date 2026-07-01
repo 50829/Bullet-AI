@@ -19,6 +19,8 @@
 - **Goals** — 日历视图目标管理 + 迁移清单
 - **Habits** — 基于 `habit_checkins` 的每日/每周习惯历史打卡追踪
 
+Moments、Reflections、Goals、Habits 和 Habit Check-ins 均采用本地优先写入：浏览器先将实体与 outbox 原子写入 IndexedDB，再由同步引擎异步提交到 Supabase。断网期间的变更会在恢复联网后自动重试。
+
 ## 技术栈
 
 - **框架**: Next.js 15.5 + React 19 + TypeScript
@@ -51,6 +53,7 @@ db/migrations/000_current_schema.sql
 这个脚本会：
 
 - 创建 `habit_checkins` 历史打卡表。
+- 为习惯打卡补齐稳定 `client_id`、`habit_client_id` 和可合并的打卡状态字段。
 - 创建 `ai_usage_events`，用于限制登录用户的 AI 调用频率。
 - 为同一用户、同一习惯、同一日期添加唯一约束。
 - 为目标补齐颜色和手动排序字段。

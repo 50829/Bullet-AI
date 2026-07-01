@@ -99,7 +99,7 @@ export const ReflectionModal = ({
           content,
         });
       } else {
-        addReflection({
+        await addReflection({
           id: Date.now(),
           title: nextTitle,
           body: nextBody,

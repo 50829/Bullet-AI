@@ -75,35 +75,37 @@ export const MomentModal = ({ isOpen, onClose, onSuccess, initialMoment = null }
       localImageUrl = URL.createObjectURL(imageFile);
     }
 
-    if (isEditing && initialMoment) {
-      updateMoment(initialMoment.id, {
-        content,
-        created_at: dateISO,
-        image_path: imageFile ? null : initialMoment.image_path ?? null,
-        image_url: localImageUrl || previewUrl || initialMoment.image_url || null,
-        local_file: imageFile,
-        local_file_name: imageFile?.name ?? null,
-      });
+    try {
+      if (isEditing && initialMoment) {
+        await updateMoment(initialMoment.id, {
+          content,
+          created_at: dateISO,
+          image_path: imageFile ? null : initialMoment.image_path ?? null,
+          image_url: localImageUrl || previewUrl || initialMoment.image_url || null,
+          local_file: imageFile,
+          local_file_name: imageFile?.name ?? null,
+        });
+      } else {
+        await addMoment({
+          id: Date.now(),
+          content,
+          image_path: null,
+          image_url: localImageUrl || previewUrl,
+          local_file: imageFile,
+          local_file_name: imageFile?.name ?? null,
+          created_at: dateISO,
+          date: dateISO.split('T')[0],
+        });
+      }
+
       handleClose();
       onSuccess();
-      return;
+    } catch (error) {
+      showToast({
+        type: "error",
+        message: error instanceof Error ? error.message : t("saveFailed") || "保存失败",
+      });
     }
-
-    const tempMoment = {
-      id: Date.now(),
-      content,
-      image_path: null,
-      image_url: localImageUrl || previewUrl,
-      local_file: imageFile,
-      local_file_name: imageFile?.name ?? null,
-      created_at: dateISO,
-      date: dateISO.split('T')[0],
-    };
-
-    addMoment(tempMoment);
-
-    handleClose();
-    onSuccess();
   };
 
   return (

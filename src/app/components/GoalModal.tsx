@@ -93,7 +93,7 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, initialGoal = null }: Pr
         return;
       }
 
-      addGoal({
+      await addGoal({
         id: Date.now(),
         title: title.trim(),
         description: description.trim(),

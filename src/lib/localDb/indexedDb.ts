@@ -93,3 +93,43 @@ export async function idbDelete(storeName: string, key: IDBValidKey): Promise<vo
   const store = await getStore(storeName, "readwrite");
   await requestToPromise(store.delete(key));
 }
+
+export async function runIdbTransaction<T>(
+  storeNames: string[],
+  mode: IDBTransactionMode,
+  operation: (stores: Record<string, IDBObjectStore>) => Promise<T>,
+): Promise<T> {
+  const db = await openLocalDb();
+  const transaction = db.transaction(storeNames, mode);
+  const stores = Object.fromEntries(
+    storeNames.map((storeName) => [storeName, transaction.objectStore(storeName)]),
+  );
+
+  const completed = new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onabort = () => reject(transaction.error ?? new Error("IndexedDB transaction aborted"));
+    transaction.onerror = () => reject(transaction.error ?? new Error("IndexedDB transaction failed"));
+  });
+
+  try {
+    const result = await operation(stores);
+    await completed;
+    return result;
+  } catch (error) {
+    try {
+      transaction.abort();
+    } catch {
+      // The transaction may already be completed or aborted.
+    }
+    try {
+      await completed;
+    } catch {
+      // Preserve the original operation error.
+    }
+    throw error;
+  }
+}
+
+export function idbRequest<T>(request: IDBRequest<T>): Promise<T> {
+  return requestToPromise(request);
+}

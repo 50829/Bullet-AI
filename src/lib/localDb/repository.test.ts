@@ -37,6 +37,36 @@ vi.mock("./indexedDb", () => ({
   idbDelete: vi.fn(async (storeName: StoreName, key: string) => {
     db.stores[storeName].delete(key);
   }),
+  idbRequest: vi.fn(async (request: Promise<unknown>) => request),
+  runIdbTransaction: vi.fn(
+    async (_storeNames: string[], _mode: string, operation: (stores: Record<string, unknown>) => Promise<unknown>) => {
+      const objectStore = (storeName: StoreName) => ({
+        get: (key: string) => Promise.resolve(db.stores[storeName].get(key)),
+        put: (value: { key?: string; id?: string }) => {
+          const key = value.key ?? value.id;
+          if (!key) return Promise.reject(new Error("Missing key"));
+          db.stores[storeName].set(key, value);
+          return Promise.resolve(key);
+        },
+        delete: (key: string) => {
+          db.stores[storeName].delete(key);
+          return Promise.resolve(undefined);
+        },
+        index: () => ({
+          getAll: (query: { value?: unknown }) => {
+            const [userId, collection, entityId] = (query.value ?? []) as string[];
+            return Promise.resolve(
+              [...db.stores[storeName].values()].filter((value) => {
+                const row = value as { userId?: string; collection?: string; entityId?: string };
+                return row.userId === userId && row.collection === collection && row.entityId === entityId;
+              }),
+            );
+          },
+        }),
+      });
+      return operation({ entities: objectStore("entities"), outbox: objectStore("outbox") });
+    },
+  ),
 }));
 
 Object.defineProperty(globalThis, "IDBKeyRange", {
@@ -104,5 +134,71 @@ describe("localDb repository client_id reconciliation", () => {
     await repository.markEntityDeleted("user-1", "goals", 999);
 
     expect(await repository.readEntities("user-1", "goals")).toEqual([]);
+  });
+
+  it("prunes synced local rows that disappeared from a complete remote snapshot", async () => {
+    await repository.upsertEntity(
+      "user-1",
+      "moments",
+      { id: 1, client_id: "deleted-remotely", content: "stale" },
+    );
+
+    await repository.cacheRemoteEntities("user-1", "moments", []);
+
+    expect(await repository.readEntities("user-1", "moments")).toEqual([]);
+  });
+
+  it("does not overwrite a newer pending mutation with an older sync response", async () => {
+    await repository.upsertEntity(
+      "user-1",
+      "goals",
+      { id: 1, client_id: "goal-client", title: "new local value" },
+      { pending: true },
+    );
+
+    await repository.upsertSyncedEntity(
+      "user-1",
+      "goals",
+      { id: 1, client_id: "goal-client", title: "old server response" },
+      { mutationUpdatedAt: "2000-01-01T00:00:00.000Z" },
+    );
+
+    expect(await repository.readEntities<{ id: number; title: string }>("user-1", "goals"))
+      .toEqual([
+        expect.objectContaining({
+          title: "new local value",
+          _local: expect.objectContaining({ pending: true }),
+        }),
+      ]);
+  });
+
+  it("atomically persists and compacts repeated local mutations", async () => {
+    await repository.commitLocalMutation({
+      userId: "user-1",
+      collection: "goals",
+      entityId: 99,
+      operation: "upsert",
+      payload: { id: 99, client_id: "goal-client", title: "first" },
+    });
+    await repository.commitLocalMutation({
+      userId: "user-1",
+      collection: "goals",
+      entityId: 99,
+      operation: "update",
+      payload: { id: 99, client_id: "goal-client", title: "latest" },
+    });
+
+    expect(db.stores.outbox.size).toBe(1);
+    expect([...db.stores.outbox.values()][0]).toMatchObject({
+      operation: "upsert",
+      payload: expect.objectContaining({ title: "latest" }),
+    });
+    expect(await repository.readEntities<{ id: number; title: string }>("user-1", "goals"))
+      .toEqual([
+        expect.objectContaining({
+          title: "latest",
+          _local: expect.objectContaining({ pending: true }),
+        }),
+      ]);
   });
 });

@@ -137,7 +137,7 @@ export default function GoalsPageClient() {
   };
 
   const addTasksFromAIReply = async (plan: GoalPlan) => {
-    [...plan.daily, ...plan.future].forEach((task) => {
+    await Promise.all([...plan.daily, ...plan.future].map((task) =>
       addGoal({
         id: Date.now() + Math.floor(Math.random() * 1000),
         title: task.title,
@@ -148,8 +148,8 @@ export default function GoalsPageClient() {
         image_url: null,
         image_path: null,
         created_at: new Date().toISOString(),
-      });
-    });
+      }),
+    ));
   };
 
   useEffect(() => {

@@ -44,6 +44,7 @@ export type OutboxItem<T = unknown> = {
   createdAt: string;
   updatedAt: string;
   error?: string;
+  attemptCount?: number;
 };
 
 export type LocalFile = {

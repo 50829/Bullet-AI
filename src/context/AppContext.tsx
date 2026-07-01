@@ -10,15 +10,8 @@ import React, {
   type ReactNode,
 } from "react";
 import { supabase } from "../lib/supabaseClient";
-import {
-  cacheRemoteEntities,
-  createClientId,
-  markEntityDeleted,
-  readEntity,
-  readEntities,
-  upsertEntity,
-} from "../lib/localDb/repository";
-import { enqueueOutbox } from "../lib/localDb/syncQueue";
+import { getLocalFirstRepository } from "../lib/localDb/localFirstRepository";
+import { createClientId } from "../lib/localDb/repository";
 import {
   flushOutbox,
   installSyncTriggers,
@@ -96,10 +89,10 @@ type AppContextType = {
   refreshMoments: () => Promise<void>;
   refreshReflections: () => Promise<void>;
   refreshGoals: () => Promise<void>;
-  addMoment: (moment: Moment) => void;
-  addReflection: (reflection: Reflection) => void;
-  addGoal: (goal: Goal) => void;
-  updateMoment: (id: number, updates: Partial<Moment>) => void;
+  addMoment: (moment: Moment) => Promise<void>;
+  addReflection: (reflection: Reflection) => Promise<void>;
+  addGoal: (goal: Goal) => Promise<void>;
+  updateMoment: (id: number, updates: Partial<Moment>) => Promise<void>;
   updateReflection: (id: number, updates: Partial<Reflection>) => Promise<void>;
   updateGoal: (id: number, updates: Partial<Goal>) => Promise<void>;
   reorderGoals: (orderedIds: number[]) => Promise<void>;
@@ -113,6 +106,18 @@ type AppContextType = {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 const signedImageUrlCache = new Map<string, { url: string; expiresAt: number }>();
 const SIGNED_IMAGE_URL_TTL_MS = 55 * 60 * 1000;
+const momentsRepository = getLocalFirstRepository<Moment>("moments");
+const reflectionsRepository = getLocalFirstRepository<Reflection>("reflections");
+const goalsRepository = getLocalFirstRepository<Goal>("goals");
+
+function repositoryFor(collection: LocalCollection) {
+  return getLocalFirstRepository<{
+    id: number | string;
+    client_id?: string | null;
+    user_id?: string;
+    [key: string]: unknown;
+  }>(collection);
+}
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
@@ -230,7 +235,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       loadingKey: keyof LoadingState,
     ) => {
       try {
-        const cached = await readEntities<T>(activeUserId, collection);
+        const cached = (await repositoryFor(collection).list(activeUserId)) as unknown as T[];
         if (cached.length > 0) {
           setItems(sortByCreatedAtDesc(cached.map(withFormattedDate) as T[]));
           setCollectionLoading(loadingKey, false);
@@ -257,8 +262,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (error) throw new Error(error.message);
 
         const remote = await attachSignedUrls("moments", visibleRemoteRows(data ?? []));
-        await cacheRemoteEntities(activeUserId, "moments", remote);
-        const merged = await readEntities<Moment>(activeUserId, "moments");
+        const merged = await momentsRepository.replaceRemote(activeUserId, remote as Moment[]);
         setMoments(sortByCreatedAtDesc(merged.map(withFormattedDate)));
       } catch (error) {
         console.error("Failed to revalidate moments:", error);
@@ -284,8 +288,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (error) throw new Error(error.message);
 
         const remote = await attachSignedUrls("reflections", visibleRemoteRows(data ?? []));
-        await cacheRemoteEntities(activeUserId, "reflections", remote);
-        const merged = await readEntities<Reflection>(activeUserId, "reflections");
+        const merged = await reflectionsRepository.replaceRemote(activeUserId, remote as Reflection[]);
         setReflections(sortByCreatedAtDesc(merged.map(withFormattedDate)));
       } catch (error) {
         console.error("Failed to revalidate reflections:", error);
@@ -311,8 +314,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (error) throw new Error(error.message);
 
         const remote = await attachSignedUrls("goals", visibleRemoteRows(data ?? []));
-        await cacheRemoteEntities(activeUserId, "goals", remote);
-        const merged = await readEntities<Goal>(activeUserId, "goals");
+        const merged = await goalsRepository.replaceRemote(activeUserId, remote as Goal[]);
         setGoals(sortByCreatedAtDesc(merged.map(withFormattedDate)));
       } catch (error) {
         console.error("Failed to revalidate goals:", error);
@@ -435,133 +437,120 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         user_id: entity.user_id ?? userId,
       };
 
-      await upsertEntity(userId, collection, payload, { pending: true });
-      await enqueueOutbox({
+      await repositoryFor(collection).mutate(
         userId,
-        collection,
-        entityId: entity.id,
+        payload as { id: number | string; client_id?: string; user_id?: string },
         operation,
-        payload,
-      });
+      );
       void flushOutbox();
     },
     [userId],
   );
 
   const addMoment = useCallback(
-    (moment: Moment) => {
+    async (moment: Moment) => {
       const nextMoment = withFormattedDate(ensureLocalFields("moments", moment, userId));
+      await queueUpdate("moments", nextMoment, "upsert");
       setMoments((current) => sortByCreatedAtDesc([nextMoment, ...current]));
-      void queueUpdate("moments", nextMoment, "upsert");
     },
     [queueUpdate, userId],
   );
 
   const addReflection = useCallback(
-    (reflection: Reflection) => {
+    async (reflection: Reflection) => {
       const nextReflection = withFormattedDate(ensureLocalFields("reflections", reflection, userId));
+      await queueUpdate("reflections", nextReflection, "upsert");
       setReflections((current) => sortByCreatedAtDesc([nextReflection, ...current]));
-      void queueUpdate("reflections", nextReflection, "upsert");
     },
     [queueUpdate, userId],
   );
 
   const addGoal = useCallback(
-    (goal: Goal) => {
+    async (goal: Goal) => {
       const nextGoal = withFormattedDate(ensureLocalFields("goals", goal, userId));
+      await queueUpdate("goals", nextGoal, "upsert");
       setGoals((current) => sortByCreatedAtDesc([nextGoal, ...current]));
-      void queueUpdate("goals", nextGoal, "upsert");
     },
     [queueUpdate, userId],
   );
 
   const updateMoment = useCallback(
-    (id: number, updates: Partial<Moment>) => {
-      setMoments((current) => {
-        const updatedAt = new Date().toISOString();
-        const next = current.map((moment) =>
-          moment.id === id ? withFormattedDate({ ...moment, ...updates, updated_at: updatedAt }) : moment,
-        );
-        const updated = next.find((moment) => moment.id === id);
-        if (updated) void queueUpdate("moments", updated, "update");
-        return sortByCreatedAtDesc(next);
+    async (id: number, updates: Partial<Moment>) => {
+      const current = moments.find((moment) => moment.id === id);
+      if (!current) return;
+      const updated = withFormattedDate({
+        ...current,
+        ...updates,
+        updated_at: new Date().toISOString(),
       });
+      await queueUpdate("moments", updated, "update");
+      setMoments((items) =>
+        sortByCreatedAtDesc(items.map((item) => (item.id === id ? updated : item))),
+      );
     },
-    [queueUpdate],
+    [moments, queueUpdate],
   );
 
   const updateReflection = useCallback(
     async (id: number, updates: Partial<Reflection>) => {
-      setReflections((current) => {
-        const updatedAt = new Date().toISOString();
-        const next = current.map((reflection) =>
-          reflection.id === id ? withFormattedDate({ ...reflection, ...updates, updated_at: updatedAt }) : reflection,
-        );
-        const updated = next.find((reflection) => reflection.id === id);
-        if (updated) void queueUpdate("reflections", updated, "update");
-        return sortByCreatedAtDesc(next);
+      const current = reflections.find((reflection) => reflection.id === id);
+      if (!current) return;
+      const updated = withFormattedDate({
+        ...current,
+        ...updates,
+        updated_at: new Date().toISOString(),
       });
+      await queueUpdate("reflections", updated, "update");
+      setReflections((items) =>
+        sortByCreatedAtDesc(items.map((item) => (item.id === id ? updated : item))),
+      );
     },
-    [queueUpdate],
+    [queueUpdate, reflections],
   );
 
   const updateGoal = useCallback(
     async (id: number, updates: Partial<Goal>) => {
-      setGoals((current) => {
-        const updatedAt = new Date().toISOString();
-        const next = current.map((goal) =>
-          goal.id === id ? withFormattedDate({ ...goal, ...updates, updated_at: updatedAt }) : goal,
-        );
-        const updated = next.find((goal) => goal.id === id);
-        if (updated) void queueUpdate("goals", updated, "update");
-        return sortByCreatedAtDesc(next);
+      const current = goals.find((goal) => goal.id === id);
+      if (!current) return;
+      const updated = withFormattedDate({
+        ...current,
+        ...updates,
+        updated_at: new Date().toISOString(),
       });
+      await queueUpdate("goals", updated, "update");
+      setGoals((items) =>
+        sortByCreatedAtDesc(items.map((item) => (item.id === id ? updated : item))),
+      );
     },
-    [queueUpdate],
+    [goals, queueUpdate],
   );
 
   const reorderGoals = useCallback(
     async (orderedIds: number[]) => {
       const orderMap = new Map(orderedIds.map((id, index) => [id, index]));
-      setGoals((current) => {
-        const updatedAt = new Date().toISOString();
-        const next = current.map((goal) =>
-          orderMap.has(goal.id)
-            ? withFormattedDate({ ...goal, sort_order: orderMap.get(goal.id)!, updated_at: updatedAt })
-            : goal,
-        );
-        orderedIds.forEach((id) => {
-          const updated = next.find((goal) => goal.id === id);
-          if (updated) void queueUpdate("goals", updated, "update");
-        });
-        return sortByCreatedAtDesc(next);
-      });
+      const updatedAt = new Date().toISOString();
+      const next = goals.map((goal) =>
+        orderMap.has(goal.id)
+          ? withFormattedDate({ ...goal, sort_order: orderMap.get(goal.id)!, updated_at: updatedAt })
+          : goal,
+      );
+      await Promise.all(
+        next
+          .filter((goal) => orderMap.has(goal.id))
+          .map((goal) => queueUpdate("goals", goal, "update")),
+      );
+      setGoals(sortByCreatedAtDesc(next));
     },
-    [queueUpdate],
+    [goals, queueUpdate],
   );
 
   const queueDelete = useCallback(
-    async (collection: LocalCollection, id: number, imagePath?: string | null) => {
+    async (collection: LocalCollection, id: number, _imagePath?: string | null) => {
       if (!userId) return;
-
-      const deletedAt = new Date().toISOString();
-      const existing = await readEntity<Record<string, unknown>>(userId, collection, id);
-      const clientId =
-        typeof existing?.data?.client_id === "string" ? existing.data.client_id : undefined;
-      await markEntityDeleted(userId, collection, id);
-      await enqueueOutbox({
-        userId,
-        collection,
-        entityId: id,
-        operation: "delete",
-        payload: {
-          id,
-          client_id: clientId,
-          user_id: userId,
-          image_path: imagePath ?? null,
-          deleted_at: deletedAt,
-        },
-      });
+      void _imagePath;
+      const repository = repositoryFor(collection);
+      const existing = (await repository.list(userId)).find((entity) => entity.id === id);
+      await repository.remove(userId, existing ?? { id, user_id: userId });
       void flushOutbox();
     },
     [userId],
@@ -569,24 +558,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteMoment = useCallback(
     async (id: number, imagePath?: string | null) => {
-      setMoments((current) => current.filter((moment) => moment.id !== id));
       await queueDelete("moments", id, imagePath);
+      setMoments((current) => current.filter((moment) => moment.id !== id));
     },
     [queueDelete],
   );
 
   const deleteReflection = useCallback(
     async (id: number, imagePath?: string | null) => {
-      setReflections((current) => current.filter((reflection) => reflection.id !== id));
       await queueDelete("reflections", id, imagePath);
+      setReflections((current) => current.filter((reflection) => reflection.id !== id));
     },
     [queueDelete],
   );
 
   const deleteGoal = useCallback(
     async (id: number, imagePath?: string | null) => {
-      setGoals((current) => current.filter((goal) => goal.id !== id));
       await queueDelete("goals", id, imagePath);
+      setGoals((current) => current.filter((goal) => goal.id !== id));
     },
     [queueDelete],
   );

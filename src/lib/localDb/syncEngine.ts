@@ -6,12 +6,13 @@ import {
   upsertEntity,
   upsertSyncedEntity,
 } from "./repository";
-import { getOutboxItems, markOutboxItem, removeOutboxItem } from "./syncQueue";
+import { getOutboxItems, markOutboxItem, recoverStaleOutboxItems, removeOutboxItem } from "./syncQueue";
 import type { LocalCollection, OutboxItem, SyncStatus } from "./types";
 
 const TRANSIENT_STATUS = new Set(["pending", "failed"]);
 
 let currentStatus: SyncStatus = "idle";
+let activeFlush: Promise<void> | null = null;
 const listeners = new Set<(status: SyncStatus) => void>();
 
 export function getSyncStatus() {
@@ -113,6 +114,7 @@ async function applyOutboxItem(item: OutboxItem) {
     if (data) {
       await upsertSyncedEntity(item.userId, item.collection, data, {
         localEntityId: item.entityId,
+        mutationUpdatedAt: item.updatedAt,
       });
       return;
     }
@@ -122,11 +124,13 @@ async function applyOutboxItem(item: OutboxItem) {
   if (currentEntity) {
     await upsertSyncedEntity(item.userId, item.collection, payload, {
       localEntityId: item.entityId,
+      mutationUpdatedAt: item.updatedAt,
     });
   }
 }
 
-export async function flushOutbox() {
+async function performFlush() {
+  await recoverStaleOutboxItems();
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -161,7 +165,7 @@ export async function flushOutbox() {
       );
 
       const currentEntity = await readEntity(item.userId, item.collection, item.entityId);
-      if (currentEntity) {
+      if (currentEntity && currentEntity.updatedAt <= item.updatedAt) {
         await upsertEntity(item.userId, item.collection, currentEntity.data, {
           pending: false,
           failed: true,
@@ -174,11 +178,34 @@ export async function flushOutbox() {
   setSyncStatus(failed ? "failed" : "idle");
 }
 
+async function flushWithCrossTabLock() {
+  if (typeof navigator !== "undefined" && navigator.locks) {
+    await navigator.locks.request(
+      "bullet-ai-outbox",
+      { ifAvailable: true },
+      async (lock) => {
+        if (lock) await performFlush();
+      },
+    );
+    return;
+  }
+
+  await performFlush();
+}
+
+export function flushOutbox() {
+  if (activeFlush) return activeFlush;
+  activeFlush = flushWithCrossTabLock().finally(() => {
+    activeFlush = null;
+  });
+  return activeFlush;
+}
+
 export function installSyncTriggers() {
   if (typeof window === "undefined") return () => undefined;
 
   const flush = () => {
-    void flushOutbox();
+    if (document.visibilityState === "visible" || navigator.onLine) void flushOutbox();
   };
 
   window.addEventListener("online", flush);
