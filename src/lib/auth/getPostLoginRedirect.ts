@@ -1,8 +1,4 @@
-import {
-  getWorkspacePathFromLegacyPage,
-  isWorkspacePath,
-  WORKSPACE_HOME_PATH,
-} from "../navigation/workspaceRoutes";
+import { isWorkspacePath, WORKSPACE_HOME_PATH } from "../navigation/workspaceRoutes";
 
 export function getPostLoginRedirect(next?: string | null) {
   if (!next || !next.startsWith("/") || next.startsWith("//")) {
@@ -10,14 +6,6 @@ export function getPostLoginRedirect(next?: string | null) {
   }
 
   const url = new URL(next, "https://bullet.local");
-
-  if (url.pathname === "/dashboard" || url.pathname === "/main") {
-    return getWorkspacePathFromLegacyPage(url.searchParams.get("page"));
-  }
-
-  if (url.pathname === "/username") {
-    return WORKSPACE_HOME_PATH;
-  }
 
   if (isWorkspacePath(url.pathname)) {
     return `${url.pathname}${url.search}`;

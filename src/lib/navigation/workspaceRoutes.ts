@@ -31,11 +31,3 @@ export function getWorkspacePageFromPathname(pathname: string): WorkspacePage {
 export function getWorkspacePath(page: WorkspacePage) {
   return WORKSPACE_ROUTES[page];
 }
-
-export function getWorkspacePathFromLegacyPage(page?: string | null) {
-  if (page === "goals" || page === "moments" || page === "reflections") {
-    return WORKSPACE_ROUTES[page];
-  }
-
-  return WORKSPACE_HOME_PATH;
-}
