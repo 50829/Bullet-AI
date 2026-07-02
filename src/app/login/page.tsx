@@ -1,8 +1,12 @@
 "use client";
+
+import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+
 import { supabase } from "../../lib/supabaseClient";
-import { useLanguage } from '../context/LanguageContext';
+import { useLanguage } from "../context/LanguageContext";
 import { getPostLoginRedirect } from "../../lib/auth/getPostLoginRedirect";
 
 export default function LoginPage() {
@@ -11,6 +15,7 @@ export default function LoginPage() {
   const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -24,13 +29,16 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setMessage(t("passwordMismatch"));
+      setMessage(t("pleaseEnterEmailAndPassword"));
       return;
     }
     setLoading(true);
     setMessage(null);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
       if (error) {
         setMessage(`登录失败：${error.message}`);
       } else {
@@ -61,11 +69,12 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center relative bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
-      <div className="w-full max-w-md rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-8 text-center shadow-sm mx-4">
+    <main className="relative flex min-h-screen items-center justify-center bg-[var(--color-bg-primary)] px-4 py-8 text-[var(--color-text-primary)]">
+      <div className="w-full max-w-md rounded-lg border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-8 text-center shadow-sm">
         <h1 className="text-3xl font-bold mb-6 text-[var(--color-text-primary)]">{t("loginTitle")}</h1>
 
         <button
+          type="button"
           onClick={() => signInWithProvider("google")}
           disabled={loading}
           className="mb-3 flex w-full items-center justify-center gap-3 rounded-lg border border-[var(--color-border-muted)] px-4 py-2.5 text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-primary)]"
@@ -77,6 +86,7 @@ export default function LoginPage() {
         </button>
 
         <button
+          type="button"
           onClick={() => signInWithProvider("github")}
           disabled={loading}
           className="mb-3 flex w-full items-center justify-center gap-3 rounded-lg border border-[var(--color-border-muted)] px-4 py-2.5 text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-primary)]"
@@ -93,43 +103,64 @@ export default function LoginPage() {
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-3 mb-6 text-left">
-          <label className="block text-sm text-[var(--color-text-primary)]">{t("emailLabel")}</label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-[var(--color-border-muted)] px-4 py-2 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-            placeholder={t("emailPlaceholder")}
-            disabled={loading}
-          />
-          <label className="block text-sm text-[var(--color-text-primary)]">{t("passwordLabel")}</label>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-[var(--color-border-muted)] px-4 py-2 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-            placeholder={t("passwordPlaceholder")}
-            disabled={loading}
-          />
+        <form onSubmit={handleLogin} className="mb-6 space-y-5 text-left">
+          <div className="space-y-2">
+            <label htmlFor="login-email" className="block text-sm text-[var(--color-text-primary)]">{t("emailLabel")}</label>
+            <input
+              id="login-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-lg border border-[var(--color-border-muted)] px-4 py-2 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+              placeholder={t("emailPlaceholder")}
+              disabled={loading}
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="login-password" className="block text-sm text-[var(--color-text-primary)]">{t("passwordLabel")}</label>
+            <div className="relative">
+              <input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-[var(--color-border-muted)] py-2 pl-4 pr-12 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                placeholder={t("passwordPlaceholder")}
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => setShowPassword((visible) => !visible)}
+                className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+                title={showPassword ? t("hidePassword") : t("showPassword")}
+                disabled={loading}
+              >
+                {showPassword ? <Eye className="size-5" /> : <EyeOff className="size-5" />}
+              </button>
+            </div>
+          </div>
           <button
             type="submit"
             disabled={loading}
-            className="mt-4 w-full rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-2.5 font-bold text-[var(--color-text-on-primary)] transition-colors duration-150 hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-2.5 font-bold text-[var(--color-text-on-primary)] transition-colors duration-150 hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? t("loggingIn") : t("login")}
           </button>
         </form>
 
         <p className="text-sm">
-          <a href="/register" className="text-[var(--color-primary)] hover:underline">
+          <Link href="/register" className="text-[var(--color-primary)] hover:underline">
             {t("registerTip")}
-          </a>
+          </Link>
         </p>
 
-        {message && <p className="mt-4 text-sm text-[var(--color-primary)]">{message}</p>}
+        {message && <p className="mt-4 text-sm text-red-500" role="alert">{message}</p>}
       </div>
     </main>
   );
