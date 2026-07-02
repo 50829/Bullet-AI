@@ -1,6 +1,9 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+
+import React, { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { buildCalendarGrid } from "../../lib/date/calendarGrid";
 import { toDateKey } from "../../lib/date/dateUtils";
 
 type Goal = {
@@ -22,47 +25,13 @@ type CalendarProps = {
 
 export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [isMobile, setIsMobile] = useState(false);
   const today = useMemo(() => new Date(), []);
   const todayKey = toDateKey(today);
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-    };
-  }, []);
-
-  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-  const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-  const firstDayOfWeek = firstDayOfMonth.getDay();
-  const daysInMonth = lastDayOfMonth.getDate();
-  
-  const days: (number | null)[] = [];
-  
-  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-    days.push(null);
-  }
-  
-  for (let i = 1; i <= daysInMonth; i++) {
-    days.push(i);
-  }
-  
-  const remainingDays = 42 - days.length;
-  for (let i = 1; i <= remainingDays; i++) {
-    days.push(null);
-  }
-
-  const getDateKeyForDay = (day: number | null) => {
-    if (day === null) return null;
-    return `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  };
+  const calendarDays = useMemo(
+    () => buildCalendarGrid(currentMonth.getFullYear(), currentMonth.getMonth()),
+    [currentMonth],
+  );
 
   const goalDotsByDate = useMemo(() => {
     const counts = new Map<string, { open: number; completed: number }>();
@@ -81,10 +50,7 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
     return counts;
   }, [goals]);
 
-  const getGoalDotsOnDate = (day: number | null) => {
-    const dateKey = getDateKeyForDay(day);
-    if (!dateKey) return [];
-
+  const getGoalDotsOnDate = (dateKey: string) => {
     const counts = goalDotsByDate.get(dateKey) ?? { open: 0, completed: 0 };
     const openDots = Math.min(counts.open, 3);
     const completedDots = Math.min(counts.completed, 3 - openDots);
@@ -95,90 +61,90 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
     ];
   };
 
-  const isToday = (day: number | null): boolean => {
-    if (day === null) return false;
-    return getDateKeyForDay(day) === todayKey;
-  };
+  const selectedDateKey = selectedDate ? toDateKey(selectedDate) : null;
 
-  const isSelected = (day: number | null): boolean => {
-    if (day === null || !selectedDate) return false;
-    return (
-      day === selectedDate.getDate() &&
-      currentMonth.getMonth() === selectedDate.getMonth() &&
-      currentMonth.getFullYear() === selectedDate.getFullYear()
-    );
-  };
-
-  const handleDayClick = (day: number | null) => {
-    if (day === null) return;
-    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+  const handleDayClick = (date: Date, isCurrentMonth: boolean) => {
+    if (!isCurrentMonth) {
+      setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+    }
     onDateSelect(date);
   };
 
   const prevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    setCurrentMonth(
+      (month) => new Date(month.getFullYear(), month.getMonth() - 1, 1),
+    );
   };
 
   const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    setCurrentMonth(
+      (month) => new Date(month.getFullYear(), month.getMonth() + 1, 1),
+    );
   };
 
   const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
   const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
 
   return (
-    <div className={`rounded-xl p-4 ${isMobile ? 'h-auto min-h-[400px]' : 'h-[520px]'} flex flex-col bg-[var(--color-panel-primary)]`}>
-      <div className="flex items-start justify-between mb-3 flex-shrink-0">
-        <div>
-          <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-[var(--color-panel-text)]`}>
-            {currentMonth.getFullYear()}年 {monthNames[currentMonth.getMonth()]}
-          </h3>
-        </div>
+    <section className="flex h-[400px] flex-col rounded-xl bg-[var(--color-panel-primary)] p-4 sm:h-[460px] lg:h-full">
+      <div className="mb-2 flex shrink-0 items-center justify-between">
+        <h3 className="text-xl font-semibold text-[var(--color-panel-text)] sm:text-2xl">
+          {currentMonth.getFullYear()}年 {monthNames[currentMonth.getMonth()]}
+        </h3>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={prevMonth}
-            className="p-2 rounded-2xl transition-colors hover:bg-black/10"
+            className="flex size-9 items-center justify-center rounded-lg text-[var(--color-panel-text)] transition-colors hover:bg-black/10 motion-reduce:transition-none"
+            aria-label="上个月"
           >
-            <ChevronLeft className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-[var(--color-panel-text)]`} />
+            <ChevronLeft className="size-5" />
           </button>
           <button
+            type="button"
             onClick={nextMonth}
-            className="p-2 rounded-2xl transition-colors hover:bg-black/10"
+            className="flex size-9 items-center justify-center rounded-lg text-[var(--color-panel-text)] transition-colors hover:bg-black/10 motion-reduce:transition-none"
+            aria-label="下个月"
           >
-            <ChevronRight className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-[var(--color-panel-text)]`} />
+            <ChevronRight className="size-5" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 mb-2 flex-shrink-0">
+      <div className="mb-1 grid shrink-0 grid-cols-7 gap-1">
         {weekDays.map((day) => (
-          <div key={day} className={`text-center ${isMobile ? 'text-sm' : 'text-lg'} font-medium text-[var(--color-panel-text)] py-1`}>
+          <div
+            key={day}
+            className="py-1 text-center text-sm font-medium text-[var(--color-panel-text)] sm:text-base"
+          >
             {day}
           </div>
         ))}
       </div>
 
-      <div className={`grid grid-cols-7 gap-1 ${isMobile ? '' : 'flex-1 min-h-0'}`}>
-        {days.map((day, index) => {
-          const goalDots = getGoalDotsOnDate(day);
-          const dayIsToday = isToday(day);
-          const selected = isSelected(day);
+      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 gap-1">
+        {calendarDays.map(({ date, dateKey, isCurrentMonth }) => {
+          const goalDots = getGoalDotsOnDate(dateKey);
+          const dayIsToday = dateKey === todayKey;
+          const selected = dateKey === selectedDateKey;
 
           return (
             <button
-              key={index}
-              onClick={() => handleDayClick(day)}
-              disabled={day === null}
+              key={dateKey}
+              type="button"
+              onClick={() => handleDayClick(date, isCurrentMonth)}
+              aria-label={`${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`}
+              aria-pressed={selected}
               className={`
-                aspect-square ${isMobile ? 'p-1' : 'p-2'} rounded-xl ${isMobile ? 'text-sm' : 'text-lg'} flex flex-col items-center justify-center gap-1
-                ${day === null ? 'cursor-default opacity-0' : 'cursor-pointer'}
-                ${selected ? 'border-2 border-[var(--color-panel-text)] bg-white/15' : 'border-2 border-transparent'}
-                ${dayIsToday && !selected ? 'bg-white/10 font-semibold' : ''}
-                ${dayIsToday && selected ? 'font-semibold' : ''}
-                ${day !== null ? 'text-[var(--color-panel-text)] hover:bg-white/10' : ''}
+                flex min-h-0 flex-col items-center justify-center gap-0.5 rounded-lg p-1 text-sm text-[var(--color-panel-text)] transition-colors sm:text-base motion-reduce:transition-none
+                ${isCurrentMonth ? "opacity-100" : "opacity-40"}
+                ${selected ? "bg-white/15 ring-2 ring-inset ring-[var(--color-panel-text)]" : "ring-2 ring-inset ring-transparent"}
+                ${dayIsToday && !selected ? "bg-white/10 font-semibold" : ""}
+                ${dayIsToday && selected ? "font-semibold" : ""}
+                hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-panel-text)]
               `}
             >
-              <span>{day}</span>
+              <span>{date.getDate()}</span>
               <span className="flex h-2 items-center justify-center gap-0.5">
                 {goalDots.map((dot, dotIndex) => (
                   <span
@@ -195,6 +161,6 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };
