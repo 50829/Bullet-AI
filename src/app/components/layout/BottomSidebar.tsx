@@ -1,21 +1,21 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { Camera, Home, Lightbulb, LogOut, Settings, Target } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../../lib/supabaseClient';
-import LogoutConfirmDialog from './LogoutConfirmDialog';
-import SettingsPanel from './SettingsPanel';
 import { getCurrentUserProfile, type UserProfile } from '../../../lib/profile/profileService';
 import { useToast } from '../ui/Toast';
 import {
-  getWorkspacePageFromPathname,
-  getWorkspacePath,
   WORKSPACE_PAGE_ORDER,
   type WorkspacePage,
 } from '../../../lib/navigation/workspaceRoutes';
+import { WorkspaceNavLink } from './WorkspaceNavLink';
+
+const LogoutConfirmDialog = dynamic(() => import('./LogoutConfirmDialog'), { ssr: false });
+const SettingsPanel = dynamic(() => import('./SettingsPanel'), { ssr: false });
 
 export const BottomSidebar = () => {
   const { t } = useLanguage();
@@ -24,8 +24,6 @@ export const BottomSidebar = () => {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const currentPage = getWorkspacePageFromPathname(usePathname());
-
   const navItems: Record<WorkspacePage, { label: string; icon: React.ReactNode }> = {
     home: { label: t("today") || 'Today', icon: <Home size={19} /> },
     goals: { label: t("goals") || '目标', icon: <Target size={19} /> },
@@ -130,21 +128,14 @@ export const BottomSidebar = () => {
         <ul className="grid grid-cols-5 gap-1">
           {WORKSPACE_PAGE_ORDER.map((page) => {
             const item = navItems[page];
-            const isActive = currentPage === page;
             return (
               <li key={page}>
-                <Link
-                  href={getWorkspacePath(page)}
-                  className={`flex h-11 w-full items-center justify-center rounded-xl transition-colors duration-150 motion-reduce:transition-none ${
-                    isActive
-                      ? 'bg-[var(--color-bg-primary)] text-[var(--color-primary)]'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)]'
-                  }`}
-                  title={item.label}
-                  aria-label={item.label}
-                >
-                  {item.icon}
-                </Link>
+                <WorkspaceNavLink
+                  page={page}
+                  icon={item.icon}
+                  label={item.label}
+                  className="w-full"
+                />
               </li>
             );
           })}

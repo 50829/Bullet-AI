@@ -29,13 +29,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const { response, user } = await updateSession(request);
+  const { response, authenticated } = await updateSession(request);
 
-  if (isProtectedPath(pathname) && !user) {
+  if (!authenticated) {
     const url = request.nextUrl.clone();
     url.pathname = LOGIN_PATH;
     url.searchParams.set("next", `${pathname}${search}`);
-    return NextResponse.redirect(url);
+    const redirect = NextResponse.redirect(url);
+    const serverTiming = response.headers.get("Server-Timing");
+    if (serverTiming) redirect.headers.set("Server-Timing", serverTiming);
+    return redirect;
   }
 
   return response;

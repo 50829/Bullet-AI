@@ -13,6 +13,7 @@ import {
   subscribeHabitViews,
   updateHabitLocal,
 } from "../services/habitRepository";
+import { shouldRefreshHabits } from "./habitRefreshPolicy";
 
 type HabitState = {
   userId: string | null;
@@ -20,16 +21,21 @@ type HabitState = {
   loading: boolean;
   saving: boolean;
   error: string | null;
+  hydrated: boolean;
+  lastRefreshedAt: number | null;
 };
 
-const listeners = new Set<() => void>();
-let state: HabitState = {
+const SERVER_SNAPSHOT: HabitState = {
   userId: null,
   habits: [],
   loading: false,
   saving: false,
   error: null,
+  hydrated: false,
+  lastRefreshedAt: null,
 };
+const listeners = new Set<() => void>();
+let state: HabitState = { ...SERVER_SNAPSHOT };
 let refreshPromise: Promise<void> | null = null;
 let refreshUserId: string | null = null;
 
@@ -51,20 +57,36 @@ function getSnapshot() {
   return state;
 }
 
-async function loadLocal(userId: string) {
-  const habits = await readHabitViews(userId);
-  if (state.userId === userId) setState({ habits, loading: false });
+function getServerSnapshot() {
+  return SERVER_SNAPSHOT;
 }
 
-async function refreshStore(userId: string, options?: { silent?: boolean }) {
+async function loadLocal(userId: string) {
+  const habits = await readHabitViews(userId);
+  if (state.userId === userId) setState({ habits, loading: false, hydrated: true });
+}
+
+async function refreshStore(
+  userId: string,
+  options?: { silent?: boolean; force?: boolean },
+) {
   if (refreshPromise && refreshUserId === userId) return refreshPromise;
+  if (!options?.force && !shouldRefreshHabits(state.lastRefreshedAt)) return;
   if (!options?.silent) setState({ loading: true, error: null });
 
   refreshUserId = userId;
   const promise = (async () => {
     try {
       const habits = await refreshHabitViews(userId);
-      if (state.userId === userId) setState({ habits, loading: false, error: null });
+      if (state.userId === userId) {
+        setState({
+          habits,
+          loading: false,
+          error: null,
+          hydrated: true,
+          lastRefreshedAt: Date.now(),
+        });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "加载习惯失败";
       if (state.userId === userId) setState({ loading: false, error: message });
@@ -81,16 +103,33 @@ async function refreshStore(userId: string, options?: { silent?: boolean }) {
 
 export function useHabits() {
   const { userId } = useAppContext();
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
     if (!userId) {
-      setState({ userId: null, habits: [], loading: false, saving: false, error: null });
+      setState({
+        userId: null,
+        habits: [],
+        loading: false,
+        saving: false,
+        error: null,
+        hydrated: false,
+        lastRefreshedAt: null,
+      });
       return;
     }
 
+    const requiresLocalLoad = state.userId !== userId || !state.hydrated;
     if (state.userId !== userId) {
-      setState({ userId, habits: [], loading: true, saving: false, error: null });
+      setState({
+        userId,
+        habits: [],
+        loading: true,
+        saving: false,
+        error: null,
+        hydrated: false,
+        lastRefreshedAt: null,
+      });
     }
     let disposed = false;
     const reload = () => {
@@ -98,7 +137,8 @@ export function useHabits() {
     };
     const unsubscribe = subscribeHabitViews(userId, reload);
 
-    void loadLocal(userId).then(() => {
+    const hydration = requiresLocalLoad ? loadLocal(userId) : Promise.resolve();
+    void hydration.then(() => {
       if (!disposed) void refreshStore(userId, { silent: true });
     });
 
@@ -129,7 +169,7 @@ export function useHabits() {
   }, [requireUser]);
 
   const refresh = useCallback(async () => {
-    await refreshStore(requireUser());
+    await refreshStore(requireUser(), { force: true });
   }, [requireUser]);
 
   const createHabit = useCallback(

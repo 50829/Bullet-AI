@@ -2,11 +2,11 @@
 
 import React, { useMemo, useState } from "react";
 import { Clock3, Edit2, Plus } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useAppContext } from "../../context/AppContext";
 import { useHabits } from "../../features/habits/hooks/useHabits";
 import type { HabitView } from "../../features/habits/types";
 import { HabitList } from "../../features/habits/components/HabitList";
-import { HabitFormDialog } from "../../features/habits/components/HabitFormDialog";
 import { GoalCard } from "../../features/goals/components/GoalCard";
 import { isGoalCompleted, shouldShowGoal, sortGoalsByCompletion, sortGoalsByOrder } from "../../features/goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
@@ -15,11 +15,29 @@ import { Card } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { EmptyState } from "./ui/EmptyState";
 import { LoadingState } from "./ui/LoadingState";
-import { ConfirmDialog } from "./ui/ConfirmDialog";
-import { MomentModal } from "./MomentModal";
-import { GoalModal } from "./GoalModal";
-import { ReflectionModal, parseReflectionContent } from "./ReflectionModal";
 import { useToast } from "./ui/Toast";
+import { parseReflectionContent } from "../../lib/reflections/reflectionContent";
+
+const ConfirmDialog = dynamic(() => import("./ui/ConfirmDialog").then((mod) => mod.ConfirmDialog), {
+  ssr: false,
+});
+const GoalModal = dynamic(() => import("./GoalModal").then((mod) => mod.GoalModal), {
+  ssr: false,
+});
+const HabitFormDialog = dynamic(
+  () =>
+    import("../../features/habits/components/HabitFormDialog").then(
+      (mod) => mod.HabitFormDialog,
+    ),
+  { ssr: false },
+);
+const MomentModal = dynamic(() => import("./MomentModal").then((mod) => mod.MomentModal), {
+  ssr: false,
+});
+const ReflectionModal = dynamic(
+  () => import("./ReflectionModal").then((mod) => mod.ReflectionModal),
+  { ssr: false },
+);
 
 type Goal = {
   id: number;
@@ -307,8 +325,10 @@ export default function HomePage() {
         </Card>
       </div>
 
-      <MomentModal isOpen={momentOpen} onClose={() => setMomentOpen(false)} onSuccess={() => undefined} />
-      <GoalModal
+      {momentOpen && (
+        <MomentModal isOpen onClose={() => setMomentOpen(false)} onSuccess={() => undefined} />
+      )}
+      {goalOpen && <GoalModal
         isOpen={goalOpen}
         initialGoal={editingGoal}
         onClose={() => {
@@ -316,14 +336,14 @@ export default function HomePage() {
           setEditingGoal(null);
         }}
         onSuccess={() => undefined}
-      />
-      <ReflectionModal
-        isOpen={reflectionOpen}
+      />}
+      {reflectionOpen && <ReflectionModal
+        isOpen
         onClose={() => setReflectionOpen(false)}
         onSuccess={() => undefined}
-      />
-      <HabitFormDialog
-        isOpen={habitOpen}
+      />}
+      {habitOpen && <HabitFormDialog
+        isOpen
         saving={habitsSaving}
         habit={editingHabit}
         onClose={() => {
@@ -332,9 +352,9 @@ export default function HomePage() {
         }}
         onCreate={createHabit}
         onUpdate={updateHabit}
-      />
-      <ConfirmDialog
-        isOpen={Boolean(habitToDelete)}
+      />}
+      {habitToDelete && <ConfirmDialog
+        isOpen
         title={`${t("confirmDelete") || "确认删除"} ${habitToDelete?.name ?? ""}`}
         description={t("cannotRecover") || "删除后不可恢复。"}
         confirmLabel={t("confirm") || "确认"}
@@ -342,9 +362,9 @@ export default function HomePage() {
         tone="danger"
         onConfirm={confirmDeleteHabit}
         onCancel={() => setHabitToDelete(null)}
-      />
-      <ConfirmDialog
-        isOpen={Boolean(goalToDelete)}
+      />}
+      {goalToDelete && <ConfirmDialog
+        isOpen
         title={`${t("confirmDelete") || "确认删除"} ${goalToDelete?.title ?? ""}`}
         description={t("cannotRecover") || "删除后不可恢复。"}
         confirmLabel={t("confirm") || "确认"}
@@ -352,7 +372,7 @@ export default function HomePage() {
         tone="danger"
         onConfirm={confirmDeleteGoal}
         onCancel={() => setGoalToDelete(null)}
-      />
+      />}
     </div>
   );
 }

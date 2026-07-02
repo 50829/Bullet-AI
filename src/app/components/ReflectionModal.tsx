@@ -7,6 +7,7 @@ import { Textarea } from "./ui/Textarea";
 import { useLanguage } from "../context/LanguageContext";
 import { useAppContext } from "../../context/AppContext";
 import { useToast } from "./ui/Toast";
+import { parseReflectionContent } from "../../lib/reflections/reflectionContent";
 
 type ReflectionDraft = {
   id: number;
@@ -22,23 +23,6 @@ type Props = {
   onSuccess: () => void;
   initialReflection?: ReflectionDraft | null;
 };
-
-export function parseReflectionContent(reflection: Pick<ReflectionDraft, "content" | "title" | "body">) {
-  if (reflection.title || reflection.body) {
-    return {
-      title: reflection.title ?? "",
-      body: reflection.body ?? reflection.content,
-    };
-  }
-
-  const parts = reflection.content.split("\n\n");
-  const hasTitle = parts.length > 1 && parts[0].trim().length > 0 && parts[0].trim().length <= 100;
-
-  return {
-    title: hasTitle ? parts[0].trim() : "",
-    body: hasTitle ? parts.slice(1).join("\n\n") : reflection.content,
-  };
-}
 
 export const ReflectionModal = ({
   isOpen,

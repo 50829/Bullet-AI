@@ -2,17 +2,29 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Edit2, Trash2 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTopBar } from "../components/layout/TopBar";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
-import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { EmptyState } from "../components/ui/EmptyState";
 import { LoadingState } from "../components/ui/LoadingState";
 import { useToast } from "../components/ui/Toast";
-import { ReflectionModal, parseReflectionContent } from "../components/ReflectionModal";
-import { AssistantDrawer } from "../components/AssistantDrawer";
+import { parseReflectionContent } from "../../lib/reflections/reflectionContent";
+
+const AssistantDrawer = dynamic(
+  () => import("../components/AssistantDrawer").then((mod) => mod.AssistantDrawer),
+  { ssr: false },
+);
+const ConfirmDialog = dynamic(
+  () => import("../components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
+  { ssr: false },
+);
+const ReflectionModal = dynamic(
+  () => import("../components/ReflectionModal").then((mod) => mod.ReflectionModal),
+  { ssr: false },
+);
 
 type Reflection = {
   id: number;
@@ -31,6 +43,7 @@ export default function ReflectionsPageClient() {
   const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [hasOpenedAIPanel, setHasOpenedAIPanel] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReflection, setEditingReflection] = useState<Reflection | null>(null);
   const [reflectionToDelete, setReflectionToDelete] = useState<Reflection | null>(null);
@@ -52,12 +65,17 @@ export default function ReflectionsPageClient() {
     setIsModalOpen(true);
   }, []);
 
+  const toggleAIPanel = useCallback(() => {
+    setHasOpenedAIPanel(true);
+    setShowAIPanel((current) => !current);
+  }, []);
+
   useEffect(() => {
     setTopBarHandlers({
       onAddReflection: openNewReflection,
-      onToggleAIPanel: () => setShowAIPanel((current) => !current),
+      onToggleAIPanel: toggleAIPanel,
     });
-  }, [openNewReflection, setTopBarHandlers]);
+  }, [openNewReflection, setTopBarHandlers, toggleAIPanel]);
 
   const toggleReflection = (reflectionId: number) => {
     setCollapsedReflections((current) => {
@@ -93,7 +111,7 @@ export default function ReflectionsPageClient() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
-      <AssistantDrawer
+      {hasOpenedAIPanel && <AssistantDrawer
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
         title={t("insights") || "感悟"}
@@ -103,7 +121,7 @@ export default function ReflectionsPageClient() {
             ? "You are a concise thinking partner. Help the user clarify reflections and turn vague thoughts into grounded observations."
             : "你是用户的思考伙伴。请帮助用户澄清感悟，把模糊想法整理成具体、温和、可继续行动的观察。"
         }
-      />
+      />}
 
       {sortedReflections.length === 0 ? (
         <EmptyState
@@ -177,17 +195,17 @@ export default function ReflectionsPageClient() {
         })
       )}
 
-      <ReflectionModal
-        isOpen={isModalOpen}
+      {isModalOpen && <ReflectionModal
+        isOpen
         initialReflection={editingReflection}
         onClose={() => {
           setIsModalOpen(false);
           setEditingReflection(null);
         }}
         onSuccess={() => undefined}
-      />
-      <ConfirmDialog
-        isOpen={Boolean(reflectionToDelete)}
+      />}
+      {reflectionToDelete && <ConfirmDialog
+        isOpen
         title={t("confirmDelete") || "确认删除这条感悟吗？"}
         description={t("cannotRecover") || "删除后不可恢复"}
         confirmLabel={t("confirm") || "确认"}
@@ -196,7 +214,7 @@ export default function ReflectionsPageClient() {
         tone="danger"
         onConfirm={handleDelete}
         onCancel={() => setReflectionToDelete(null)}
-      />
+      />}
     </div>
   );
 }

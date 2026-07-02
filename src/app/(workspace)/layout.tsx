@@ -3,8 +3,6 @@ import { AppProvider } from "../../context/AppContext";
 import { MainLayout } from "../components/layout/MainLayout";
 import { LoadingState } from "../components/ui/LoadingState";
 
-export const dynamic = "force-dynamic";
-
 export default function WorkspaceLayout({ children }: { children: ReactNode }) {
   return (
     <AppProvider>

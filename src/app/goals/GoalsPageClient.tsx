@@ -1,19 +1,16 @@
 // app/goals/page.tsx
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { GoalModal } from "../components/GoalModal";
 import { Calendar } from "../components/Calendar";
-import { AssistantDrawer } from "../components/AssistantDrawer";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext';
 import { useTopBar } from '../components/layout/TopBar';
 import { useHabits } from "../../features/habits/hooks/useHabits";
 import { HabitList } from "../../features/habits/components/HabitList";
-import { HabitFormDialog } from "../../features/habits/components/HabitFormDialog";
 import type { GoalPlan } from "../../features/goals/types";
-import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../components/ui/Toast";
 import { EmptyState } from "../components/ui/EmptyState";
 import { LoadingState } from "../components/ui/LoadingState";
@@ -21,6 +18,26 @@ import { GoalCard } from "../../features/goals/components/GoalCard";
 import { SortableGoalList, SortableGoalItem } from "../../features/goals/components/SortableGoalList";
 import { isGoalCompleted, shouldShowGoal, sortGoalsByCompletion, sortGoalsByOrder } from "../../features/goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
+
+const AssistantDrawer = dynamic(
+  () => import("../components/AssistantDrawer").then((mod) => mod.AssistantDrawer),
+  { ssr: false },
+);
+const ConfirmDialog = dynamic(
+  () => import("../components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
+  { ssr: false },
+);
+const GoalModal = dynamic(
+  () => import("../components/GoalModal").then((mod) => mod.GoalModal),
+  { ssr: false },
+);
+const HabitFormDialog = dynamic(
+  () =>
+    import("../../features/habits/components/HabitFormDialog").then(
+      (mod) => mod.HabitFormDialog,
+    ),
+  { ssr: false },
+);
 
 function getTodayDate() {
   const now = new Date();
@@ -56,6 +73,7 @@ export default function GoalsPageClient() {
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<(typeof habits)[number] | null>(null);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [hasOpenedAIPanel, setHasOpenedAIPanel] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(() => getTodayDate());
   const [rightViewMode, setRightViewMode] = useState<"migration" | "schedule">("migration");
   
@@ -152,15 +170,20 @@ export default function GoalsPageClient() {
     ));
   };
 
+  const toggleAIPanel = useCallback(() => {
+    setHasOpenedAIPanel(true);
+    setShowAIPanel((current) => !current);
+  }, []);
+
   useEffect(() => {
     setTopBarHandlers({
       onAddGoal: () => {
         setEditingGoal(null);
         setIsGoalModalOpen(true);
       },
-      onToggleAIPanel: () => setShowAIPanel((current) => !current),
+      onToggleAIPanel: toggleAIPanel,
     });
-  }, [setTopBarHandlers]);
+  }, [setTopBarHandlers, toggleAIPanel]);
 
   const isInitialLoading = (loading.goals && goals.length === 0) || (habitsLoading && habits.length === 0);
 
@@ -169,7 +192,7 @@ export default function GoalsPageClient() {
   return (
     <div className="flex min-h-full flex-col">
 
-      <AssistantDrawer
+      {hasOpenedAIPanel && <AssistantDrawer
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
         mode="planning"
@@ -193,7 +216,7 @@ export default function GoalsPageClient() {
               "6. 当用户表达规划意图时，必须生成 JSON 计划。"
         }
         onAddGoals={addTasksFromAIReply}
-      />
+      />}
 
       <div className="flex-1">
         <div className="px-0 pb-4">
@@ -384,18 +407,18 @@ export default function GoalsPageClient() {
       </div>
 
 
-      <GoalModal
-        isOpen={isGoalModalOpen}
+      {isGoalModalOpen && <GoalModal
+        isOpen
         initialGoal={editingGoal}
         onClose={() => {
           setIsGoalModalOpen(false);
           setEditingGoal(null);
         }}
         onSuccess={() => undefined}
-      />
+      />}
 
-      <HabitFormDialog
-        isOpen={isHabitModalOpen}
+      {isHabitModalOpen && <HabitFormDialog
+        isOpen
         saving={habitsSaving}
         habit={editingHabit}
         onClose={() => {
@@ -404,10 +427,10 @@ export default function GoalsPageClient() {
         }}
         onCreate={createHabit}
         onUpdate={updateHabit}
-      />
+      />}
 
-      <ConfirmDialog
-        isOpen={showConfirm && Boolean(selectedItem)}
+      {showConfirm && selectedItem && <ConfirmDialog
+        isOpen
         title={`${t("confirmDelete") || "确认删除"} ${selectedItem?.name ?? ""}`}
         description={t("cannotRecover") || "删除后不可恢复"}
         confirmLabel={t("confirm") || "确认"}
@@ -419,7 +442,7 @@ export default function GoalsPageClient() {
           setShowConfirm(false);
           setSelectedItem(null);
         }}
-      />
+      />}
     </div>
   );
 }

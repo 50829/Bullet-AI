@@ -1,18 +1,29 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { Card } from "../components/ui/Card";
 import { Trash2, ChevronDown, ChevronUp, Edit2 } from "lucide-react";
-import { MomentModal } from "../components/MomentModal";
-import { AssistantDrawer } from "../components/AssistantDrawer";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext';
 import { useTopBar } from '../components/layout/TopBar';
-import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../components/ui/Toast";
 import { PlainImage } from "../components/ui/PlainImage";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { LoadingState } from "../components/ui/LoadingState";
+
+const AssistantDrawer = dynamic(
+  () => import("../components/AssistantDrawer").then((mod) => mod.AssistantDrawer),
+  { ssr: false },
+);
+const ConfirmDialog = dynamic(
+  () => import("../components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
+  { ssr: false },
+);
+const MomentModal = dynamic(
+  () => import("../components/MomentModal").then((mod) => mod.MomentModal),
+  { ssr: false },
+);
 
 type Moment = {
   id: number;
@@ -46,6 +57,7 @@ export default function MomentsPageClient() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedMoment, setSelectedMoment] = useState<Moment | null>(null);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [hasOpenedAIPanel, setHasOpenedAIPanel] = useState(false);
   const [deletingMoment, setDeletingMoment] = useState(false);
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
@@ -162,12 +174,17 @@ export default function MomentsPageClient() {
     setIsModalOpen(true);
   }, []);
 
+  const toggleAIPanel = useCallback(() => {
+    setHasOpenedAIPanel(true);
+    setShowAIPanel((current) => !current);
+  }, []);
+
   useEffect(() => {
     setTopBarHandlers({
       onAddMoment: handleAddMoment,
-      onToggleAIPanel: () => setShowAIPanel((current) => !current),
+      onToggleAIPanel: toggleAIPanel,
     });
-  }, [handleAddMoment, setTopBarHandlers]);
+  }, [handleAddMoment, setTopBarHandlers, toggleAIPanel]);
 
   const handleModalClose = () => {
     setIsModalOpen(false);
@@ -202,7 +219,7 @@ export default function MomentsPageClient() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <AssistantDrawer
+      {hasOpenedAIPanel && <AssistantDrawer
         isOpen={showAIPanel}
         onClose={() => setShowAIPanel(false)}
         title={t("moments") || "记录"}
@@ -222,7 +239,7 @@ export default function MomentsPageClient() {
               "4. 保持对话的轻松愉快，让用户感受到生活的美好。\n" +
               "5. 当用户分享快乐时，一起庆祝；当用户遇到困难时，给予鼓励和支持。"
         }
-      />
+      />}
 
       <div className="flex-1">
         <div className="px-0 pb-4">
@@ -364,15 +381,15 @@ export default function MomentsPageClient() {
         </div>
       </div>
 
-      <MomentModal
-        isOpen={isModalOpen}
+      {isModalOpen && <MomentModal
+        isOpen
         initialMoment={editingMoment}
         onClose={handleModalClose}
         onSuccess={handleModalSuccess}
-      />
+      />}
 
-      <ConfirmDialog
-        isOpen={showConfirm && Boolean(selectedMoment)}
+      {showConfirm && selectedMoment && <ConfirmDialog
+        isOpen
         title={t("confirmDelete") || "确认删除这条记录吗？"}
         description={t("cannotRecover") || "删除后不可恢复"}
         confirmLabel={t("confirm") || "确认"}
@@ -384,7 +401,7 @@ export default function MomentsPageClient() {
           setShowConfirm(false);
           setSelectedMoment(null);
         }}
-      />
+      />}
     </div>
   );
 }
