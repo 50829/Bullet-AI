@@ -13,28 +13,57 @@ type FeatureItem = {
   description: string;
 };
 
-const LandingPage: NextPage = () => {
-  const [isVisible, setIsVisible] = useState({
-    hero: false,
-    pricing: false,
-    cta: false,
-    footer: false
-  });
+const REVEAL_CLASS =
+  "transition-[opacity,transform] duration-700 ease-out motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none";
+
+function getRevealClass(isVisible: boolean) {
+  return `${REVEAL_CLASS} ${isVisible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"}`;
+}
+
+function useIntroReveal() {
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const heroTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, hero: true })), 100);
-    const pricingTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, pricing: true })), 500);
-    const ctaTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, cta: true })), 700);
-    const footerTimer = setTimeout(() => setIsVisible(prev => ({ ...prev, footer: true })), 900);
-
-    return () => {
-      clearTimeout(heroTimer);
-      clearTimeout(pricingTimer);
-      clearTimeout(ctaTimer);
-      clearTimeout(footerTimer);
-    };
+    const frame = window.requestAnimationFrame(() => setIsVisible(true));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
+  return isVisible;
+}
+
+function useScrollReveal<T extends HTMLElement>() {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<T>(null);
+
+  useEffect(() => {
+    const section = ref.current;
+    if (!section) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.12 },
+    );
+
+    observer.observe(section);
+
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, isVisible };
+}
+
+const LandingPage: NextPage = () => {
+  const introVisible = useIntroReveal();
   const topRef = useRef<HTMLDivElement>(null);
 
   const scrollToTop = () => {
@@ -48,7 +77,7 @@ const LandingPage: NextPage = () => {
       <div className="absolute inset-0 overflow-y-auto">
         <div ref={topRef} />
         <main>
-          <HeroSection isVisible={isVisible.hero} />
+          <HeroSection isVisible={introVisible} />
           <FeaturesSection />
           <div className="-mt-20">
             <PricingSection />
@@ -70,15 +99,18 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
   };
 
   return (
-    <section className={`relative z-10 flex flex-col items-center justify-center p-4 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-      <div className="absolute top-4 left-4 flex items-center gap-3 z-20">
+    <section className="relative z-10 flex flex-col items-center justify-center p-4 text-center">
+      <div className={`absolute top-4 left-4 flex items-center gap-3 z-20 ${getRevealClass(isVisible)}`}>
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
           <Sparkles className="h-6 w-6 text-gray-700" />
         </div>
         <span className="text-xl font-bold text-theme-primary">BulletAI</span>
       </div>
 
-      <div className="absolute top-4 right-4 flex items-center space-x-2 z-20">
+      <div
+        className={`absolute top-4 right-4 flex items-center space-x-2 z-20 ${getRevealClass(isVisible)}`}
+        style={{ transitionDelay: isVisible ? "80ms" : "0ms" }}
+      >
         <button
           onClick={() => setLanguage("en")}
           className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
@@ -105,15 +137,24 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
       </div>
 
       <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto pt-12 pb-20 min-h-[75vh]">
-        <h1 className={`text-6xl md:text-7xl font-bold text-theme-primary tracking-tight transition-all duration-1000 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <h1
+          className={`text-6xl md:text-7xl font-bold text-theme-primary tracking-tight ${getRevealClass(isVisible)}`}
+          style={{ transitionDelay: isVisible ? "120ms" : "0ms" }}
+        >
         {t("heroTitle")}
         </h1>
         
-        <div className={`mt-4 flex justify-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+        <div
+          className={`mt-4 flex justify-center ${getRevealClass(isVisible)}`}
+          style={{ transitionDelay: isVisible ? "220ms" : "0ms" }}
+        >
           <p className="text-2xl md:text-3xl text-gray-600">{t("slogan")}</p>
         </div>
         
-        <div className={`mt-10 flex flex-col sm:flex-row gap-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+        <div
+          className={`mt-10 flex flex-col sm:flex-row gap-4 ${getRevealClass(isVisible)}`}
+          style={{ transitionDelay: isVisible ? "320ms" : "0ms" }}
+        >
           <button 
             onClick={goToLogin}
             className="flex h-14 min-w-[200px] items-center justify-center rounded-full border border-[var(--color-primary)] bg-[var(--color-primary)] px-10 py-4 text-lg font-semibold text-[var(--color-text-on-primary)] shadow-sm transition-colors duration-150 hover:bg-[var(--color-primary-hover)]"
@@ -128,6 +169,7 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
 
 const FeaturesSection = () => {
   const { t, language } = useLanguage();
+  const { ref, isVisible } = useScrollReveal<HTMLElement>();
 
   const features: FeatureItem[] = [
     {
@@ -153,24 +195,31 @@ const FeaturesSection = () => {
   ];
 
   return (
-    <section className="py-20 px-4">
+    <section ref={ref} className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
+        <div className={`text-center mb-16 ${getRevealClass(isVisible)}`}>
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-theme-primary">{t("coreFeatures")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("featuresDescription")}</p>
         </div>
 
-        <div className="relative max-w-6xl mx-auto">
-          <div className="pointer-events-none absolute inset-0 hidden md:block">
+        <div
+          className={`relative max-w-6xl mx-auto ${getRevealClass(isVisible)}`}
+          style={{ transitionDelay: isVisible ? "120ms" : "0ms" }}
+        >
+          <div
+            className={`pointer-events-none absolute inset-0 hidden md:block ${getRevealClass(isVisible)}`}
+            style={{ transitionDelay: isVisible ? "180ms" : "0ms" }}
+          >
             <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-gradient-to-b from-orange-100 via-orange-200 to-orange-100" />
             <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-orange-100 via-orange-200 to-orange-100" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-y-12 gap-x-12 px-0 md:px-4">
-            {features.map((feature) => (
+            {features.map((feature, index) => (
               <div
                 key={feature.title}
-                className="relative flex flex-col justify-center items-start p-4 md:p-6 rounded-3xl overflow-hidden"
+                className={`relative flex flex-col justify-center items-start p-4 md:p-6 rounded-3xl overflow-hidden ${getRevealClass(isVisible)}`}
+                style={{ transitionDelay: isVisible ? `${220 + index * 70}ms` : "0ms" }}
               >
                 <div className="relative w-full h-full min-h-[200px] flex items-center justify-center">
                   <div className="flex flex-col justify-center items-center text-center p-6 md:p-8">
@@ -198,33 +247,8 @@ const FeaturesSection = () => {
 
 
 const PricingSection = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const { ref, isVisible } = useScrollReveal<HTMLElement>();
   const { t } = useLanguage();
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isVisible) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    const section = sectionRef.current;
-
-    if (section) {
-      observer.observe(section);
-    }
-
-    return () => {
-      if (section) {
-        observer.unobserve(section);
-      }
-    };
-  }, [isVisible]);
 
   const tier = {
     name: t("freeStart"),
@@ -242,13 +266,16 @@ const PricingSection = () => {
   };
 
   return (
-    <section ref={sectionRef} className={`py-20 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+    <section ref={ref} className="py-20 px-4">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <div className={`lg:col-span-1 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <div className={`lg:col-span-1 ${getRevealClass(isVisible)}`}>
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight whitespace-pre-line text-theme-primary">{t("suitableForEveryone")}</h2>
           <p className="mt-4 text-xl text-gray-600 whitespace-pre-line">{t("pricingDescription")}</p>
         </div>
-        <div className="lg:col-span-2 flex items-center justify-center">
+        <div
+          className={`lg:col-span-2 flex items-center justify-center ${getRevealClass(isVisible)}`}
+          style={{ transitionDelay: isVisible ? "140ms" : "0ms" }}
+        >
           <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-8 rounded-3xl shadow-lg w-full max-w-md hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
             <PricingCard {...tier} />
           </div>
@@ -292,33 +319,8 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
 };
 
 const CallToActionSection = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const { ref, isVisible } = useScrollReveal<HTMLElement>();
   const { t } = useLanguage();
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isVisible) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    const section = sectionRef.current;
-
-    if (section) {
-      observer.observe(section);
-    }
-
-    return () => {
-      if (section) {
-        observer.unobserve(section);
-      }
-    };
-  }, [isVisible]);
 
   const router = useRouter();
 
@@ -327,9 +329,9 @@ const CallToActionSection = () => {
   };
 
   return (
-    <section ref={sectionRef} className={`py-4 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+    <section ref={ref} className="py-4 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-12 rounded-3xl text-center shadow-lg hover:-translate-y-1 hover:shadow-xl transition-all duration-500">
+        <div className={`bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-12 rounded-3xl text-center shadow-lg hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ${getRevealClass(isVisible)}`}>
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-theme-primary">{t("startYourStory")}</h2>
           <p className="mt-4 text-xl text-gray-600">{t("storyDescription")}</p>
           <button 
@@ -345,39 +347,14 @@ const CallToActionSection = () => {
 };
 
 const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const { ref, isVisible } = useScrollReveal<HTMLElement>();
   const { t } = useLanguage();
   const router = useRouter();
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isVisible) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    const section = sectionRef.current;
-
-    if (section) {
-      observer.observe(section);
-    }
-
-    return () => {
-      if (section) {
-        observer.unobserve(section);
-      }
-    };
-  }, [isVisible]);
-
   return (
-    <footer ref={sectionRef} className={`relative py-12 px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+    <footer ref={ref} className="relative py-12 px-4">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center text-gray-600">
-        <div className={`flex flex-col items-center sm:items-start transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <div className={`flex flex-col items-center sm:items-start ${getRevealClass(isVisible)}`}>
           <div className="flex items-center gap-3">
             <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
                 <Sparkles className="h-6 w-6 text-gray-700"/>
@@ -386,7 +363,10 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
           </div>
           <p className="mt-2 text-sm text-center sm:text-left text-theme-primary">{t("copyright")}</p>
         </div>
-        <div className={`mt-8 sm:mt-0 text-center sm:text-right transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <div
+          className={`mt-8 sm:mt-0 text-center sm:text-right ${getRevealClass(isVisible)}`}
+          style={{ transitionDelay: isVisible ? "120ms" : "0ms" }}
+        >
           <button
             onClick={() => router.push('/contact')}
             className="font-semibold hover:text-orange-400 transition-colors cursor-pointer"
