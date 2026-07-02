@@ -2,15 +2,11 @@
 
 **个人成长与生活管理 Web 应用** — 记录瞬间、沉淀思考、管理目标、养成习惯。
 
-> 在线体验: [react-test1-kappa-ten.vercel.app](https://react-test1-kappa-ten.vercel.app/)
-
-## 项目文档
-
-| 文档 | 说明 |
-|------|------|
-| [需求分析](docs/requirements-analysis.md) | 完整功能需求、用户角色、非功能需求、页面路由 |
-| [数据库 ER 图](docs/ER/er-diagram.md) | 实体关系图、表结构、关系说明、图片存储方案 |
-| [Supabase 设置](SUPABASE_SETUP.md) | 数据库初始化 SQL、RLS 策略配置 |
+> 2025 年 10 月版: https://bullet-ai.vercel.app/
+> 
+> 2026 年 1 月版：https://www.bulletai.top/
+> 
+> 2026 年 7 月版：在 [Preview](https://github.com/50829/Bullet-AI/deployments/Preview) 中获取新版网址来体验
 
 ## 功能概览
 
