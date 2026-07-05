@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { Clock3, Edit2, Plus } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useAppContext } from "../../context/AppContext";
 import { useHabits } from "../../features/habits/hooks/useHabits";
 import type { HabitView } from "../../features/habits/types";
@@ -75,7 +76,22 @@ function todayKey() {
   ).padStart(2, "0")}`;
 }
 
+function formatRecentItemDate(value: string) {
+  const dateKey = value.includes("T") ? value.split("T")[0] : value;
+  const [year, month, day] = dateKey.split("-");
+  if (!year || !month || !day) return value;
+
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  if (Number.isNaN(date.getTime())) return value;
+
+  const weekday = date.toLocaleDateString("zh-CN", {
+    weekday: "short",
+  });
+  return `${month}-${day} ${weekday}`;
+}
+
 export default function HomePage() {
+  const router = useRouter();
   const {
     moments,
     reflections,
@@ -131,17 +147,23 @@ export default function HomePage() {
   const recentItems = useMemo(() => {
     const momentItems = moments.slice(0, 4).map((moment) => ({
       id: `moment-${moment.id}`,
-      type: t("moments") || "记录",
+      kind: "moment" as const,
+      itemId: moment.id,
       title: moment.content.slice(0, 42) || t("newMoment") || "记录",
       time: moment.created_at,
+      dateLabel: formatRecentItemDate(moment.created_at),
     }));
     const reflectionItems = reflections.slice(0, 3).map((reflection) => {
       const parsed = parseReflectionContent(reflection);
       return {
         id: `reflection-${reflection.id}`,
-        type: t("insights") || "感悟",
+        kind: "reflection" as const,
+        itemId: reflection.id,
         title: parsed.title || parsed.body.slice(0, 42),
         time: reflection.updated_at || reflection.created_at,
+        dateLabel: formatRecentItemDate(
+          reflection.updated_at || reflection.created_at,
+        ),
       };
     });
 
@@ -149,6 +171,12 @@ export default function HomePage() {
       .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
       .slice(0, 5);
   }, [moments, reflections, t]);
+
+  const openRecentItem = (item: (typeof recentItems)[number]) => {
+    if (item.kind === "moment") {
+      router.push(`/moments?moment=${item.itemId}`);
+    }
+  };
 
   const toggleGoalCompleted = async (goal: Goal) => {
     try {
@@ -348,22 +376,25 @@ export default function HomePage() {
           ) : (
             <div className="divide-y divide-[var(--color-border-muted)]">
               {recentItems.map((item) => (
-                <div
+                <button
                   key={item.id}
-                  className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
+                  type="button"
+                  onClick={() => openRecentItem(item)}
+                  disabled={item.kind !== "moment"}
+                  className="group grid min-h-[68px] w-full grid-cols-[36px_minmax(0,1fr)] items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors duration-150 enabled:hover:bg-[var(--color-bg-primary)] enabled:focus-visible:outline-none enabled:focus-visible:ring-2 enabled:focus-visible:ring-[var(--color-primary)] disabled:cursor-default motion-reduce:transition-none"
                 >
-                  <span className="mt-1 rounded-full bg-[var(--color-primary-light)] p-2 text-[var(--color-primary)]">
-                    <Clock3 size={14} />
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)]">
+                    <Clock3 size={18} strokeWidth={2.5} />
                   </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                      {item.type}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-[var(--color-primary)]">
+                      {item.dateLabel}
                     </p>
-                    <p className="mt-1 line-clamp-2 text-sm text-[var(--color-text-primary)]">
+                    <p className="mt-1 line-clamp-2 text-base leading-6 text-[var(--color-text-primary)]">
                       {item.title}
                     </p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}

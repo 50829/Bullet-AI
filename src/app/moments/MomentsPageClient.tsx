@@ -1,6 +1,7 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { Card } from "../components/ui/Card";
 import { Trash2, ChevronDown, ChevronUp, Edit2 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
@@ -51,6 +52,7 @@ type MonthCard = {
 
 export default function MomentsPageClient() {
   const { moments, loading, refreshMoments, deleteMoment } = useAppContext();
+  const searchParams = useSearchParams();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
@@ -61,6 +63,9 @@ export default function MomentsPageClient() {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [hasOpenedAIPanel, setHasOpenedAIPanel] = useState(false);
   const [deletingMoment, setDeletingMoment] = useState(false);
+  const [activeHighlightMomentId, setActiveHighlightMomentId] = useState<
+    number | null
+  >(null);
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(
     new Set(),
   );
@@ -167,6 +172,10 @@ export default function MomentsPageClient() {
     () => groupDaysByMonth(groupMomentsByDate(moments)),
     [groupDaysByMonth, groupMomentsByDate, moments],
   );
+  const highlightedMomentParam = searchParams.get("moment");
+  const highlightedMomentId = highlightedMomentParam
+    ? Number(highlightedMomentParam)
+    : null;
 
   const toggleMonth = (monthKey: string) => {
     setCollapsedMonths((prev) => {
@@ -208,6 +217,47 @@ export default function MomentsPageClient() {
       onToggleAIPanel: toggleAIPanel,
     });
   }, [handleAddMoment, setTopBarHandlers, toggleAIPanel]);
+
+  useEffect(() => {
+    if (!highlightedMomentId || !Number.isFinite(highlightedMomentId)) return;
+
+    const target = moments.find((moment) => moment.id === highlightedMomentId);
+    if (!target) return;
+
+    setActiveHighlightMomentId(highlightedMomentId);
+
+    const dateKey = getDateKey(target.created_at);
+    const monthKey = getMonthKey(target.created_at);
+
+    setCollapsedMonths((current) => {
+      if (!current.has(monthKey)) return current;
+      const next = new Set(current);
+      next.delete(monthKey);
+      return next;
+    });
+    setCollapsedDays((current) => {
+      if (!current.has(dateKey)) return current;
+      const next = new Set(current);
+      next.delete(dateKey);
+      return next;
+    });
+
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(`moment-${highlightedMomentId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    const highlightTimer = window.setTimeout(() => {
+      setActiveHighlightMomentId((current) =>
+        current === highlightedMomentId ? null : current,
+      );
+    }, 1000);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(highlightTimer);
+    };
+  }, [getDateKey, getMonthKey, highlightedMomentId, moments]);
 
   const handleModalClose = () => {
     setIsModalOpen(false);
@@ -367,7 +417,13 @@ export default function MomentsPageClient() {
                                         {dayCard.moments.map((moment) => (
                                           <div
                                             key={moment.id}
-                                            className="flex flex-col gap-3 group/item relative"
+                                            id={`moment-${moment.id}`}
+                                            className={`group/item relative flex flex-col gap-3 rounded-xl p-3 transition-[background-color,box-shadow] duration-700 ease-out motion-reduce:transition-none ${
+                                              moment.id ===
+                                              activeHighlightMomentId
+                                                ? "bg-[var(--color-primary-light)] ring-2 ring-[var(--color-primary)]"
+                                                : ""
+                                            }`}
                                           >
                                             <div className="absolute right-0 top-0 z-10 flex items-center gap-1">
                                               <button
