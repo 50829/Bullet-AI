@@ -10,6 +10,7 @@ import { getOutboxItems, markOutboxItem, recoverStaleOutboxItems, removeOutboxIt
 import type { LocalCollection, OutboxItem, SyncStatus } from "./types";
 
 const TRANSIENT_STATUS = new Set(["pending", "failed"]);
+const STORAGE_COLLECTIONS = new Set<LocalCollection>(["moments", "reflections", "goals", "habits"]);
 
 let currentStatus: SyncStatus = "idle";
 let activeFlush: Promise<void> | null = null;
@@ -71,6 +72,13 @@ function isDuplicateSuccess(error: { code?: string; message?: string } | null | 
   return error?.code === "23505" || Boolean(error?.message?.toLowerCase().includes("duplicate"));
 }
 
+async function removeStoredFile(collection: LocalCollection, imagePath: unknown) {
+  if (!STORAGE_COLLECTIONS.has(collection) || typeof imagePath !== "string" || !imagePath) return;
+
+  const { error } = await supabase.storage.from(collection).remove([imagePath]);
+  if (error) throw new Error(error.message);
+}
+
 async function applyOutboxItem(item: OutboxItem) {
   const table = supabase.from(item.collection as LocalCollection);
   const payload = await preparePayloadWithFileUpload(
@@ -86,6 +94,7 @@ async function applyOutboxItem(item: OutboxItem) {
       ? await query.eq("client_id", clientId)
       : await query.eq("id", item.entityId);
     if (error) throw new Error(error.message);
+    await removeStoredFile(item.collection, payload.image_path);
     if (clientId) {
       await removeEntitiesByClientId(item.userId, item.collection, clientId);
     } else {

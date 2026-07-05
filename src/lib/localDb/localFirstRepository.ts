@@ -10,6 +10,7 @@ type EntityIdentity = {
   id: string | number;
   client_id?: string | null;
   user_id?: string;
+  image_path?: string | null;
 };
 
 export class LocalFirstRepository<T extends EntityIdentity> {
@@ -48,6 +49,7 @@ export class LocalFirstRepository<T extends EntityIdentity> {
         id: entity.id,
         client_id: entity.client_id ?? undefined,
         user_id: entity.user_id ?? userId,
+        image_path: entity.image_path ?? undefined,
         deleted_at: new Date().toISOString(),
       },
       operation: "delete",

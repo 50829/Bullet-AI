@@ -211,6 +211,14 @@ function stripLocalFields<T extends Record<string, unknown>>(value: T) {
   return payload;
 }
 
+function emptyLoadingState(): LoadingState {
+  return {
+    moments: true,
+    reflections: true,
+    goals: true,
+  };
+}
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [moments, setMoments] = useState<Moment[]>([]);
@@ -236,10 +244,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     ) => {
       try {
         const cached = (await repositoryFor(collection).list(activeUserId)) as unknown as T[];
-        if (cached.length > 0) {
-          setItems(sortByCreatedAtDesc(cached.map(withFormattedDate) as T[]));
-          setCollectionLoading(loadingKey, false);
-        }
+        setItems(sortByCreatedAtDesc(cached.map(withFormattedDate) as T[]));
+        setCollectionLoading(loadingKey, false);
       } catch (error) {
         console.error(`Failed to read ${collection} cache:`, error);
       }
@@ -348,6 +354,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setUserId(activeUserId);
+      setMoments([]);
+      setReflections([]);
+      setGoals([]);
+      setLoading(emptyLoadingState());
       await Promise.all([
         loadCachedCollection<Moment>(activeUserId, "moments", setMoments, "moments"),
         loadCachedCollection<Reflection>(
@@ -376,6 +386,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const activeUserId = session?.user?.id ?? null;
       setUserId(activeUserId);
       if (activeUserId) {
+        setMoments([]);
+        setReflections([]);
+        setGoals([]);
+        setLoading(emptyLoadingState());
         void Promise.all([
           loadCachedCollection<Moment>(activeUserId, "moments", setMoments, "moments"),
           loadCachedCollection<Reflection>(
@@ -545,12 +559,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const queueDelete = useCallback(
-    async (collection: LocalCollection, id: number, _imagePath?: string | null) => {
+    async (collection: LocalCollection, id: number, imagePath?: string | null) => {
       if (!userId) return;
-      void _imagePath;
       const repository = repositoryFor(collection);
       const existing = (await repository.list(userId)).find((entity) => entity.id === id);
-      await repository.remove(userId, existing ?? { id, user_id: userId });
+      await repository.remove(userId, {
+        ...(existing ?? { id, user_id: userId }),
+        image_path: imagePath ?? existing?.image_path ?? null,
+      });
       void flushOutbox();
     },
     [userId],
