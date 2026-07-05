@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTopBar } from "../components/layout/TopBar";
+import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -105,8 +106,11 @@ export default function ReflectionsPageClient() {
     }
   };
 
-  if (loading.reflections && reflections.length === 0) {
-    return <LoadingState />;
+  const isInitialLoading = loading.reflections && reflections.length === 0;
+  const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
+
+  if (isInitialLoading) {
+    return isNavigationLoading ? null : <LoadingState className="min-h-[50dvh]" />;
   }
 
   return (

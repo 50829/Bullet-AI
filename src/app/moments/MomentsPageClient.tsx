@@ -6,6 +6,7 @@ import { Trash2, ChevronDown, ChevronUp, Edit2 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext';
 import { useTopBar } from '../components/layout/TopBar';
+import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
 import { useToast } from "../components/ui/Toast";
 import { PlainImage } from "../components/ui/PlainImage";
 import { Button } from "../components/ui/Button";
@@ -213,8 +214,11 @@ export default function MomentsPageClient() {
     }
   };
 
-  if (loading.moments && moments.length === 0) {
-    return <LoadingState />;
+  const isInitialLoading = loading.moments && moments.length === 0;
+  const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
+
+  if (isInitialLoading) {
+    return isNavigationLoading ? null : <LoadingState className="min-h-[50dvh]" />;
   }
 
   return (

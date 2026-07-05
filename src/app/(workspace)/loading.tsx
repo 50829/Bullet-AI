@@ -1,5 +1,5 @@
-import { WorkspaceRouteLoading } from "../components/layout/WorkspaceRouteLoading";
+import { LoadingState } from "../components/ui/LoadingState";
 
 export default function WorkspaceLoading() {
-  return <WorkspaceRouteLoading delayed />;
+  return <LoadingState delayed className="min-h-[50dvh]" label="正在加载页面" />;
 }

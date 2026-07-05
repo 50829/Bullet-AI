@@ -8,6 +8,7 @@ import { Calendar } from "../components/Calendar";
 import { useAppContext } from "../../context/AppContext";
 import { useLanguage } from '../context/LanguageContext';
 import { useTopBar } from '../components/layout/TopBar';
+import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
 import { useHabits } from "../../features/habits/hooks/useHabits";
 import { HabitList } from "../../features/habits/components/HabitList";
 import type { GoalPlan } from "../../features/goals/types";
@@ -186,8 +187,11 @@ export default function GoalsPageClient() {
   }, [setTopBarHandlers, toggleAIPanel]);
 
   const isInitialLoading = (loading.goals && goals.length === 0) || (habitsLoading && habits.length === 0);
+  const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
 
-  if (isInitialLoading) return <LoadingState />;
+  if (isInitialLoading) {
+    return isNavigationLoading ? null : <LoadingState className="min-h-[50dvh]" />;
+  }
 
   return (
     <div className="flex min-h-full flex-col">
