@@ -19,7 +19,11 @@ describe("requestPolicy", () => {
       ok: false,
       error: "message role must be user or assistant",
     });
-    expect(validateAiMessages([{ role: "user", content: "x".repeat(MAX_AI_MESSAGE_CHARS + 1) }])).toEqual({
+    expect(
+      validateAiMessages([
+        { role: "user", content: "x".repeat(MAX_AI_MESSAGE_CHARS + 1) },
+      ]),
+    ).toEqual({
       ok: false,
       error: `message content cannot exceed ${MAX_AI_MESSAGE_CHARS} characters`,
     });

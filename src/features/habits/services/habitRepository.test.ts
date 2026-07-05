@@ -12,13 +12,17 @@ vi.mock("../../../lib/localDb/localFirstRepository", () => ({
   getLocalFirstRepository: (collection: "habits" | "habit_checkins") => ({
     list: async () => memory[collection],
     mutate: async (_userId: string, entity: Row) => {
-      const index = memory[collection].findIndex((row) => row.client_id === entity.client_id);
+      const index = memory[collection].findIndex(
+        (row) => row.client_id === entity.client_id,
+      );
       if (index >= 0) memory[collection][index] = entity;
       else memory[collection].push(entity);
       return entity;
     },
     remove: async (_userId: string, entity: Row) => {
-      memory[collection] = memory[collection].filter((row) => row.client_id !== entity.client_id);
+      memory[collection] = memory[collection].filter(
+        (row) => row.client_id !== entity.client_id,
+      );
     },
     replaceRemote: async () => memory[collection],
   }),
@@ -29,7 +33,9 @@ vi.mock("../../../lib/localDb/repository", () => ({
   subscribeCollection: () => () => undefined,
 }));
 
-vi.mock("../../../lib/localDb/syncEngine", () => ({ flushOutbox: vi.fn(async () => undefined) }));
+vi.mock("../../../lib/localDb/syncEngine", () => ({
+  flushOutbox: vi.fn(async () => undefined),
+}));
 vi.mock("../../../lib/supabase/client", () => ({ supabase: {} }));
 
 const repository = await import("./habitRepository");
@@ -102,7 +108,11 @@ describe("habit local-first repository", () => {
     }
 
     expect(await repository.readHabitViews("user-1")).toEqual([
-      expect.objectContaining({ checkedToday: true, checkinCount: 2, streak: 2 }),
+      expect.objectContaining({
+        checkedToday: true,
+        checkinCount: 2,
+        streak: 2,
+      }),
     ]);
   });
 });

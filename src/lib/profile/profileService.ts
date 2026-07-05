@@ -41,17 +41,21 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
     updated_at: data?.updated_at || null,
     preferences_updated_at: data?.preferences_updated_at || null,
     preferences: normalizePreferences({
-      preferred_language: data?.preferred_language ?? DEFAULT_USER_PREFERENCES.preferred_language,
+      preferred_language:
+        data?.preferred_language ?? DEFAULT_USER_PREFERENCES.preferred_language,
       ui_theme: data?.ui_theme ?? DEFAULT_USER_PREFERENCES.ui_theme,
       accent_color: data?.accent_color ?? DEFAULT_USER_PREFERENCES.accent_color,
       color_scheme: data?.color_scheme ?? DEFAULT_USER_PREFERENCES.color_scheme,
       completed_goal_retention:
-        data?.completed_goal_retention ?? DEFAULT_USER_PREFERENCES.completed_goal_retention,
+        data?.completed_goal_retention ??
+        DEFAULT_USER_PREFERENCES.completed_goal_retention,
     }),
   };
 }
 
-export async function updateCurrentUserDisplayName(displayName: string): Promise<UserProfile> {
+export async function updateCurrentUserDisplayName(
+  displayName: string,
+): Promise<UserProfile> {
   const user = await getCurrentUser();
   if (!user) throw new Error("请先登录");
 
@@ -79,7 +83,7 @@ export async function updateCurrentUserDisplayName(displayName: string): Promise
       username_updated_at: updatedAt,
       updated_at: updatedAt,
     },
-    { onConflict: "user_id" }
+    { onConflict: "user_id" },
   );
 
   if (error) throw new Error(error.message);

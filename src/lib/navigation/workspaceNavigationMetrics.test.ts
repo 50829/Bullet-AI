@@ -10,6 +10,8 @@ describe("workspace navigation metrics", () => {
     markWorkspaceNavigationStart("/goals");
 
     expect(markWorkspaceNavigationComplete("/moments")).toBeNull();
-    expect(markWorkspaceNavigationComplete("/goals")).toEqual(expect.any(Number));
+    expect(markWorkspaceNavigationComplete("/goals")).toEqual(
+      expect.any(Number),
+    );
   });
 });

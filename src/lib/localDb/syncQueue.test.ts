@@ -40,7 +40,10 @@ describe("sync queue recovery and dependency ordering", () => {
     store.set(checkin.id, checkin);
     store.set(habit.id, habit);
 
-    expect((await getOutboxItems()).map((entry) => entry.id)).toEqual(["habit", "checkin"]);
+    expect((await getOutboxItems()).map((entry) => entry.id)).toEqual([
+      "habit",
+      "checkin",
+    ]);
   });
 
   it("returns an interrupted syncing item to pending", async () => {

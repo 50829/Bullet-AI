@@ -3,9 +3,9 @@
 **个人成长与生活管理 Web 应用** — 记录瞬间、沉淀思考、管理目标、养成习惯。
 
 > 2025 年 10 月版: https://bullet-ai.vercel.app/
-> 
+>
 > 2026 年 1 月版：https://www.bulletai.top/
-> 
+>
 > 2026 年 7 月版：在 [Preview](https://github.com/50829/Bullet-AI/deployments/Preview) 中获取新版网址来体验
 
 ## 功能概览
@@ -33,6 +33,7 @@ pnpm dev
 ```
 
 需要配置环境变量:
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `LLM_API_KEY`（可选对话服务）

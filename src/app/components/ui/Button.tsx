@@ -1,9 +1,9 @@
 // src/components/ui/Button.tsx
-import React from 'react';
+import React from "react";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
 };
 
 const variantClasses = {
@@ -15,15 +15,14 @@ const variantClasses = {
     "border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)] hover:bg-[var(--color-bg-primary)]",
   ghost:
     "border-transparent bg-transparent text-[var(--color-text-primary)] hover:bg-[var(--color-bg-primary)]",
-  danger:
-    "border-red-600 bg-red-600 text-white hover:bg-red-700",
+  danger: "border-red-600 bg-red-600 text-white hover:bg-red-700",
 };
 
 export const Button = ({
   children,
-  type = 'button',
-  variant = 'primary',
-  className = '',
+  type = "button",
+  variant = "primary",
+  className = "",
   disabled = false,
   ...props
 }: ButtonProps) => {

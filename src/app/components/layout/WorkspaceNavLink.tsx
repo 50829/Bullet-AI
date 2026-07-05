@@ -19,7 +19,12 @@ type WorkspaceNavLinkProps = {
   className: string;
 };
 
-export function WorkspaceNavLink({ page, icon, label, className }: WorkspaceNavLinkProps) {
+export function WorkspaceNavLink({
+  page,
+  icon,
+  label,
+  className,
+}: WorkspaceNavLinkProps) {
   const router = useRouter();
   const { activePath, beginNavigation } = useWorkspaceNavigation();
   const href = getWorkspacePath(page);

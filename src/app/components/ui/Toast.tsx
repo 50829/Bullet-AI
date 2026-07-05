@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import { AlertCircle, X } from "lucide-react";
 
 type ToastType = "error";
@@ -27,13 +33,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
-  const showToast = useCallback((toast: ToastInput) => {
-    if (toast.type !== "error") return;
+  const showToast = useCallback(
+    (toast: ToastInput) => {
+      if (toast.type !== "error") return;
 
-    const id = Date.now() + Math.floor(Math.random() * 1000);
-    setToasts((current) => [...current, { ...toast, id }].slice(-4));
-    window.setTimeout(() => removeToast(id), 5200);
-  }, [removeToast]);
+      const id = Date.now() + Math.floor(Math.random() * 1000);
+      setToasts((current) => [...current, { ...toast, id }].slice(-4));
+      window.setTimeout(() => removeToast(id), 5200);
+    },
+    [removeToast],
+  );
 
   const value = useMemo(() => ({ showToast }), [showToast]);
 
@@ -49,7 +58,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             >
               <AlertCircle size={18} className="mt-0.5 shrink-0" />
               <div className="min-w-0 flex-1">
-                {toast.title && <p className="text-sm font-semibold">{toast.title}</p>}
+                {toast.title && (
+                  <p className="text-sm font-semibold">{toast.title}</p>
+                )}
                 <p className="text-sm leading-5">{toast.message}</p>
               </div>
               <button

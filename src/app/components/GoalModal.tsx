@@ -5,7 +5,7 @@ import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { Modal } from "./ui/Modal";
-import { useLanguage } from '../context/LanguageContext';
+import { useLanguage } from "../context/LanguageContext";
 import { useAppContext } from "../../context/AppContext";
 
 type Props = {
@@ -33,7 +33,12 @@ const GOAL_COLORS: Array<{ value: string | null; swatch: string }> = [
   { value: "#64748b", swatch: "#64748b" },
 ];
 
-export const GoalModal = ({ isOpen, onClose, onSuccess, initialGoal = null }: Props) => {
+export const GoalModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialGoal = null,
+}: Props) => {
   const { t } = useLanguage();
   const { addGoal, updateGoal } = useAppContext();
   const [title, setTitle] = useState("");
@@ -138,7 +143,9 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, initialGoal = null }: Pr
 
       <label className="mt-5 block text-sm font-medium text-[var(--color-text-primary)]">
         {t("title") || "标题"}
-        <span className="ml-2 text-xs font-normal text-[var(--color-text-secondary)]">({title.length}/30)</span>
+        <span className="ml-2 text-xs font-normal text-[var(--color-text-secondary)]">
+          ({title.length}/30)
+        </span>
       </label>
       <Input
         placeholder={t("enterGoal") || "输入目标..."}
@@ -152,7 +159,9 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, initialGoal = null }: Pr
 
       <label className="mt-4 block text-sm font-medium text-[var(--color-text-primary)]">
         {t("description") || "描述"}
-        <span className="ml-2 text-xs font-normal text-[var(--color-text-secondary)]">({description.length}/70)</span>
+        <span className="ml-2 text-xs font-normal text-[var(--color-text-secondary)]">
+          ({description.length}/70)
+        </span>
       </label>
       <Textarea
         placeholder={t("detailedDescription") || "详细描述..."}
@@ -187,7 +196,9 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, initialGoal = null }: Pr
               type="button"
               onClick={() => setColor(value)}
               className={`h-8 w-8 rounded-lg border-2 transition-colors duration-150 motion-reduce:transition-none ${
-                selected ? "border-[var(--color-text-primary)]" : "border-transparent"
+                selected
+                  ? "border-[var(--color-text-primary)]"
+                  : "border-transparent"
               }`}
               style={{ backgroundColor: swatch }}
               aria-label={value ?? (t("themeDefault") || "主题色")}
@@ -197,10 +208,18 @@ export const GoalModal = ({ isOpen, onClose, onSuccess, initialGoal = null }: Pr
         })}
       </div>
 
-      {message && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{message}</p>}
+      {message && (
+        <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          {message}
+        </p>
+      )}
 
       <div className="mt-6 flex justify-end gap-3">
-        <Button variant="secondary" onClick={handleClose} className="min-w-[60px] h-10">
+        <Button
+          variant="secondary"
+          onClick={handleClose}
+          className="min-w-[60px] h-10"
+        >
           {t("cancel") || "取消"}
         </Button>
         <Button

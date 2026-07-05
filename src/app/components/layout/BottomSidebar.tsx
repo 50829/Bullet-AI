@@ -1,21 +1,33 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Camera, Home, Lightbulb, LogOut, Settings, Target } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
-import { useLanguage } from '../../context/LanguageContext';
-import { supabase } from '../../../lib/supabaseClient';
-import { getCurrentUserProfile, type UserProfile } from '../../../lib/profile/profileService';
-import { useToast } from '../ui/Toast';
+import React, { useState, useEffect } from "react";
+import {
+  Camera,
+  Home,
+  Lightbulb,
+  LogOut,
+  Settings,
+  Target,
+} from "lucide-react";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { useLanguage } from "../../context/LanguageContext";
+import { supabase } from "../../../lib/supabaseClient";
+import {
+  getCurrentUserProfile,
+  type UserProfile,
+} from "../../../lib/profile/profileService";
+import { useToast } from "../ui/Toast";
 import {
   WORKSPACE_PAGE_ORDER,
   type WorkspacePage,
-} from '../../../lib/navigation/workspaceRoutes';
-import { WorkspaceNavLink } from './WorkspaceNavLink';
+} from "../../../lib/navigation/workspaceRoutes";
+import { WorkspaceNavLink } from "./WorkspaceNavLink";
 
-const LogoutConfirmDialog = dynamic(() => import('./LogoutConfirmDialog'), { ssr: false });
-const SettingsPanel = dynamic(() => import('./SettingsPanel'), { ssr: false });
+const LogoutConfirmDialog = dynamic(() => import("./LogoutConfirmDialog"), {
+  ssr: false,
+});
+const SettingsPanel = dynamic(() => import("./SettingsPanel"), { ssr: false });
 
 export const BottomSidebar = () => {
   const { t } = useLanguage();
@@ -24,11 +36,20 @@ export const BottomSidebar = () => {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const navItems: Record<WorkspacePage, { label: string; icon: React.ReactNode }> = {
-    home: { label: t("today") || 'Today', icon: <Home size={19} /> },
-    goals: { label: t("goals") || '目标', icon: <Target size={19} /> },
-    moments: { label: t("records") || t("moments") || '记录', icon: <Camera size={19} /> },
-    reflections: { label: t("insights") || '感悟', icon: <Lightbulb size={19} /> },
+  const navItems: Record<
+    WorkspacePage,
+    { label: string; icon: React.ReactNode }
+  > = {
+    home: { label: t("today") || "Today", icon: <Home size={19} /> },
+    goals: { label: t("goals") || "目标", icon: <Target size={19} /> },
+    moments: {
+      label: t("records") || t("moments") || "记录",
+      icon: <Camera size={19} />,
+    },
+    reflections: {
+      label: t("insights") || "感悟",
+      icon: <Lightbulb size={19} />,
+    },
   };
 
   useEffect(() => {
@@ -43,7 +64,9 @@ export const BottomSidebar = () => {
 
     fetchUserProfile();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         const profile = await getCurrentUserProfile();
         setUserProfile(profile);
@@ -69,17 +92,17 @@ export const BottomSidebar = () => {
     try {
       setShowLogoutDialog(false);
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
-        console.error('退出登录失败:', error);
+        console.error("退出登录失败:", error);
         showToast({ type: "error", message: `退出登录失败: ${error.message}` });
         setShowLogoutDialog(true);
         return;
       }
 
-      router.replace('/');
+      router.replace("/");
     } catch (error) {
-      console.error('退出登录过程出错:', error);
+      console.error("退出登录过程出错:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
       showToast({ type: "error", message: `退出登录出错: ${errorMsg}` });
       setShowLogoutDialog(true);
@@ -92,9 +115,7 @@ export const BottomSidebar = () => {
 
   return (
     <>
-      <aside
-        className="fixed bottom-20 left-4 z-30 hidden rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-2 shadow-sm lg:block"
-      >
+      <aside className="fixed bottom-20 left-4 z-30 hidden rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-2 shadow-sm lg:block">
         <nav>
           <ul className="space-y-2">
             <li>
@@ -108,7 +129,7 @@ export const BottomSidebar = () => {
                 <Settings size={20} />
               </button>
             </li>
-            
+
             <li>
               <button
                 type="button"
@@ -161,7 +182,7 @@ export const BottomSidebar = () => {
       )}
 
       {showSettingsPanel && (
-        <SettingsPanel 
+        <SettingsPanel
           onClose={() => setShowSettingsPanel(false)}
           initialProfile={userProfile}
           onProfileUpdate={(profile) => {

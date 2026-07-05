@@ -63,7 +63,8 @@ function getServerSnapshot() {
 
 async function loadLocal(userId: string) {
   const habits = await readHabitViews(userId);
-  if (state.userId === userId) setState({ habits, loading: false, hydrated: true });
+  if (state.userId === userId)
+    setState({ habits, loading: false, hydrated: true });
 }
 
 async function refreshStore(
@@ -103,7 +104,11 @@ async function refreshStore(
 
 export function useHabits() {
   const { userId } = useAppContext();
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const snapshot = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot,
+  );
 
   useEffect(() => {
     if (!userId) {
@@ -153,20 +158,23 @@ export function useHabits() {
     return userId;
   }, [userId]);
 
-  const runMutation = useCallback(async (operation: (activeUserId: string) => Promise<unknown>) => {
-    const activeUserId = requireUser();
-    setState({ saving: true, error: null });
-    try {
-      await operation(activeUserId);
-      await loadLocal(activeUserId);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "保存习惯失败";
-      setState({ error: message });
-      throw error;
-    } finally {
-      if (state.userId === activeUserId) setState({ saving: false });
-    }
-  }, [requireUser]);
+  const runMutation = useCallback(
+    async (operation: (activeUserId: string) => Promise<unknown>) => {
+      const activeUserId = requireUser();
+      setState({ saving: true, error: null });
+      try {
+        await operation(activeUserId);
+        await loadLocal(activeUserId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "保存习惯失败";
+        setState({ error: message });
+        throw error;
+      } finally {
+        if (state.userId === activeUserId) setState({ saving: false });
+      }
+    },
+    [requireUser],
+  );
 
   const refresh = useCallback(async () => {
     await refreshStore(requireUser(), { force: true });
@@ -174,28 +182,36 @@ export function useHabits() {
 
   const createHabit = useCallback(
     async (input: CreateHabitInput) => {
-      await runMutation((activeUserId) => createHabitLocal(activeUserId, input));
+      await runMutation((activeUserId) =>
+        createHabitLocal(activeUserId, input),
+      );
     },
     [runMutation],
   );
 
   const updateHabit = useCallback(
     async (habitId: number, input: UpdateHabitInput) => {
-      await runMutation((activeUserId) => updateHabitLocal(activeUserId, habitId, input));
+      await runMutation((activeUserId) =>
+        updateHabitLocal(activeUserId, habitId, input),
+      );
     },
     [runMutation],
   );
 
   const removeHabit = useCallback(
     async (habitId: number) => {
-      await runMutation((activeUserId) => deleteHabitLocal(activeUserId, habitId));
+      await runMutation((activeUserId) =>
+        deleteHabitLocal(activeUserId, habitId),
+      );
     },
     [runMutation],
   );
 
   const toggleCheckin = useCallback(
     async (habit: HabitView, dateKey: string) => {
-      const checked = !habit.checkins.some((checkin) => checkin.checked_on === dateKey);
+      const checked = !habit.checkins.some(
+        (checkin) => checkin.checked_on === dateKey,
+      );
       await runMutation((activeUserId) =>
         setHabitCheckinLocal(activeUserId, habit, dateKey, checked),
       );

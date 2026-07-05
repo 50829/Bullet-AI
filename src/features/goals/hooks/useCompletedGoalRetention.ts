@@ -18,13 +18,20 @@ export function useCompletedGoalRetention() {
     setRetention(readLocalPreferences().completed_goal_retention);
 
     const handlePreferencesUpdated = (event: Event) => {
-      const preferences = (event as CustomEvent<{ preferences?: Partial<UserPreferences> }>).detail
-        ?.preferences;
-      setRetention(normalizeCompletedGoalRetention(preferences?.completed_goal_retention));
+      const preferences = (
+        event as CustomEvent<{ preferences?: Partial<UserPreferences> }>
+      ).detail?.preferences;
+      setRetention(
+        normalizeCompletedGoalRetention(preferences?.completed_goal_retention),
+      );
     };
 
     window.addEventListener("preferences-updated", handlePreferencesUpdated);
-    return () => window.removeEventListener("preferences-updated", handlePreferencesUpdated);
+    return () =>
+      window.removeEventListener(
+        "preferences-updated",
+        handlePreferencesUpdated,
+      );
   }, []);
 
   return retention;

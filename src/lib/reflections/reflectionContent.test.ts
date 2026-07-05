@@ -5,7 +5,11 @@ import { parseReflectionContent } from "./reflectionContent";
 describe("parseReflectionContent", () => {
   it("prefers structured reflection fields", () => {
     expect(
-      parseReflectionContent({ content: "legacy", title: "Title", body: "Body" }),
+      parseReflectionContent({
+        content: "legacy",
+        title: "Title",
+        body: "Body",
+      }),
     ).toEqual({ title: "Title", body: "Body" });
   });
 

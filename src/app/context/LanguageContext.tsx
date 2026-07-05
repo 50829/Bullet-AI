@@ -1,6 +1,6 @@
 "use client";
 
-import {NextIntlClientProvider, useTranslations} from "next-intl";
+import { NextIntlClientProvider, useTranslations } from "next-intl";
 import {
   createContext,
   useCallback,
@@ -34,9 +34,11 @@ const messages: Record<Language, Record<string, string>> = {
   en: enMessages,
 };
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined,
+);
 
-export function LanguageProvider({children}: {children: ReactNode}) {
+export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>("zh");
 
   useEffect(() => {
@@ -69,7 +71,9 @@ export function LanguageProvider({children}: {children: ReactNode}) {
     setLanguageState(nextLanguage);
     writeLocalPreferences({ preferred_language: nextLanguage });
 
-    void updateCurrentUserPreferences({ preferred_language: nextLanguage }).catch(() => {
+    void updateCurrentUserPreferences({
+      preferred_language: nextLanguage,
+    }).catch(() => {
       return undefined;
     });
   }, []);
@@ -88,7 +92,7 @@ export function LanguageProvider({children}: {children: ReactNode}) {
         key={language}
         locale={language}
         messages={messages[language]}
-        getMessageFallback={({key}) => key}
+        getMessageFallback={({ key }) => key}
         onError={(error) => {
           if (error.code !== "MISSING_MESSAGE") {
             console.error(error);

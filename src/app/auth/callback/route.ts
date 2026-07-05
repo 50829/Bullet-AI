@@ -5,7 +5,8 @@ import { getPostLoginRedirect } from "../../../lib/auth/getPostLoginRedirect";
 export async function GET(request: NextRequest) {
   const url = request.nextUrl.clone();
   const code = url.searchParams.get("code");
-  const authError = url.searchParams.get("error_description") ?? url.searchParams.get("error");
+  const authError =
+    url.searchParams.get("error_description") ?? url.searchParams.get("error");
   const next = getPostLoginRedirect(url.searchParams.get("next"));
 
   if (authError) {

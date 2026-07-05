@@ -15,7 +15,8 @@ export type FrontendPlan = {
 
 const FENCED_JSON_PATTERN = /```json([\s\S]*?)```/;
 const FENCED_BLOCK_PATTERN = /```([\s\S]*?)```/;
-const PLAN_OBJECT_PATTERN = /\{[\s\S]*"tasksDaily"[\s\S]*"tasksFuture"[\s\S]*\}/;
+const PLAN_OBJECT_PATTERN =
+  /\{[\s\S]*"tasksDaily"[\s\S]*"tasksFuture"[\s\S]*\}/;
 
 function isPlan(value: unknown): value is InternalPlan {
   if (!value || typeof value !== "object") return false;

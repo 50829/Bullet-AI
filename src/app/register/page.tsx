@@ -48,7 +48,13 @@ export default function RegisterPage() {
     setSubmitted(true);
     setMessage(null);
 
-    if (!email || !password || !confirmPassword || !passwordIsStrong || !passwordsMatch) {
+    if (
+      !email ||
+      !password ||
+      !confirmPassword ||
+      !passwordIsStrong ||
+      !passwordsMatch
+    ) {
       return;
     }
 
@@ -118,7 +124,9 @@ export default function RegisterPage() {
                 onChange={(event) => setPassword(event.target.value)}
                 onBlur={() => setPasswordTouched(true)}
                 aria-invalid={showPasswordError}
-                aria-describedby={showPasswordError ? "password-error" : undefined}
+                aria-describedby={
+                  showPasswordError ? "password-error" : undefined
+                }
                 className={
                   showPasswordError
                     ? invalidPasswordInputClassName
@@ -133,11 +141,17 @@ export default function RegisterPage() {
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => setShowPassword((visible) => !visible)}
                 className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+                aria-label={
+                  showPassword ? t("hidePassword") : t("showPassword")
+                }
                 title={showPassword ? t("hidePassword") : t("showPassword")}
                 disabled={loading}
               >
-                {showPassword ? <Eye className="size-5" /> : <EyeOff className="size-5" />}
+                {showPassword ? (
+                  <Eye className="size-5" />
+                ) : (
+                  <EyeOff className="size-5" />
+                )}
               </button>
             </div>
             {showPasswordError && (
@@ -146,14 +160,20 @@ export default function RegisterPage() {
                 className="flex items-start gap-1.5 text-xs leading-5 text-red-500"
                 role="alert"
               >
-                <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                <CircleAlert
+                  className="mt-0.5 size-4 shrink-0"
+                  aria-hidden="true"
+                />
                 <span>{t("passwordTooWeak")}</span>
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="register-confirm-password" className="block text-sm">
+            <label
+              htmlFor="register-confirm-password"
+              className="block text-sm"
+            >
               {t("confirmPassword")}
             </label>
             <input
@@ -167,7 +187,11 @@ export default function RegisterPage() {
               aria-describedby={
                 showConfirmPasswordError ? "confirm-password-error" : undefined
               }
-              className={showConfirmPasswordError ? invalidInputClassName : inputClassName}
+              className={
+                showConfirmPasswordError
+                  ? invalidInputClassName
+                  : inputClassName
+              }
               placeholder={t("confirmPasswordPlaceholder")}
               disabled={loading}
               required
@@ -194,8 +218,11 @@ export default function RegisterPage() {
         </form>
 
         <p className="text-sm">
-          {t("alreadyAccount")} {" "}
-          <Link href="/login" className="text-[var(--color-primary)] hover:underline">
+          {t("alreadyAccount")}{" "}
+          <Link
+            href="/login"
+            className="text-[var(--color-primary)] hover:underline"
+          >
             {t("login")}
           </Link>
         </p>

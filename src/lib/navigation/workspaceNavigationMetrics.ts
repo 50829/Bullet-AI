@@ -5,7 +5,9 @@ const MEASURE_NAME = "workspace-navigation";
 let pendingPath: string | null = null;
 
 function supportsPerformanceMarks() {
-  return typeof performance !== "undefined" && typeof performance.mark === "function";
+  return (
+    typeof performance !== "undefined" && typeof performance.mark === "function"
+  );
 }
 
 export function markWorkspaceNavigationStart(path: string) {

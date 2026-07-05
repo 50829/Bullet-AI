@@ -6,11 +6,16 @@ let dbPromise: Promise<IDBDatabase> | null = null;
 function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("IndexedDB request failed"));
+    request.onerror = () =>
+      reject(request.error ?? new Error("IndexedDB request failed"));
   });
 }
 
-function createStore(db: IDBDatabase, name: string, options: IDBObjectStoreParameters) {
+function createStore(
+  db: IDBDatabase,
+  name: string,
+  options: IDBObjectStoreParameters,
+) {
   if (!db.objectStoreNames.contains(name)) {
     return db.createObjectStore(name, options);
   }
@@ -19,7 +24,9 @@ function createStore(db: IDBDatabase, name: string, options: IDBObjectStoreParam
 
 export function openLocalDb(): Promise<IDBDatabase> {
   if (typeof indexedDB === "undefined") {
-    return Promise.reject(new Error("IndexedDB is not available in this environment"));
+    return Promise.reject(
+      new Error("IndexedDB is not available in this environment"),
+    );
   }
 
   if (dbPromise) return dbPromise;
@@ -32,7 +39,9 @@ export function openLocalDb(): Promise<IDBDatabase> {
 
       const entities = createStore(db, "entities", { keyPath: "key" });
       if (entities) {
-        entities.createIndex("userCollection", ["userId", "collection"], { unique: false });
+        entities.createIndex("userCollection", ["userId", "collection"], {
+          unique: false,
+        });
         entities.createIndex("collection", "collection", { unique: false });
       }
 
@@ -40,7 +49,9 @@ export function openLocalDb(): Promise<IDBDatabase> {
       if (outbox) {
         outbox.createIndex("status", "status", { unique: false });
         outbox.createIndex("userId", "userId", { unique: false });
-        outbox.createIndex("entity", ["userId", "collection", "entityId"], { unique: false });
+        outbox.createIndex("entity", ["userId", "collection", "entityId"], {
+          unique: false,
+        });
       }
 
       const files = createStore(db, "files", { keyPath: "id" });
@@ -69,7 +80,10 @@ export async function getStore(
   return db.transaction(storeName, mode).objectStore(storeName);
 }
 
-export async function idbGet<T>(storeName: string, key: IDBValidKey): Promise<T | undefined> {
+export async function idbGet<T>(
+  storeName: string,
+  key: IDBValidKey,
+): Promise<T | undefined> {
   const store = await getStore(storeName);
   return requestToPromise<T | undefined>(store.get(key));
 }
@@ -84,12 +98,18 @@ export async function idbGetAll<T>(
   return requestToPromise<T[]>(source.getAll(query));
 }
 
-export async function idbPut<T>(storeName: string, value: T): Promise<IDBValidKey> {
+export async function idbPut<T>(
+  storeName: string,
+  value: T,
+): Promise<IDBValidKey> {
   const store = await getStore(storeName, "readwrite");
   return requestToPromise<IDBValidKey>(store.put(value));
 }
 
-export async function idbDelete(storeName: string, key: IDBValidKey): Promise<void> {
+export async function idbDelete(
+  storeName: string,
+  key: IDBValidKey,
+): Promise<void> {
   const store = await getStore(storeName, "readwrite");
   await requestToPromise(store.delete(key));
 }
@@ -102,13 +122,18 @@ export async function runIdbTransaction<T>(
   const db = await openLocalDb();
   const transaction = db.transaction(storeNames, mode);
   const stores = Object.fromEntries(
-    storeNames.map((storeName) => [storeName, transaction.objectStore(storeName)]),
+    storeNames.map((storeName) => [
+      storeName,
+      transaction.objectStore(storeName),
+    ]),
   );
 
   const completed = new Promise<void>((resolve, reject) => {
     transaction.oncomplete = () => resolve();
-    transaction.onabort = () => reject(transaction.error ?? new Error("IndexedDB transaction aborted"));
-    transaction.onerror = () => reject(transaction.error ?? new Error("IndexedDB transaction failed"));
+    transaction.onabort = () =>
+      reject(transaction.error ?? new Error("IndexedDB transaction aborted"));
+    transaction.onerror = () =>
+      reject(transaction.error ?? new Error("IndexedDB transaction failed"));
   });
 
   try {

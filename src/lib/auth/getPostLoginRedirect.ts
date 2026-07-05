@@ -1,4 +1,7 @@
-import { isWorkspacePath, WORKSPACE_HOME_PATH } from "../navigation/workspaceRoutes";
+import {
+  isWorkspacePath,
+  WORKSPACE_HOME_PATH,
+} from "../navigation/workspaceRoutes";
 
 export function getPostLoginRedirect(next?: string | null) {
   if (!next || !next.startsWith("/") || next.startsWith("//")) {

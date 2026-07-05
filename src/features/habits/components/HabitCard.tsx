@@ -13,9 +13,16 @@ type HabitCardProps = {
   onDelete?: (habit: HabitView) => void;
 };
 
-export function HabitCard({ habit, onOpen, onCheckinToday, onEdit, onDelete }: HabitCardProps) {
+export function HabitCard({
+  habit,
+  onOpen,
+  onCheckinToday,
+  onEdit,
+  onDelete,
+}: HabitCardProps) {
   const { t, language } = useLanguage();
-  const frequencyLabel = habit.frequency === "daily" ? t("daily") || "每日" : t("weekly") || "每周";
+  const frequencyLabel =
+    habit.frequency === "daily" ? t("daily") || "每日" : t("weekly") || "每周";
   const checked = habit.checkedToday;
 
   return (
@@ -36,7 +43,9 @@ export function HabitCard({ habit, onOpen, onCheckinToday, onEdit, onDelete }: H
         }}
         disabled={checked}
         title={checked ? t("checkedIn") || "已打卡" : t("checkin") || "打卡"}
-        aria-label={checked ? t("checkedIn") || "已打卡" : t("checkin") || "打卡"}
+        aria-label={
+          checked ? t("checkedIn") || "已打卡" : t("checkin") || "打卡"
+        }
         className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-150 motion-reduce:transition-none ${
           checked
             ? "cursor-default bg-[var(--color-primary)] text-[var(--color-text-on-primary)]"
@@ -52,20 +61,25 @@ export function HabitCard({ habit, onOpen, onCheckinToday, onEdit, onDelete }: H
             className="h-2.5 w-2.5 shrink-0 rounded-full"
             style={{ backgroundColor: habit.color || "var(--color-primary)" }}
           />
-          <h4 className="truncate text-base font-semibold text-[var(--color-text-primary)]">{habit.name}</h4>
+          <h4 className="truncate text-base font-semibold text-[var(--color-text-primary)]">
+            {habit.name}
+          </h4>
           <span className="rounded-full bg-[var(--color-bg-surface)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)]">
             {frequencyLabel}
           </span>
         </div>
 
         {habit.description && (
-          <p className="mt-1 line-clamp-2 text-sm text-[var(--color-text-secondary)]">{habit.description}</p>
+          <p className="mt-1 line-clamp-2 text-sm text-[var(--color-text-secondary)]">
+            {habit.description}
+          </p>
         )}
 
         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--color-text-secondary)]">
           <span className="inline-flex items-center gap-1">
             <CalendarDays size={14} />
-            {t("checkinCount") || "打卡"} {habit.checkinCount} {t("times") || "次"}
+            {t("checkinCount") || "打卡"} {habit.checkinCount}{" "}
+            {t("times") || "次"}
           </span>
           {habit.frequency === "daily" && (
             <span className="inline-flex items-center gap-1">

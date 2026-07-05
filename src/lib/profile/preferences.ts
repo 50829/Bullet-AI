@@ -36,7 +36,12 @@ export function normalizeUiTheme(value?: unknown): UiTheme {
 }
 
 export function normalizeAccentColor(value: unknown): AccentColor {
-  if (value === "green" || value === "purple" || value === "amber" || value === "sage") {
+  if (
+    value === "green" ||
+    value === "purple" ||
+    value === "amber" ||
+    value === "sage"
+  ) {
     return value;
   }
 
@@ -48,8 +53,11 @@ export function normalizeColorScheme(value: unknown): ColorScheme {
   return "system";
 }
 
-export function normalizeCompletedGoalRetention(value: unknown): CompletedGoalRetention {
-  if (value === "instant" || value === "next_day" || value === "never") return value;
+export function normalizeCompletedGoalRetention(
+  value: unknown,
+): CompletedGoalRetention {
+  if (value === "instant" || value === "next_day" || value === "never")
+    return value;
   return "next_day";
 }
 
@@ -61,20 +69,28 @@ export function normalizePreferences(
     ui_theme: normalizeUiTheme(value?.ui_theme),
     accent_color: normalizeAccentColor(value?.accent_color),
     color_scheme: normalizeColorScheme(value?.color_scheme),
-    completed_goal_retention: normalizeCompletedGoalRetention(value?.completed_goal_retention),
+    completed_goal_retention: normalizeCompletedGoalRetention(
+      value?.completed_goal_retention,
+    ),
   };
 }
 
 export function resolveColorScheme(colorScheme: ColorScheme): "light" | "dark" {
   if (colorScheme === "light" || colorScheme === "dark") return colorScheme;
-  if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+  ) {
     return "dark";
   }
   return "light";
 }
 
 export function applyAppearancePreference(
-  preferences: Pick<UserPreferences, "ui_theme" | "accent_color" | "color_scheme">,
+  preferences: Pick<
+    UserPreferences,
+    "ui_theme" | "accent_color" | "color_scheme"
+  >,
 ) {
   if (typeof document === "undefined") return;
 
@@ -102,7 +118,9 @@ export function readLocalPreferences(): UserPreferences {
     ui_theme: window.localStorage.getItem(UI_THEME_STORAGE_KEY),
     accent_color: window.localStorage.getItem(ACCENT_COLOR_STORAGE_KEY),
     color_scheme: window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY),
-    completed_goal_retention: window.localStorage.getItem(COMPLETED_GOAL_RETENTION_STORAGE_KEY),
+    completed_goal_retention: window.localStorage.getItem(
+      COMPLETED_GOAL_RETENTION_STORAGE_KEY,
+    ),
   });
 }
 
@@ -116,7 +134,10 @@ export function writeLocalPreferences(preferences: Partial<UserPreferences>) {
   window.localStorage.setItem(UI_THEME_STORAGE_KEY, next.ui_theme);
   window.localStorage.setItem(ACCENT_COLOR_STORAGE_KEY, next.accent_color);
   window.localStorage.setItem(COLOR_SCHEME_STORAGE_KEY, next.color_scheme);
-  window.localStorage.setItem(COMPLETED_GOAL_RETENTION_STORAGE_KEY, next.completed_goal_retention);
+  window.localStorage.setItem(
+    COMPLETED_GOAL_RETENTION_STORAGE_KEY,
+    next.completed_goal_retention,
+  );
   document.documentElement.lang = next.preferred_language;
   applyAppearancePreference(next);
 

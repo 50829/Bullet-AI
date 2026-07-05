@@ -10,12 +10,10 @@ describe("isPasswordStrong", () => {
     },
   );
 
-  it.each([
-    "Short1!",
-    "lowercase1!",
-    "UPPERCASE1!",
-    "NoNumber!",
-  ])("rejects a password missing a requirement: %s", (password) => {
-    expect(isPasswordStrong(password)).toBe(false);
-  });
+  it.each(["Short1!", "lowercase1!", "UPPERCASE1!", "NoNumber!"])(
+    "rejects a password missing a requirement: %s",
+    (password) => {
+      expect(isPasswordStrong(password)).toBe(false);
+    },
+  );
 });

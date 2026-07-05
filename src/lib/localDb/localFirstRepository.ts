@@ -21,7 +21,9 @@ export class LocalFirstRepository<T extends EntityIdentity> {
   }
 
   async replaceRemote(userId: string, rows: T[]) {
-    await cacheRemoteEntities(userId, this.collection, rows, { pruneMissing: true });
+    await cacheRemoteEntities(userId, this.collection, rows, {
+      pruneMissing: true,
+    });
     return this.list(userId);
   }
 
@@ -62,9 +64,14 @@ export class LocalFirstRepository<T extends EntityIdentity> {
   }
 }
 
-const repositories = new Map<LocalCollection, LocalFirstRepository<EntityIdentity>>();
+const repositories = new Map<
+  LocalCollection,
+  LocalFirstRepository<EntityIdentity>
+>();
 
-export function getLocalFirstRepository<T extends EntityIdentity>(collection: LocalCollection) {
+export function getLocalFirstRepository<T extends EntityIdentity>(
+  collection: LocalCollection,
+) {
   let repository = repositories.get(collection);
   if (!repository) {
     repository = new LocalFirstRepository(collection);

@@ -6,11 +6,21 @@ import {
   upsertEntity,
   upsertSyncedEntity,
 } from "./repository";
-import { getOutboxItems, markOutboxItem, recoverStaleOutboxItems, removeOutboxItem } from "./syncQueue";
+import {
+  getOutboxItems,
+  markOutboxItem,
+  recoverStaleOutboxItems,
+  removeOutboxItem,
+} from "./syncQueue";
 import type { LocalCollection, OutboxItem, SyncStatus } from "./types";
 
 const TRANSIENT_STATUS = new Set(["pending", "failed"]);
-const STORAGE_COLLECTIONS = new Set<LocalCollection>(["moments", "reflections", "goals", "habits"]);
+const STORAGE_COLLECTIONS = new Set<LocalCollection>([
+  "moments",
+  "reflections",
+  "goals",
+  "habits",
+]);
 
 let currentStatus: SyncStatus = "idle";
 let activeFlush: Promise<void> | null = null;
@@ -43,12 +53,16 @@ function sanitizePayload(payload: unknown) {
   return rest;
 }
 
-async function preparePayloadWithFileUpload(item: OutboxItem, payload: Record<string, unknown>) {
+async function preparePayloadWithFileUpload(
+  item: OutboxItem,
+  payload: Record<string, unknown>,
+) {
   const localFile = (item.payload as Record<string, unknown>)?.local_file;
   if (!(localFile instanceof Blob)) return payload;
 
   const fileName = String(
-    (item.payload as Record<string, unknown>)?.local_file_name || `${item.entityId}.jpg`,
+    (item.payload as Record<string, unknown>)?.local_file_name ||
+      `${item.entityId}.jpg`,
   );
   const extension = fileName.split(".").pop() || "jpg";
   const path =
@@ -68,12 +82,25 @@ async function preparePayloadWithFileUpload(item: OutboxItem, payload: Record<st
   };
 }
 
-function isDuplicateSuccess(error: { code?: string; message?: string } | null | undefined) {
-  return error?.code === "23505" || Boolean(error?.message?.toLowerCase().includes("duplicate"));
+function isDuplicateSuccess(
+  error: { code?: string; message?: string } | null | undefined,
+) {
+  return (
+    error?.code === "23505" ||
+    Boolean(error?.message?.toLowerCase().includes("duplicate"))
+  );
 }
 
-async function removeStoredFile(collection: LocalCollection, imagePath: unknown) {
-  if (!STORAGE_COLLECTIONS.has(collection) || typeof imagePath !== "string" || !imagePath) return;
+async function removeStoredFile(
+  collection: LocalCollection,
+  imagePath: unknown,
+) {
+  if (
+    !STORAGE_COLLECTIONS.has(collection) ||
+    typeof imagePath !== "string" ||
+    !imagePath
+  )
+    return;
 
   const { error } = await supabase.storage.from(collection).remove([imagePath]);
   if (error) throw new Error(error.message);
@@ -86,7 +113,9 @@ async function applyOutboxItem(item: OutboxItem) {
     sanitizePayload(item.payload) as Record<string, unknown>,
   );
   const clientId =
-    typeof payload.client_id === "string" && payload.client_id ? payload.client_id : null;
+    typeof payload.client_id === "string" && payload.client_id
+      ? payload.client_id
+      : null;
 
   if (item.operation === "delete") {
     const query = table.delete().eq("user_id", item.userId);
@@ -129,7 +158,11 @@ async function applyOutboxItem(item: OutboxItem) {
     }
   }
 
-  const currentEntity = await readEntity(item.userId, item.collection, item.entityId);
+  const currentEntity = await readEntity(
+    item.userId,
+    item.collection,
+    item.entityId,
+  );
   if (currentEntity) {
     await upsertSyncedEntity(item.userId, item.collection, payload, {
       localEntityId: item.entityId,
@@ -149,8 +182,9 @@ async function performFlush() {
     return;
   }
 
-  const items = (await getOutboxItems([...TRANSIENT_STATUS] as Array<"pending" | "failed">))
-    .filter((item) => item.userId === session.user.id);
+  const items = (
+    await getOutboxItems([...TRANSIENT_STATUS] as Array<"pending" | "failed">)
+  ).filter((item) => item.userId === session.user.id);
 
   if (items.length === 0) {
     setSyncStatus("idle");
@@ -173,7 +207,11 @@ async function performFlush() {
         error instanceof Error ? error.message : String(error),
       );
 
-      const currentEntity = await readEntity(item.userId, item.collection, item.entityId);
+      const currentEntity = await readEntity(
+        item.userId,
+        item.collection,
+        item.entityId,
+      );
       if (currentEntity && currentEntity.updatedAt <= item.updatedAt) {
         await upsertEntity(item.userId, item.collection, currentEntity.data, {
           pending: false,
@@ -214,7 +252,8 @@ export function installSyncTriggers() {
   if (typeof window === "undefined") return () => undefined;
 
   const flush = () => {
-    if (document.visibilityState === "visible" || navigator.onLine) void flushOutbox();
+    if (document.visibilityState === "visible" || navigator.onLine)
+      void flushOutbox();
   };
 
   window.addEventListener("online", flush);

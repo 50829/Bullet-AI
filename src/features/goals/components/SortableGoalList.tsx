@@ -32,11 +32,17 @@ type SortableGoalListProps = {
   children: ReactNode;
 };
 
-export function SortableGoalList({ ids, onReorder, children }: SortableGoalListProps) {
+export function SortableGoalList({
+  ids,
+  onReorder,
+  children,
+}: SortableGoalListProps) {
   const sensors = useSensors(
     // distance constraint lets taps/clicks on inner buttons pass through
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -49,7 +55,11 @@ export function SortableGoalList({ ids, onReorder, children }: SortableGoalListP
   };
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         {children}
       </SortableContext>
@@ -57,8 +67,21 @@ export function SortableGoalList({ ids, onReorder, children }: SortableGoalListP
   );
 }
 
-export function SortableGoalItem({ id, children }: { id: number; children: ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+export function SortableGoalItem({
+  id,
+  children,
+}: {
+  id: number;
+  children: ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id,
     animateLayoutChanges,
   });

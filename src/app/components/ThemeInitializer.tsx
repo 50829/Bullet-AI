@@ -17,7 +17,8 @@ export function ThemeInitializer() {
     applyAppearancePreference(readLocalPreferences());
 
     const handlePreferencesUpdated = (event: Event) => {
-      const preferences = (event as PreferencesUpdatedEvent).detail?.preferences;
+      const preferences = (event as PreferencesUpdatedEvent).detail
+        ?.preferences;
       if (preferences) {
         applyAppearancePreference(preferences);
       }
@@ -46,7 +47,10 @@ export function ThemeInitializer() {
     media.addEventListener("change", handleSystemColorSchemeChange);
 
     return () => {
-      window.removeEventListener("preferences-updated", handlePreferencesUpdated);
+      window.removeEventListener(
+        "preferences-updated",
+        handlePreferencesUpdated,
+      );
       window.removeEventListener("storage", handleStorageChange);
       media.removeEventListener("change", handleSystemColorSchemeChange);
     };

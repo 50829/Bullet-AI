@@ -5,6 +5,11 @@ type PlainImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   alt: string;
 };
 
-export function PlainImage({ alt, loading = "lazy", decoding = "async", ...props }: PlainImageProps) {
+export function PlainImage({
+  alt,
+  loading = "lazy",
+  decoding = "async",
+  ...props
+}: PlainImageProps) {
   return <img alt={alt} loading={loading} decoding={decoding} {...props} />;
 }

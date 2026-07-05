@@ -1,5 +1,10 @@
 import { idbDelete, idbGetAll, idbPut } from "./indexedDb";
-import type { LocalCollection, OutboxItem, OutboxStatus, SyncOperation } from "./types";
+import type {
+  LocalCollection,
+  OutboxItem,
+  OutboxStatus,
+  SyncOperation,
+} from "./types";
 
 function createId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -32,7 +37,9 @@ export async function enqueueOutbox<T>(input: {
   return item;
 }
 
-export async function getOutboxItems(statuses: OutboxStatus[] = ["pending", "failed"]) {
+export async function getOutboxItems(
+  statuses: OutboxStatus[] = ["pending", "failed"],
+) {
   const all = await idbGetAll<OutboxItem>("outbox");
   const priority = (item: OutboxItem) => {
     if (item.collection === "habits") return 0;
@@ -63,7 +70,8 @@ export async function markOutboxItem(
     ...item,
     status,
     error,
-    attemptCount: status === "syncing" ? (item.attemptCount ?? 0) + 1 : item.attemptCount,
+    attemptCount:
+      status === "syncing" ? (item.attemptCount ?? 0) + 1 : item.attemptCount,
   });
 }
 

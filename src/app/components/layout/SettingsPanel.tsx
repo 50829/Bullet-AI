@@ -1,7 +1,18 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Check, Download, Languages, Moon, Palette, RefreshCw, Sun, Monitor, User, X } from "lucide-react";
+import {
+  Check,
+  Download,
+  Languages,
+  Moon,
+  Palette,
+  RefreshCw,
+  Sun,
+  Monitor,
+  User,
+  X,
+} from "lucide-react";
 import { useLanguage, type Language } from "../../context/LanguageContext";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -81,7 +92,9 @@ const COMPLETED_GOAL_RETENTION_OPTIONS: Array<{
   { id: "never", labelZh: "保留", labelEn: "Keep" },
 ];
 
-function getUsernameTimestamp(profile: Pick<UserProfile, "username_updated_at" | "updated_at">) {
+function getUsernameTimestamp(
+  profile: Pick<UserProfile, "username_updated_at" | "updated_at">,
+) {
   return profile.username_updated_at || profile.updated_at;
 }
 
@@ -97,9 +110,13 @@ export default function SettingsPanel({
   const [activeSection, setActiveSection] = useState<SettingsSection>("user");
   const [username, setUsername] = useState("");
   const [currentUsername, setCurrentUsername] = useState("");
-  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
+  const [preferences, setPreferences] = useState<UserPreferences>(
+    DEFAULT_USER_PREFERENCES,
+  );
   const [savingUsername, setSavingUsername] = useState(false);
-  const [savingPreference, setSavingPreference] = useState<keyof UserPreferences | null>(null);
+  const [savingPreference, setSavingPreference] = useState<
+    keyof UserPreferences | null
+  >(null);
   const [message, setMessage] = useState<FormMessage>(null);
   const [canChangeUsername, setCanChangeUsername] = useState(true);
   const [daysRemaining, setDaysRemaining] = useState(0);
@@ -113,7 +130,9 @@ export default function SettingsPanel({
     if (usernameUpdatedAt) {
       const lastUpdate = new Date(usernameUpdatedAt);
       const now = new Date();
-      const diffDays = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.floor(
+        (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24),
+      );
 
       if (diffDays < 3) {
         setCanChangeUsername(false);
@@ -149,7 +168,8 @@ export default function SettingsPanel({
         console.error("Failed to load profile:", error);
         showToast({
           type: "error",
-          message: language === "en" ? "Failed to load settings." : "设置加载失败。",
+          message:
+            language === "en" ? "Failed to load settings." : "设置加载失败。",
         });
       });
 
@@ -159,14 +179,21 @@ export default function SettingsPanel({
   }, [applyProfileState, initialProfile, language, onClose, showToast]);
 
   const savePreferences = useCallback(
-    async (nextPartial: Partial<UserPreferences>, savingKey: keyof UserPreferences) => {
-      const nextPreferences = normalizePreferences({ ...preferences, ...nextPartial });
+    async (
+      nextPartial: Partial<UserPreferences>,
+      savingKey: keyof UserPreferences,
+    ) => {
+      const nextPreferences = normalizePreferences({
+        ...preferences,
+        ...nextPartial,
+      });
       setPreferences(nextPreferences);
       writeLocalPreferences(nextPreferences);
       setSavingPreference(savingKey);
 
       try {
-        const savedPreferences = await updateCurrentUserPreferences(nextPartial);
+        const savedPreferences =
+          await updateCurrentUserPreferences(nextPartial);
         const mergedPreferences = normalizePreferences(savedPreferences);
         setPreferences(mergedPreferences);
         writeLocalPreferences(mergedPreferences);
@@ -174,7 +201,10 @@ export default function SettingsPanel({
         console.error("Failed to save preferences:", error);
         showToast({
           type: "error",
-          message: language === "en" ? "Cloud sync failed. Please retry." : "云端同步失败，请重试。",
+          message:
+            language === "en"
+              ? "Cloud sync failed. Please retry."
+              : "云端同步失败，请重试。",
         });
       } finally {
         setSavingPreference(null);
@@ -194,7 +224,10 @@ export default function SettingsPanel({
     if (!canChangeUsername) {
       setMessage({
         type: "error",
-        text: t("usernameChangeCooldown").replace("{days}", daysRemaining.toString()),
+        text: t("usernameChangeCooldown").replace(
+          "{days}",
+          daysRemaining.toString(),
+        ),
       });
       return;
     }
@@ -224,18 +257,26 @@ export default function SettingsPanel({
 
   const handleLanguageChange = (nextLanguage: Language) => {
     setLanguage(nextLanguage);
-    void savePreferences({ preferred_language: nextLanguage }, "preferred_language");
+    void savePreferences(
+      { preferred_language: nextLanguage },
+      "preferred_language",
+    );
   };
 
   const handleAccentChange = (accentColor: AccentColor) => {
-    void savePreferences({ ui_theme: "calm", accent_color: accentColor }, "accent_color");
+    void savePreferences(
+      { ui_theme: "calm", accent_color: accentColor },
+      "accent_color",
+    );
   };
 
   const handleColorSchemeChange = (colorScheme: ColorScheme) => {
     void savePreferences({ color_scheme: colorScheme }, "color_scheme");
   };
 
-  const handleCompletedGoalRetentionChange = (completedGoalRetention: CompletedGoalRetention) => {
+  const handleCompletedGoalRetentionChange = (
+    completedGoalRetention: CompletedGoalRetention,
+  ) => {
     void savePreferences(
       { completed_goal_retention: completedGoalRetention },
       "completed_goal_retention",
@@ -259,7 +300,11 @@ export default function SettingsPanel({
     URL.revokeObjectURL(url);
   };
 
-  const sectionButton = (section: SettingsSection, Icon: typeof User, label: string) => {
+  const sectionButton = (
+    section: SettingsSection,
+    Icon: typeof User,
+    label: string,
+  ) => {
     const isActive = activeSection === section;
     return (
       <button
@@ -309,8 +354,16 @@ export default function SettingsPanel({
               <nav className="grid grid-cols-4 gap-2 md:grid-cols-1">
                 {sectionButton("user", User, t("user"))}
                 {sectionButton("appearance", Palette, t("appearance"))}
-                {sectionButton("language", Languages, language === "en" ? "Language" : "语言")}
-                {sectionButton("data", Download, language === "en" ? "Data" : "数据")}
+                {sectionButton(
+                  "language",
+                  Languages,
+                  language === "en" ? "Language" : "语言",
+                )}
+                {sectionButton(
+                  "data",
+                  Download,
+                  language === "en" ? "Data" : "数据",
+                )}
               </nav>
             </aside>
 
@@ -321,7 +374,10 @@ export default function SettingsPanel({
                     {t("userSettings")}
                   </h3>
 
-                  <form onSubmit={handleUsernameChange} className="mt-5 space-y-4">
+                  <form
+                    onSubmit={handleUsernameChange}
+                    className="mt-5 space-y-4"
+                  >
                     <label className="block">
                       <span className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
                         {language === "en" ? "Display name" : "显示名称"}
@@ -329,7 +385,9 @@ export default function SettingsPanel({
                       <Input
                         value={username}
                         onChange={(event) => setUsername(event.target.value)}
-                        placeholder={language === "en" ? "Display name" : "显示名称"}
+                        placeholder={
+                          language === "en" ? "Display name" : "显示名称"
+                        }
                         disabled={savingUsername || !canChangeUsername}
                         maxLength={20}
                       />
@@ -337,17 +395,24 @@ export default function SettingsPanel({
 
                     {!canChangeUsername && (
                       <p className="text-sm text-[var(--color-warning)]">
-                        {t("usernameChangeCooldown").replace("{days}", daysRemaining.toString())}
+                        {t("usernameChangeCooldown").replace(
+                          "{days}",
+                          daysRemaining.toString(),
+                        )}
                       </p>
                     )}
 
                     <div className="flex flex-wrap items-center gap-3">
                       <Button
                         type="submit"
-                        disabled={savingUsername || !canChangeUsername || username.trim() === currentUsername}
+                        disabled={
+                          savingUsername ||
+                          !canChangeUsername ||
+                          username.trim() === currentUsername
+                        }
                       >
-                          {savingUsername ? t("saving") : t("save")}
-                        </Button>
+                        {savingUsername ? t("saving") : t("save")}
+                      </Button>
                     </div>
                   </form>
 
@@ -389,9 +454,16 @@ export default function SettingsPanel({
                             <div className="flex items-center justify-between gap-3">
                               <span className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
                                 <Icon size={16} />
-                                {language === "en" ? option.labelEn : option.labelZh}
+                                {language === "en"
+                                  ? option.labelEn
+                                  : option.labelZh}
                               </span>
-                              {selected && <Check size={16} className="text-[var(--color-primary)]" />}
+                              {selected && (
+                                <Check
+                                  size={16}
+                                  className="text-[var(--color-primary)]"
+                                />
+                              )}
                             </div>
                           </button>
                         );
@@ -424,10 +496,17 @@ export default function SettingsPanel({
                                 style={{ backgroundColor: option.color }}
                               />
                               <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                                {language === "en" ? option.labelEn : option.labelZh}
+                                {language === "en"
+                                  ? option.labelEn
+                                  : option.labelZh}
                               </span>
                             </span>
-                            {selected && <Check size={16} className="text-[var(--color-primary)]" />}
+                            {selected && (
+                              <Check
+                                size={16}
+                                className="text-[var(--color-primary)]"
+                              />
+                            )}
                           </button>
                         );
                       })}
@@ -464,7 +543,12 @@ export default function SettingsPanel({
                             <span className="font-semibold text-[var(--color-text-primary)]">
                               {option.label}
                             </span>
-                            {selected && <Check size={16} className="text-[var(--color-primary)]" />}
+                            {selected && (
+                              <Check
+                                size={16}
+                                className="text-[var(--color-primary)]"
+                              />
+                            )}
                           </div>
                         </button>
                       );
@@ -485,13 +569,18 @@ export default function SettingsPanel({
                     </h4>
                     <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                       {COMPLETED_GOAL_RETENTION_OPTIONS.map((option) => {
-                        const selected = preferences.completed_goal_retention === option.id;
+                        const selected =
+                          preferences.completed_goal_retention === option.id;
                         return (
                           <button
                             key={option.id}
                             type="button"
-                            onClick={() => handleCompletedGoalRetentionChange(option.id)}
-                            disabled={savingPreference === "completed_goal_retention"}
+                            onClick={() =>
+                              handleCompletedGoalRetentionChange(option.id)
+                            }
+                            disabled={
+                              savingPreference === "completed_goal_retention"
+                            }
                             className={`rounded-xl border p-4 text-left transition-colors duration-150 disabled:cursor-wait disabled:opacity-70 motion-reduce:transition-none ${
                               selected
                                 ? "border-[var(--color-primary)] bg-[var(--color-primary-light)]"
@@ -500,9 +589,16 @@ export default function SettingsPanel({
                           >
                             <div className="flex items-center justify-between gap-3">
                               <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                                {language === "en" ? option.labelEn : option.labelZh}
+                                {language === "en"
+                                  ? option.labelEn
+                                  : option.labelZh}
                               </span>
-                              {selected && <Check size={16} className="text-[var(--color-primary)]" />}
+                              {selected && (
+                                <Check
+                                  size={16}
+                                  className="text-[var(--color-primary)]"
+                                />
+                              )}
                             </div>
                           </button>
                         );
@@ -516,7 +612,10 @@ export default function SettingsPanel({
                         <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
                           {t("syncFailed") || "同步失败"}
                         </span>
-                        <Button variant="outline" onClick={() => void retrySync()}>
+                        <Button
+                          variant="outline"
+                          onClick={() => void retrySync()}
+                        >
                           <RefreshCw size={16} />
                           {t("retry") || "重试"}
                         </Button>

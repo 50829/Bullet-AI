@@ -27,7 +27,9 @@ export function Drawer({ isOpen, title, onClose, children }: DrawerProps) {
         aria-hidden={!isOpen}
       >
         <div className="flex min-h-16 items-center justify-between border-b border-[var(--color-border-muted)] px-4">
-          <h2 className="text-base font-semibold text-[var(--color-text-primary)]">{title}</h2>
+          <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
+            {title}
+          </h2>
           <button
             type="button"
             onClick={onClose}

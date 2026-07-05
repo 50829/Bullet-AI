@@ -26,10 +26,14 @@ describe("updateSession", () => {
       error: null,
     });
 
-    const result = await updateSession(new NextRequest("http://localhost/goals"));
+    const result = await updateSession(
+      new NextRequest("http://localhost/goals"),
+    );
 
     expect(result.authenticated).toBe(true);
-    expect(result.response.headers.get("Server-Timing")).toMatch(/^supabase-auth;dur=\d/);
+    expect(result.response.headers.get("Server-Timing")).toMatch(
+      /^supabase-auth;dur=\d/,
+    );
   });
 
   it("rejects an invalid claims response", async () => {
@@ -38,7 +42,9 @@ describe("updateSession", () => {
       error: new Error("invalid token"),
     });
 
-    const result = await updateSession(new NextRequest("http://localhost/goals"));
+    const result = await updateSession(
+      new NextRequest("http://localhost/goals"),
+    );
 
     expect(result.authenticated).toBe(false);
   });

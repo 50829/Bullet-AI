@@ -29,7 +29,9 @@ describe("goalVisibility", () => {
       { id: 3, status: "completed" },
     ];
 
-    expect(sortGoalsByCompletion(goals).map((goal) => goal.id)).toEqual([2, 1, 3]);
+    expect(sortGoalsByCompletion(goals).map((goal) => goal.id)).toEqual([
+      2, 1, 3,
+    ]);
   });
 
   it("applies completed goal retention policies", () => {

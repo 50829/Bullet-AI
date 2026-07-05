@@ -104,10 +104,14 @@ type AppContextType = {
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-const signedImageUrlCache = new Map<string, { url: string; expiresAt: number }>();
+const signedImageUrlCache = new Map<
+  string,
+  { url: string; expiresAt: number }
+>();
 const SIGNED_IMAGE_URL_TTL_MS = 55 * 60 * 1000;
 const momentsRepository = getLocalFirstRepository<Moment>("moments");
-const reflectionsRepository = getLocalFirstRepository<Reflection>("reflections");
+const reflectionsRepository =
+  getLocalFirstRepository<Reflection>("reflections");
 const goalsRepository = getLocalFirstRepository<Goal>("goals");
 
 function repositoryFor(collection: LocalCollection) {
@@ -133,11 +137,14 @@ function formatDate(dateString: string) {
 function sortByCreatedAtDesc<T extends { created_at?: string }>(items: T[]) {
   return [...items].sort(
     (a, b) =>
-      new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
+      new Date(b.created_at ?? 0).getTime() -
+      new Date(a.created_at ?? 0).getTime(),
   );
 }
 
-function withFormattedDate<T extends { created_at?: string; updated_at?: string }>(item: T) {
+function withFormattedDate<
+  T extends { created_at?: string; updated_at?: string },
+>(item: T) {
   const createdAt = item.created_at || new Date().toISOString();
   return {
     ...item,
@@ -148,12 +155,17 @@ function withFormattedDate<T extends { created_at?: string; updated_at?: string 
 }
 
 function ensureLocalFields<
-  T extends LocalMeta & { id?: number; user_id?: string; created_at?: string }
+  T extends LocalMeta & { id?: number; user_id?: string; created_at?: string },
 >(
   collection: LocalCollection,
   item: T,
   userId: string | null,
-): T & { id: number; client_id: string; created_at: string; updated_at: string } {
+): T & {
+  id: number;
+  client_id: string;
+  created_at: string;
+  updated_at: string;
+} {
   const now = new Date().toISOString();
   const prefix = collection.replace(/s$/, "");
   return {
@@ -167,7 +179,9 @@ function ensureLocalFields<
   };
 }
 
-function visibleRemoteRows<T extends { deleted_at?: string | null }>(items: T[] | null) {
+function visibleRemoteRows<T extends { deleted_at?: string | null }>(
+  items: T[] | null,
+) {
   return (items ?? []).filter((item) => !item.deleted_at);
 }
 
@@ -178,7 +192,9 @@ async function getSignedImageUrl(bucket: string, imagePath?: string | null) {
   const cached = signedImageUrlCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.url;
 
-  const result = await supabase.storage.from(bucket).createSignedUrl(imagePath, 60 * 60);
+  const result = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(imagePath, 60 * 60);
   if (result.error || !result.data) return null;
   const signedUrl = result.data.signedUrl ?? null;
   if (signedUrl) {
@@ -191,14 +207,15 @@ async function getSignedImageUrl(bucket: string, imagePath?: string | null) {
   return signedUrl;
 }
 
-async function attachSignedUrls<T extends { image_path?: string | null; created_at?: string }>(
-  bucket: "moments" | "reflections" | "goals",
-  items: T[],
-) {
+async function attachSignedUrls<
+  T extends { image_path?: string | null; created_at?: string },
+>(bucket: "moments" | "reflections" | "goals", items: T[]) {
   return Promise.all(
     items.map(async (item) => ({
       ...withFormattedDate(item),
-      image_url: item.image_path ? await getSignedImageUrl(bucket, item.image_path) : null,
+      image_url: item.image_path
+        ? await getSignedImageUrl(bucket, item.image_path)
+        : null,
     })),
   );
 }
@@ -231,9 +248,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     goals: true,
   });
 
-  const setCollectionLoading = useCallback((collection: keyof LoadingState, value: boolean) => {
-    setLoading((current) => ({ ...current, [collection]: value }));
-  }, []);
+  const setCollectionLoading = useCallback(
+    (collection: keyof LoadingState, value: boolean) => {
+      setLoading((current) => ({ ...current, [collection]: value }));
+    },
+    [],
+  );
 
   const loadCachedCollection = useCallback(
     async <T extends { created_at?: string }>(
@@ -243,7 +263,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       loadingKey: keyof LoadingState,
     ) => {
       try {
-        const cached = (await repositoryFor(collection).list(activeUserId)) as unknown as T[];
+        const cached = (await repositoryFor(collection).list(
+          activeUserId,
+        )) as unknown as T[];
         setItems(sortByCreatedAtDesc(cached.map(withFormattedDate) as T[]));
         setCollectionLoading(loadingKey, false);
       } catch (error) {
@@ -267,8 +289,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) throw new Error(error.message);
 
-        const remote = await attachSignedUrls("moments", visibleRemoteRows(data ?? []));
-        const merged = await momentsRepository.replaceRemote(activeUserId, remote as Moment[]);
+        const remote = await attachSignedUrls(
+          "moments",
+          visibleRemoteRows(data ?? []),
+        );
+        const merged = await momentsRepository.replaceRemote(
+          activeUserId,
+          remote as Moment[],
+        );
         setMoments(sortByCreatedAtDesc(merged.map(withFormattedDate)));
       } catch (error) {
         console.error("Failed to revalidate moments:", error);
@@ -293,8 +321,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) throw new Error(error.message);
 
-        const remote = await attachSignedUrls("reflections", visibleRemoteRows(data ?? []));
-        const merged = await reflectionsRepository.replaceRemote(activeUserId, remote as Reflection[]);
+        const remote = await attachSignedUrls(
+          "reflections",
+          visibleRemoteRows(data ?? []),
+        );
+        const merged = await reflectionsRepository.replaceRemote(
+          activeUserId,
+          remote as Reflection[],
+        );
         setReflections(sortByCreatedAtDesc(merged.map(withFormattedDate)));
       } catch (error) {
         console.error("Failed to revalidate reflections:", error);
@@ -319,8 +353,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) throw new Error(error.message);
 
-        const remote = await attachSignedUrls("goals", visibleRemoteRows(data ?? []));
-        const merged = await goalsRepository.replaceRemote(activeUserId, remote as Goal[]);
+        const remote = await attachSignedUrls(
+          "goals",
+          visibleRemoteRows(data ?? []),
+        );
+        const merged = await goalsRepository.replaceRemote(
+          activeUserId,
+          remote as Goal[],
+        );
         setGoals(sortByCreatedAtDesc(merged.map(withFormattedDate)));
       } catch (error) {
         console.error("Failed to revalidate goals:", error);
@@ -359,7 +399,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setGoals([]);
       setLoading(emptyLoadingState());
       await Promise.all([
-        loadCachedCollection<Moment>(activeUserId, "moments", setMoments, "moments"),
+        loadCachedCollection<Moment>(
+          activeUserId,
+          "moments",
+          setMoments,
+          "moments",
+        ),
         loadCachedCollection<Reflection>(
           activeUserId,
           "reflections",
@@ -391,7 +436,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setGoals([]);
         setLoading(emptyLoadingState());
         void Promise.all([
-          loadCachedCollection<Moment>(activeUserId, "moments", setMoments, "moments"),
+          loadCachedCollection<Moment>(
+            activeUserId,
+            "moments",
+            setMoments,
+            "moments",
+          ),
           loadCachedCollection<Reflection>(
             activeUserId,
             "reflections",
@@ -429,11 +479,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   ]);
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      void revalidateMoments();
-      void revalidateReflections();
-      void revalidateGoals();
-    }, 50 * 60 * 1000);
+    const interval = window.setInterval(
+      () => {
+        void revalidateMoments();
+        void revalidateReflections();
+        void revalidateGoals();
+      },
+      50 * 60 * 1000,
+    );
 
     return () => window.clearInterval(interval);
   }, [revalidateGoals, revalidateMoments, revalidateReflections]);
@@ -453,7 +506,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       await repositoryFor(collection).mutate(
         userId,
-        payload as { id: number | string; client_id?: string; user_id?: string },
+        payload as {
+          id: number | string;
+          client_id?: string;
+          user_id?: string;
+        },
         operation,
       );
       void flushOutbox();
@@ -463,7 +520,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const addMoment = useCallback(
     async (moment: Moment) => {
-      const nextMoment = withFormattedDate(ensureLocalFields("moments", moment, userId));
+      const nextMoment = withFormattedDate(
+        ensureLocalFields("moments", moment, userId),
+      );
       await queueUpdate("moments", nextMoment, "upsert");
       setMoments((current) => sortByCreatedAtDesc([nextMoment, ...current]));
     },
@@ -472,16 +531,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const addReflection = useCallback(
     async (reflection: Reflection) => {
-      const nextReflection = withFormattedDate(ensureLocalFields("reflections", reflection, userId));
+      const nextReflection = withFormattedDate(
+        ensureLocalFields("reflections", reflection, userId),
+      );
       await queueUpdate("reflections", nextReflection, "upsert");
-      setReflections((current) => sortByCreatedAtDesc([nextReflection, ...current]));
+      setReflections((current) =>
+        sortByCreatedAtDesc([nextReflection, ...current]),
+      );
     },
     [queueUpdate, userId],
   );
 
   const addGoal = useCallback(
     async (goal: Goal) => {
-      const nextGoal = withFormattedDate(ensureLocalFields("goals", goal, userId));
+      const nextGoal = withFormattedDate(
+        ensureLocalFields("goals", goal, userId),
+      );
       await queueUpdate("goals", nextGoal, "upsert");
       setGoals((current) => sortByCreatedAtDesc([nextGoal, ...current]));
     },
@@ -499,7 +564,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       });
       await queueUpdate("moments", updated, "update");
       setMoments((items) =>
-        sortByCreatedAtDesc(items.map((item) => (item.id === id ? updated : item))),
+        sortByCreatedAtDesc(
+          items.map((item) => (item.id === id ? updated : item)),
+        ),
       );
     },
     [moments, queueUpdate],
@@ -516,7 +583,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       });
       await queueUpdate("reflections", updated, "update");
       setReflections((items) =>
-        sortByCreatedAtDesc(items.map((item) => (item.id === id ? updated : item))),
+        sortByCreatedAtDesc(
+          items.map((item) => (item.id === id ? updated : item)),
+        ),
       );
     },
     [queueUpdate, reflections],
@@ -533,7 +602,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       });
       await queueUpdate("goals", updated, "update");
       setGoals((items) =>
-        sortByCreatedAtDesc(items.map((item) => (item.id === id ? updated : item))),
+        sortByCreatedAtDesc(
+          items.map((item) => (item.id === id ? updated : item)),
+        ),
       );
     },
     [goals, queueUpdate],
@@ -545,7 +616,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const updatedAt = new Date().toISOString();
       const next = goals.map((goal) =>
         orderMap.has(goal.id)
-          ? withFormattedDate({ ...goal, sort_order: orderMap.get(goal.id)!, updated_at: updatedAt })
+          ? withFormattedDate({
+              ...goal,
+              sort_order: orderMap.get(goal.id)!,
+              updated_at: updatedAt,
+            })
           : goal,
       );
       await Promise.all(
@@ -559,10 +634,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const queueDelete = useCallback(
-    async (collection: LocalCollection, id: number, imagePath?: string | null) => {
+    async (
+      collection: LocalCollection,
+      id: number,
+      imagePath?: string | null,
+    ) => {
       if (!userId) return;
       const repository = repositoryFor(collection);
-      const existing = (await repository.list(userId)).find((entity) => entity.id === id);
+      const existing = (await repository.list(userId)).find(
+        (entity) => entity.id === id,
+      );
       await repository.remove(userId, {
         ...(existing ?? { id, user_id: userId }),
         image_path: imagePath ?? existing?.image_path ?? null,
@@ -583,7 +664,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const deleteReflection = useCallback(
     async (id: number, imagePath?: string | null) => {
       await queueDelete("reflections", id, imagePath);
-      setReflections((current) => current.filter((reflection) => reflection.id !== id));
+      setReflections((current) =>
+        current.filter((reflection) => reflection.id !== id),
+      );
     },
     [queueDelete],
   );

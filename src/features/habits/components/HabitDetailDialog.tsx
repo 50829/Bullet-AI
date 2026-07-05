@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "../../../app/components/ui/Button";
-import { formatDateKey, isDateKeyAfter, isDateKeyBefore, toDateKey } from "../../../lib/date/dateUtils";
+import {
+  formatDateKey,
+  isDateKeyAfter,
+  isDateKeyBefore,
+  toDateKey,
+} from "../../../lib/date/dateUtils";
 import { useLanguage } from "../../../app/context/LanguageContext";
 import type { HabitView } from "../types";
 
@@ -13,7 +18,11 @@ type HabitDetailDialogProps = {
   onToggleCheckin: (habit: HabitView, dateKey: string) => Promise<void>;
 };
 
-export function HabitDetailDialog({ habit, onClose, onToggleCheckin }: HabitDetailDialogProps) {
+export function HabitDetailDialog({
+  habit,
+  onClose,
+  onToggleCheckin,
+}: HabitDetailDialogProps) {
   const { t, language } = useLanguage();
   const today = toDateKey();
   const [dateKey, setDateKey] = useState(today);
@@ -28,7 +37,7 @@ export function HabitDetailDialog({ habit, onClose, onToggleCheckin }: HabitDeta
   const createdOn = habit ? toDateKey(habit.created_at) : today;
   const checkedDateSet = useMemo(
     () => new Set(habit?.checkins.map((checkin) => checkin.checked_on) ?? []),
-    [habit]
+    [habit],
   );
   const isChecked = checkedDateSet.has(dateKey);
   const isBeforeCreated = isDateKeyBefore(dateKey, createdOn);
@@ -46,7 +55,9 @@ export function HabitDetailDialog({ habit, onClose, onToggleCheckin }: HabitDeta
     try {
       await onToggleCheckin(habit, dateKey);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : t("checkinFailed") || "打卡失败");
+      setMessage(
+        err instanceof Error ? err.message : t("checkinFailed") || "打卡失败",
+      );
     } finally {
       setSaving(false);
     }
@@ -57,9 +68,13 @@ export function HabitDetailDialog({ habit, onClose, onToggleCheckin }: HabitDeta
       <div className="w-full max-w-xl rounded-2xl bg-[var(--color-bg-card)] p-5 shadow-xl">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">{habit.name}</h2>
+            <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+              {habit.name}
+            </h2>
             {habit.description && (
-              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{habit.description}</p>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                {habit.description}
+              </p>
             )}
           </div>
           <button
@@ -74,19 +89,29 @@ export function HabitDetailDialog({ habit, onClose, onToggleCheckin }: HabitDeta
 
         <div className="mt-5 grid grid-cols-3 gap-3">
           <div className="rounded-xl bg-[var(--color-bg-surface)] p-3">
-            <p className="text-xs text-[var(--color-text-secondary)]">{t("checkinCount") || "打卡次数"}</p>
-            <p className="mt-1 text-2xl font-semibold text-[var(--color-text-primary)]">{habit.checkinCount}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              {t("checkinCount") || "打卡次数"}
+            </p>
+            <p className="mt-1 text-2xl font-semibold text-[var(--color-text-primary)]">
+              {habit.checkinCount}
+            </p>
           </div>
           <div className="rounded-xl bg-[var(--color-bg-surface)] p-3">
-            <p className="text-xs text-[var(--color-text-secondary)]">{language === "en" ? "Current streak" : "当前连续"}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              {language === "en" ? "Current streak" : "当前连续"}
+            </p>
             <p className="mt-1 text-2xl font-semibold text-[var(--color-text-primary)]">
               {habit.frequency === "daily" ? habit.streak : "-"}
             </p>
           </div>
           <div className="rounded-xl bg-[var(--color-bg-surface)] p-3">
-            <p className="text-xs text-[var(--color-text-secondary)]">{t("lastCheckin") || "上次打卡"}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              {t("lastCheckin") || "上次打卡"}
+            </p>
             <p className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">
-              {habit.lastCheckedOn ? formatDateKey(habit.lastCheckedOn, language) : "-"}
+              {habit.lastCheckedOn
+                ? formatDateKey(habit.lastCheckedOn, language)
+                : "-"}
             </p>
           </div>
         </div>
@@ -104,15 +129,31 @@ export function HabitDetailDialog({ habit, onClose, onToggleCheckin }: HabitDeta
               onChange={(event) => setDateKey(event.target.value)}
               className="min-h-10 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 text-[var(--color-text-primary)]"
             />
-            <Button onClick={handleToggle} disabled={!canToggle || saving} className="min-h-10">
-              {isChecked ? (language === "en" ? "Undo" : "撤销打卡") : t("checkin") || "打卡"}
+            <Button
+              onClick={handleToggle}
+              disabled={!canToggle || saving}
+              className="min-h-10"
+            >
+              {isChecked
+                ? language === "en"
+                  ? "Undo"
+                  : "撤销打卡"
+                : t("checkin") || "打卡"}
             </Button>
           </div>
           {isBeforeCreated && (
-            <p className="mt-2 text-sm text-red-500">{language === "en" ? "This date is before the habit was created." : "不能操作习惯创建日前的日期。"}</p>
+            <p className="mt-2 text-sm text-red-500">
+              {language === "en"
+                ? "This date is before the habit was created."
+                : "不能操作习惯创建日前的日期。"}
+            </p>
           )}
           {isFuture && (
-            <p className="mt-2 text-sm text-red-500">{language === "en" ? "Future dates cannot be checked in." : "不能提前给未来日期打卡。"}</p>
+            <p className="mt-2 text-sm text-red-500">
+              {language === "en"
+                ? "Future dates cannot be checked in."
+                : "不能提前给未来日期打卡。"}
+            </p>
           )}
           {message && <p className="mt-2 text-sm text-red-500">{message}</p>}
         </div>

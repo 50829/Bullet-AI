@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_AI_RATE_LIMIT_PER_HOUR, MAX_AI_MESSAGE_CHARS } from "../../../lib/ai/requestPolicy";
+import {
+  DEFAULT_AI_RATE_LIMIT_PER_HOUR,
+  MAX_AI_MESSAGE_CHARS,
+} from "../../../lib/ai/requestPolicy";
 import { POST } from "./route";
 
 const mocks = vi.hoisted(() => ({
@@ -69,7 +72,9 @@ describe("/api/ai", () => {
   it("returns 401 when the user is not authenticated", async () => {
     mocks.createClient.mockResolvedValue(createSupabaseMock({ user: null }));
 
-    const response = await POST(createRequest({ messages: [{ role: "user", content: "hi" }] }));
+    const response = await POST(
+      createRequest({ messages: [{ role: "user", content: "hi" }] }),
+    );
 
     expect(response.status).toBe(401);
     expect(mocks.fetch).not.toHaveBeenCalled();
@@ -80,7 +85,9 @@ describe("/api/ai", () => {
 
     const response = await POST(
       createRequest({
-        messages: [{ role: "user", content: "x".repeat(MAX_AI_MESSAGE_CHARS + 1) }],
+        messages: [
+          { role: "user", content: "x".repeat(MAX_AI_MESSAGE_CHARS + 1) },
+        ],
       }),
     );
 
@@ -93,7 +100,9 @@ describe("/api/ai", () => {
       createSupabaseMock({ count: DEFAULT_AI_RATE_LIMIT_PER_HOUR }),
     );
 
-    const response = await POST(createRequest({ messages: [{ role: "user", content: "hi" }] }));
+    const response = await POST(
+      createRequest({ messages: [{ role: "user", content: "hi" }] }),
+    );
 
     expect(response.status).toBe(429);
     expect(mocks.fetch).not.toHaveBeenCalled();
@@ -108,7 +117,9 @@ describe("/api/ai", () => {
       }),
     });
 
-    const response = await POST(createRequest({ messages: [{ role: "user", content: "hi" }] }));
+    const response = await POST(
+      createRequest({ messages: [{ role: "user", content: "hi" }] }),
+    );
     const body = await response.json();
 
     expect(response.status).toBe(200);

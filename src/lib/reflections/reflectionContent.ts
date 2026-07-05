@@ -14,7 +14,10 @@ export function parseReflectionContent(reflection: ReflectionContentInput) {
 
   const parts = reflection.content.split("\n\n");
   const candidateTitle = parts[0].trim();
-  const hasTitle = parts.length > 1 && candidateTitle.length > 0 && candidateTitle.length <= 100;
+  const hasTitle =
+    parts.length > 1 &&
+    candidateTitle.length > 0 &&
+    candidateTitle.length <= 100;
 
   return {
     title: hasTitle ? candidateTitle : "",

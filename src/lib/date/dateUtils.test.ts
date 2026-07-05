@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { addDays, formatDateKey, isDateKeyAfter, isDateKeyBefore, toDateKey } from "./dateUtils";
+import {
+  addDays,
+  formatDateKey,
+  isDateKeyAfter,
+  isDateKeyBefore,
+  toDateKey,
+} from "./dateUtils";
 
 describe("dateUtils", () => {
   it("formats Date values as local date keys", () => {

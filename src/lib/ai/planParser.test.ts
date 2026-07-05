@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { extractPlanFromReply, removePlanFromReply, toFrontendPlan } from "./planParser";
+import {
+  extractPlanFromReply,
+  removePlanFromReply,
+  toFrontendPlan,
+} from "./planParser";
 
 describe("planParser", () => {
   it("extracts a fenced JSON plan", () => {
@@ -29,7 +33,9 @@ describe("planParser", () => {
   });
 
   it("normalizes internal plan shape for the frontend", () => {
-    expect(toFrontendPlan({ tasksDaily: [{ title: "A", description: "B" }] })).toEqual({
+    expect(
+      toFrontendPlan({ tasksDaily: [{ title: "A", description: "B" }] }),
+    ).toEqual({
       daily: [{ title: "A", description: "B" }],
       future: [],
     });

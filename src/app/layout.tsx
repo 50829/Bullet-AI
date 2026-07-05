@@ -1,18 +1,18 @@
 // app/layout.tsx
-import './globals.css';
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import { LanguageProvider } from './context/LanguageContext';
-import { ThemeInitializer } from './components/ThemeInitializer';
-import { Suspense } from 'react';
-import { LoadingState } from './components/ui/LoadingState';
-import { ToastProvider } from './components/ui/Toast';
+import "./globals.css";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { LanguageProvider } from "./context/LanguageContext";
+import { ThemeInitializer } from "./components/ThemeInitializer";
+import { Suspense } from "react";
+import { LoadingState } from "./components/ui/LoadingState";
+import { ToastProvider } from "./components/ui/Toast";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'BulletAI',
-  description: '利用BulletAI，活成自己梦想中的样子',
+  title: "BulletAI",
+  description: "利用BulletAI，活成自己梦想中的样子",
 };
 
 export default function RootLayout({

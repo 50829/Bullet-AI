@@ -14,7 +14,9 @@ export type NetworkConnectionHint = {
   effectiveType?: string;
 };
 
-export function shouldSkipWorkspacePrefetch(connection?: NetworkConnectionHint) {
+export function shouldSkipWorkspacePrefetch(
+  connection?: NetworkConnectionHint,
+) {
   return connection?.saveData === true || connection?.effectiveType === "2g";
 }
 

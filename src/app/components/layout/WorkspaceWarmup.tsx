@@ -43,7 +43,10 @@ export function WorkspaceWarmup() {
 
       if (process.env.NODE_ENV === "development") {
         try {
-          await fetch(target, { credentials: "same-origin", cache: "no-store" });
+          await fetch(target, {
+            credentials: "same-origin",
+            cache: "no-store",
+          });
         } catch {
           warmedRoutes.delete(target);
         }
@@ -60,7 +63,9 @@ export function WorkspaceWarmup() {
     };
 
     if ("requestIdleCallback" in window) {
-      idleCallbackId = window.requestIdleCallback(() => void prefetchNext(0), { timeout: 1_500 });
+      idleCallbackId = window.requestIdleCallback(() => void prefetchNext(0), {
+        timeout: 1_500,
+      });
     } else {
       fallbackTimer = setTimeout(() => void prefetchNext(0), 500);
     }

@@ -32,8 +32,12 @@ export function HabitList({
 }: HabitListProps) {
   const { t } = useLanguage();
   const [selectedHabitId, setSelectedHabitId] = useState<number | null>(null);
-  const visibleHabits = useMemo(() => (limit ? habits.slice(0, limit) : habits), [habits, limit]);
-  const selectedHabit = habits.find((habit) => habit.id === selectedHabitId) ?? null;
+  const visibleHabits = useMemo(
+    () => (limit ? habits.slice(0, limit) : habits),
+    [habits, limit],
+  );
+  const selectedHabit =
+    habits.find((habit) => habit.id === selectedHabitId) ?? null;
 
   if (loading) return <LoadingState />;
 

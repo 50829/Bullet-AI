@@ -1,11 +1,20 @@
 "use client";
 
-import React, { type ReactNode } from 'react';
-import type { NextPage } from 'next';
-import { Sparkles, Camera, Target, Lightbulb, Check, ArrowRight, ArrowUp, Globe } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { useLanguage } from './context/LanguageContext';
+import React, { type ReactNode } from "react";
+import type { NextPage } from "next";
+import {
+  Sparkles,
+  Camera,
+  Target,
+  Lightbulb,
+  Check,
+  ArrowRight,
+  ArrowUp,
+  Globe,
+} from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useLanguage } from "./context/LanguageContext";
 
 type FeatureItem = {
   icon: ReactNode;
@@ -68,7 +77,7 @@ const LandingPage: NextPage = () => {
 
   const scrollToTop = () => {
     if (topRef.current) {
-      topRef.current.scrollIntoView({ behavior: 'smooth' });
+      topRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -93,14 +102,16 @@ const LandingPage: NextPage = () => {
 const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
-  
+
   const goToLogin = () => {
-    router.push('/login');
+    router.push("/login");
   };
 
   return (
     <section className="relative z-10 flex flex-col items-center justify-center p-4 text-center">
-      <div className={`absolute top-4 left-4 flex items-center gap-3 z-20 ${getRevealClass(isVisible)}`}>
+      <div
+        className={`absolute top-4 left-4 flex items-center gap-3 z-20 ${getRevealClass(isVisible)}`}
+      >
         <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
           <Sparkles className="h-6 w-6 text-gray-700" />
         </div>
@@ -114,8 +125,8 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
         <button
           onClick={() => setLanguage("en")}
           className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
-            language === "en" 
-              ? "bg-[var(--color-primary)] text-[var(--color-text-on-primary)]" 
+            language === "en"
+              ? "bg-[var(--color-primary)] text-[var(--color-text-on-primary)]"
               : "text-gray-500 hover:text-amber-500"
           }`}
         >
@@ -126,8 +137,8 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
         <button
           onClick={() => setLanguage("zh")}
           className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
-            language === "zh" 
-              ? "bg-[var(--color-primary)] text-[var(--color-text-on-primary)]" 
+            language === "zh"
+              ? "bg-[var(--color-primary)] text-[var(--color-text-on-primary)]"
               : "text-gray-500 hover:text-amber-500"
           }`}
         >
@@ -141,21 +152,21 @@ const HeroSection = ({ isVisible }: { isVisible: boolean }) => {
           className={`text-6xl md:text-7xl font-bold text-theme-primary tracking-tight ${getRevealClass(isVisible)}`}
           style={{ transitionDelay: isVisible ? "120ms" : "0ms" }}
         >
-        {t("heroTitle")}
+          {t("heroTitle")}
         </h1>
-        
+
         <div
           className={`mt-4 flex justify-center ${getRevealClass(isVisible)}`}
           style={{ transitionDelay: isVisible ? "220ms" : "0ms" }}
         >
           <p className="text-2xl md:text-3xl text-gray-600">{t("slogan")}</p>
         </div>
-        
+
         <div
           className={`mt-10 flex flex-col sm:flex-row gap-4 ${getRevealClass(isVisible)}`}
           style={{ transitionDelay: isVisible ? "320ms" : "0ms" }}
         >
-          <button 
+          <button
             onClick={goToLogin}
             className="flex h-14 min-w-[200px] items-center justify-center rounded-full border border-[var(--color-primary)] bg-[var(--color-primary)] px-10 py-4 text-lg font-semibold text-[var(--color-text-on-primary)] shadow-sm transition-colors duration-150 hover:bg-[var(--color-primary-hover)]"
           >
@@ -190,7 +201,10 @@ const FeaturesSection = () => {
     {
       icon: <Check className="h-7 w-7 text-gray-700" />,
       title: t("habit"),
-      description: language === "en" ? "Small routines stay visible beside each day" : "把长期的小行动放在每天看得见的位置",
+      description:
+        language === "en"
+          ? "Small routines stay visible beside each day"
+          : "把长期的小行动放在每天看得见的位置",
     },
   ];
 
@@ -198,8 +212,12 @@ const FeaturesSection = () => {
     <section ref={ref} className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
         <div className={`text-center mb-16 ${getRevealClass(isVisible)}`}>
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-theme-primary">{t("coreFeatures")}</h2>
-          <p className="mt-4 text-xl text-gray-600">{t("featuresDescription")}</p>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-theme-primary">
+            {t("coreFeatures")}
+          </h2>
+          <p className="mt-4 text-xl text-gray-600">
+            {t("featuresDescription")}
+          </p>
         </div>
 
         <div
@@ -219,7 +237,9 @@ const FeaturesSection = () => {
               <div
                 key={feature.title}
                 className={`relative flex flex-col justify-center items-start p-4 md:p-6 rounded-3xl overflow-hidden ${getRevealClass(isVisible)}`}
-                style={{ transitionDelay: isVisible ? `${220 + index * 70}ms` : "0ms" }}
+                style={{
+                  transitionDelay: isVisible ? `${220 + index * 70}ms` : "0ms",
+                }}
               >
                 <div className="relative w-full h-full min-h-[200px] flex items-center justify-center">
                   <div className="flex flex-col justify-center items-center text-center p-6 md:p-8">
@@ -245,7 +265,6 @@ const FeaturesSection = () => {
   );
 };
 
-
 const PricingSection = () => {
   const { ref, isVisible } = useScrollReveal<HTMLElement>();
   const { t } = useLanguage();
@@ -269,8 +288,12 @@ const PricingSection = () => {
     <section ref={ref} className="py-20 px-4">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className={`lg:col-span-1 ${getRevealClass(isVisible)}`}>
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight whitespace-pre-line text-theme-primary">{t("suitableForEveryone")}</h2>
-          <p className="mt-4 text-xl text-gray-600 whitespace-pre-line">{t("pricingDescription")}</p>
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight whitespace-pre-line text-theme-primary">
+            {t("suitableForEveryone")}
+          </h2>
+          <p className="mt-4 text-xl text-gray-600 whitespace-pre-line">
+            {t("pricingDescription")}
+          </p>
         </div>
         <div
           className={`lg:col-span-2 flex items-center justify-center ${getRevealClass(isVisible)}`}
@@ -285,13 +308,23 @@ const PricingSection = () => {
   );
 };
 
-const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
-  name: string; description: string; features: string[]; buttonText: string; isFeatured: boolean;
+const PricingCard = ({
+  name,
+  description,
+  features,
+  buttonText,
+  isFeatured,
+}: {
+  name: string;
+  description: string;
+  features: string[];
+  buttonText: string;
+  isFeatured: boolean;
 }) => {
   const router = useRouter();
 
   const goToLogin = () => {
-    router.push('/login');
+    router.push("/login");
   };
 
   return (
@@ -301,14 +334,18 @@ const PricingCard = ({ name, description, features, buttonText, isFeatured }: {
       <ul className="mt-8 space-y-4 flex-grow">
         {features.map((feature, index) => (
           <li key={index} className="flex items-center gap-3">
-            <div className={`rounded-full p-0.5 ${isFeatured ? 'bg-blue-100' : 'bg-green-100'}`}>
-              <Check className={`h-4 w-4 ${isFeatured ? 'text-blue-600' : 'text-green-600'}`} />
+            <div
+              className={`rounded-full p-0.5 ${isFeatured ? "bg-blue-100" : "bg-green-100"}`}
+            >
+              <Check
+                className={`h-4 w-4 ${isFeatured ? "text-blue-600" : "text-green-600"}`}
+              />
             </div>
             <span>{feature}</span>
           </li>
         ))}
       </ul>
-      <button 
+      <button
         onClick={goToLogin}
         className="mt-8 flex h-14 w-full items-center justify-center rounded-full border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-4 text-lg font-semibold text-[var(--color-text-on-primary)] transition-colors duration-150 hover:bg-[var(--color-primary-hover)]"
       >
@@ -325,16 +362,20 @@ const CallToActionSection = () => {
   const router = useRouter();
 
   const goToLogin = () => {
-    router.push('/login');
+    router.push("/login");
   };
 
   return (
     <section ref={ref} className="py-4 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className={`bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-12 rounded-3xl text-center shadow-lg hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ${getRevealClass(isVisible)}`}>
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-theme-primary">{t("startYourStory")}</h2>
+        <div
+          className={`bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-12 rounded-3xl text-center shadow-lg hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ${getRevealClass(isVisible)}`}
+        >
+          <h2 className="text-5xl md:text-6xl font-bold tracking-tight text-theme-primary">
+            {t("startYourStory")}
+          </h2>
           <p className="mt-4 text-xl text-gray-600">{t("storyDescription")}</p>
-          <button 
+          <button
             onClick={goToLogin}
             className="mt-12 inline-flex h-14 items-center justify-center gap-2 rounded-full border border-[var(--color-primary)] bg-[var(--color-primary)] px-10 py-4 text-lg font-semibold text-[var(--color-text-on-primary)] shadow-sm transition-colors duration-150 hover:bg-[var(--color-primary-hover)]"
           >
@@ -354,28 +395,34 @@ const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
   return (
     <footer ref={ref} className="relative py-12 px-4">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center text-gray-600">
-        <div className={`flex flex-col items-center sm:items-start ${getRevealClass(isVisible)}`}>
+        <div
+          className={`flex flex-col items-center sm:items-start ${getRevealClass(isVisible)}`}
+        >
           <div className="flex items-center gap-3">
             <div className="bg-gradient-to-br from-blue-100/80 via-white/80 to-orange-100/80 p-2 rounded-3xl shadow-lg border border-orange-200">
-                <Sparkles className="h-6 w-6 text-gray-700"/>
+              <Sparkles className="h-6 w-6 text-gray-700" />
             </div>
-            <span className="font-bold text-xl text-theme-primary">BulletAI</span>
+            <span className="font-bold text-xl text-theme-primary">
+              BulletAI
+            </span>
           </div>
-          <p className="mt-2 text-sm text-center sm:text-left text-theme-primary">{t("copyright")}</p>
+          <p className="mt-2 text-sm text-center sm:text-left text-theme-primary">
+            {t("copyright")}
+          </p>
         </div>
         <div
           className={`mt-8 sm:mt-0 text-center sm:text-right ${getRevealClass(isVisible)}`}
           style={{ transitionDelay: isVisible ? "120ms" : "0ms" }}
         >
           <button
-            onClick={() => router.push('/contact')}
+            onClick={() => router.push("/contact")}
             className="font-semibold hover:text-orange-400 transition-colors cursor-pointer"
           >
             {t("contactUs")}
           </button>
         </div>
       </div>
-      <button 
+      <button
         onClick={scrollToTop}
         className="fixed bottom-10 right-10 z-50 rounded-full border border-[var(--color-primary)] bg-[var(--color-primary)] p-3 text-[var(--color-text-on-primary)] shadow-sm transition-colors duration-150 hover:bg-[var(--color-primary-hover)]"
         aria-label="返回顶部"

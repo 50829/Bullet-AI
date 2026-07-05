@@ -57,9 +57,9 @@ export function AssistantDrawer({
 
     const nextMessages = [...messages, userMessage];
     const messagesToSend = nextMessages.map((message) => ({
-        role: message.role,
-        content: message.content,
-      }));
+      role: message.role,
+      content: message.content,
+    }));
 
     setMessages(nextMessages);
     setInput("");
@@ -89,7 +89,7 @@ export function AssistantDrawer({
           id: `assistant-${Date.now()}`,
           role: "assistant",
           content: data.reply || t("aiError") || "抱歉，没有收到回复。",
-          planData: mode === "planning" ? data.plan ?? null : null,
+          planData: mode === "planning" ? (data.plan ?? null) : null,
         },
       ]);
     } catch (error) {
@@ -121,7 +121,10 @@ export function AssistantDrawer({
         {
           id: `assistant-add-error-${Date.now()}`,
           role: "assistant",
-          content: error instanceof Error ? error.message : t("addGoalsFailed") || "添加目标失败。",
+          content:
+            error instanceof Error
+              ? error.message
+              : t("addGoalsFailed") || "添加目标失败。",
           planData: null,
         },
       ]);
@@ -152,7 +155,9 @@ export function AssistantDrawer({
                   : "border border-[var(--color-border-muted)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
               }`}
             >
-              <p className="whitespace-pre-wrap text-sm leading-6">{message.content}</p>
+              <p className="whitespace-pre-wrap text-sm leading-6">
+                {message.content}
+              </p>
 
               {message.planData && (
                 <div className="mt-3 rounded-lg border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-3">
@@ -184,9 +189,13 @@ export function AssistantDrawer({
                   <Button
                     className="mt-3 w-full"
                     disabled={isAdding}
-                    onClick={() => message.planData && void handleAddGoals(message.planData)}
+                    onClick={() =>
+                      message.planData && void handleAddGoals(message.planData)
+                    }
                   >
-                    {isAdding ? t("adding") || "添加中..." : t("addToMigrationList") || "加入待分配任务"}
+                    {isAdding
+                      ? t("adding") || "添加中..."
+                      : t("addToMigrationList") || "加入待分配任务"}
                   </Button>
                 </div>
               )}
@@ -210,7 +219,9 @@ export function AssistantDrawer({
             value={input}
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder || t("aiInputPlaceholder") || "输入你的想法..."}
+            placeholder={
+              placeholder || t("aiInputPlaceholder") || "输入你的想法..."
+            }
             disabled={isLoading}
             className="min-w-0 flex-1 rounded-lg bg-transparent px-2 py-2 text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-secondary)]"
           />

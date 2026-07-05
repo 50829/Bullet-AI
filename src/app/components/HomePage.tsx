@@ -8,7 +8,12 @@ import { useHabits } from "../../features/habits/hooks/useHabits";
 import type { HabitView } from "../../features/habits/types";
 import { HabitList } from "../../features/habits/components/HabitList";
 import { GoalCard } from "../../features/goals/components/GoalCard";
-import { isGoalCompleted, shouldShowGoal, sortGoalsByCompletion, sortGoalsByOrder } from "../../features/goals/goalVisibility";
+import {
+  isGoalCompleted,
+  shouldShowGoal,
+  sortGoalsByCompletion,
+  sortGoalsByOrder,
+} from "../../features/goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
 import { useLanguage } from "../context/LanguageContext";
 import { Card } from "./ui/Card";
@@ -18,12 +23,18 @@ import { LoadingState } from "./ui/LoadingState";
 import { useToast } from "./ui/Toast";
 import { parseReflectionContent } from "../../lib/reflections/reflectionContent";
 
-const ConfirmDialog = dynamic(() => import("./ui/ConfirmDialog").then((mod) => mod.ConfirmDialog), {
-  ssr: false,
-});
-const GoalModal = dynamic(() => import("./GoalModal").then((mod) => mod.GoalModal), {
-  ssr: false,
-});
+const ConfirmDialog = dynamic(
+  () => import("./ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
+  {
+    ssr: false,
+  },
+);
+const GoalModal = dynamic(
+  () => import("./GoalModal").then((mod) => mod.GoalModal),
+  {
+    ssr: false,
+  },
+);
 const HabitFormDialog = dynamic(
   () =>
     import("../../features/habits/components/HabitFormDialog").then(
@@ -31,9 +42,12 @@ const HabitFormDialog = dynamic(
     ),
   { ssr: false },
 );
-const MomentModal = dynamic(() => import("./MomentModal").then((mod) => mod.MomentModal), {
-  ssr: false,
-});
+const MomentModal = dynamic(
+  () => import("./MomentModal").then((mod) => mod.MomentModal),
+  {
+    ssr: false,
+  },
+);
 const ReflectionModal = dynamic(
   () => import("./ReflectionModal").then((mod) => mod.ReflectionModal),
   { ssr: false },
@@ -99,11 +113,17 @@ export default function HomePage() {
     () => goals.filter((goal) => goal.due_date === today),
     [goals, today],
   );
-  const openTodayGoals = todayGoals.filter((goal) => goal.status !== "completed");
+  const openTodayGoals = todayGoals.filter(
+    (goal) => goal.status !== "completed",
+  );
   const visibleTodayGoals = useMemo(
     () =>
       sortGoalsByCompletion(
-        sortGoalsByOrder(todayGoals.filter((goal) => shouldShowGoal(goal, completedGoalRetention))),
+        sortGoalsByOrder(
+          todayGoals.filter((goal) =>
+            shouldShowGoal(goal, completedGoalRetention),
+          ),
+        ),
       ),
     [completedGoalRetention, todayGoals],
   );
@@ -140,7 +160,10 @@ export default function HomePage() {
     } catch (error) {
       showToast({
         type: "error",
-        message: error instanceof Error ? error.message : t("updateFailed") || "更新失败",
+        message:
+          error instanceof Error
+            ? error.message
+            : t("updateFailed") || "更新失败",
       });
     }
   };
@@ -153,7 +176,10 @@ export default function HomePage() {
     } catch (error) {
       showToast({
         type: "error",
-        message: error instanceof Error ? error.message : t("deleteFailed") || "删除失败",
+        message:
+          error instanceof Error
+            ? error.message
+            : t("deleteFailed") || "删除失败",
       });
     }
   };
@@ -166,7 +192,10 @@ export default function HomePage() {
     } catch (error) {
       showToast({
         type: "error",
-        message: error instanceof Error ? error.message : t("deleteFailed") || "删除失败",
+        message:
+          error instanceof Error
+            ? error.message
+            : t("deleteFailed") || "删除失败",
       });
     }
   };
@@ -175,7 +204,9 @@ export default function HomePage() {
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-[var(--color-primary)]">Today</p>
+          <p className="text-sm font-semibold text-[var(--color-primary)]">
+            Today
+          </p>
           <h1 className="mt-1 text-3xl font-bold text-[var(--color-text-primary)]">
             {t("todayWorkbench") || "今天的成长工作台"}
           </h1>
@@ -232,7 +263,11 @@ export default function HomePage() {
           ) : visibleTodayGoals.length === 0 ? (
             <EmptyState
               title={t("noTasksToday") || "今天还没有任务"}
-              action={<Button onClick={() => setGoalOpen(true)}>{t("newGoal") || "新建目标"}</Button>}
+              action={
+                <Button onClick={() => setGoalOpen(true)}>
+                  {t("newGoal") || "新建目标"}
+                </Button>
+              }
             />
           ) : (
             <div className="divide-y divide-[var(--color-border-muted)]">
@@ -260,8 +295,8 @@ export default function HomePage() {
                 {t("myHabits") || "今日习惯"}
               </h2>
               <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                {habits.filter((habit) => habit.checkedToday).length}/{habits.length}{" "}
-                {t("checkedIn") || "已打卡"}
+                {habits.filter((habit) => habit.checkedToday).length}/
+                {habits.length} {t("checkedIn") || "已打卡"}
               </p>
             </div>
             <Button variant="outline" onClick={() => setHabitOpen(true)}>
@@ -292,7 +327,8 @@ export default function HomePage() {
                 {t("recentRecords") || "最近更新"}
               </h2>
               <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                {t("recentRecordsDescription") || "生活记录和感悟会在这里汇总。"}
+                {t("recentRecordsDescription") ||
+                  "生活记录和感悟会在这里汇总。"}
               </p>
             </div>
             <Button variant="outline" onClick={() => setReflectionOpen(true)}>
@@ -303,17 +339,26 @@ export default function HomePage() {
           {recentItems.length === 0 ? (
             <EmptyState
               title={t("noRecords") || "暂无记录"}
-              action={<Button onClick={() => setMomentOpen(true)}>{t("newMoment") || "记录"}</Button>}
+              action={
+                <Button onClick={() => setMomentOpen(true)}>
+                  {t("newMoment") || "记录"}
+                </Button>
+              }
             />
           ) : (
             <div className="divide-y divide-[var(--color-border-muted)]">
               {recentItems.map((item) => (
-                <div key={item.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                <div
+                  key={item.id}
+                  className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
+                >
                   <span className="mt-1 rounded-full bg-[var(--color-primary-light)] p-2 text-[var(--color-primary)]">
                     <Clock3 size={14} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-[var(--color-text-secondary)]">{item.type}</p>
+                    <p className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                      {item.type}
+                    </p>
                     <p className="mt-1 line-clamp-2 text-sm text-[var(--color-text-primary)]">
                       {item.title}
                     </p>
@@ -326,53 +371,67 @@ export default function HomePage() {
       </div>
 
       {momentOpen && (
-        <MomentModal isOpen onClose={() => setMomentOpen(false)} onSuccess={() => undefined} />
+        <MomentModal
+          isOpen
+          onClose={() => setMomentOpen(false)}
+          onSuccess={() => undefined}
+        />
       )}
-      {goalOpen && <GoalModal
-        isOpen={goalOpen}
-        initialGoal={editingGoal}
-        onClose={() => {
-          setGoalOpen(false);
-          setEditingGoal(null);
-        }}
-        onSuccess={() => undefined}
-      />}
-      {reflectionOpen && <ReflectionModal
-        isOpen
-        onClose={() => setReflectionOpen(false)}
-        onSuccess={() => undefined}
-      />}
-      {habitOpen && <HabitFormDialog
-        isOpen
-        saving={habitsSaving}
-        habit={editingHabit}
-        onClose={() => {
-          setHabitOpen(false);
-          setEditingHabit(null);
-        }}
-        onCreate={createHabit}
-        onUpdate={updateHabit}
-      />}
-      {habitToDelete && <ConfirmDialog
-        isOpen
-        title={`${t("confirmDelete") || "确认删除"} ${habitToDelete?.name ?? ""}`}
-        description={t("cannotRecover") || "删除后不可恢复。"}
-        confirmLabel={t("confirm") || "确认"}
-        cancelLabel={t("cancel") || "取消"}
-        tone="danger"
-        onConfirm={confirmDeleteHabit}
-        onCancel={() => setHabitToDelete(null)}
-      />}
-      {goalToDelete && <ConfirmDialog
-        isOpen
-        title={`${t("confirmDelete") || "确认删除"} ${goalToDelete?.title ?? ""}`}
-        description={t("cannotRecover") || "删除后不可恢复。"}
-        confirmLabel={t("confirm") || "确认"}
-        cancelLabel={t("cancel") || "取消"}
-        tone="danger"
-        onConfirm={confirmDeleteGoal}
-        onCancel={() => setGoalToDelete(null)}
-      />}
+      {goalOpen && (
+        <GoalModal
+          isOpen={goalOpen}
+          initialGoal={editingGoal}
+          onClose={() => {
+            setGoalOpen(false);
+            setEditingGoal(null);
+          }}
+          onSuccess={() => undefined}
+        />
+      )}
+      {reflectionOpen && (
+        <ReflectionModal
+          isOpen
+          onClose={() => setReflectionOpen(false)}
+          onSuccess={() => undefined}
+        />
+      )}
+      {habitOpen && (
+        <HabitFormDialog
+          isOpen
+          saving={habitsSaving}
+          habit={editingHabit}
+          onClose={() => {
+            setHabitOpen(false);
+            setEditingHabit(null);
+          }}
+          onCreate={createHabit}
+          onUpdate={updateHabit}
+        />
+      )}
+      {habitToDelete && (
+        <ConfirmDialog
+          isOpen
+          title={`${t("confirmDelete") || "确认删除"} ${habitToDelete?.name ?? ""}`}
+          description={t("cannotRecover") || "删除后不可恢复。"}
+          confirmLabel={t("confirm") || "确认"}
+          cancelLabel={t("cancel") || "取消"}
+          tone="danger"
+          onConfirm={confirmDeleteHabit}
+          onCancel={() => setHabitToDelete(null)}
+        />
+      )}
+      {goalToDelete && (
+        <ConfirmDialog
+          isOpen
+          title={`${t("confirmDelete") || "确认删除"} ${goalToDelete?.title ?? ""}`}
+          description={t("cannotRecover") || "删除后不可恢复。"}
+          confirmLabel={t("confirm") || "确认"}
+          cancelLabel={t("cancel") || "取消"}
+          tone="danger"
+          onConfirm={confirmDeleteGoal}
+          onCancel={() => setGoalToDelete(null)}
+        />
+      )}
     </div>
   );
 }

@@ -7,7 +7,12 @@ import { Input } from "../../../app/components/ui/Input";
 import { Textarea } from "../../../app/components/ui/Textarea";
 import { Modal } from "../../../app/components/ui/Modal";
 import { useLanguage } from "../../../app/context/LanguageContext";
-import type { CreateHabitInput, HabitFrequency, HabitView, UpdateHabitInput } from "../types";
+import type {
+  CreateHabitInput,
+  HabitFrequency,
+  HabitView,
+  UpdateHabitInput,
+} from "../types";
 
 type HabitFormDialogProps = {
   isOpen: boolean;
@@ -79,7 +84,9 @@ export function HabitFormDialog({
       }
       handleClose();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : t("saveFailed") || "保存失败");
+      setMessage(
+        err instanceof Error ? err.message : t("saveFailed") || "保存失败",
+      );
     }
   };
 
@@ -149,18 +156,22 @@ export function HabitFormDialog({
           {t("color") || "颜色"}
         </label>
         <div className="mt-2 flex flex-wrap gap-2">
-          {["#2f6f5e", "#4f7c8a", "#7c5c9e", "#a16207", "#64748b"].map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setColor(value)}
-              className={`h-8 w-8 rounded-lg border-2 transition-colors duration-150 motion-reduce:transition-none ${
-                color === value ? "border-[var(--color-text-primary)]" : "border-transparent"
-              }`}
-              style={{ backgroundColor: value }}
-              aria-label={value}
-            />
-          ))}
+          {["#2f6f5e", "#4f7c8a", "#7c5c9e", "#a16207", "#64748b"].map(
+            (value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setColor(value)}
+                className={`h-8 w-8 rounded-lg border-2 transition-colors duration-150 motion-reduce:transition-none ${
+                  color === value
+                    ? "border-[var(--color-text-primary)]"
+                    : "border-transparent"
+                }`}
+                style={{ backgroundColor: value }}
+                aria-label={value}
+              />
+            ),
+          )}
         </div>
 
         {message && <p className="mt-3 text-sm text-red-500">{message}</p>}

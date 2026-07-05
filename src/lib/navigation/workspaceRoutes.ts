@@ -17,7 +17,10 @@ export const WORKSPACE_PAGE_ORDER: WorkspacePage[] = [
 ];
 
 const WORKSPACE_PATH_TO_PAGE = new Map(
-  Object.entries(WORKSPACE_ROUTES).map(([page, path]) => [path, page as WorkspacePage]),
+  Object.entries(WORKSPACE_ROUTES).map(([page, path]) => [
+    path,
+    page as WorkspacePage,
+  ]),
 );
 
 export function isWorkspacePath(pathname: string) {

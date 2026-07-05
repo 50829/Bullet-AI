@@ -11,13 +11,14 @@ export const MAX_AI_TOTAL_CHARS = 12000;
 
 export function getAiRateLimitPerHour() {
   const configured = Number(process.env.AI_RATE_LIMIT_PER_HOUR);
-  if (Number.isFinite(configured) && configured > 0) return Math.floor(configured);
+  if (Number.isFinite(configured) && configured > 0)
+    return Math.floor(configured);
   return DEFAULT_AI_RATE_LIMIT_PER_HOUR;
 }
 
-export function validateAiMessages(value: unknown):
-  | { ok: true; messages: AiChatMessage[] }
-  | { ok: false; error: string } {
+export function validateAiMessages(
+  value: unknown,
+): { ok: true; messages: AiChatMessage[] } | { ok: false; error: string } {
   if (!Array.isArray(value)) {
     return { ok: false, error: "messages must be an array" };
   }
@@ -27,7 +28,10 @@ export function validateAiMessages(value: unknown):
   }
 
   if (value.length > MAX_AI_MESSAGES) {
-    return { ok: false, error: `messages cannot exceed ${MAX_AI_MESSAGES} items` };
+    return {
+      ok: false,
+      error: `messages cannot exceed ${MAX_AI_MESSAGES} items`,
+    };
   }
 
   let totalLength = 0;

@@ -102,7 +102,9 @@ export function GoalCard({
         )}
       </div>
 
-      <div className={`${isList ? "" : "col-span-2 sm:col-span-1"} grid ${actionGrid} justify-self-end gap-1`}>
+      <div
+        className={`${isList ? "" : "col-span-2 sm:col-span-1"} grid ${actionGrid} justify-self-end gap-1`}
+      >
         {showMoveAction && moveAction ? (
           <button
             type="button"

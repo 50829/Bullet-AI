@@ -6,7 +6,10 @@ export type CalendarGridDay = {
   isCurrentMonth: boolean;
 };
 
-export function buildCalendarGrid(year: number, month: number): CalendarGridDay[] {
+export function buildCalendarGrid(
+  year: number,
+  month: number,
+): CalendarGridDay[] {
   const monthStart = new Date(year, month, 1);
   const gridStart = new Date(year, month, 1 - monthStart.getDay());
 

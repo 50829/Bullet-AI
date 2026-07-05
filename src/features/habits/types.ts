@@ -42,4 +42,6 @@ export type CreateHabitInput = {
   color?: string | null;
 };
 
-export type UpdateHabitInput = Partial<Pick<CreateHabitInput, "name" | "description" | "frequency" | "color">>;
+export type UpdateHabitInput = Partial<
+  Pick<CreateHabitInput, "name" | "description" | "frequency" | "color">
+>;

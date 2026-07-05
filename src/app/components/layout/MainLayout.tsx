@@ -1,12 +1,12 @@
 // src/components/layout/MainLayout.tsx
-import React from 'react';
-import { Sidebar } from './Sidebar';
-import { BottomSidebar } from './BottomSidebar';
-import { TopBar, TopBarProvider } from './TopBar';
-import { WorkspaceNavigationTracker } from './WorkspaceNavigationTracker';
-import { WorkspaceWarmup } from './WorkspaceWarmup';
-import { WorkspaceHydrationBoundary } from './WorkspaceHydrationBoundary';
-import { WorkspaceNavigationProvider } from './WorkspaceNavigationContext';
+import React from "react";
+import { Sidebar } from "./Sidebar";
+import { BottomSidebar } from "./BottomSidebar";
+import { TopBar, TopBarProvider } from "./TopBar";
+import { WorkspaceNavigationTracker } from "./WorkspaceNavigationTracker";
+import { WorkspaceWarmup } from "./WorkspaceWarmup";
+import { WorkspaceHydrationBoundary } from "./WorkspaceHydrationBoundary";
+import { WorkspaceNavigationProvider } from "./WorkspaceNavigationContext";
 
 export const MainLayout = ({ children }: { children: React.ReactNode }) => {
   return (

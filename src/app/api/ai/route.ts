@@ -33,7 +33,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { messages: userMessages, language, systemPrompt } = body as {
+    const {
+      messages: userMessages,
+      language,
+      systemPrompt,
+    } = body as {
       messages: unknown;
       language?: string;
       systemPrompt?: string;
@@ -45,10 +49,15 @@ export async function POST(req: Request) {
     }
 
     if (typeof systemPrompt === "string" && systemPrompt.length > 6000) {
-      return NextResponse.json({ error: "systemPrompt is too long" }, { status: 400 });
+      return NextResponse.json(
+        { error: "systemPrompt is too long" },
+        { status: 400 },
+      );
     }
 
-    const windowStart = new Date(Date.now() - AI_RATE_LIMIT_WINDOW_MS).toISOString();
+    const windowStart = new Date(
+      Date.now() - AI_RATE_LIMIT_WINDOW_MS,
+    ).toISOString();
     const { count, error: countError } = await supabase
       .from("ai_usage_events")
       .select("id", { count: "exact", head: true })
@@ -57,20 +66,31 @@ export async function POST(req: Request) {
 
     if (countError) {
       console.error("[AI Route] 限流计数失败:", countError);
-      return NextResponse.json({ error: "AI rate limit unavailable" }, { status: 500 });
+      return NextResponse.json(
+        { error: "AI rate limit unavailable" },
+        { status: 500 },
+      );
     }
 
     if ((count ?? 0) >= getAiRateLimitPerHour()) {
-      return NextResponse.json({ error: "请求过于频繁，请稍后再试" }, { status: 429 });
+      return NextResponse.json(
+        { error: "请求过于频繁，请稍后再试" },
+        { status: 429 },
+      );
     }
 
-    const { error: usageError } = await supabase.from("ai_usage_events").insert({
-      user_id: user.id,
-    });
+    const { error: usageError } = await supabase
+      .from("ai_usage_events")
+      .insert({
+        user_id: user.id,
+      });
 
     if (usageError) {
       console.error("[AI Route] 限流记录写入失败:", usageError);
-      return NextResponse.json({ error: "AI rate limit unavailable" }, { status: 500 });
+      return NextResponse.json(
+        { error: "AI rate limit unavailable" },
+        { status: 500 },
+      );
     }
 
     const apiKey = process.env.LLM_API_KEY;
@@ -79,28 +99,33 @@ export async function POST(req: Request) {
 
     if (!apiKey) {
       console.error("[AI Route] 未设置 LLM_API_KEY 环境变量");
-      return NextResponse.json({ error: "服务器配置错误：未设置 API Key" }, { status: 500 });
+      return NextResponse.json(
+        { error: "服务器配置错误：未设置 API Key" },
+        { status: 500 },
+      );
     }
     if (!baseUrl) {
       console.error("[AI Route] 未设置 LLM_BASE_URL 环境变量");
-      return NextResponse.json({ error: "服务器配置错误：未设置 API Base URL" }, { status: 500 });
+      return NextResponse.json(
+        { error: "服务器配置错误：未设置 API Base URL" },
+        { status: 500 },
+      );
     }
 
     let endpoint: string;
-    if (baseUrl.includes('/chat/completions')) {
+    if (baseUrl.includes("/chat/completions")) {
       endpoint = baseUrl;
     } else {
-      if (baseUrl.endsWith('/')) {
+      if (baseUrl.endsWith("/")) {
         baseUrl = baseUrl.slice(0, -1);
       }
       endpoint = `${baseUrl}/chat/completions`;
     }
 
-    const languageInstruction = language === 'en' 
-      ? "Please respond in English." 
-      : "请使用中文回复。";
+    const languageInstruction =
+      language === "en" ? "Please respond in English." : "请使用中文回复。";
 
-    const defaultSystemPrompt = 
+    const defaultSystemPrompt =
       "你是用户的倾听伙伴，一个温暖、理解、倾听的陪伴者。请严格遵守以下规则：\n" +
       `1. 回答必须温暖、真诚、口语化，且使用与用户相同的语言。${languageInstruction}\n` +
       "2. 基于用户分享的时刻、感悟和目标，给予理解和支持。\n" +
@@ -131,18 +156,24 @@ export async function POST(req: Request) {
     if (!resp.ok) {
       const errorText = await resp.text();
       console.error("豆包 API 调用失败:", errorText);
-      
+
       try {
         const errorJson = JSON.parse(errorText);
         console.error("豆包 API 详细错误信息:", errorJson);
         if (errorJson.base_resp && errorJson.base_resp.status_code === 1004) {
-          return NextResponse.json({ error: `API 认证失败: ${errorJson.base_resp.status_msg}` }, { status: resp.status });
+          return NextResponse.json(
+            { error: `API 认证失败: ${errorJson.base_resp.status_msg}` },
+            { status: resp.status },
+          );
         }
       } catch (e) {
         console.error("解析错误信息失败:", e);
       }
-      
-      return NextResponse.json({ error: `调用失败: ${errorText}` }, { status: resp.status });
+
+      return NextResponse.json(
+        { error: `调用失败: ${errorText}` },
+        { status: resp.status },
+      );
     }
 
     const data = await resp.json();
@@ -150,7 +181,9 @@ export async function POST(req: Request) {
     let reply: string = data.choices?.[0]?.message?.content || "";
     const internalPlan = extractPlanFromReply(reply);
     reply = removePlanFromReply(reply);
-    const frontendPlan = internalPlan ? toFrontendPlan(internalPlan) : undefined;
+    const frontendPlan = internalPlan
+      ? toFrontendPlan(internalPlan)
+      : undefined;
 
     return NextResponse.json({
       reply,

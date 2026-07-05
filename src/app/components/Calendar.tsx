@@ -23,13 +23,18 @@ type CalendarProps = {
   goals: Goal[];
 };
 
-export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) => {
+export const Calendar = ({
+  selectedDate,
+  onDateSelect,
+  goals,
+}: CalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const today = useMemo(() => new Date(), []);
   const todayKey = toDateKey(today);
 
   const calendarDays = useMemo(
-    () => buildCalendarGrid(currentMonth.getFullYear(), currentMonth.getMonth()),
+    () =>
+      buildCalendarGrid(currentMonth.getFullYear(), currentMonth.getMonth()),
     [currentMonth],
   );
 
@@ -82,7 +87,20 @@ export const Calendar = ({ selectedDate, onDateSelect, goals }: CalendarProps) =
     );
   };
 
-  const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
+  const monthNames = [
+    "一月",
+    "二月",
+    "三月",
+    "四月",
+    "五月",
+    "六月",
+    "七月",
+    "八月",
+    "九月",
+    "十月",
+    "十一月",
+    "十二月",
+  ];
   const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
 
   return (
