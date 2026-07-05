@@ -3,10 +3,11 @@ import React, { useEffect, useState } from "react";
 import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { Input } from "./ui/Input";
-import { useLanguage } from '../context/LanguageContext';
-import { useAppContext } from '../../context/AppContext';
+import { useLanguage } from "../context/LanguageContext";
+import { useAppContext } from "../../context/AppContext";
 import { useToast } from "./ui/Toast";
 import { PlainImage } from "./ui/PlainImage";
+import { Modal } from "./ui/Modal";
 
 type MomentDraft = {
   id: number;
@@ -29,7 +30,12 @@ function toDateInputValue(value?: string) {
   return value;
 }
 
-export const MomentModal = ({ isOpen, onClose, onSuccess, initialMoment = null }: Props) => {
+export const MomentModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialMoment = null,
+}: Props) => {
   const { t } = useLanguage();
   const { addMoment, updateMoment } = useAppContext();
   const { showToast } = useToast();
@@ -63,9 +69,12 @@ export const MomentModal = ({ isOpen, onClose, onSuccess, initialMoment = null }
   };
 
   const handleSubmit = async () => {
-    if (!content.trim()) { 
-      showToast({ type: "error", message: t("contentCannotBeEmpty") || "内容不能为空" }); 
-      return; 
+    if (!content.trim()) {
+      showToast({
+        type: "error",
+        message: t("contentCannotBeEmpty") || "内容不能为空",
+      });
+      return;
     }
 
     const dateISO = `${selectedDate}T00:00:00.000Z`;
@@ -80,8 +89,9 @@ export const MomentModal = ({ isOpen, onClose, onSuccess, initialMoment = null }
         await updateMoment(initialMoment.id, {
           content,
           created_at: dateISO,
-          image_path: imageFile ? null : initialMoment.image_path ?? null,
-          image_url: localImageUrl || previewUrl || initialMoment.image_url || null,
+          image_path: imageFile ? null : (initialMoment.image_path ?? null),
+          image_url:
+            localImageUrl || previewUrl || initialMoment.image_url || null,
           local_file: imageFile,
           local_file_name: imageFile?.name ?? null,
         });
@@ -94,7 +104,7 @@ export const MomentModal = ({ isOpen, onClose, onSuccess, initialMoment = null }
           local_file: imageFile,
           local_file_name: imageFile?.name ?? null,
           created_at: dateISO,
-          date: dateISO.split('T')[0],
+          date: dateISO.split("T")[0],
         });
       }
 
@@ -103,69 +113,87 @@ export const MomentModal = ({ isOpen, onClose, onSuccess, initialMoment = null }
     } catch (error) {
       showToast({
         type: "error",
-        message: error instanceof Error ? error.message : t("saveFailed") || "保存失败",
+        message:
+          error instanceof Error
+            ? error.message
+            : t("saveFailed") || "保存失败",
       });
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="w-full max-w-xl rounded-2xl bg-[var(--color-bg-surface)] p-6 shadow-xl">
-        <h2 className="text-2xl font-bold mb-4">
-          {isEditing ? t("edit") || "编辑" : t("newMoment") || "记录新时刻"}
-        </h2>
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      className="max-w-xl rounded-2xl bg-[var(--color-bg-surface)] p-6 shadow-xl"
+    >
+      <h2 className="text-2xl font-bold mb-4">
+        {isEditing ? t("edit") || "编辑" : t("newMoment") || "记录新时刻"}
+      </h2>
 
-        <div className="mb-4">
-          <label className="block text-sm text-gray-600 mb-1">{t("date") || "日期"}</label>
-          <Input 
-            type="date"
-            value={selectedDate} 
-            onChange={(e) => setSelectedDate(e.target.value)} 
-            className="w-full"
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm text-gray-600 mb-1">{t("content") || "内容"}</label>
-          <Textarea 
-            placeholder={t("recordFeelings") || "记录这一刻的感受..."} 
-            value={content} 
-            onChange={(e) => setContent(e.target.value)} 
-            className="min-h-[120px] h-auto" 
-          />
-        </div>
-
-        <div className="mt-3">
-          <label className="block text-sm text-gray-600 mb-1">{t("uploadImage") || "上传图片"}</label>
-          <input 
-            type="file" 
-            accept="image/*" 
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              setImageFile(file);
-              setPreviewUrl(file ? URL.createObjectURL(file) : initialMoment?.image_url ?? null);
-            }} 
-            className="block w-full rounded-lg border border-dashed border-[var(--color-border-muted)] p-3 text-sm text-[var(--color-text-secondary)]" 
-          />
-          {previewUrl && <PlainImage src={previewUrl} alt="preview" className="mt-3 w-48 h-48 object-cover rounded" />}
-        </div>
-
-        <div className="flex justify-end mt-6 space-x-3">
-          <Button 
-            variant="secondary" 
-            onClick={handleClose} 
-            className="min-w-[60px] h-10"
-          >
-            {t("cancel") || "取消"}
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            className="min-w-[60px] h-10"
-          >
-            {isEditing ? t("update") || "更新" : t("save") || "记录"}
-          </Button>
-        </div>
+      <div className="mb-4">
+        <label className="block text-sm text-gray-600 mb-1">
+          {t("date") || "日期"}
+        </label>
+        <Input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="w-full"
+        />
       </div>
-    </div>
+
+      <div className="mb-4">
+        <label className="block text-sm text-gray-600 mb-1">
+          {t("content") || "内容"}
+        </label>
+        <Textarea
+          placeholder={t("recordFeelings") || "记录这一刻的感受..."}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="min-h-[120px] h-auto"
+        />
+      </div>
+
+      <div className="mt-3">
+        <label className="block text-sm text-gray-600 mb-1">
+          {t("uploadImage") || "上传图片"}
+        </label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0] || null;
+            setImageFile(file);
+            setPreviewUrl(
+              file
+                ? URL.createObjectURL(file)
+                : (initialMoment?.image_url ?? null),
+            );
+          }}
+          className="block w-full rounded-lg border border-dashed border-[var(--color-border-muted)] p-3 text-sm text-[var(--color-text-secondary)]"
+        />
+        {previewUrl && (
+          <PlainImage
+            src={previewUrl}
+            alt="preview"
+            className="mt-3 w-48 h-48 object-cover rounded"
+          />
+        )}
+      </div>
+
+      <div className="flex justify-end mt-6 space-x-3">
+        <Button
+          variant="secondary"
+          onClick={handleClose}
+          className="min-w-[60px] h-10"
+        >
+          {t("cancel") || "取消"}
+        </Button>
+        <Button onClick={handleSubmit} className="min-w-[60px] h-10">
+          {isEditing ? t("update") || "更新" : t("save") || "记录"}
+        </Button>
+      </div>
+    </Modal>
   );
 };

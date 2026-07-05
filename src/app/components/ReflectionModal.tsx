@@ -8,6 +8,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useAppContext } from "../../context/AppContext";
 import { useToast } from "./ui/Toast";
 import { parseReflectionContent } from "../../lib/reflections/reflectionContent";
+import { Modal } from "./ui/Modal";
 
 type ReflectionDraft = {
   id: number;
@@ -61,12 +62,18 @@ export const ReflectionModal = ({
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      showToast({ type: "error", message: t("pleaseEnterTitle") || "请填写标题" });
+      showToast({
+        type: "error",
+        message: t("pleaseEnterTitle") || "请填写标题",
+      });
       return;
     }
 
     if (!body.trim()) {
-      showToast({ type: "error", message: t("pleaseEnterContent") || "请填写感悟内容" });
+      showToast({
+        type: "error",
+        message: t("pleaseEnterContent") || "请填写感悟内容",
+      });
       return;
     }
 
@@ -101,7 +108,10 @@ export const ReflectionModal = ({
     } catch (error) {
       showToast({
         type: "error",
-        message: error instanceof Error ? error.message : t("saveFailed") || "保存失败",
+        message:
+          error instanceof Error
+            ? error.message
+            : t("saveFailed") || "保存失败",
       });
     } finally {
       setSaving(false);
@@ -109,46 +119,53 @@ export const ReflectionModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-xl rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-6 shadow-xl">
-        <h2 className="mb-4 text-2xl font-bold text-[var(--color-text-primary)]">
-          {isEditing ? t("editReflection") || "编辑感悟" : t("newReflection") || "记录新感悟"}
-        </h2>
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      className="max-w-xl rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-6 shadow-xl"
+    >
+      <h2 className="mb-4 text-2xl font-bold text-[var(--color-text-primary)]">
+        {isEditing
+          ? t("editReflection") || "编辑感悟"
+          : t("newReflection") || "记录新感悟"}
+      </h2>
 
-        <label className="block text-sm text-[var(--color-text-secondary)]">
-          {t("title") || "标题"} *
-        </label>
-        <Input
-          className="mt-1"
-          placeholder={t("enterTitle") || "输入标题（必填）"}
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          maxLength={100}
-        />
+      <label className="block text-sm text-[var(--color-text-secondary)]">
+        {t("title") || "标题"} *
+      </label>
+      <Input
+        className="mt-1"
+        placeholder={t("enterTitle") || "输入标题（必填）"}
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        maxLength={100}
+      />
 
-        <label className="mt-4 block text-sm text-[var(--color-text-secondary)]">
-          {t("content") || "内容"} *
-        </label>
-        <Textarea
-          className="mt-1 min-h-[180px]"
-          placeholder={t("recordThoughts") || "记录你的思考和感悟..."}
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
-        />
+      <label className="mt-4 block text-sm text-[var(--color-text-secondary)]">
+        {t("content") || "内容"} *
+      </label>
+      <Textarea
+        className="mt-1 min-h-[180px]"
+        placeholder={t("recordThoughts") || "记录你的思考和感悟..."}
+        value={body}
+        onChange={(event) => setBody(event.target.value)}
+      />
 
-        <div className="mt-6 flex justify-end gap-3">
-          <Button variant="secondary" onClick={handleClose} disabled={saving}>
-            {t("cancel") || "取消"}
-          </Button>
-          <Button onClick={handleSubmit} disabled={saving || !title.trim() || !body.trim()}>
-            {saving
-              ? t("saving") || "保存中..."
-              : isEditing
-                ? t("update") || "更新"
-                : t("save") || "保存"}
-          </Button>
-        </div>
+      <div className="mt-6 flex justify-end gap-3">
+        <Button variant="secondary" onClick={handleClose} disabled={saving}>
+          {t("cancel") || "取消"}
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={saving || !title.trim() || !body.trim()}
+        >
+          {saving
+            ? t("saving") || "保存中..."
+            : isEditing
+              ? t("update") || "更新"
+              : t("save") || "保存"}
+        </Button>
       </div>
-    </div>
+    </Modal>
   );
 };

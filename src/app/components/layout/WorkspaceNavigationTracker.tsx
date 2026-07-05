@@ -3,9 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
-import {
-  markWorkspaceNavigationComplete,
-} from "../../../lib/navigation/workspaceNavigationMetrics";
+import { markWorkspaceNavigationComplete } from "../../../lib/navigation/workspaceNavigationMetrics";
 import { LoadingState } from "../ui/LoadingState";
 import { useWorkspaceNavigation } from "./WorkspaceNavigationContext";
 
@@ -13,7 +11,8 @@ const NAVIGATION_TIMEOUT_MS = 10_000;
 
 export function WorkspaceNavigationTracker() {
   const pathname = usePathname();
-  const { pendingPath, completeNavigation, cancelNavigation } = useWorkspaceNavigation();
+  const { pendingPath, completeNavigation, cancelNavigation } =
+    useWorkspaceNavigation();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {

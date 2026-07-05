@@ -21,9 +21,14 @@ type WorkspaceNavigationContextValue = {
   setRouteLoading: (loading: boolean) => void;
 };
 
-const WorkspaceNavigationContext = createContext<WorkspaceNavigationContextValue | null>(null);
+const WorkspaceNavigationContext =
+  createContext<WorkspaceNavigationContextValue | null>(null);
 
-export function WorkspaceNavigationProvider({ children }: { children: ReactNode }) {
+export function WorkspaceNavigationProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const pathname = usePathname();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const routeLoadingRef = useRef(false);
@@ -33,13 +38,16 @@ export function WorkspaceNavigationProvider({ children }: { children: ReactNode 
     routeLoadingRef.current = false;
   }, []);
 
-  const completeNavigation = useCallback((path: string, options?: { force?: boolean }) => {
-    setPendingPath((current) => {
-      if (current !== path) return current;
-      if (!options?.force && routeLoadingRef.current) return current;
-      return null;
-    });
-  }, []);
+  const completeNavigation = useCallback(
+    (path: string, options?: { force?: boolean }) => {
+      setPendingPath((current) => {
+        if (current !== path) return current;
+        if (!options?.force && routeLoadingRef.current) return current;
+        return null;
+      });
+    },
+    [],
+  );
 
   const setRouteLoading = useCallback((loading: boolean) => {
     routeLoadingRef.current = loading;
@@ -79,14 +87,17 @@ export function WorkspaceNavigationProvider({ children }: { children: ReactNode 
 export function useWorkspaceNavigation() {
   const context = useContext(WorkspaceNavigationContext);
   if (!context) {
-    throw new Error("useWorkspaceNavigation must be used within WorkspaceNavigationProvider");
+    throw new Error(
+      "useWorkspaceNavigation must be used within WorkspaceNavigationProvider",
+    );
   }
   return context;
 }
 
 export function useWorkspacePageLoading(loading: boolean) {
   const pathname = usePathname();
-  const { pendingPath, completeNavigation, setRouteLoading } = useWorkspaceNavigation();
+  const { pendingPath, completeNavigation, setRouteLoading } =
+    useWorkspaceNavigation();
   const isPendingCurrentRoute = pendingPath === pathname;
 
   useLayoutEffect(() => {
@@ -94,7 +105,13 @@ export function useWorkspacePageLoading(loading: boolean) {
     if (!loading && isPendingCurrentRoute) {
       completeNavigation(pathname);
     }
-  }, [completeNavigation, isPendingCurrentRoute, loading, pathname, setRouteLoading]);
+  }, [
+    completeNavigation,
+    isPendingCurrentRoute,
+    loading,
+    pathname,
+    setRouteLoading,
+  ]);
 
   return isPendingCurrentRoute && loading;
 }

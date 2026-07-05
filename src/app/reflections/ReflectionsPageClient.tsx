@@ -15,15 +15,18 @@ import { useToast } from "../components/ui/Toast";
 import { parseReflectionContent } from "../../lib/reflections/reflectionContent";
 
 const AssistantDrawer = dynamic(
-  () => import("../components/AssistantDrawer").then((mod) => mod.AssistantDrawer),
+  () =>
+    import("../components/AssistantDrawer").then((mod) => mod.AssistantDrawer),
   { ssr: false },
 );
 const ConfirmDialog = dynamic(
-  () => import("../components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
+  () =>
+    import("../components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
   { ssr: false },
 );
 const ReflectionModal = dynamic(
-  () => import("../components/ReflectionModal").then((mod) => mod.ReflectionModal),
+  () =>
+    import("../components/ReflectionModal").then((mod) => mod.ReflectionModal),
   { ssr: false },
 );
 
@@ -39,17 +42,23 @@ type Reflection = {
 };
 
 export default function ReflectionsPageClient() {
-  const { reflections, loading, refreshReflections, deleteReflection } = useAppContext();
+  const { reflections, loading, refreshReflections, deleteReflection } =
+    useAppContext();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [hasOpenedAIPanel, setHasOpenedAIPanel] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingReflection, setEditingReflection] = useState<Reflection | null>(null);
-  const [reflectionToDelete, setReflectionToDelete] = useState<Reflection | null>(null);
+  const [editingReflection, setEditingReflection] = useState<Reflection | null>(
+    null,
+  );
+  const [reflectionToDelete, setReflectionToDelete] =
+    useState<Reflection | null>(null);
   const [deletingReflection, setDeletingReflection] = useState(false);
-  const [collapsedReflections, setCollapsedReflections] = useState<Set<number>>(new Set());
+  const [collapsedReflections, setCollapsedReflections] = useState<Set<number>>(
+    new Set(),
+  );
 
   const sortedReflections = useMemo(
     () =>
@@ -98,7 +107,10 @@ export default function ReflectionsPageClient() {
     } catch (error) {
       showToast({
         type: "error",
-        message: error instanceof Error ? error.message : t("deleteFailed") || "删除失败",
+        message:
+          error instanceof Error
+            ? error.message
+            : t("deleteFailed") || "删除失败",
       });
       void refreshReflections();
     } finally {
@@ -110,27 +122,35 @@ export default function ReflectionsPageClient() {
   const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
 
   if (isInitialLoading) {
-    return isNavigationLoading ? null : <LoadingState className="min-h-[50dvh]" />;
+    return isNavigationLoading ? null : (
+      <LoadingState className="min-h-[50dvh]" />
+    );
   }
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
-      {hasOpenedAIPanel && <AssistantDrawer
-        isOpen={showAIPanel}
-        onClose={() => setShowAIPanel(false)}
-        title={t("insights") || "感悟"}
-        placeholder={t("aiInputPlaceholder") || "输入你的想法..."}
-        systemPrompt={
-          language === "en"
-            ? "You are a concise thinking partner. Help the user clarify reflections and turn vague thoughts into grounded observations."
-            : "你是用户的思考伙伴。请帮助用户澄清感悟，把模糊想法整理成具体、温和、可继续行动的观察。"
-        }
-      />}
+      {hasOpenedAIPanel && (
+        <AssistantDrawer
+          isOpen={showAIPanel}
+          onClose={() => setShowAIPanel(false)}
+          title={t("insights") || "感悟"}
+          placeholder={t("aiInputPlaceholder") || "输入你的想法..."}
+          systemPrompt={
+            language === "en"
+              ? "You are a concise thinking partner. Help the user clarify reflections and turn vague thoughts into grounded observations."
+              : "你是用户的思考伙伴。请帮助用户澄清感悟，把模糊想法整理成具体、温和、可继续行动的观察。"
+          }
+        />
+      )}
 
       {sortedReflections.length === 0 ? (
         <EmptyState
           title={t("noRecords") || "暂无感悟"}
-          action={<Button onClick={openNewReflection}>{t("newReflection") || "记录新感悟"}</Button>}
+          action={
+            <Button onClick={openNewReflection}>
+              {t("newReflection") || "记录新感悟"}
+            </Button>
+          }
         />
       ) : (
         sortedReflections.map((reflection) => {
@@ -144,9 +164,15 @@ export default function ReflectionsPageClient() {
                   type="button"
                   onClick={() => toggleReflection(reflection.id)}
                   className="mt-1 rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-text-primary)] motion-reduce:transition-none"
-                  aria-label={isCollapsed ? "Expand reflection" : "Collapse reflection"}
+                  aria-label={
+                    isCollapsed ? "Expand reflection" : "Collapse reflection"
+                  }
                 >
-                  {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                  {isCollapsed ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronUp size={16} />
+                  )}
                 </button>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -155,7 +181,9 @@ export default function ReflectionsPageClient() {
                         {parsed.title || t("insights") || "感悟"}
                       </h2>
                       <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-                        {new Date(reflection.updated_at || reflection.created_at).toLocaleString("zh-CN")}
+                        {new Date(
+                          reflection.updated_at || reflection.created_at,
+                        ).toLocaleString("zh-CN")}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
@@ -199,26 +227,30 @@ export default function ReflectionsPageClient() {
         })
       )}
 
-      {isModalOpen && <ReflectionModal
-        isOpen
-        initialReflection={editingReflection}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingReflection(null);
-        }}
-        onSuccess={() => undefined}
-      />}
-      {reflectionToDelete && <ConfirmDialog
-        isOpen
-        title={t("confirmDelete") || "确认删除这条感悟吗？"}
-        description={t("cannotRecover") || "删除后不可恢复"}
-        confirmLabel={t("confirm") || "确认"}
-        cancelLabel={t("cancel") || "取消"}
-        loading={deletingReflection}
-        tone="danger"
-        onConfirm={handleDelete}
-        onCancel={() => setReflectionToDelete(null)}
-      />}
+      {isModalOpen && (
+        <ReflectionModal
+          isOpen
+          initialReflection={editingReflection}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingReflection(null);
+          }}
+          onSuccess={() => undefined}
+        />
+      )}
+      {reflectionToDelete && (
+        <ConfirmDialog
+          isOpen
+          title={t("confirmDelete") || "确认删除这条感悟吗？"}
+          description={t("cannotRecover") || "删除后不可恢复"}
+          confirmLabel={t("confirm") || "确认"}
+          cancelLabel={t("cancel") || "取消"}
+          loading={deletingReflection}
+          tone="danger"
+          onConfirm={handleDelete}
+          onCancel={() => setReflectionToDelete(null)}
+        />
+      )}
     </div>
   );
 }
