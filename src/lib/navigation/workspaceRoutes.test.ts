@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { getWorkspacePageFromPathname, isWorkspacePath } from "./workspaceRoutes";
+import {
+  getWorkspacePageFromPathname,
+  isWorkspacePath,
+} from "./workspaceRoutes";
 
 describe("workspace routes", () => {
   it("matches workspace roots and nested paths", () => {

@@ -50,7 +50,7 @@ https://your-domain.com/auth/callback
 
 ## 推荐执行方式
 
-无论是新 Supabase 项目，还是已经有旧版 BulletAI 表的项目，都直接执行这一个文件：
+新 Supabase 项目直接执行当前全量快照：
 
 ```sql
 db/migrations/000_current_schema.sql
@@ -58,7 +58,14 @@ db/migrations/000_current_schema.sql
 
 这个文件会创建缺失表、修补旧表字段、配置 RLS、创建 Storage buckets 和 policies，并在最后执行 `notify pgrst, 'reload schema';` 刷新 Supabase PostgREST schema cache。
 
-`001_goal_color_and_sort_order.sql` 是历史增量迁移，相关字段已经合入 `000_current_schema.sql`；你手动配置数据库时直接复制并运行 `000_current_schema.sql` 这一个文件即可。
+已经运行过旧版 SQL 的 Supabase 项目，按文件序号继续执行增量迁移：
+
+```sql
+db/migrations/001_goal_color_and_sort_order.sql
+db/migrations/002_reliability_schema_guard.sql
+```
+
+`001_goal_color_and_sort_order.sql` 是历史增量迁移，相关字段已经合入 `000_current_schema.sql`。`002_reliability_schema_guard.sql` 是幂等守护迁移，用于补齐当前代码依赖的查询列、`deleted_at`、`client_id` 唯一索引、habit check-in 历史、触发器、AI 限流 RPC、RLS 和 Storage policies。所有迁移都应保持可重复执行。
 
 说明：
 

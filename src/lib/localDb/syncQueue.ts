@@ -1,5 +1,13 @@
-import { idbDelete, idbGetAll, idbPut } from "./indexedDb";
-import type { OutboxItem, OutboxStatus } from "./types";
+import { idbDelete, idbGet, idbGetAll, idbPut } from "./indexedDb";
+import type { OutboxErrorKind, OutboxItem, OutboxStatus } from "./types";
+
+export const MAX_OUTBOX_ATTEMPTS = 5;
+
+const TERMINAL_ERROR_KINDS = new Set<OutboxErrorKind>([
+  "permanent",
+  "auth",
+  "not_found",
+]);
 
 export async function getOutboxItems(
   statuses: OutboxStatus[] = ["pending", "failed"],
@@ -19,23 +27,60 @@ export async function getOutboxItems(
 }
 
 export async function updateOutboxItem(item: OutboxItem) {
-  await idbPut("outbox", {
+  const next = {
     ...item,
     updatedAt: new Date().toISOString(),
-  });
+  };
+  await idbPut("outbox", next);
+  return next;
 }
 
 export async function markOutboxItem(
   item: OutboxItem,
   status: OutboxStatus,
-  error?: string,
+  errorOrOptions?:
+    | string
+    | {
+        error?: string;
+        errorKind?: OutboxErrorKind;
+        maxAttempts?: number;
+        orphanedStoragePath?: string | null;
+      },
 ) {
-  await updateOutboxItem({
-    ...item,
+  const current = (await idbGet<OutboxItem>("outbox", item.id)) ?? item;
+  const options =
+    typeof errorOrOptions === "string"
+      ? { error: errorOrOptions }
+      : (errorOrOptions ?? {});
+  const attemptCount =
+    status === "syncing"
+      ? (current.attemptCount ?? 0) + 1
+      : (current.attemptCount ?? 0);
+  const maxAttempts = options.maxAttempts ?? MAX_OUTBOX_ATTEMPTS;
+  const shouldDeadLetter =
+    status === "dead" ||
+    (status === "failed" &&
+      (attemptCount >= maxAttempts ||
+        (options.errorKind
+          ? TERMINAL_ERROR_KINDS.has(options.errorKind)
+          : false)));
+  const nextStatus: OutboxStatus = shouldDeadLetter ? "dead" : status;
+  const payload = current.payload as Record<string, unknown>;
+  const orphanedStoragePath =
+    options.orphanedStoragePath ??
+    (nextStatus === "dead" && typeof payload.uploaded_image_path === "string"
+      ? payload.uploaded_image_path
+      : undefined);
+
+  return updateOutboxItem({
+    ...current,
     status,
-    error,
-    attemptCount:
-      status === "syncing" ? (item.attemptCount ?? 0) + 1 : item.attemptCount,
+    ...(nextStatus !== status ? { status: nextStatus } : {}),
+    error: options.error,
+    errorKind: options.errorKind,
+    attemptCount,
+    ...(nextStatus === "dead" ? { deadAt: new Date().toISOString() } : {}),
+    ...(orphanedStoragePath ? { orphanedStoragePath } : {}),
   });
 }
 

@@ -124,6 +124,7 @@ function stripTransientEntityFields<T>(payload: T) {
   delete data.local_file;
   delete data.local_file_id;
   delete data.local_file_name;
+  delete data.uploaded_image_path;
   delete data.previous_image_path;
   return data as T;
 }
@@ -156,8 +157,10 @@ function createOutboxPayload(
 
   if (localFile instanceof Blob) {
     outboxPayload.local_file_id = localFileKey(userId, collection, entityId);
+    delete outboxPayload.uploaded_image_path;
   } else if (hasLocalFileField) {
     outboxPayload.local_file_id = null;
+    outboxPayload.uploaded_image_path = null;
   }
 
   delete outboxPayload.local_file;

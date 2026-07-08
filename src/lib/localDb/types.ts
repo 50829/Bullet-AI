@@ -9,7 +9,9 @@ export type LocalCollection =
 export type SyncOperation = "upsert" | "update" | "delete";
 export type SyncStatus = "idle" | "syncing" | "failed";
 export type SyncState = "synced" | "pending" | "failed";
-export type OutboxStatus = "pending" | "syncing" | "failed";
+export type OutboxStatus = "pending" | "syncing" | "failed" | "dead";
+export type OutboxErrorKind =
+  "transient" | "permanent" | "auth" | "not_found" | "storage";
 
 export type LocalEntityBase = {
   id?: number;
@@ -44,7 +46,10 @@ export type OutboxItem<T = unknown> = {
   createdAt: string;
   updatedAt: string;
   error?: string;
+  errorKind?: OutboxErrorKind;
   attemptCount?: number;
+  deadAt?: string;
+  orphanedStoragePath?: string;
 };
 
 export type LocalFile = {

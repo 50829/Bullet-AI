@@ -13,12 +13,32 @@ import {
   getAiSystemPrompt,
   normalizeAiPurpose,
 } from "../../../lib/ai/promptRegistry";
+import { logger } from "../../../lib/observability/logger";
 import { normalizeLanguage } from "../../../lib/profile/preferences";
 import { createClient } from "../../../lib/supabase/server";
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
+}
+
+const DEFAULT_LLM_TIMEOUT_MS = 30_000;
+
+function getLlmTimeoutMs() {
+  const raw = process.env.LLM_TIMEOUT_MS;
+  if (!raw) return DEFAULT_LLM_TIMEOUT_MS;
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0
+    ? parsed
+    : DEFAULT_LLM_TIMEOUT_MS;
+}
+
+function isAbortError(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.name === "AbortError" || error.message.includes("aborted"))
+  );
 }
 
 export async function POST(req: Request) {
@@ -38,7 +58,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { messages: userMessages, language, purpose } = body as {
+    const {
+      messages: userMessages,
+      language,
+      purpose,
+    } = body as {
       messages: unknown;
       language?: string;
       purpose?: string;
@@ -62,7 +86,10 @@ export async function POST(req: Request) {
     );
 
     if (reserveError) {
-      console.error("[AI Route] 限流预留失败:", reserveError);
+      logger.error("ai_rate_limit_reservation_failed", {
+        userId: user.id,
+        error: reserveError,
+      });
       return NextResponse.json(
         { error: "AI rate limit unavailable" },
         { status: 500 },
@@ -81,14 +108,14 @@ export async function POST(req: Request) {
     let baseUrl = process.env.LLM_BASE_URL;
 
     if (!apiKey) {
-      console.error("[AI Route] 未设置 LLM_API_KEY 环境变量");
+      logger.error("ai_missing_api_key", { userId: user.id });
       return NextResponse.json(
         { error: "服务器配置错误：未设置 API Key" },
         { status: 500 },
       );
     }
     if (!baseUrl) {
-      console.error("[AI Route] 未设置 LLM_BASE_URL 环境变量");
+      logger.error("ai_missing_base_url", { userId: user.id });
       return NextResponse.json(
         { error: "服务器配置错误：未设置 API Base URL" },
         { status: 500 },
@@ -114,39 +141,78 @@ export async function POST(req: Request) {
     };
 
     const messages: ChatMessage[] = [system, ...validation.messages];
+    const controller = new AbortController();
+    const timeoutMs = getLlmTimeoutMs();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-    const resp = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.5,
-      }),
-    });
+    let resp: Response;
+    try {
+      resp = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: 0.5,
+        }),
+      });
+    } catch (error) {
+      if (isAbortError(error)) {
+        logger.warn("ai_llm_timeout", {
+          userId: user.id,
+          purpose: normalizedPurpose,
+          timeoutMs,
+        });
+        return NextResponse.json(
+          { error: "AI 服务响应超时，请稍后再试" },
+          { status: 504 },
+        );
+      }
+
+      logger.error("ai_llm_request_failed", {
+        userId: user.id,
+        purpose: normalizedPurpose,
+        error,
+      });
+      return NextResponse.json(
+        { error: "AI 服务暂时不可用，请稍后再试" },
+        { status: 502 },
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!resp.ok) {
       const errorText = await resp.text();
-      console.error("豆包 API 调用失败:", errorText);
+      logger.warn("ai_llm_bad_response", {
+        userId: user.id,
+        purpose: normalizedPurpose,
+        status: resp.status,
+        errorText,
+      });
 
       try {
         const errorJson = JSON.parse(errorText);
-        console.error("豆包 API 详细错误信息:", errorJson);
         if (errorJson.base_resp && errorJson.base_resp.status_code === 1004) {
           return NextResponse.json(
             { error: `API 认证失败: ${errorJson.base_resp.status_msg}` },
             { status: resp.status },
           );
         }
-      } catch (e) {
-        console.error("解析错误信息失败:", e);
+      } catch (error) {
+        logger.warn("ai_llm_error_parse_failed", {
+          userId: user.id,
+          purpose: normalizedPurpose,
+          error,
+        });
       }
 
       return NextResponse.json(
-        { error: `调用失败: ${errorText}` },
+        { error: "AI 服务暂时不可用，请稍后再试" },
         { status: resp.status },
       );
     }
@@ -165,7 +231,7 @@ export async function POST(req: Request) {
       plan: frontendPlan,
     });
   } catch (err) {
-    console.error("[AI Route] 发生错误：", err);
+    logger.error("ai_route_unhandled_error", { error: err });
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

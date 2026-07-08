@@ -63,10 +63,7 @@ export type WorkspaceCollections = {
   addMoment: (moment: MomentRecord) => Promise<void>;
   addReflection: (reflection: ReflectionRecord) => Promise<void>;
   addGoal: (goal: GoalRecord) => Promise<void>;
-  updateMoment: (
-    id: number,
-    updates: Partial<MomentRecord>,
-  ) => Promise<void>;
+  updateMoment: (id: number, updates: Partial<MomentRecord>) => Promise<void>;
   updateReflection: (
     id: number,
     updates: Partial<ReflectionRecord>,

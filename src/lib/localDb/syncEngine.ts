@@ -13,8 +13,15 @@ import {
   markOutboxItem,
   recoverStaleOutboxItems,
   removeOutboxItem,
+  updateOutboxItem,
 } from "./syncQueue";
-import type { LocalCollection, OutboxItem, SyncStatus } from "./types";
+import { logger } from "../observability/logger";
+import type {
+  LocalCollection,
+  OutboxErrorKind,
+  OutboxItem,
+  SyncStatus,
+} from "./types";
 
 const TRANSIENT_STATUS = new Set(["pending", "failed"]);
 const STORAGE_COLLECTIONS = new Set<LocalCollection>([
@@ -23,10 +30,35 @@ const STORAGE_COLLECTIONS = new Set<LocalCollection>([
   "goals",
   "habits",
 ]);
+const REMOTE_SYNC_SELECT: Record<LocalCollection, string> = {
+  moments:
+    "id,client_id,user_id,content,image_path,created_at,updated_at,deleted_at",
+  reflections:
+    "id,client_id,user_id,content,title,body,source,source_type,location,image_path,created_at,updated_at,deleted_at",
+  goals:
+    "id,client_id,user_id,title,description,status,due_date,progress,color,sort_order,image_path,created_at,updated_at,deleted_at",
+  habits:
+    "id,client_id,user_id,name,description,frequency,color,created_at,updated_at,deleted_at",
+  habit_checkins:
+    "id,client_id,user_id,habit_id,habit_client_id,checked_on,checked,created_at,updated_at,deleted_at",
+  profiles:
+    "user_id,username,username_updated_at,updated_at,preferences_updated_at,preferred_language,ui_theme,accent_color,color_scheme,completed_goal_retention",
+};
 
 let currentStatus: SyncStatus = "idle";
 let activeFlush: Promise<void> | null = null;
 const listeners = new Set<(status: SyncStatus) => void>();
+
+class SyncError extends Error {
+  constructor(
+    message: string,
+    readonly kind: OutboxErrorKind = "transient",
+    readonly orphanedStoragePath?: string,
+  ) {
+    super(message);
+    this.name = "SyncError";
+  }
+}
 
 export function getSyncStatus() {
   return currentStatus;
@@ -53,6 +85,7 @@ function sanitizePayload(payload: unknown) {
   delete rest.local_file;
   delete rest.local_file_id;
   delete rest.local_file_name;
+  delete rest.uploaded_image_path;
   delete rest.previous_image_path;
   return rest;
 }
@@ -66,6 +99,15 @@ async function preparePayloadWithFileUpload(
   item: OutboxItem,
   payload: Record<string, unknown>,
 ) {
+  const uploadedImagePath = (item.payload as Record<string, unknown>)
+    .uploaded_image_path;
+  if (typeof uploadedImagePath === "string" && uploadedImagePath) {
+    return {
+      ...payload,
+      image_path: uploadedImagePath,
+    };
+  }
+
   const localFile = await resolveQueuedLocalFile(item);
   if (!localFile) return payload;
 
@@ -83,7 +125,16 @@ async function preparePayloadWithFileUpload(
     .from(item.collection)
     .upload(path, localFile.blob, { cacheControl: "3600", upsert: true });
 
-  if (error) throw new Error(error.message);
+  if (error) throw new SyncError(error.message, "storage");
+
+  await updateOutboxItem({
+    ...item,
+    payload: {
+      ...(item.payload as Record<string, unknown>),
+      image_path: path,
+      uploaded_image_path: path,
+    },
+  });
 
   return {
     ...payload,
@@ -101,7 +152,7 @@ async function resolveQueuedLocalFile(item: OutboxItem) {
   if (typeof fileId !== "string" || !fileId) return null;
 
   const stored = await readLocalFile(fileId);
-  if (!stored) throw new Error("Queued local file not found");
+  if (!stored) throw new SyncError("Queued local file not found", "permanent");
   return { blob: stored.blob, fileId };
 }
 
@@ -119,6 +170,10 @@ function isDuplicateSuccess(
   );
 }
 
+function selectColumnsFor(collection: LocalCollection) {
+  return REMOTE_SYNC_SELECT[collection];
+}
+
 async function removeStoredFile(
   collection: LocalCollection,
   imagePath: unknown,
@@ -131,13 +186,18 @@ async function removeStoredFile(
     return;
 
   const { error } = await supabase.storage.from(collection).remove([imagePath]);
-  if (error) throw new Error(error.message);
+  if (error) {
+    logger.warn("storage_cleanup_failed", {
+      collection,
+      imagePath,
+      error,
+    });
+    return false;
+  }
+  return true;
 }
 
-async function removeReplacedStoredFile(
-  item: OutboxItem,
-  imagePath: unknown,
-) {
+async function removeReplacedStoredFile(item: OutboxItem, imagePath: unknown) {
   const previousImagePath = getPreviousImagePath(item);
   if (!previousImagePath || previousImagePath === imagePath) return;
   await removeStoredFile(item.collection, previousImagePath);
@@ -165,8 +225,9 @@ async function applyOutboxItem(item: OutboxItem) {
     const { data, error } = clientId
       ? await query.eq("client_id", clientId).select("id").maybeSingle()
       : await query.eq("id", item.entityId).select("id").maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!data) throw new Error("Remote row not found for delete");
+    if (error) throw new SyncError(error.message, "transient");
+    if (!data)
+      throw new SyncError("Remote row not found for delete", "not_found");
     await removeStoredFile(item.collection, payload.image_path);
     await removeQueuedLocalFile(item);
     if (clientId) {
@@ -183,12 +244,29 @@ async function applyOutboxItem(item: OutboxItem) {
     delete updates.user_id;
     const query = table.update(updates).eq("user_id", item.userId);
     const { data, error } = clientId
-      ? await query.eq("client_id", clientId).select("*").maybeSingle()
-      : await query.eq("id", item.entityId).select("*").maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!data) throw new Error("Remote row not found for update");
-    await removeReplacedStoredFile(item, data.image_path);
-    await upsertSyncedEntity(item.userId, item.collection, data, {
+      ? await query
+          .eq("client_id", clientId)
+          .select(selectColumnsFor(item.collection))
+          .maybeSingle()
+      : await query
+          .eq("id", item.entityId)
+          .select(selectColumnsFor(item.collection))
+          .maybeSingle();
+    if (error)
+      throw new SyncError(
+        error.message,
+        "transient",
+        typeof payload.image_path === "string" ? payload.image_path : undefined,
+      );
+    if (!data)
+      throw new SyncError(
+        "Remote row not found for update",
+        "not_found",
+        typeof payload.image_path === "string" ? payload.image_path : undefined,
+      );
+    const syncedData = data as unknown as Record<string, unknown>;
+    await removeReplacedStoredFile(item, syncedData.image_path);
+    await upsertSyncedEntity(item.userId, item.collection, syncedData, {
       localEntityId: item.entityId,
       mutationUpdatedAt: item.updatedAt,
     });
@@ -199,12 +277,18 @@ async function applyOutboxItem(item: OutboxItem) {
     if (clientId) delete insertPayload.id;
     const { data, error } = await table
       .upsert(insertPayload, { onConflict: clientId ? "client_id" : "id" })
-      .select("*")
+      .select(selectColumnsFor(item.collection))
       .maybeSingle();
-    if (error && !isDuplicateSuccess(error)) throw new Error(error.message);
+    if (error && !isDuplicateSuccess(error))
+      throw new SyncError(
+        error.message,
+        "transient",
+        typeof payload.image_path === "string" ? payload.image_path : undefined,
+      );
     if (data) {
-      await removeReplacedStoredFile(item, data.image_path);
-      await upsertSyncedEntity(item.userId, item.collection, data, {
+      const syncedData = data as unknown as Record<string, unknown>;
+      await removeReplacedStoredFile(item, syncedData.image_path);
+      await upsertSyncedEntity(item.userId, item.collection, syncedData, {
         localEntityId: item.entityId,
         mutationUpdatedAt: item.updatedAt,
       });
@@ -225,6 +309,14 @@ async function applyOutboxItem(item: OutboxItem) {
     });
     await removeQueuedLocalFile(item);
   }
+}
+
+function classifySyncError(error: unknown) {
+  if (error instanceof SyncError) return error;
+  return new SyncError(
+    error instanceof Error ? error.message : String(error),
+    "transient",
+  );
 }
 
 async function performFlush() {
@@ -251,29 +343,54 @@ async function performFlush() {
   let failed = false;
 
   for (const item of items) {
+    let activeItem = item;
+    const startedAt = Date.now();
     try {
-      await markOutboxItem(item, "syncing");
-      await applyOutboxItem(item);
-      await removeOutboxItem(item.id);
+      activeItem = await markOutboxItem(item, "syncing");
+      await applyOutboxItem(activeItem);
+      await removeOutboxItem(activeItem.id);
+      logger.info("outbox_item_synced", {
+        collection: activeItem.collection,
+        entityId: activeItem.entityId,
+        operation: activeItem.operation,
+        attemptCount: activeItem.attemptCount,
+        durationMs: Date.now() - startedAt,
+      });
     } catch (error) {
+      const syncError = classifySyncError(error);
       failed = true;
-      await markOutboxItem(
-        item,
-        "failed",
-        error instanceof Error ? error.message : String(error),
-      );
+      const failedItem = await markOutboxItem(activeItem, "failed", {
+        error: syncError.message,
+        errorKind: syncError.kind,
+        orphanedStoragePath: syncError.orphanedStoragePath,
+      });
+      logger.warn("outbox_item_failed", {
+        collection: failedItem.collection,
+        entityId: failedItem.entityId,
+        operation: failedItem.operation,
+        status: failedItem.status,
+        errorKind: failedItem.errorKind,
+        attemptCount: failedItem.attemptCount,
+        orphanedStoragePath: failedItem.orphanedStoragePath,
+        durationMs: Date.now() - startedAt,
+      });
 
       const currentEntity = await readEntity(
-        item.userId,
-        item.collection,
-        item.entityId,
+        activeItem.userId,
+        activeItem.collection,
+        activeItem.entityId,
       );
-      if (currentEntity && currentEntity.updatedAt <= item.updatedAt) {
-        await upsertEntity(item.userId, item.collection, currentEntity.data, {
-          pending: false,
-          failed: true,
-          deleted: currentEntity.deleted,
-        });
+      if (currentEntity && currentEntity.updatedAt <= activeItem.updatedAt) {
+        await upsertEntity(
+          activeItem.userId,
+          activeItem.collection,
+          currentEntity.data,
+          {
+            pending: false,
+            failed: true,
+            deleted: currentEntity.deleted,
+          },
+        );
       }
     }
   }

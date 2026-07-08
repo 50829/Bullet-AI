@@ -31,6 +31,10 @@ type HabitRecord = {
 const habitsRepository = getLocalFirstRepository<HabitRecord>("habits");
 const checkinsRepository =
   getLocalFirstRepository<HabitCheckin>("habit_checkins");
+const HABIT_REMOTE_SELECT =
+  "id,client_id,user_id,name,description,frequency,color,created_at,updated_at,deleted_at";
+const HABIT_CHECKIN_REMOTE_SELECT =
+  "id,client_id,user_id,habit_id,habit_client_id,checked_on,checked,created_at,updated_at,deleted_at";
 
 function calculateDailyStreak(checkins: HabitCheckin[]) {
   const checkedDates = new Set(
@@ -97,13 +101,13 @@ export async function refreshHabitViews(userId: string) {
   ] = await Promise.all([
     supabase
       .from("habits")
-      .select("*")
+      .select(HABIT_REMOTE_SELECT)
       .eq("user_id", userId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     supabase
       .from("habit_checkins")
-      .select("*")
+      .select(HABIT_CHECKIN_REMOTE_SELECT)
       .eq("user_id", userId)
       .is("deleted_at", null)
       .order("checked_on", { ascending: false }),

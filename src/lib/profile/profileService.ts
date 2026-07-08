@@ -13,6 +13,9 @@ export type UserProfile = {
   preferences: UserPreferences;
 };
 
+const PROFILE_SELECT =
+  "user_id,username,username_updated_at,updated_at,preferences_updated_at,preferred_language,ui_theme,accent_color,color_scheme,completed_goal_retention";
+
 async function getCurrentUser() {
   const {
     data: { session },
@@ -29,7 +32,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PROFILE_SELECT)
     .eq("user_id", user.id)
     .maybeSingle();
 

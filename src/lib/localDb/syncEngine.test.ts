@@ -1,11 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OutboxItem } from "./types";
 
+type MaybeSingleResult = {
+  data: Record<string, unknown> | null;
+  error: { message: string } | null;
+};
+
 const mocks = vi.hoisted(() => ({
   sessionUser: { id: "user-1" } as { id: string } | null,
   outboxItems: [] as OutboxItem[],
   updatePayloads: [] as Record<string, unknown>[],
-  maybeSingleResult: { data: { id: 1, client_id: "moment-client" }, error: null },
+  maybeSingleResult: {
+    data: { id: 1, client_id: "moment-client" },
+    error: null,
+  } as MaybeSingleResult,
   markOutboxItem: vi.fn(),
   removeOutboxItem: vi.fn(),
   recoverStaleOutboxItems: vi.fn(),
@@ -18,13 +26,16 @@ const mocks = vi.hoisted(() => ({
   upsertSyncedEntity: vi.fn(),
   storageRemove: vi.fn(),
   storageUpload: vi.fn(),
+  updateOutboxItem: vi.fn(),
 }));
 
 vi.mock("../supabaseClient", () => ({
   supabase: {
     auth: {
       getSession: vi.fn(async () => ({
-        data: { session: mocks.sessionUser ? { user: mocks.sessionUser } : null },
+        data: {
+          session: mocks.sessionUser ? { user: mocks.sessionUser } : null,
+        },
       })),
     },
     from: vi.fn(() => ({
@@ -62,9 +73,48 @@ vi.mock("./repository", () => ({
 
 vi.mock("./syncQueue", () => ({
   getOutboxItems: vi.fn(async () => mocks.outboxItems),
-  markOutboxItem: mocks.markOutboxItem,
+  markOutboxItem: vi.fn(
+    async (
+      item: OutboxItem,
+      status: OutboxItem["status"],
+      options?: string | { error?: string; errorKind?: string },
+    ) => {
+      const current =
+        mocks.outboxItems.find((entry) => entry.id === item.id) ?? item;
+      const attemptCount =
+        status === "syncing"
+          ? (current.attemptCount ?? 0) + 1
+          : current.attemptCount;
+      const error = typeof options === "string" ? options : options?.error;
+      const errorKind =
+        typeof options === "string" ? undefined : options?.errorKind;
+      const next = {
+        ...current,
+        status:
+          status === "failed" &&
+          (errorKind === "not_found" || errorKind === "permanent")
+            ? "dead"
+            : status,
+        attemptCount,
+        error,
+        errorKind,
+      } as OutboxItem;
+      mocks.markOutboxItem(item, status, options);
+      const index = mocks.outboxItems.findIndex(
+        (entry) => entry.id === item.id,
+      );
+      if (index >= 0) mocks.outboxItems[index] = next;
+      return next;
+    },
+  ),
   recoverStaleOutboxItems: mocks.recoverStaleOutboxItems,
   removeOutboxItem: mocks.removeOutboxItem,
+  updateOutboxItem: vi.fn(async (item: OutboxItem) => {
+    mocks.updateOutboxItem(item);
+    const index = mocks.outboxItems.findIndex((entry) => entry.id === item.id);
+    if (index >= 0) mocks.outboxItems[index] = item;
+    return item;
+  }),
 }));
 
 const { flushOutbox } = await import("./syncEngine");
@@ -113,6 +163,7 @@ describe("syncEngine", () => {
     mocks.storageRemove.mockResolvedValue({ error: null });
     mocks.storageUpload.mockReset();
     mocks.storageUpload.mockResolvedValue({ error: null });
+    mocks.updateOutboxItem.mockReset();
   });
 
   it("soft-deletes remote rows and removes stored files", async () => {
@@ -158,7 +209,10 @@ describe("syncEngine", () => {
     expect(mocks.markOutboxItem).toHaveBeenLastCalledWith(
       expect.objectContaining({ id: "outbox-1" }),
       "failed",
-      "Remote row not found for update",
+      expect.objectContaining({
+        error: "Remote row not found for update",
+        errorKind: "not_found",
+      }),
     );
     expect(mocks.upsertEntity).toHaveBeenCalledWith(
       "user-1",
@@ -215,5 +269,61 @@ describe("syncEngine", () => {
     expect(mocks.updatePayloads[0]).not.toHaveProperty("local_file_name");
     expect(mocks.storageRemove).toHaveBeenCalledWith(["user-1/old.jpg"]);
     expect(mocks.removeLocalFile).toHaveBeenCalledWith("file-1");
+  });
+
+  it("persists uploaded file paths so table-write retries do not re-upload", async () => {
+    mocks.readLocalFile.mockResolvedValue({
+      id: "file-1",
+      userId: "user-1",
+      bucket: "moments",
+      path: "",
+      blob: new Blob(["photo"]),
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+    mocks.maybeSingleResult = { data: null, error: { message: "db offline" } };
+    mocks.outboxItems = [
+      outboxItem({
+        operation: "update",
+        payload: {
+          id: 1,
+          client_id: "moment-client",
+          user_id: "user-1",
+          content: "with photo",
+          local_file_id: "file-1",
+          local_file_name: "photo.jpg",
+        },
+      }),
+    ];
+
+    await flushOutbox();
+
+    expect(mocks.storageUpload).toHaveBeenCalledTimes(1);
+    expect(mocks.updateOutboxItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          uploaded_image_path: expect.stringMatching(
+            /^user-1\/\d+-moment-client\.jpg$/,
+          ),
+        }),
+      }),
+    );
+
+    mocks.markOutboxItem.mockClear();
+    mocks.updatePayloads = [];
+    mocks.maybeSingleResult = {
+      data: {
+        id: 1,
+        client_id: "moment-client",
+        image_path: "user-1/uploaded.jpg",
+      },
+      error: null,
+    };
+
+    await flushOutbox();
+
+    expect(mocks.storageUpload).toHaveBeenCalledTimes(1);
+    expect(mocks.updatePayloads[0]).toMatchObject({
+      image_path: expect.stringMatching(/^user-1\/\d+-moment-client\.jpg$/),
+    });
   });
 });

@@ -99,7 +99,9 @@ export default function ReflectionsPageClient() {
     if (!highlightedReflectionId || !Number.isFinite(highlightedReflectionId))
       return;
     if (
-      !reflections.some((reflection) => reflection.id === highlightedReflectionId)
+      !reflections.some(
+        (reflection) => reflection.id === highlightedReflectionId,
+      )
     )
       return;
 
@@ -219,9 +221,7 @@ export default function ReflectionsPageClient() {
                       <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
                         {new Date(
                           reflection.updated_at || reflection.created_at,
-                        ).toLocaleString(
-                          language === "en" ? "en-US" : "zh-CN",
-                        )}
+                        ).toLocaleString(language === "en" ? "en-US" : "zh-CN")}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">

@@ -4,6 +4,7 @@ import type { OutboxItem } from "./types";
 const store = vi.hoisted(() => new Map<string, OutboxItem>());
 
 vi.mock("./indexedDb", () => ({
+  idbGet: vi.fn(async (_name: string, id: string) => store.get(id)),
   idbGetAll: vi.fn(async () => [...store.values()]),
   idbPut: vi.fn(async (_name: string, item: OutboxItem) => {
     store.set(item.id, item);
@@ -14,7 +15,8 @@ vi.mock("./indexedDb", () => ({
   }),
 }));
 
-const { getOutboxItems, recoverStaleOutboxItems } = await import("./syncQueue");
+const { getOutboxItems, markOutboxItem, recoverStaleOutboxItems } =
+  await import("./syncQueue");
 
 function item(overrides: Partial<OutboxItem>): OutboxItem {
   return {
@@ -54,6 +56,49 @@ describe("sync queue recovery and dependency ordering", () => {
     expect(store.get("stale")).toMatchObject({
       status: "pending",
       error: "Recovered after an interrupted sync",
+    });
+  });
+
+  it("does not return dead-lettered items in the default pending queue", async () => {
+    const dead = item({ id: "dead", status: "dead" });
+    const pending = item({ id: "pending", status: "pending" });
+    store.set(dead.id, dead);
+    store.set(pending.id, pending);
+
+    expect((await getOutboxItems()).map((entry) => entry.id)).toEqual([
+      "pending",
+    ]);
+  });
+
+  it("moves permanent failures directly to dead-letter state", async () => {
+    const failed = item({ id: "permanent" });
+    store.set(failed.id, failed);
+
+    await markOutboxItem(failed, "failed", {
+      error: "Remote row not found for update",
+      errorKind: "not_found",
+    });
+
+    expect(store.get("permanent")).toMatchObject({
+      status: "dead",
+      errorKind: "not_found",
+      deadAt: expect.any(String),
+    });
+  });
+
+  it("moves transient failures to dead-letter state after the retry budget", async () => {
+    const failed = item({ id: "retry", attemptCount: 5 });
+    store.set(failed.id, failed);
+
+    await markOutboxItem(failed, "failed", {
+      error: "network unavailable",
+      errorKind: "transient",
+    });
+
+    expect(store.get("retry")).toMatchObject({
+      status: "dead",
+      errorKind: "transient",
+      deadAt: expect.any(String),
     });
   });
 });

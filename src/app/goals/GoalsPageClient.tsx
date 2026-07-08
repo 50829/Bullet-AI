@@ -225,8 +225,7 @@ export default function GoalsPageClient() {
   }, [setTopBarHandlers, toggleAIPanel]);
 
   const isInitialLoading =
-    (loading && goals.length === 0) ||
-    (habitsLoading && habits.length === 0);
+    (loading && goals.length === 0) || (habitsLoading && habits.length === 0);
   const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
 
   if (isInitialLoading) {
