@@ -7,11 +7,18 @@ import {
 import type { LocalCollection, SyncOperation } from "./types";
 
 type EntityIdentity = {
-  id: string | number;
+  id?: string | number | null;
   client_id?: string | null;
   user_id?: string;
   image_path?: string | null;
+  deleted_at?: string | null;
 };
+
+function entityIdentity(entity: EntityIdentity) {
+  if (entity.client_id) return entity.client_id;
+  if (typeof entity.id !== "undefined" && entity.id !== null) return entity.id;
+  throw new Error("Entity must include client_id or id");
+}
 
 export class LocalFirstRepository<T extends EntityIdentity> {
   constructor(readonly collection: LocalCollection) {}
@@ -35,7 +42,7 @@ export class LocalFirstRepository<T extends EntityIdentity> {
     await commitLocalMutation({
       userId,
       collection: this.collection,
-      entityId: entity.id,
+      entityId: entityIdentity(entity),
       payload: { ...entity, user_id: entity.user_id ?? userId },
       operation,
     });
@@ -46,13 +53,13 @@ export class LocalFirstRepository<T extends EntityIdentity> {
     await commitLocalMutation({
       userId,
       collection: this.collection,
-      entityId: entity.id,
+      entityId: entityIdentity(entity),
       payload: {
         id: entity.id,
         client_id: entity.client_id ?? undefined,
         user_id: entity.user_id ?? userId,
         image_path: entity.image_path ?? undefined,
-        deleted_at: new Date().toISOString(),
+        deleted_at: entity.deleted_at ?? new Date().toISOString(),
       },
       operation: "delete",
       deleted: true,

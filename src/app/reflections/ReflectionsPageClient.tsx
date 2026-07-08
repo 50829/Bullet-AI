@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Edit2, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useAppContext } from "../../context/AppContext";
+import { useSearchParams } from "next/navigation";
+import { useReflectionsContext } from "../../features/workspace/WorkspaceContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTopBar } from "../components/layout/TopBar";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
@@ -13,6 +14,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { LoadingState } from "../components/ui/LoadingState";
 import { useToast } from "../components/ui/Toast";
 import { parseReflectionContent } from "../../lib/reflections/reflectionContent";
+import type { ReflectionRecord as Reflection } from "../../features/workspace/types";
 
 const AssistantDrawer = dynamic(
   () =>
@@ -30,20 +32,10 @@ const ReflectionModal = dynamic(
   { ssr: false },
 );
 
-type Reflection = {
-  id: number;
-  created_at: string;
-  updated_at?: string;
-  content: string;
-  title?: string | null;
-  body?: string | null;
-  image_path?: string | null;
-  _local?: { pending?: boolean; failed?: boolean };
-};
-
 export default function ReflectionsPageClient() {
   const { reflections, loading, refreshReflections, deleteReflection } =
-    useAppContext();
+    useReflectionsContext();
+  const searchParams = useSearchParams();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
@@ -59,6 +51,8 @@ export default function ReflectionsPageClient() {
   const [collapsedReflections, setCollapsedReflections] = useState<Set<number>>(
     new Set(),
   );
+  const [activeHighlightReflectionId, setActiveHighlightReflectionId] =
+    useState<number | null>(null);
 
   const sortedReflections = useMemo(
     () =>
@@ -96,6 +90,44 @@ export default function ReflectionsPageClient() {
     });
   };
 
+  const highlightedReflectionParam = searchParams.get("reflection");
+  const highlightedReflectionId = highlightedReflectionParam
+    ? Number(highlightedReflectionParam)
+    : null;
+
+  useEffect(() => {
+    if (!highlightedReflectionId || !Number.isFinite(highlightedReflectionId))
+      return;
+    if (
+      !reflections.some((reflection) => reflection.id === highlightedReflectionId)
+    )
+      return;
+
+    setCollapsedReflections((current) => {
+      if (!current.has(highlightedReflectionId)) return current;
+      const next = new Set(current);
+      next.delete(highlightedReflectionId);
+      return next;
+    });
+    setActiveHighlightReflectionId(highlightedReflectionId);
+
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(`reflection-${highlightedReflectionId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    const highlightTimer = window.setTimeout(() => {
+      setActiveHighlightReflectionId((current) =>
+        current === highlightedReflectionId ? null : current,
+      );
+    }, 1000);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(highlightTimer);
+    };
+  }, [highlightedReflectionId, reflections]);
+
   const handleDelete = async () => {
     if (!reflectionToDelete) return;
     const target = reflectionToDelete;
@@ -118,7 +150,7 @@ export default function ReflectionsPageClient() {
     }
   };
 
-  const isInitialLoading = loading.reflections && reflections.length === 0;
+  const isInitialLoading = loading && reflections.length === 0;
   const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
 
   if (isInitialLoading) {
@@ -135,11 +167,7 @@ export default function ReflectionsPageClient() {
           onClose={() => setShowAIPanel(false)}
           title={t("insights") || "感悟"}
           placeholder={t("aiInputPlaceholder") || "输入你的想法..."}
-          systemPrompt={
-            language === "en"
-              ? "You are a concise thinking partner. Help the user clarify reflections and turn vague thoughts into grounded observations."
-              : "你是用户的思考伙伴。请帮助用户澄清感悟，把模糊想法整理成具体、温和、可继续行动的观察。"
-          }
+          purpose="reflection_chat"
         />
       )}
 
@@ -158,7 +186,15 @@ export default function ReflectionsPageClient() {
           const isCollapsed = collapsedReflections.has(reflection.id);
 
           return (
-            <Card key={reflection.id} className="w-full">
+            <Card
+              key={reflection.id}
+              id={`reflection-${reflection.id}`}
+              className={`w-full transition-[background-color,box-shadow] duration-700 ease-out motion-reduce:transition-none ${
+                reflection.id === activeHighlightReflectionId
+                  ? "bg-[var(--color-primary-light)] ring-2 ring-[var(--color-primary)]"
+                  : ""
+              }`}
+            >
               <div className="flex items-start gap-3">
                 <button
                   type="button"
@@ -183,7 +219,9 @@ export default function ReflectionsPageClient() {
                       <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
                         {new Date(
                           reflection.updated_at || reflection.created_at,
-                        ).toLocaleString("zh-CN")}
+                        ).toLocaleString(
+                          language === "en" ? "en-US" : "zh-CN",
+                        )}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">

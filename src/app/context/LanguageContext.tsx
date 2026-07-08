@@ -114,11 +114,12 @@ export function useLanguage() {
     throw new Error("useLanguage must be used within a LanguageProvider");
   }
 
-  const t = (key: string) => {
+  const t = (key: string, fallback = "") => {
     try {
-      return translate(key);
+      const message = translate(key);
+      return message === key ? fallback : message;
     } catch {
-      return key;
+      return fallback;
     }
   };
 

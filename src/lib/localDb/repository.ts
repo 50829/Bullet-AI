@@ -7,6 +7,7 @@ import {
   runIdbTransaction,
 } from "./indexedDb";
 import type {
+  LocalFile,
   LocalCollection,
   LocalEntity,
   LocalMeta,
@@ -69,12 +70,14 @@ export function createClientId(prefix = "entity") {
 }
 
 function getEntityId(entity: unknown) {
-  if (entity && typeof entity === "object" && "id" in entity) {
-    return String((entity as { id: string | number }).id);
+  if (entity && typeof entity === "object" && "client_id" in entity) {
+    const clientId = (entity as { client_id?: unknown }).client_id;
+    if (typeof clientId === "string" && clientId) return clientId;
   }
 
-  if (entity && typeof entity === "object" && "client_id" in entity) {
-    return String((entity as { client_id: string }).client_id);
+  if (entity && typeof entity === "object" && "id" in entity) {
+    const id = (entity as { id?: unknown }).id;
+    if (typeof id === "string" || typeof id === "number") return String(id);
   }
 
   throw new Error("Local entity must include an id or client_id");
@@ -109,6 +112,56 @@ function toEntityData<T>(row: LocalEntity<T>) {
       deleted: row.deleted,
     },
   };
+}
+
+function stripTransientEntityFields<T>(payload: T) {
+  if (!payload || typeof payload !== "object") return payload;
+
+  const data = { ...(payload as Record<string, unknown>) };
+  delete data._local;
+  delete data.date;
+  delete data.image_url;
+  delete data.local_file;
+  delete data.local_file_id;
+  delete data.local_file_name;
+  delete data.previous_image_path;
+  return data as T;
+}
+
+export function localFileKey(
+  userId: string,
+  collection: LocalCollection,
+  entityId: string | number,
+) {
+  return `${userId}:${collection}:${String(entityId)}`;
+}
+
+export function readLocalFile(fileId: string) {
+  return idbGet<LocalFile>("files", fileId);
+}
+
+export async function removeLocalFile(fileId: string) {
+  await idbDelete("files", fileId);
+}
+
+function createOutboxPayload(
+  userId: string,
+  collection: LocalCollection,
+  entityId: string | number,
+  payload: Record<string, unknown>,
+) {
+  const outboxPayload = { ...payload };
+  const localFile = outboxPayload.local_file;
+  const hasLocalFileField = Object.hasOwn(outboxPayload, "local_file");
+
+  if (localFile instanceof Blob) {
+    outboxPayload.local_file_id = localFileKey(userId, collection, entityId);
+  } else if (hasLocalFileField) {
+    outboxPayload.local_file_id = null;
+  }
+
+  delete outboxPayload.local_file;
+  return outboxPayload;
 }
 
 export async function readEntities<T>(
@@ -148,10 +201,26 @@ export async function readEntity<T>(
   collection: LocalCollection,
   entityId: string | number,
 ): Promise<LocalEntity<T> | undefined> {
-  return idbGet<LocalEntity<T>>(
+  const row = await idbGet<LocalEntity<T>>(
     "entities",
     entityKey(userId, collection, entityId),
   );
+  if (row) return row;
+
+  const rows = await idbGetAll<LocalEntity<T>>(
+    "entities",
+    "userCollection",
+    IDBKeyRange.only([userId, collection]),
+  );
+  const target = String(entityId);
+  return rows.find((candidate) => {
+    const data = candidate.data as Record<string, unknown>;
+    return (
+      candidate.entityId === target ||
+      data.client_id === target ||
+      String(data.id ?? "") === target
+    );
+  });
 }
 
 export async function upsertEntity<T>(
@@ -182,7 +251,7 @@ export async function upsertEntity<T>(
     userId,
     collection,
     entityId,
-    data: entity,
+    data: stripTransientEntityFields(entity),
     updatedAt: now,
     pending: options?.pending ?? false,
     failed: options?.failed ?? false,
@@ -271,7 +340,9 @@ export async function upsertSyncedEntity<T>(
   return row;
 }
 
-export async function cacheRemoteEntities<T extends { id: string | number }>(
+export async function cacheRemoteEntities<
+  T extends { id?: string | number | null; client_id?: string | null },
+>(
   userId: string,
   collection: LocalCollection,
   entities: T[],
@@ -296,7 +367,7 @@ export async function cacheRemoteEntities<T extends { id: string | number }>(
     const remoteKeys = new Set(
       entities.map((entity) => {
         const clientId = getEntityClientId(entity);
-        return clientId ? `client:${clientId}` : `id:${String(entity.id)}`;
+        return clientId ? `client:${clientId}` : `id:${getEntityId(entity)}`;
       }),
     );
     const localRows = await idbGetAll<LocalEntity<T>>(
@@ -355,7 +426,11 @@ export async function removeEntity(
   collection: LocalCollection,
   entityId: string | number,
 ) {
-  await idbDelete("entities", entityKey(userId, collection, entityId));
+  const existing = await readEntity(userId, collection, entityId);
+  await idbDelete(
+    "entities",
+    existing?.key ?? entityKey(userId, collection, entityId),
+  );
   emitCollectionChange(userId, collection);
 }
 
@@ -386,9 +461,19 @@ export async function commitLocalMutation<
 }) {
   const now = new Date().toISOString();
   const key = entityKey(input.userId, input.collection, input.entityId);
+  const outboxPayload = createOutboxPayload(
+    input.userId,
+    input.collection,
+    input.entityId,
+    input.payload,
+  );
+  const localFile =
+    input.payload.local_file instanceof Blob ? input.payload.local_file : null;
+  const hasLocalFileField = Object.hasOwn(input.payload, "local_file");
+  const fileId = localFileKey(input.userId, input.collection, input.entityId);
 
   await runIdbTransaction(
-    ["entities", "outbox"],
+    ["entities", "outbox", "files"],
     "readwrite",
     async (stores) => {
       const existingEntity = await idbRequest<LocalEntity<T> | undefined>(
@@ -399,7 +484,7 @@ export async function commitLocalMutation<
         userId: input.userId,
         collection: input.collection,
         entityId: String(input.entityId),
-        data: input.payload,
+        data: stripTransientEntityFields(input.payload),
         updatedAt: now,
         pending: true,
         failed: false,
@@ -407,7 +492,10 @@ export async function commitLocalMutation<
       };
 
       if (existingEntity?.data && input.operation !== "delete") {
-        entityRow.data = { ...existingEntity.data, ...input.payload };
+        entityRow.data = stripTransientEntityFields({
+          ...existingEntity.data,
+          ...input.payload,
+        });
       }
 
       await idbRequest(stores.entities.put(entityRow));
@@ -427,15 +515,29 @@ export async function commitLocalMutation<
       const operation = compactOperation(previous?.operation, input.operation);
       const payload =
         operation === "delete"
-          ? input.payload
+          ? outboxPayload
           : {
               ...((previous?.payload as Record<string, unknown>) ?? {}),
-              ...input.payload,
+              ...outboxPayload,
             };
 
       await Promise.all(
         compactable.map((item) => idbRequest(stores.outbox.delete(item.id))),
       );
+      if (localFile) {
+        await idbRequest(
+          stores.files.put({
+            id: fileId,
+            userId: input.userId,
+            bucket: input.collection,
+            path: "",
+            blob: localFile,
+            createdAt: now,
+          } satisfies LocalFile),
+        );
+      } else if (input.operation === "delete" || hasLocalFileField) {
+        await idbRequest(stores.files.delete(fileId));
+      }
       const outboxItem: OutboxItem = {
         id: createMutationId(),
         userId: input.userId,

@@ -5,22 +5,15 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { buildCalendarGrid } from "../../lib/date/calendarGrid";
 import { toDateKey } from "../../lib/date/dateUtils";
+import { useLanguage } from "../context/LanguageContext";
+import type { GoalRecord } from "../../features/workspace/types";
 
-type Goal = {
-  id: number;
-  title: string;
-  description: string | null;
-  created_at: string;
-  image_path?: string | null;
-  status?: string;
-  due_date?: string | null;
-  progress?: number;
-};
+type CalendarGoal = Pick<GoalRecord, "status" | "due_date">;
 
 type CalendarProps = {
   selectedDate: Date | null;
   onDateSelect: (date: Date) => void;
-  goals: Goal[];
+  goals: CalendarGoal[];
 };
 
 export const Calendar = ({
@@ -28,6 +21,7 @@ export const Calendar = ({
   onDateSelect,
   goals,
 }: CalendarProps) => {
+  const { language } = useLanguage();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const today = useMemo(() => new Date(), []);
   const todayKey = toDateKey(today);
@@ -87,34 +81,28 @@ export const Calendar = ({
     );
   };
 
-  const monthNames = [
-    "一月",
-    "二月",
-    "三月",
-    "四月",
-    "五月",
-    "六月",
-    "七月",
-    "八月",
-    "九月",
-    "十月",
-    "十一月",
-    "十二月",
-  ];
-  const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
+  const dateLocale = language === "en" ? "en-US" : "zh-CN";
+  const monthLabel = currentMonth.toLocaleDateString(dateLocale, {
+    year: "numeric",
+    month: "long",
+  });
+  const weekDays =
+    language === "en"
+      ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+      : ["日", "一", "二", "三", "四", "五", "六"];
 
   return (
     <section className="flex h-[400px] flex-col rounded-xl bg-[var(--color-panel-primary)] p-4 sm:h-[460px] lg:h-full">
       <div className="mb-2 flex shrink-0 items-center justify-between">
         <h3 className="text-xl font-semibold text-[var(--color-panel-text)] sm:text-2xl">
-          {currentMonth.getFullYear()}年 {monthNames[currentMonth.getMonth()]}
+          {monthLabel}
         </h3>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={prevMonth}
             className="flex size-9 items-center justify-center rounded-lg text-[var(--color-panel-text)] transition-colors hover:bg-black/10 motion-reduce:transition-none"
-            aria-label="上个月"
+            aria-label={language === "en" ? "Previous month" : "上个月"}
           >
             <ChevronLeft className="size-5" />
           </button>
@@ -122,7 +110,7 @@ export const Calendar = ({
             type="button"
             onClick={nextMonth}
             className="flex size-9 items-center justify-center rounded-lg text-[var(--color-panel-text)] transition-colors hover:bg-black/10 motion-reduce:transition-none"
-            aria-label="下个月"
+            aria-label={language === "en" ? "Next month" : "下个月"}
           >
             <ChevronRight className="size-5" />
           </button>
@@ -151,7 +139,11 @@ export const Calendar = ({
               key={dateKey}
               type="button"
               onClick={() => handleDayClick(date, isCurrentMonth)}
-              aria-label={`${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`}
+              aria-label={date.toLocaleDateString(dateLocale, {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
               aria-pressed={selected}
               className={`
                 flex min-h-0 flex-col items-center justify-center gap-0.5 rounded-lg p-1 text-sm text-[var(--color-panel-text)] transition-colors sm:text-base motion-reduce:transition-none

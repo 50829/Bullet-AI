@@ -1,8 +1,10 @@
 import { supabase } from "../supabaseClient";
 import {
   readEntity,
+  readLocalFile,
   removeEntitiesByClientId,
   removeEntity,
+  removeLocalFile,
   upsertEntity,
   upsertSyncedEntity,
 } from "./repository";
@@ -49,16 +51,23 @@ function sanitizePayload(payload: unknown) {
   delete rest.date;
   delete rest.image_url;
   delete rest.local_file;
+  delete rest.local_file_id;
   delete rest.local_file_name;
+  delete rest.previous_image_path;
   return rest;
+}
+
+function getPreviousImagePath(item: OutboxItem) {
+  const value = (item.payload as Record<string, unknown>)?.previous_image_path;
+  return typeof value === "string" && value ? value : null;
 }
 
 async function preparePayloadWithFileUpload(
   item: OutboxItem,
   payload: Record<string, unknown>,
 ) {
-  const localFile = (item.payload as Record<string, unknown>)?.local_file;
-  if (!(localFile instanceof Blob)) return payload;
+  const localFile = await resolveQueuedLocalFile(item);
+  if (!localFile) return payload;
 
   const fileName = String(
     (item.payload as Record<string, unknown>)?.local_file_name ||
@@ -72,7 +81,7 @@ async function preparePayloadWithFileUpload(
 
   const { error } = await supabase.storage
     .from(item.collection)
-    .upload(path, localFile, { cacheControl: "3600", upsert: true });
+    .upload(path, localFile.blob, { cacheControl: "3600", upsert: true });
 
   if (error) throw new Error(error.message);
 
@@ -80,6 +89,25 @@ async function preparePayloadWithFileUpload(
     ...payload,
     image_path: path,
   };
+}
+
+async function resolveQueuedLocalFile(item: OutboxItem) {
+  const payload = item.payload as Record<string, unknown>;
+  if (payload.local_file instanceof Blob) {
+    return { blob: payload.local_file, fileId: null };
+  }
+
+  const fileId = payload.local_file_id;
+  if (typeof fileId !== "string" || !fileId) return null;
+
+  const stored = await readLocalFile(fileId);
+  if (!stored) throw new Error("Queued local file not found");
+  return { blob: stored.blob, fileId };
+}
+
+async function removeQueuedLocalFile(item: OutboxItem) {
+  const fileId = (item.payload as Record<string, unknown>).local_file_id;
+  if (typeof fileId === "string" && fileId) await removeLocalFile(fileId);
 }
 
 function isDuplicateSuccess(
@@ -106,6 +134,15 @@ async function removeStoredFile(
   if (error) throw new Error(error.message);
 }
 
+async function removeReplacedStoredFile(
+  item: OutboxItem,
+  imagePath: unknown,
+) {
+  const previousImagePath = getPreviousImagePath(item);
+  if (!previousImagePath || previousImagePath === imagePath) return;
+  await removeStoredFile(item.collection, previousImagePath);
+}
+
 async function applyOutboxItem(item: OutboxItem) {
   const table = supabase.from(item.collection as LocalCollection);
   const payload = await preparePayloadWithFileUpload(
@@ -118,12 +155,20 @@ async function applyOutboxItem(item: OutboxItem) {
       : null;
 
   if (item.operation === "delete") {
-    const query = table.delete().eq("user_id", item.userId);
-    const { error } = clientId
-      ? await query.eq("client_id", clientId)
-      : await query.eq("id", item.entityId);
+    const deletedAt =
+      typeof payload.deleted_at === "string"
+        ? payload.deleted_at
+        : new Date().toISOString();
+    const query = table
+      .update({ deleted_at: deletedAt })
+      .eq("user_id", item.userId);
+    const { data, error } = clientId
+      ? await query.eq("client_id", clientId).select("id").maybeSingle()
+      : await query.eq("id", item.entityId).select("id").maybeSingle();
     if (error) throw new Error(error.message);
+    if (!data) throw new Error("Remote row not found for delete");
     await removeStoredFile(item.collection, payload.image_path);
+    await removeQueuedLocalFile(item);
     if (clientId) {
       await removeEntitiesByClientId(item.userId, item.collection, clientId);
     } else {
@@ -137,10 +182,18 @@ async function applyOutboxItem(item: OutboxItem) {
     delete updates.id;
     delete updates.user_id;
     const query = table.update(updates).eq("user_id", item.userId);
-    const { error } = clientId
-      ? await query.eq("client_id", clientId)
-      : await query.eq("id", item.entityId);
+    const { data, error } = clientId
+      ? await query.eq("client_id", clientId).select("*").maybeSingle()
+      : await query.eq("id", item.entityId).select("*").maybeSingle();
     if (error) throw new Error(error.message);
+    if (!data) throw new Error("Remote row not found for update");
+    await removeReplacedStoredFile(item, data.image_path);
+    await upsertSyncedEntity(item.userId, item.collection, data, {
+      localEntityId: item.entityId,
+      mutationUpdatedAt: item.updatedAt,
+    });
+    await removeQueuedLocalFile(item);
+    return;
   } else {
     const insertPayload = { ...payload };
     if (clientId) delete insertPayload.id;
@@ -150,10 +203,12 @@ async function applyOutboxItem(item: OutboxItem) {
       .maybeSingle();
     if (error && !isDuplicateSuccess(error)) throw new Error(error.message);
     if (data) {
+      await removeReplacedStoredFile(item, data.image_path);
       await upsertSyncedEntity(item.userId, item.collection, data, {
         localEntityId: item.entityId,
         mutationUpdatedAt: item.updatedAt,
       });
+      await removeQueuedLocalFile(item);
       return;
     }
   }
@@ -168,6 +223,7 @@ async function applyOutboxItem(item: OutboxItem) {
       localEntityId: item.entityId,
       mutationUpdatedAt: item.updatedAt,
     });
+    await removeQueuedLocalFile(item);
   }
 }
 

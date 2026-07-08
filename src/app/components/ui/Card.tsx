@@ -1,15 +1,16 @@
 // src/components/ui/Card.tsx
 import React from "react";
 
+type CardProps = React.HTMLAttributes<HTMLDivElement> & {
+  style?: React.CSSProperties;
+};
+
 export const Card = ({
   children,
   className = "",
   style,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
-}) => {
+  ...props
+}: CardProps) => {
   const hasCustomBg = /\bbg-/.test(className) || style?.backgroundColor;
   const hasCustomPadding = /\bp-\d+/.test(className);
   const defaultPadding = hasCustomPadding ? "" : "p-4";
@@ -24,6 +25,7 @@ export const Card = ({
 
   return (
     <div
+      {...props}
       className={`${defaultPadding} ${defaultRounded} ${className}`}
       style={mergedStyle}
     >

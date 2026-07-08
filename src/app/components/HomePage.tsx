@@ -4,7 +4,6 @@ import React, { useMemo, useState } from "react";
 import { Clock3, Edit2, Plus } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useAppContext } from "../../context/AppContext";
 import { useHabits } from "../../features/habits/hooks/useHabits";
 import type { HabitView } from "../../features/habits/types";
 import { HabitList } from "../../features/habits/components/HabitList";
@@ -23,6 +22,13 @@ import { EmptyState } from "./ui/EmptyState";
 import { LoadingState } from "./ui/LoadingState";
 import { useToast } from "./ui/Toast";
 import { parseReflectionContent } from "../../lib/reflections/reflectionContent";
+import type { GoalRecord as Goal } from "../../features/workspace/types";
+import {
+  useGoalsContext,
+  useMomentsContext,
+  useReflectionsContext,
+  useWorkspaceSessionContext,
+} from "../../features/workspace/WorkspaceContext";
 
 const ConfirmDialog = dynamic(
   () => import("./ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
@@ -54,21 +60,6 @@ const ReflectionModal = dynamic(
   { ssr: false },
 );
 
-type Goal = {
-  id: number;
-  title: string;
-  description: string;
-  status: string;
-  due_date?: string | null;
-  progress: number;
-  color?: string | null;
-  sort_order?: number | null;
-  image_path?: string | null;
-  updated_at?: string;
-  created_at?: string;
-  _local?: { pending?: boolean; failed?: boolean };
-};
-
 function todayKey() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
@@ -76,7 +67,7 @@ function todayKey() {
   ).padStart(2, "0")}`;
 }
 
-function formatRecentItemDate(value: string) {
+function formatRecentItemDate(value: string, language: "zh" | "en") {
   const dateKey = value.includes("T") ? value.split("T")[0] : value;
   const [year, month, day] = dateKey.split("-");
   if (!year || !month || !day) return value;
@@ -84,24 +75,26 @@ function formatRecentItemDate(value: string) {
   const date = new Date(Number(year), Number(month) - 1, Number(day));
   if (Number.isNaN(date.getTime())) return value;
 
-  const weekday = date.toLocaleDateString("zh-CN", {
-    weekday: "short",
-  });
+  const weekday = date.toLocaleDateString(
+    language === "en" ? "en-US" : "zh-CN",
+    {
+      weekday: "short",
+    },
+  );
   return `${month}-${day} ${weekday}`;
 }
 
 export default function HomePage() {
   const router = useRouter();
+  const { moments } = useMomentsContext();
+  const { reflections } = useReflectionsContext();
   const {
-    moments,
-    reflections,
     goals,
-    loading,
-    syncStatus,
+    loading: goalsLoading,
     updateGoal,
     deleteGoal,
-    retrySync,
-  } = useAppContext();
+  } = useGoalsContext();
+  const { syncStatus, retrySync } = useWorkspaceSessionContext();
   const {
     habits,
     loading: habitsLoading,
@@ -112,7 +105,7 @@ export default function HomePage() {
     toggleCheckin,
     removeHabit,
   } = useHabits();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showToast } = useToast();
   const completedGoalRetention = useCompletedGoalRetention();
   const [momentOpen, setMomentOpen] = useState(false);
@@ -151,7 +144,7 @@ export default function HomePage() {
       itemId: moment.id,
       title: moment.content.slice(0, 42) || t("newMoment") || "记录",
       time: moment.created_at,
-      dateLabel: formatRecentItemDate(moment.created_at),
+      dateLabel: formatRecentItemDate(moment.created_at, language),
     }));
     const reflectionItems = reflections.slice(0, 3).map((reflection) => {
       const parsed = parseReflectionContent(reflection);
@@ -163,6 +156,7 @@ export default function HomePage() {
         time: reflection.updated_at || reflection.created_at,
         dateLabel: formatRecentItemDate(
           reflection.updated_at || reflection.created_at,
+          language,
         ),
       };
     });
@@ -170,11 +164,13 @@ export default function HomePage() {
     return [...momentItems, ...reflectionItems]
       .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
       .slice(0, 5);
-  }, [moments, reflections, t]);
+  }, [language, moments, reflections, t]);
 
   const openRecentItem = (item: (typeof recentItems)[number]) => {
     if (item.kind === "moment") {
       router.push(`/moments?moment=${item.itemId}`);
+    } else {
+      router.push(`/reflections?reflection=${item.itemId}`);
     }
   };
 
@@ -239,12 +235,15 @@ export default function HomePage() {
             {t("todayWorkbench") || "今天的成长工作台"}
           </h1>
           <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-            {new Date().toLocaleDateString("zh-CN", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              weekday: "long",
-            })}
+            {new Date().toLocaleDateString(
+              language === "en" ? "en-US" : "zh-CN",
+              {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                weekday: "long",
+              },
+            )}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -286,7 +285,7 @@ export default function HomePage() {
             </Button>
           </div>
 
-          {loading.goals && goals.length === 0 ? (
+          {goalsLoading && goals.length === 0 ? (
             <LoadingState />
           ) : visibleTodayGoals.length === 0 ? (
             <EmptyState
@@ -380,7 +379,6 @@ export default function HomePage() {
                   key={item.id}
                   type="button"
                   onClick={() => openRecentItem(item)}
-                  disabled={item.kind !== "moment"}
                   className="group grid min-h-[68px] w-full grid-cols-[36px_minmax(0,1fr)] items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors duration-150 enabled:hover:bg-[var(--color-bg-primary)] enabled:focus-visible:outline-none enabled:focus-visible:ring-2 enabled:focus-visible:ring-[var(--color-primary)] disabled:cursor-default motion-reduce:transition-none"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)]">

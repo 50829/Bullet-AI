@@ -13,7 +13,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import { Button } from "../ui/Button";
 import { supabase } from "../../../lib/supabaseClient";
 import { getCurrentUserProfile } from "../../../lib/profile/profileService";
-import { useAppContext } from "../../../context/AppContext";
+import { useWorkspaceSessionContext } from "../../../features/workspace/WorkspaceContext";
 import { getWorkspacePageFromPathname } from "../../../lib/navigation/workspaceRoutes";
 
 type TopBarHandlers = {
@@ -60,7 +60,7 @@ export const TopBarProvider = ({ children }: { children: React.ReactNode }) => {
 export const TopBar = () => {
   const pathname = usePathname();
   const { t, language } = useLanguage();
-  const { syncStatus } = useAppContext();
+  const { syncStatus } = useWorkspaceSessionContext();
   const currentPage = getWorkspacePageFromPathname(pathname);
   const context = useContext(TopBarContext);
   const [username, setUsername] = useState<string | null>(null);
@@ -144,7 +144,7 @@ export const TopBar = () => {
                   className="text-2xl font-bold"
                   style={{ color: "var(--color-text-primary)" }}
                 >
-                  你好，{username}
+                  {language === "en" ? `Hi, ${username}` : `你好，${username}`}
                 </span>
               </>
             )}
@@ -223,7 +223,7 @@ export const TopBar = () => {
                 className="text-2xl font-bold"
                 style={{ color: "var(--color-text-primary)" }}
               >
-                你好，{username}
+                {language === "en" ? `Hi, ${username}` : `你好，${username}`}
               </span>
             </>
           ) : (

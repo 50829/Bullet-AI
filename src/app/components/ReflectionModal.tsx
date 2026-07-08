@@ -5,18 +5,16 @@ import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { useLanguage } from "../context/LanguageContext";
-import { useAppContext } from "../../context/AppContext";
+import { useReflectionsContext } from "../../features/workspace/WorkspaceContext";
 import { useToast } from "./ui/Toast";
 import { parseReflectionContent } from "../../lib/reflections/reflectionContent";
 import { Modal } from "./ui/Modal";
+import type { ReflectionRecord } from "../../features/workspace/types";
 
-type ReflectionDraft = {
-  id: number;
-  content: string;
-  title?: string | null;
-  body?: string | null;
-  created_at: string;
-};
+type ReflectionDraft = Pick<
+  ReflectionRecord,
+  "id" | "content" | "title" | "body" | "created_at"
+>;
 
 type Props = {
   isOpen: boolean;
@@ -32,7 +30,7 @@ export const ReflectionModal = ({
   initialReflection = null,
 }: Props) => {
   const { t } = useLanguage();
-  const { addReflection, updateReflection } = useAppContext();
+  const { addReflection, updateReflection } = useReflectionsContext();
   const { showToast } = useToast();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");

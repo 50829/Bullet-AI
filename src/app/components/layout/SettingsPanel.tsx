@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Check,
   Download,
@@ -32,8 +33,12 @@ import {
   type CompletedGoalRetention,
   type UserPreferences,
 } from "../../../lib/profile/preferences";
-import { useAppContext } from "../../../context/AppContext";
 import { useHabits } from "../../../features/habits/hooks/useHabits";
+import {
+  useWorkspaceExportContext,
+  useWorkspaceSessionContext,
+} from "../../../features/workspace/WorkspaceContext";
+import { supabase } from "../../../lib/supabaseClient";
 
 type SettingsPanelProps = {
   onClose: () => void;
@@ -104,7 +109,9 @@ export default function SettingsPanel({
   onProfileUpdate,
 }: SettingsPanelProps) {
   const { t, language, setLanguage } = useLanguage();
-  const { syncStatus, retrySync, exportData } = useAppContext();
+  const router = useRouter();
+  const { syncStatus, retrySync } = useWorkspaceSessionContext();
+  const { exportData } = useWorkspaceExportContext();
   const { habits } = useHabits();
   const { showToast } = useToast();
   const [activeSection, setActiveSection] = useState<SettingsSection>("user");
@@ -300,6 +307,23 @@ export default function SettingsPanel({
     URL.revokeObjectURL(url);
   };
 
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      showToast({
+        type: "error",
+        message:
+          language === "en"
+            ? `Failed to log out: ${error.message}`
+            : `退出登录失败: ${error.message}`,
+      });
+      return;
+    }
+
+    onClose();
+    router.replace("/");
+  };
+
   const sectionButton = (
     section: SettingsSection,
     Icon: typeof User,
@@ -412,6 +436,13 @@ export default function SettingsPanel({
                         }
                       >
                         {savingUsername ? t("saving") : t("save")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => void handleLogout()}
+                      >
+                        {t("logout") || "退出登录"}
                       </Button>
                     </div>
                   </form>

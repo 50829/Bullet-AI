@@ -1,21 +1,19 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
 import { Input } from "./ui/Input";
 import { useLanguage } from "../context/LanguageContext";
-import { useAppContext } from "../../context/AppContext";
+import { useMomentsContext } from "../../features/workspace/WorkspaceContext";
 import { useToast } from "./ui/Toast";
 import { PlainImage } from "./ui/PlainImage";
 import { Modal } from "./ui/Modal";
+import type { MomentRecord } from "../../features/workspace/types";
 
-type MomentDraft = {
-  id: number;
-  content: string;
-  created_at: string;
-  image_url?: string | null;
-  image_path?: string | null;
-};
+type MomentDraft = Pick<
+  MomentRecord,
+  "id" | "content" | "created_at" | "image_url" | "image_path"
+>;
 
 type Props = {
   isOpen: boolean;
@@ -37,13 +35,30 @@ export const MomentModal = ({
   initialMoment = null,
 }: Props) => {
   const { t } = useLanguage();
-  const { addMoment, updateMoment } = useAppContext();
+  const { addMoment, updateMoment } = useMomentsContext();
   const { showToast } = useToast();
   const [content, setContent] = useState("");
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue());
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
   const isEditing = Boolean(initialMoment);
+
+  const setObjectPreview = (file: File | null) => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+
+    if (!file) {
+      setPreviewUrl(initialMoment?.image_url ?? null);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    objectUrlRef.current = url;
+    setPreviewUrl(url);
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -51,14 +66,28 @@ export const MomentModal = ({
     setContent(initialMoment?.content ?? "");
     setSelectedDate(toDateInputValue(initialMoment?.created_at));
     setImageFile(null);
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
     setPreviewUrl(initialMoment?.image_url ?? null);
   }, [initialMoment, isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    };
+  }, []);
 
   if (!isOpen) return null;
 
   const resetForm = () => {
     setContent("");
     setImageFile(null);
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
     setPreviewUrl(null);
     setSelectedDate(toDateInputValue());
   };
@@ -79,10 +108,7 @@ export const MomentModal = ({
 
     const dateISO = `${selectedDate}T00:00:00.000Z`;
 
-    let localImageUrl: string | null = null;
-    if (imageFile) {
-      localImageUrl = URL.createObjectURL(imageFile);
-    }
+    const localImageUrl = objectUrlRef.current;
 
     try {
       if (isEditing && initialMoment) {
@@ -94,6 +120,9 @@ export const MomentModal = ({
             localImageUrl || previewUrl || initialMoment.image_url || null,
           local_file: imageFile,
           local_file_name: imageFile?.name ?? null,
+          previous_image_path: imageFile
+            ? (initialMoment.image_path ?? null)
+            : null,
         });
       } else {
         await addMoment({
@@ -165,11 +194,7 @@ export const MomentModal = ({
           onChange={(e) => {
             const file = e.target.files?.[0] || null;
             setImageFile(file);
-            setPreviewUrl(
-              file
-                ? URL.createObjectURL(file)
-                : (initialMoment?.image_url ?? null),
-            );
+            setObjectPreview(file);
           }}
           className="block w-full rounded-lg border border-dashed border-[var(--color-border-muted)] p-3 text-sm text-[var(--color-text-secondary)]"
         />

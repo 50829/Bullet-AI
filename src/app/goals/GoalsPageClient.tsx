@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Calendar } from "../components/Calendar";
-import { useAppContext } from "../../context/AppContext";
+import { useGoalsContext } from "../../features/workspace/WorkspaceContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTopBar } from "../components/layout/TopBar";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
@@ -27,6 +27,7 @@ import {
   sortGoalsByOrder,
 } from "../../features/goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
+import { createClientId } from "../../lib/localDb/repository";
 
 const AssistantDrawer = dynamic(
   () =>
@@ -71,7 +72,7 @@ export default function GoalsPageClient() {
     deleteGoal,
     updateGoal,
     reorderGoals,
-  } = useAppContext();
+  } = useGoalsContext();
   const {
     habits,
     loading: habitsLoading,
@@ -189,10 +190,12 @@ export default function GoalsPageClient() {
   };
 
   const addTasksFromAIReply = async (plan: GoalPlan) => {
+    const temporaryIdBase = Date.now();
     await Promise.all(
-      [...plan.daily, ...plan.future].map((task) =>
+      [...plan.daily, ...plan.future].map((task, index) =>
         addGoal({
-          id: Date.now() + Math.floor(Math.random() * 1000),
+          id: temporaryIdBase + index,
+          client_id: createClientId("goal"),
           title: task.title,
           description: task.description,
           due_date: null,
@@ -222,7 +225,7 @@ export default function GoalsPageClient() {
   }, [setTopBarHandlers, toggleAIPanel]);
 
   const isInitialLoading =
-    (loading.goals && goals.length === 0) ||
+    (loading && goals.length === 0) ||
     (habitsLoading && habits.length === 0);
   const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
 
@@ -241,23 +244,7 @@ export default function GoalsPageClient() {
           mode="planning"
           title={language === "en" ? "Planning" : "规划"}
           placeholder={t("aiGoalInputPlaceholder") || "输入你想完成的大目标..."}
-          systemPrompt={
-            language === "en"
-              ? "You are the user's planning partner, focused on breaking down large goals into actionable sub-goals. Please strictly follow these rules:\n" +
-                "1. Your responses must be clear, actionable, and structured, using the same language as the user. Please respond in English.\n" +
-                "2. When users share a large goal, break it down into multiple smaller, executable sub-goals.\n" +
-                "3. You must provide a structured plan in JSON format with 'tasksDaily' and 'tasksFuture' arrays.\n" +
-                "4. 'tasksDaily' should contain immediate actionable tasks, 'tasksFuture' should contain medium-term sub-goals.\n" +
-                "5. Each task should have a clear title (≤30 characters) and description.\n" +
-                "6. Always generate the JSON plan when users express planning intentions."
-              : "你是用户的规划伙伴，专注于将大目标拆分成可执行的小目标。请严格遵守以下规则：\n" +
-                "1. 回答必须清晰、可执行、结构化，且使用与用户相同的语言。请使用中文回复。\n" +
-                "2. 当用户分享大目标时，将其拆解成多个可执行的小目标。\n" +
-                "3. 必须提供结构化的计划，使用 JSON 格式，包含 'tasksDaily' 和 'tasksFuture' 两个数组。\n" +
-                "4. 'tasksDaily' 应包含立即可执行的任务，'tasksFuture' 应包含中期的小目标。\n" +
-                "5. 每个任务应有清晰的标题（≤30字符）和描述。\n" +
-                "6. 当用户表达规划意图时，必须生成 JSON 计划。"
-          }
+          purpose="goal_planning"
           onAddGoals={addTasksFromAIReply}
         />
       )}

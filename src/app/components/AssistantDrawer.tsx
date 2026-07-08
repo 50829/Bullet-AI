@@ -5,6 +5,7 @@ import { Send } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { Drawer } from "./ui/Drawer";
 import { Button } from "./ui/Button";
+import type { AiPurpose } from "../../lib/ai/promptRegistry";
 
 type AssistantMode = "chat" | "planning";
 
@@ -23,7 +24,7 @@ type Message = {
 type AssistantDrawerProps = {
   isOpen: boolean;
   title: string;
-  systemPrompt: string;
+  purpose?: AiPurpose;
   mode?: AssistantMode;
   placeholder?: string;
   onClose: () => void;
@@ -33,7 +34,7 @@ type AssistantDrawerProps = {
 export function AssistantDrawer({
   isOpen,
   title,
-  systemPrompt,
+  purpose = "moment_chat",
   mode = "chat",
   placeholder,
   onClose,
@@ -72,8 +73,7 @@ export function AssistantDrawer({
         body: JSON.stringify({
           messages: messagesToSend,
           language: language || "zh",
-          systemPrompt,
-          purpose: mode === "planning" ? "planning" : undefined,
+          purpose: mode === "planning" ? "goal_planning" : purpose,
         }),
       });
 

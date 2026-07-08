@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
-import { useAppContext } from "../../../context/AppContext";
+import { useWorkspaceSessionContext } from "../../workspace/WorkspaceContext";
 import { toDateKey } from "../../../lib/date/dateUtils";
 import type { CreateHabitInput, HabitView, UpdateHabitInput } from "../types";
 import {
@@ -103,7 +103,7 @@ async function refreshStore(
 }
 
 export function useHabits() {
-  const { userId } = useAppContext();
+  const { userId } = useWorkspaceSessionContext();
   const snapshot = useSyncExternalStore(
     subscribe,
     getSnapshot,

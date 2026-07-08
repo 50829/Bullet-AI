@@ -37,7 +37,7 @@ describe("LocalFirstRepository", () => {
       expect.objectContaining({
         userId: "user-id",
         collection: "moments",
-        entityId: 1,
+        entityId: "moment-client-id",
         operation: "delete",
         deleted: true,
         payload: expect.objectContaining({

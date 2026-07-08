@@ -16,19 +16,17 @@ export const WORKSPACE_PAGE_ORDER: WorkspacePage[] = [
   "reflections",
 ];
 
-const WORKSPACE_PATH_TO_PAGE = new Map(
-  Object.entries(WORKSPACE_ROUTES).map(([page, path]) => [
-    path,
-    page as WorkspacePage,
-  ]),
-);
-
 export function isWorkspacePath(pathname: string) {
-  return WORKSPACE_PATH_TO_PAGE.has(pathname);
+  return Object.values(WORKSPACE_ROUTES).some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
 }
 
 export function getWorkspacePageFromPathname(pathname: string): WorkspacePage {
-  return WORKSPACE_PATH_TO_PAGE.get(pathname) ?? "home";
+  const matched = Object.entries(WORKSPACE_ROUTES).find(
+    ([, path]) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+  return (matched?.[0] as WorkspacePage | undefined) ?? "home";
 }
 
 export function getWorkspacePath(page: WorkspacePage) {

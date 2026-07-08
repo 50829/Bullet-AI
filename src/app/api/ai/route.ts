@@ -9,6 +9,11 @@ import {
   getAiRateLimitPerHour,
   validateAiMessages,
 } from "../../../lib/ai/requestPolicy";
+import {
+  getAiSystemPrompt,
+  normalizeAiPurpose,
+} from "../../../lib/ai/promptRegistry";
+import { normalizeLanguage } from "../../../lib/profile/preferences";
 import { createClient } from "../../../lib/supabase/server";
 
 interface ChatMessage {
@@ -33,14 +38,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const {
-      messages: userMessages,
-      language,
-      systemPrompt,
-    } = body as {
+    const { messages: userMessages, language, purpose } = body as {
       messages: unknown;
       language?: string;
-      systemPrompt?: string;
+      purpose?: string;
     };
     const validation = validateAiMessages(userMessages);
 
@@ -48,48 +49,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    if (typeof systemPrompt === "string" && systemPrompt.length > 6000) {
-      return NextResponse.json(
-        { error: "systemPrompt is too long" },
-        { status: 400 },
-      );
-    }
-
     const windowStart = new Date(
       Date.now() - AI_RATE_LIMIT_WINDOW_MS,
     ).toISOString();
-    const { count, error: countError } = await supabase
-      .from("ai_usage_events")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .gte("created_at", windowStart);
+    const { data: reserved, error: reserveError } = await supabase.rpc(
+      "reserve_ai_usage_event",
+      {
+        p_user_id: user.id,
+        p_window_start: windowStart,
+        p_limit: getAiRateLimitPerHour(),
+      },
+    );
 
-    if (countError) {
-      console.error("[AI Route] 限流计数失败:", countError);
+    if (reserveError) {
+      console.error("[AI Route] 限流预留失败:", reserveError);
       return NextResponse.json(
         { error: "AI rate limit unavailable" },
         { status: 500 },
       );
     }
 
-    if ((count ?? 0) >= getAiRateLimitPerHour()) {
+    if (!reserved) {
       return NextResponse.json(
         { error: "请求过于频繁，请稍后再试" },
         { status: 429 },
-      );
-    }
-
-    const { error: usageError } = await supabase
-      .from("ai_usage_events")
-      .insert({
-        user_id: user.id,
-      });
-
-    if (usageError) {
-      console.error("[AI Route] 限流记录写入失败:", usageError);
-      return NextResponse.json(
-        { error: "AI rate limit unavailable" },
-        { status: 500 },
       );
     }
 
@@ -122,20 +105,12 @@ export async function POST(req: Request) {
       endpoint = `${baseUrl}/chat/completions`;
     }
 
-    const languageInstruction =
-      language === "en" ? "Please respond in English." : "请使用中文回复。";
-
-    const defaultSystemPrompt =
-      "你是用户的倾听伙伴，一个温暖、理解、倾听的陪伴者。请严格遵守以下规则：\n" +
-      `1. 回答必须温暖、真诚、口语化，且使用与用户相同的语言。${languageInstruction}\n` +
-      "2. 基于用户分享的时刻、感悟和目标，给予理解和支持。\n" +
-      "3. 如果用户需要规划或安排，可以在回复后提供结构化的任务计划（使用 ```json 格式）。\n" +
-      "4. 保持对话的自然流畅，不要过于机械。\n" +
-      "5. 当用户表达情感时，给予共情和理解。";
+    const normalizedLanguage = normalizeLanguage(language);
+    const normalizedPurpose = normalizeAiPurpose(purpose);
 
     const system: ChatMessage = {
       role: "system",
-      content: systemPrompt || defaultSystemPrompt,
+      content: getAiSystemPrompt(normalizedPurpose, normalizedLanguage),
     };
 
     const messages: ChatMessage[] = [system, ...validation.messages];

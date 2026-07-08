@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { Card } from "../components/ui/Card";
 import { Trash2, ChevronDown, ChevronUp, Edit2 } from "lucide-react";
-import { useAppContext } from "../../context/AppContext";
+import { useMomentsContext } from "../../features/workspace/WorkspaceContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTopBar } from "../components/layout/TopBar";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
@@ -13,6 +13,7 @@ import { PlainImage } from "../components/ui/PlainImage";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { LoadingState } from "../components/ui/LoadingState";
+import type { MomentRecord as Moment } from "../../features/workspace/types";
 
 const AssistantDrawer = dynamic(
   () =>
@@ -29,15 +30,6 @@ const MomentModal = dynamic(
   { ssr: false },
 );
 
-type Moment = {
-  id: number;
-  created_at: string;
-  content: string;
-  image_url?: string | null;
-  image_path?: string | null;
-  date?: string;
-};
-
 type DayCard = {
   date: string;
   dateDisplay: string;
@@ -51,9 +43,10 @@ type MonthCard = {
 };
 
 export default function MomentsPageClient() {
-  const { moments, loading, refreshMoments, deleteMoment } = useAppContext();
+  const { moments, loading, refreshMoments, deleteMoment } =
+    useMomentsContext();
   const searchParams = useSearchParams();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -289,7 +282,7 @@ export default function MomentsPageClient() {
     }
   };
 
-  const isInitialLoading = loading.moments && moments.length === 0;
+  const isInitialLoading = loading && moments.length === 0;
   const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
 
   if (isInitialLoading) {
@@ -306,21 +299,7 @@ export default function MomentsPageClient() {
           onClose={() => setShowAIPanel(false)}
           title={t("moments") || "记录"}
           placeholder={t("aiInputPlaceholder") || "输入你的想法..."}
-          systemPrompt={
-            language === "en"
-              ? "You are the user's moment companion, focused on chatting about life-related topics. Please strictly follow these rules:\n" +
-                "1. Your responses must be relaxed, natural, and close to life, using the same language as the user. Please respond in English.\n" +
-                "2. Based on the life moments and experiences shared by the user, provide empathy and understanding.\n" +
-                "3. You can share life tips, interesting stories, life insights, etc.\n" +
-                "4. Keep the conversation light and pleasant, making users feel the beauty of life.\n" +
-                "5. When users share joy, celebrate together; when users encounter difficulties, provide encouragement and support."
-              : "你是用户的时刻整理伙伴，专注于聊生活相关的话题。请严格遵守以下规则：\n" +
-                "1. 回答必须轻松、自然、贴近生活，且使用与用户相同的语言。请使用中文回复。\n" +
-                "2. 基于用户分享的生活时刻和经历，给予共鸣和理解。\n" +
-                "3. 可以分享生活小贴士、有趣的故事、生活感悟等。\n" +
-                "4. 保持对话的轻松愉快，让用户感受到生活的美好。\n" +
-                "5. 当用户分享快乐时，一起庆祝；当用户遇到困难时，给予鼓励和支持。"
-          }
+          purpose="moment_chat"
         />
       )}
 

@@ -94,6 +94,7 @@ vi.mock("./indexedDb", () => ({
       return operation({
         entities: objectStore("entities"),
         outbox: objectStore("outbox"),
+        files: objectStore("files"),
       });
     },
   ),
@@ -165,17 +166,31 @@ describe("localDb repository client_id reconciliation", () => {
     ).toBeUndefined();
   });
 
-  it("marks every local duplicate with the same client_id as deleted", async () => {
+  it("uses client_id as the stable local entity key", async () => {
     await repository.upsertEntity("user-1", "goals", {
       id: 999,
       client_id: "goal-client",
+      title: "temporary",
     });
     await repository.upsertEntity("user-1", "goals", {
       id: 1,
       client_id: "goal-client",
+      title: "remote",
     });
 
-    await repository.markEntityDeleted("user-1", "goals", 999);
+    expect(
+      await repository.readEntities<{ id: number; title: string }>(
+        "user-1",
+        "goals",
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        id: 1,
+        title: "remote",
+      }),
+    ]);
+
+    await repository.markEntityDeleted("user-1", "goals", 1);
 
     expect(await repository.readEntities("user-1", "goals")).toEqual([]);
   });
@@ -252,5 +267,47 @@ describe("localDb repository client_id reconciliation", () => {
         _local: expect.objectContaining({ pending: true }),
       }),
     ]);
+  });
+
+  it("keeps transient file fields out of the cached entity row", async () => {
+    await repository.commitLocalMutation({
+      userId: "user-1",
+      collection: "moments",
+      entityId: "moment-client",
+      operation: "upsert",
+      payload: {
+        id: 99,
+        client_id: "moment-client",
+        content: "with photo",
+        image_url: "blob:http://local/1",
+        local_file: new Blob(["photo"]),
+        local_file_name: "photo.jpg",
+        previous_image_path: "user-1/old.jpg",
+      },
+    });
+
+    const rows = await repository.readEntities<Record<string, unknown>>(
+      "user-1",
+      "moments",
+    );
+    expect(rows[0]).not.toHaveProperty("local_file");
+    expect(rows[0]).not.toHaveProperty("local_file_name");
+    expect(rows[0]).not.toHaveProperty("previous_image_path");
+    expect(rows[0]).not.toHaveProperty("image_url");
+    expect([...db.stores.outbox.values()][0]).toMatchObject({
+      payload: expect.objectContaining({
+        local_file_id: "user-1:moments:moment-client",
+        previous_image_path: "user-1/old.jpg",
+      }),
+    });
+    expect([...db.stores.outbox.values()][0]).not.toHaveProperty(
+      "payload.local_file",
+    );
+    expect([...db.stores.files.values()][0]).toMatchObject({
+      id: "user-1:moments:moment-client",
+      userId: "user-1",
+      bucket: "moments",
+      blob: expect.any(Blob),
+    });
   });
 });

@@ -6,21 +6,23 @@ import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { Modal } from "./ui/Modal";
 import { useLanguage } from "../context/LanguageContext";
-import { useAppContext } from "../../context/AppContext";
+import { useGoalsContext } from "../../features/workspace/WorkspaceContext";
+import type { GoalRecord } from "../../features/workspace/types";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialGoal?: {
-    id: number;
-    title: string;
-    description: string;
-    due_date?: string | null;
-    progress: number;
-    status: string;
-    color?: string | null;
-  } | null;
+  initialGoal?: Pick<
+    GoalRecord,
+    | "id"
+    | "title"
+    | "description"
+    | "due_date"
+    | "progress"
+    | "status"
+    | "color"
+  > | null;
 };
 
 // First swatch (null) means "use the theme's primary green". The rest are
@@ -40,12 +42,11 @@ export const GoalModal = ({
   initialGoal = null,
 }: Props) => {
   const { t } = useLanguage();
-  const { addGoal, updateGoal } = useAppContext();
+  const { addGoal, updateGoal } = useGoalsContext();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [color, setColor] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const isEditing = Boolean(initialGoal);
@@ -56,7 +57,6 @@ export const GoalModal = ({
     setDescription(initialGoal?.description ?? "");
     setDueDate(initialGoal?.due_date ?? "");
     setColor(initialGoal?.color ?? null);
-    setProgress(initialGoal?.progress ?? 0);
     setMessage(null);
   }, [initialGoal, isOpen]);
 
@@ -65,7 +65,6 @@ export const GoalModal = ({
     setDescription("");
     setDueDate("");
     setColor(null);
-    setProgress(0);
     setMessage(null);
   };
 
@@ -90,7 +89,6 @@ export const GoalModal = ({
           description: description.trim(),
           due_date: dueDate || null,
           color,
-          progress,
         });
         setLoading(false);
         onSuccess();
