@@ -29,7 +29,7 @@ type DataSettingsSectionProps = {
   onRetryDeadOutboxItem: (id: string) => void | Promise<void>;
   onDiscardDeadOutboxItem: (id: string) => void | Promise<void>;
   onCleanupOrphanedStorage: (id: string) => void | Promise<void>;
-  onExport: () => void;
+  onExport: () => void | Promise<void>;
 };
 
 function formatDeadAt(value: string | undefined, language: "en" | "zh") {
@@ -61,6 +61,7 @@ export function DataSettingsSection({
   const [discardTarget, setDiscardTarget] =
     useState<DeadOutboxDiagnostic | null>(null);
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const retryOne = async (id: string) => {
     setBusyItemId(id);
@@ -88,6 +89,15 @@ export function DataSettingsSection({
       await onCleanupOrphanedStorage(id);
     } finally {
       setBusyItemId(null);
+    }
+  };
+
+  const exportData = async () => {
+    setExporting(true);
+    try {
+      await onExport();
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -134,9 +144,19 @@ export function DataSettingsSection({
             </Button>
           </>
         )}
-        <Button variant="secondary" onClick={onExport}>
+        <Button
+          variant="secondary"
+          onClick={() => void exportData()}
+          disabled={exporting}
+        >
           <Download size={16} />
-          {language === "en" ? "Export JSON" : "导出 JSON"}
+          {exporting
+            ? language === "en"
+              ? "Exporting..."
+              : "导出中..."
+            : language === "en"
+              ? "Export JSON"
+              : "导出 JSON"}
         </Button>
       </div>
 
