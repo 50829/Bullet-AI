@@ -9,6 +9,7 @@ type MaybeSingleResult = {
 const mocks = vi.hoisted(() => ({
   sessionUser: { id: "user-1" } as { id: string } | null,
   outboxItems: [] as OutboxItem[],
+  deadOutboxCount: 0,
   updatePayloads: [] as Record<string, unknown>[],
   upsertPayloads: [] as Record<string, unknown>[],
   upsertOptions: [] as Record<string, unknown>[],
@@ -92,6 +93,7 @@ vi.mock("./repository", () => ({
 }));
 
 vi.mock("./syncQueue", () => ({
+  getDeadOutboxCount: vi.fn(async () => mocks.deadOutboxCount),
   getOutboxItems: vi.fn(async () => mocks.outboxItems),
   markOutboxItem: vi.fn(
     async (
@@ -137,7 +139,7 @@ vi.mock("./syncQueue", () => ({
   }),
 }));
 
-const { flushOutbox } = await import("./syncEngine");
+const { flushOutbox, getSyncStatus } = await import("./syncEngine");
 
 function outboxItem(overrides: Partial<OutboxItem>): OutboxItem {
   return {
@@ -164,6 +166,7 @@ describe("syncEngine", () => {
   beforeEach(() => {
     mocks.sessionUser = { id: "user-1" };
     mocks.outboxItems = [];
+    mocks.deadOutboxCount = 0;
     mocks.updatePayloads = [];
     mocks.upsertPayloads = [];
     mocks.upsertOptions = [];
@@ -204,6 +207,15 @@ describe("syncEngine", () => {
       "moment-client",
     );
     expect(mocks.removeOutboxItem).toHaveBeenCalledWith("outbox-1");
+  });
+
+  it("keeps sync status failed when only dead-lettered items remain", async () => {
+    mocks.deadOutboxCount = 1;
+
+    await flushOutbox();
+
+    expect(getSyncStatus()).toBe("failed");
+    expect(mocks.removeOutboxItem).not.toHaveBeenCalled();
   });
 
   it("cascades habit deletes to checkins without treating habits as storage-backed", async () => {

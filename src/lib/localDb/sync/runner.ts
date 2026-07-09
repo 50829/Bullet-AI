@@ -2,6 +2,7 @@ import { logger } from "../../observability/logger";
 import { supabase } from "../../supabaseClient";
 import { readEntity, upsertEntity } from "../repository";
 import {
+  getDeadOutboxCount,
   getOutboxItems,
   markOutboxItem,
   recoverStaleOutboxItems,
@@ -32,7 +33,8 @@ export async function performFlush() {
   );
 
   if (items.length === 0) {
-    setSyncStatus("idle");
+    const deadCount = await getDeadOutboxCount(session.user.id);
+    setSyncStatus(deadCount > 0 ? "failed" : "idle");
     return;
   }
 

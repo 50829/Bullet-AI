@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   session: {
     userId: "user-1" as string | null,
     syncStatus: "idle",
+    deadOutboxCount: 0,
     retrySync: vi.fn(),
   },
   goalsController: {

@@ -73,6 +73,7 @@ export default function SettingsPanel({
           preferences={settings.preferences}
           savingPreference={settings.savingPreference}
           syncStatus={settings.syncStatus}
+          deadOutboxCount={settings.deadOutboxCount}
           onCompletedGoalRetentionChange={
             settings.handleCompletedGoalRetentionChange
           }

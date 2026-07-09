@@ -15,8 +15,13 @@ vi.mock("./indexedDb", () => ({
   }),
 }));
 
-const { getOutboxItems, markOutboxItem, recoverStaleOutboxItems } =
-  await import("./syncQueue");
+const {
+  getDeadOutboxCount,
+  getOutboxItems,
+  markOutboxItem,
+  recoverStaleOutboxItems,
+  retryDeadOutboxItems,
+} = await import("./syncQueue");
 
 function item(overrides: Partial<OutboxItem>): OutboxItem {
   return {
@@ -68,6 +73,47 @@ describe("sync queue recovery and dependency ordering", () => {
     expect((await getOutboxItems()).map((entry) => entry.id)).toEqual([
       "pending",
     ]);
+  });
+
+  it("counts dead-lettered items for one user", async () => {
+    store.set("dead-1", item({ id: "dead-1", status: "dead" }));
+    store.set(
+      "dead-2",
+      item({ id: "dead-2", userId: "user-2", status: "dead" }),
+    );
+    store.set("pending", item({ id: "pending", status: "pending" }));
+
+    expect(await getDeadOutboxCount("user-1")).toBe(1);
+  });
+
+  it("requeues only the current user's dead-lettered items", async () => {
+    store.set(
+      "dead-1",
+      item({
+        id: "dead-1",
+        status: "dead",
+        attemptCount: 5,
+        error: "Remote row not found",
+        errorKind: "not_found",
+        deadAt: "2026-01-01T00:00:00.000Z",
+        orphanedStoragePath: "user-1/photo.jpg",
+      }),
+    );
+    store.set(
+      "dead-2",
+      item({ id: "dead-2", userId: "user-2", status: "dead" }),
+    );
+
+    expect(await retryDeadOutboxItems("user-1")).toBe(1);
+    expect(store.get("dead-1")).toMatchObject({
+      status: "pending",
+      attemptCount: 0,
+    });
+    expect(store.get("dead-1")).not.toHaveProperty("error");
+    expect(store.get("dead-1")).not.toHaveProperty("errorKind");
+    expect(store.get("dead-1")).not.toHaveProperty("deadAt");
+    expect(store.get("dead-1")).not.toHaveProperty("orphanedStoragePath");
+    expect(store.get("dead-2")).toMatchObject({ status: "dead" });
   });
 
   it("moves permanent failures directly to dead-letter state", async () => {

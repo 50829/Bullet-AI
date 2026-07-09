@@ -26,6 +26,15 @@ export async function getOutboxItems(
     );
 }
 
+export async function getDeadOutboxItems(userId: string) {
+  const all = await idbGetAll<OutboxItem>("outbox");
+  return all.filter((item) => item.userId === userId && item.status === "dead");
+}
+
+export async function getDeadOutboxCount(userId: string) {
+  return (await getDeadOutboxItems(userId)).length;
+}
+
 export async function updateOutboxItem(item: OutboxItem) {
   const next = {
     ...item,
@@ -82,6 +91,28 @@ export async function markOutboxItem(
     ...(nextStatus === "dead" ? { deadAt: new Date().toISOString() } : {}),
     ...(orphanedStoragePath ? { orphanedStoragePath } : {}),
   });
+}
+
+export async function retryDeadOutboxItems(userId: string) {
+  const deadItems = await getDeadOutboxItems(userId);
+
+  await Promise.all(
+    deadItems.map((item) => {
+      const next: OutboxItem = {
+        ...item,
+        status: "pending",
+        attemptCount: 0,
+        updatedAt: new Date().toISOString(),
+      };
+      delete next.error;
+      delete next.errorKind;
+      delete next.deadAt;
+      delete next.orphanedStoragePath;
+      return idbPut("outbox", next);
+    }),
+  );
+
+  return deadItems.length;
 }
 
 export async function removeOutboxItem(id: string) {

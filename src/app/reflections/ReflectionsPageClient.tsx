@@ -18,7 +18,9 @@ import type { ReflectionRecord as Reflection } from "../../features/reflections/
 
 const AssistantDrawer = dynamic(
   () =>
-    import("../components/AssistantDrawer").then((mod) => mod.AssistantDrawer),
+    import("../../features/ai/components/AssistantDrawer").then(
+      (mod) => mod.AssistantDrawer,
+    ),
   { ssr: false },
 );
 const ConfirmDialog = dynamic(

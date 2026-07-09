@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { AuthCard } from "../components/auth/AuthCard";
@@ -11,6 +11,7 @@ import { PasswordField } from "../components/auth/PasswordField";
 import { supabase } from "../../lib/supabaseClient";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { getPostLoginRedirect } from "../../lib/auth/getPostLoginRedirect";
+import { getLoginErrorMessage } from "../../lib/auth/loginErrorMessage";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,9 +21,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const loginErrorMessage = getLoginErrorMessage(searchParams.get("error"));
+  const [message, setMessage] = useState<string | null>(
+    () => loginErrorMessage,
+  );
 
   const nextPath = getPostLoginRedirect(searchParams.get("next"));
+
+  useEffect(() => {
+    if (loginErrorMessage) setMessage(loginErrorMessage);
+  }, [loginErrorMessage]);
 
   const getOrigin = () =>
     typeof window !== "undefined"

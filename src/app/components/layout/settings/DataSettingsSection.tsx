@@ -15,6 +15,7 @@ type DataSettingsSectionProps = {
   preferences: UserPreferences;
   savingPreference: keyof UserPreferences | null;
   syncStatus: SyncStatus;
+  deadOutboxCount: number;
   onCompletedGoalRetentionChange: (
     completedGoalRetention: CompletedGoalRetention,
   ) => void;
@@ -26,6 +27,7 @@ export function DataSettingsSection({
   preferences,
   savingPreference,
   syncStatus,
+  deadOutboxCount,
   onCompletedGoalRetentionChange,
   onRetrySync,
   onExport,
@@ -56,10 +58,14 @@ export function DataSettingsSection({
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
-        {syncStatus === "failed" && (
+        {(syncStatus === "failed" || deadOutboxCount > 0) && (
           <>
             <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-              {t("syncFailed") || "同步失败"}
+              {deadOutboxCount > 0
+                ? language === "en"
+                  ? `${deadOutboxCount} sync item${deadOutboxCount === 1 ? "" : "s"} need retry`
+                  : `${deadOutboxCount} 条同步失败待重试`
+                : t("syncFailed") || "同步失败"}
             </span>
             <Button variant="outline" onClick={() => void onRetrySync()}>
               <RefreshCw size={16} />

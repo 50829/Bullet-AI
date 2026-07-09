@@ -18,7 +18,9 @@ import { useGoalPlanningPage } from "../../features/goals/planning/useGoalPlanni
 
 const AssistantDrawer = dynamic(
   () =>
-    import("../components/AssistantDrawer").then((mod) => mod.AssistantDrawer),
+    import("../../features/ai/components/AssistantDrawer").then(
+      (mod) => mod.AssistantDrawer,
+    ),
   { ssr: false },
 );
 const GoalModal = dynamic(
