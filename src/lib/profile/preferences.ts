@@ -177,12 +177,4 @@ export function writeLocalPreferences(preferences: Partial<UserPreferences>) {
     next.completed_goal_retention,
   );
   window.localStorage.setItem(WEEK_STARTS_ON_STORAGE_KEY, next.week_starts_on);
-  document.documentElement.lang = next.preferred_language;
-  applyAppearancePreference(next);
-
-  window.dispatchEvent(
-    new CustomEvent("preferences-updated", {
-      detail: { preferences: next },
-    }),
-  );
 }

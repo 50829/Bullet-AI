@@ -5,20 +5,13 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
 import enMessages from "../../../messages/en.json";
 import zhMessages from "../../../messages/zh.json";
-import {
-  LANGUAGE_STORAGE_KEY,
-  readLocalPreferences,
-  writeLocalPreferences,
-  type PreferredLanguage,
-  type UserPreferences,
-} from "../../lib/profile/preferences";
+import { usePreferences } from "../../lib/profile/PreferencesContext";
+import type { PreferredLanguage } from "../../lib/profile/preferences";
 
 export type Language = PreferredLanguage;
 
@@ -36,50 +29,13 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
   undefined,
 );
 
-type PreferencesUpdatedEvent = CustomEvent<{ preferences?: UserPreferences }>;
-
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("zh");
-
-  useEffect(() => {
-    const applyLanguage = (nextLanguage: Language) => {
-      setLanguageState(nextLanguage);
-      document.documentElement.lang = nextLanguage;
-    };
-
-    applyLanguage(readLocalPreferences().preferred_language);
-
-    const handlePreferencesUpdated = (event: Event) => {
-      const nextLanguage = (event as PreferencesUpdatedEvent).detail
-        ?.preferences?.preferred_language;
-
-      if (nextLanguage) {
-        applyLanguage(nextLanguage);
-      }
-    };
-
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === LANGUAGE_STORAGE_KEY) {
-        applyLanguage(readLocalPreferences().preferred_language);
-      }
-    };
-
-    window.addEventListener("preferences-updated", handlePreferencesUpdated);
-    window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      window.removeEventListener(
-        "preferences-updated",
-        handlePreferencesUpdated,
-      );
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
+  const { preferences, updatePreferences } = usePreferences();
+  const language = preferences.preferred_language;
 
   const setLanguage = useCallback((nextLanguage: Language) => {
-    setLanguageState(nextLanguage);
-    writeLocalPreferences({ preferred_language: nextLanguage });
-  }, []);
+    updatePreferences({ preferred_language: nextLanguage });
+  }, [updatePreferences]);
 
   const value = useMemo(
     () => ({

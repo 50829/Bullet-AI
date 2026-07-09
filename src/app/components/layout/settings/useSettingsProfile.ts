@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useLanguage, type Language } from "../../../../shared/i18n/LanguageContext";
 import { useToast } from "../../../../shared/components/ui/Toast";
+import { usePreferences } from "../../../../lib/profile/PreferencesContext";
 import {
   getCurrentUserProfile,
   updateCurrentUserDisplayName,
@@ -13,7 +14,6 @@ import {
 import {
   DEFAULT_USER_PREFERENCES,
   normalizePreferences,
-  writeLocalPreferences,
   type AccentColor,
   type ColorScheme,
   type CompletedGoalRetention,
@@ -41,7 +41,9 @@ export function useSettingsProfile({
   initialProfile,
   onProfileUpdate,
 }: UseSettingsProfileInput) {
-  const { t, language, setLanguage } = useLanguage();
+  const { t, language } = useLanguage();
+  const { updatePreferences: updateLocalPreferences, replacePreferences } =
+    usePreferences();
   const router = useRouter();
   const {
     syncStatus,
@@ -134,7 +136,7 @@ export function useSettingsProfile({
         ...nextPartial,
       });
       setPreferences(nextPreferences);
-      writeLocalPreferences(nextPreferences);
+      updateLocalPreferences(nextPreferences);
       setSavingPreference(savingKey);
 
       try {
@@ -142,7 +144,7 @@ export function useSettingsProfile({
           await updateCurrentUserPreferences(nextPartial);
         const mergedPreferences = normalizePreferences(savedPreferences);
         setPreferences(mergedPreferences);
-        writeLocalPreferences(mergedPreferences);
+        replacePreferences(mergedPreferences);
       } catch (error) {
         console.error("Failed to save preferences:", error);
         showToast({
@@ -156,7 +158,13 @@ export function useSettingsProfile({
         setSavingPreference(null);
       }
     },
-    [language, preferences, showToast],
+    [
+      language,
+      preferences,
+      replacePreferences,
+      showToast,
+      updateLocalPreferences,
+    ],
   );
 
   const handleUsernameChange = async (event: FormEvent) => {
@@ -200,7 +208,6 @@ export function useSettingsProfile({
   };
 
   const handleLanguageChange = (nextLanguage: Language) => {
-    setLanguage(nextLanguage);
     void savePreferences(
       { preferred_language: nextLanguage },
       "preferred_language",
