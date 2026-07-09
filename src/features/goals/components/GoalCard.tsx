@@ -104,6 +104,8 @@ export function GoalCard({
       </div>
 
       <ActionButtonGroup
+        variant="inline"
+        visibility="always"
         className={`${isList ? "" : "col-span-2 sm:col-span-1"} justify-self-end`}
       >
         {showMoveAction && moveAction ? (

@@ -31,12 +31,29 @@ export function ReflectionCard({
   return (
     <Card
       id={`reflection-${reflection.id}`}
-      className={`w-full transition-[background-color,box-shadow] duration-700 ease-out motion-reduce:transition-none ${
+      className={`group/item relative w-full transition-[background-color,box-shadow] duration-700 ease-out motion-reduce:transition-none ${
         highlighted
           ? "bg-[var(--color-primary-light)] ring-2 ring-[var(--color-primary)]"
           : ""
       }`}
     >
+      <ActionButtonGroup variant="overlay" visibility="hover" hoverScope="item">
+        <IconButton
+          icon={<Edit2 size={18} />}
+          label={t("edit") || "编辑"}
+          tone="primary"
+          size="sm"
+          onClick={() => onEdit(reflection)}
+        />
+        <IconButton
+          icon={<Trash2 size={18} />}
+          label={t("delete") || "删除"}
+          tone="danger"
+          size="sm"
+          onClick={() => onDelete(reflection)}
+        />
+      </ActionButtonGroup>
+
       <div className="flex items-start gap-3">
         <IconButton
           icon={collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -46,8 +63,8 @@ export function ReflectionCard({
           className="mt-1"
         />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
+          <div className="flex flex-wrap items-start justify-between gap-3 pr-20">
+            <div className="min-w-0 flex-1">
               <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
                 {parsed.title || t("insights") || "感悟"}
               </h2>
@@ -57,25 +74,11 @@ export function ReflectionCard({
                 ).toLocaleString(language === "en" ? "en-US" : "zh-CN")}
               </p>
             </div>
-            <ActionButtonGroup>
-              {reflection._local?.failed && (
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">
-                  {t("syncFailed") || "同步失败"}
-                </span>
-              )}
-              <IconButton
-                icon={<Edit2 size={18} />}
-                label={t("edit") || "编辑"}
-                tone="primary"
-                onClick={() => onEdit(reflection)}
-              />
-              <IconButton
-                icon={<Trash2 size={18} />}
-                label={t("delete") || "删除"}
-                tone="danger"
-                onClick={() => onDelete(reflection)}
-              />
-            </ActionButtonGroup>
+            {reflection._local?.failed && (
+              <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">
+                {t("syncFailed") || "同步失败"}
+              </span>
+            )}
           </div>
           {!collapsed && (
             <p className="mt-4 whitespace-pre-line text-base leading-7 text-[var(--color-text-primary)]">

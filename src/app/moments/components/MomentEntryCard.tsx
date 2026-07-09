@@ -33,16 +33,16 @@ export function MomentEntryCard({
           : ""
       }`}
     >
-      <ActionButtonGroup className="absolute right-3 top-3 z-10 rounded-lg bg-[var(--color-bg-surface)]/90 opacity-100 shadow-sm transition-opacity duration-150 focus-within:opacity-100 group-hover/item:opacity-100 sm:opacity-0 motion-reduce:transition-none">
+      <ActionButtonGroup variant="overlay" visibility="hover" hoverScope="item">
         <IconButton
-          icon={<Edit2 size={17} />}
+          icon={<Edit2 size={18} />}
           label={t("edit") || "编辑"}
           tone="primary"
           size="sm"
           onClick={() => onEdit(moment)}
         />
         <IconButton
-          icon={<Trash2 size={17} />}
+          icon={<Trash2 size={18} />}
           label={t("delete") || "删除"}
           tone="danger"
           size="sm"

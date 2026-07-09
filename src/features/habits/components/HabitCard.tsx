@@ -98,7 +98,11 @@ export function HabitCard({
         </div>
       </div>
 
-      <ActionButtonGroup className="shrink-0">
+      <ActionButtonGroup
+        variant="inline"
+        visibility="always"
+        className="shrink-0"
+      >
         {onEdit && (
           <IconButton
             icon={<Edit2 size={18} />}
