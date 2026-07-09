@@ -12,6 +12,7 @@ import { useToast } from "../../shared/components/ui/Toast";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useAssistantPanel } from "../hooks/useAssistantPanel";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
+import { useWorkspaceSessionContext } from "../../features/workspace/WorkspaceContext";
 import { GoalPlanningBoard } from "../../features/goals/planning/GoalPlanningBoard";
 import { HabitsSection } from "./components/HabitsSection";
 import { useGoalPlanningPage } from "../../features/goals/planning/useGoalPlanningPage";
@@ -44,7 +45,8 @@ type DeleteTarget = {
 };
 
 export default function GoalsPageClient() {
-  const goalPage = useGoalPlanningPage();
+  const { userId } = useWorkspaceSessionContext();
+  const goalPage = useGoalPlanningPage({ userId });
   const {
     habits,
     loading: habitsLoading,
@@ -55,7 +57,7 @@ export default function GoalsPageClient() {
     removeHabit,
     checkinToday,
     toggleCheckin,
-  } = useHabits();
+  } = useHabits({ userId });
   const { t, language } = useLanguage();
   const { showToast } = useToast();
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);

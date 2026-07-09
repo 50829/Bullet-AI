@@ -2,17 +2,19 @@
 
 import { useCallback, useMemo } from "react";
 import { createClientId } from "../../../lib/localDb/repository";
-import { createOptimisticId } from "../../../lib/localFirst/collectionUtils";
+import { createOptimisticId } from "../../../lib/localFirst/ids";
 import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
-import { useWorkspaceSessionContext } from "../../workspace/WorkspaceContext";
 import type {
   CreateReflectionInput,
   ReflectionRecord,
   UpdateReflectionInput,
 } from "../types";
 
-export function useReflections() {
-  const { userId } = useWorkspaceSessionContext();
+type UseReflectionsInput = {
+  userId: string | null;
+};
+
+export function useReflections({ userId }: UseReflectionsInput) {
   const collection = useLocalFirstCollection<ReflectionRecord>({
     userId,
     collection: "reflections",

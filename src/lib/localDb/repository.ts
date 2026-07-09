@@ -6,6 +6,7 @@ import {
   idbRequest,
   runIdbTransaction,
 } from "./indexedDb";
+import { identityValueFor } from "./collectionSchemas";
 import type {
   LocalFile,
   LocalCollection,
@@ -14,6 +15,7 @@ import type {
   OutboxItem,
   SyncOperation,
 } from "./types";
+import { stripTransientEntityFields } from "./payload";
 
 type CollectionListener = () => void;
 const collectionListeners = new Map<string, Set<CollectionListener>>();
@@ -69,18 +71,12 @@ export function createClientId(prefix = "entity") {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function getEntityId(entity: unknown) {
-  if (entity && typeof entity === "object" && "client_id" in entity) {
-    const clientId = (entity as { client_id?: unknown }).client_id;
-    if (typeof clientId === "string" && clientId) return clientId;
+function getEntityId(collection: LocalCollection, entity: unknown) {
+  if (!entity || typeof entity !== "object") {
+    throw new Error("Local entity must be an object");
   }
 
-  if (entity && typeof entity === "object" && "id" in entity) {
-    const id = (entity as { id?: unknown }).id;
-    if (typeof id === "string" || typeof id === "number") return String(id);
-  }
-
-  throw new Error("Local entity must include an id or client_id");
+  return identityValueFor(collection, entity as Record<string, unknown>);
 }
 
 function getEntityClientId(entity: unknown) {
@@ -112,21 +108,6 @@ function toEntityData<T>(row: LocalEntity<T>) {
       deleted: row.deleted,
     },
   };
-}
-
-function stripTransientEntityFields<T>(payload: T) {
-  if (!payload || typeof payload !== "object") return payload;
-
-  const data = { ...(payload as Record<string, unknown>) };
-  delete data._local;
-  delete data.date;
-  delete data.image_url;
-  delete data.local_file;
-  delete data.local_file_id;
-  delete data.local_file_name;
-  delete data.uploaded_image_path;
-  delete data.previous_image_path;
-  return data as T;
 }
 
 export function localFileKey(
@@ -237,7 +218,7 @@ export async function upsertEntity<T>(
     skipPendingRemoteOverwrite?: boolean;
   },
 ) {
-  const entityId = getEntityId(entity);
+  const entityId = getEntityId(collection, entity);
   const key = entityKey(userId, collection, entityId);
   const existing = await idbGet<LocalEntity<T>>("entities", key);
 
@@ -305,7 +286,7 @@ export async function upsertSyncedEntity<T>(
   entity: T,
   options?: { localEntityId?: string | number; mutationUpdatedAt?: string },
 ) {
-  const entityId = getEntityId(entity);
+  const entityId = getEntityId(collection, entity);
   const clientId = getEntityClientId(entity);
   if (options?.mutationUpdatedAt) {
     const candidates = clientId
@@ -344,7 +325,7 @@ export async function upsertSyncedEntity<T>(
 }
 
 export async function cacheRemoteEntities<
-  T extends { id?: string | number | null; client_id?: string | null },
+  T extends Record<string, unknown>,
 >(
   userId: string,
   collection: LocalCollection,
@@ -370,7 +351,9 @@ export async function cacheRemoteEntities<
     const remoteKeys = new Set(
       entities.map((entity) => {
         const clientId = getEntityClientId(entity);
-        return clientId ? `client:${clientId}` : `id:${getEntityId(entity)}`;
+        return clientId
+          ? `client:${clientId}`
+          : `id:${getEntityId(collection, entity)}`;
       }),
     );
     const localRows = await idbGetAll<LocalEntity<T>>(

@@ -3,6 +3,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { LanguageProvider } from "../shared/i18n/LanguageContext";
+import { UserPreferencesSync } from "../shared/i18n/UserPreferencesSync";
 import { ThemeInitializer } from "./components/ThemeInitializer";
 import { Suspense } from "react";
 import { LoadingState } from "../shared/components/ui/LoadingState";
@@ -26,6 +27,7 @@ export default function RootLayout({
         <ThemeInitializer />
         <Suspense fallback={<LoadingState />}>
           <LanguageProvider>
+            <UserPreferencesSync />
             <ToastProvider>{children}</ToastProvider>
           </LanguageProvider>
         </Suspense>

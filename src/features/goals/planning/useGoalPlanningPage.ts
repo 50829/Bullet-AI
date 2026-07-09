@@ -27,8 +27,12 @@ export function formatDateToLocal(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export function useGoalPlanningPage() {
-  const goalsContext = useGoals();
+type UseGoalPlanningPageInput = {
+  userId: string | null;
+};
+
+export function useGoalPlanningPage({ userId }: UseGoalPlanningPageInput) {
+  const goalsContext = useGoals({ userId });
   const { goals, updateGoal, addGoal } = goalsContext;
   const { t } = useLanguage();
   const { showToast } = useToast();

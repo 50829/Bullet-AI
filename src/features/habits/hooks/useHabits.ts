@@ -3,9 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { addDays, toDateKey } from "../../../lib/date/dateUtils";
 import { createClientId } from "../../../lib/localDb/repository";
-import { createOptimisticId } from "../../../lib/localFirst/collectionUtils";
+import { createOptimisticId } from "../../../lib/localFirst/ids";
 import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
-import { useWorkspaceSessionContext } from "../../workspace/WorkspaceContext";
 import type {
   CreateHabitInput,
   HabitCheckin,
@@ -13,6 +12,10 @@ import type {
   HabitView,
   UpdateHabitInput,
 } from "../types";
+
+type UseHabitsInput = {
+  userId: string | null;
+};
 
 function calculateDailyStreak(checkins: HabitCheckin[]) {
   const checkedDates = new Set(
@@ -56,8 +59,7 @@ function projectHabit(
   };
 }
 
-export function useHabits() {
-  const { userId } = useWorkspaceSessionContext();
+export function useHabits({ userId }: UseHabitsInput) {
   const habitsCollection = useLocalFirstCollection<HabitRecord>({
     userId,
     collection: "habits",

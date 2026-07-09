@@ -2,17 +2,17 @@
 
 import { useCallback, useMemo } from "react";
 import { createClientId } from "../../../lib/localDb/repository";
-import {
-  createOptimisticId,
-  sortByCreatedAtDesc,
-  withFormattedDate,
-} from "../../../lib/localFirst/collectionUtils";
+import { createOptimisticId } from "../../../lib/localFirst/ids";
+import { sortByCreatedAtDesc } from "../../../lib/localFirst/ordering";
+import { withFormattedDate } from "../../../lib/localFirst/presentation";
 import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
-import { useWorkspaceSessionContext } from "../../workspace/WorkspaceContext";
 import type { CreateGoalInput, GoalRecord, UpdateGoalInput } from "../types";
 
-export function useGoals() {
-  const { userId } = useWorkspaceSessionContext();
+type UseGoalsInput = {
+  userId: string | null;
+};
+
+export function useGoals({ userId }: UseGoalsInput) {
   const collection = useLocalFirstCollection<GoalRecord>({
     userId,
     collection: "goals",

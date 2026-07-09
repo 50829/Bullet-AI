@@ -1,22 +1,20 @@
 "use client";
 
 import type { SetStateAction } from "react";
-import { supabase } from "../supabaseClient";
-import { selectColumnsFor } from "../localDb/collectionConfig";
-import { getLocalFirstRepository } from "../localDb/localFirstRepository";
+import {
+  defaultOrderFor,
+  type CollectionOrder,
+} from "../localDb/collectionSchemas";
+import { getCollectionRepository } from "../localDb/collectionRepository";
+import { readRemoteCollection } from "../localDb/remoteReader";
 import { flushOutbox } from "../localDb/syncEngine";
 import type { LocalCollection } from "../localDb/types";
 import { logger } from "../observability/logger";
 import type { LocalFirstEntity } from "./types";
-import {
-  attachSignedUrls,
-  ensureLocalFields,
-  sortByCreatedAtDesc,
-  stripLocalFields,
-  visibleRemoteRows,
-  withFormattedDate,
-  type RepositoryEntity,
-} from "./collectionUtils";
+import { ensureLocalFields, type RepositoryEntity } from "./entityFactory";
+import { sortByCreatedAtDesc } from "./ordering";
+import { stripLocalFields } from "./payload";
+import { withFormattedDate } from "./presentation";
 
 type LocalFirstCollectionState<T extends LocalFirstEntity> = {
   userId: string | null;
@@ -26,7 +24,7 @@ type LocalFirstCollectionState<T extends LocalFirstEntity> = {
 
 type LocalFirstCollectionStoreInput = {
   collection: LocalCollection;
-  remoteOrder?: { column: string; ascending: boolean };
+  remoteOrder?: CollectionOrder;
 };
 
 type LocalFirstCollectionListener = () => void;
@@ -40,7 +38,7 @@ const SERVER_SNAPSHOT = {
 export class LocalFirstCollectionStore<T extends LocalFirstEntity> {
   private readonly repository;
   private readonly listeners = new Set<LocalFirstCollectionListener>();
-  private remoteOrder: { column: string; ascending: boolean };
+  private remoteOrder: CollectionOrder;
   private state: LocalFirstCollectionState<T> = {
     userId: null,
     items: [],
@@ -51,13 +49,10 @@ export class LocalFirstCollectionStore<T extends LocalFirstEntity> {
 
   constructor(
     readonly collection: LocalCollection,
-    remoteOrder?: { column: string; ascending: boolean },
+    remoteOrder?: CollectionOrder,
   ) {
-    this.repository = getLocalFirstRepository<T>(collection);
-    this.remoteOrder = remoteOrder ?? {
-      column: "created_at",
-      ascending: false,
-    };
+    this.repository = getCollectionRepository<T>(collection);
+    this.remoteOrder = remoteOrder ?? defaultOrderFor(collection);
   }
 
   static create<T extends LocalFirstEntity>({
@@ -103,22 +98,10 @@ export class LocalFirstCollectionStore<T extends LocalFirstEntity> {
     if (options?.showLoading) this.setState({ loading: true });
 
     try {
-      const { data, error } = await supabase
-        .from(this.collection)
-        .select(selectColumnsFor(this.collection))
-        .eq("user_id", activeUserId)
-        .is("deleted_at", null)
-        .order(this.remoteOrder.column, {
-          ascending: this.remoteOrder.ascending,
-        });
-
-      if (error) throw new Error(error.message);
-
-      const remote = await attachSignedUrls(
+      const remote = await readRemoteCollection<T>(
+        activeUserId,
         this.collection,
-        visibleRemoteRows(
-          (data ?? []) as unknown as Array<T & { deleted_at?: string | null }>,
-        ) as T[],
+        this.remoteOrder,
       );
       const merged = await this.repository.replaceRemote(
         activeUserId,

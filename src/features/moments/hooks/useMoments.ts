@@ -2,13 +2,15 @@
 
 import { useCallback, useMemo } from "react";
 import { createClientId } from "../../../lib/localDb/repository";
-import { createOptimisticId } from "../../../lib/localFirst/collectionUtils";
+import { createOptimisticId } from "../../../lib/localFirst/ids";
 import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
-import { useWorkspaceSessionContext } from "../../workspace/WorkspaceContext";
 import type { CreateMomentInput, MomentRecord, UpdateMomentInput } from "../types";
 
-export function useMoments() {
-  const { userId } = useWorkspaceSessionContext();
+type UseMomentsInput = {
+  userId: string | null;
+};
+
+export function useMoments({ userId }: UseMomentsInput) {
   const collection = useLocalFirstCollection<MomentRecord>({
     userId,
     collection: "moments",

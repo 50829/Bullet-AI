@@ -11,15 +11,15 @@ vi.mock("./repository", () => ({
   subscribeCollection: vi.fn(),
 }));
 
-const { LocalFirstRepository } = await import("./localFirstRepository");
+const { CollectionRepository } = await import("./collectionRepository");
 
-describe("LocalFirstRepository", () => {
+describe("CollectionRepository", () => {
   beforeEach(() => {
     mocks.commitLocalMutation.mockReset();
   });
 
   it("keeps the entity image path when queuing a delete mutation", async () => {
-    const repository = new LocalFirstRepository<{
+    const repository = new CollectionRepository<{
       id: number;
       client_id: string;
       user_id: string;

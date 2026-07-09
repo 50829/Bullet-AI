@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   sessionUser: { id: "user-1" } as { id: string } | null,
   outboxItems: [] as OutboxItem[],
   updatePayloads: [] as Record<string, unknown>[],
+  upsertPayloads: [] as Record<string, unknown>[],
+  upsertOptions: [] as Record<string, unknown>[],
   maybeSingleResult: {
     data: { id: 1, client_id: "moment-client" },
     error: null,
@@ -51,6 +53,20 @@ vi.mock("../supabaseClient", () => ({
       delete: vi.fn(() => {
         throw new Error("hard delete should not be used");
       }),
+      upsert: vi.fn(
+        (
+          payload: Record<string, unknown>,
+          options: Record<string, unknown>,
+        ) => {
+          mocks.upsertPayloads.push(payload);
+          mocks.upsertOptions.push(options);
+          const builder = {
+            select: vi.fn(() => builder),
+            maybeSingle: vi.fn(async () => mocks.maybeSingleResult),
+          };
+          return builder;
+        },
+      ),
     })),
     storage: {
       from: vi.fn(() => ({
@@ -145,6 +161,8 @@ describe("syncEngine", () => {
     mocks.sessionUser = { id: "user-1" };
     mocks.outboxItems = [];
     mocks.updatePayloads = [];
+    mocks.upsertPayloads = [];
+    mocks.upsertOptions = [];
     mocks.maybeSingleResult = {
       data: { id: 1, client_id: "moment-client" },
       error: null,
@@ -325,5 +343,50 @@ describe("syncEngine", () => {
     expect(mocks.updatePayloads[0]).toMatchObject({
       image_path: expect.stringMatching(/^user-1\/\d+-moment-client\.jpg$/),
     });
+  });
+
+  it("syncs profiles through the outbox using user_id as the conflict target", async () => {
+    mocks.maybeSingleResult = {
+      data: {
+        user_id: "user-1",
+        username: "Mira",
+        updated_at: "2026-01-01T00:00:00.000Z",
+      },
+      error: null,
+    };
+    mocks.outboxItems = [
+      outboxItem({
+        collection: "profiles",
+        entityId: "user-1",
+        operation: "upsert",
+        payload: {
+          user_id: "user-1",
+          username: "Mira",
+          updated_at: "2026-01-01T00:00:00.000Z",
+          preferred_language: "zh",
+          ui_theme: "calm",
+          accent_color: "sage",
+          color_scheme: "system",
+          completed_goal_retention: "next_day",
+          week_starts_on: "auto",
+        },
+      }),
+    ];
+
+    await flushOutbox();
+
+    expect(mocks.upsertPayloads).toEqual([
+      expect.objectContaining({
+        user_id: "user-1",
+        username: "Mira",
+      }),
+    ]);
+    expect(mocks.upsertOptions).toEqual([{ onConflict: "user_id" }]);
+    expect(mocks.upsertSyncedEntity).toHaveBeenCalledWith(
+      "user-1",
+      "profiles",
+      expect.objectContaining({ user_id: "user-1", username: "Mira" }),
+      expect.objectContaining({ localEntityId: "user-1" }),
+    );
   });
 });

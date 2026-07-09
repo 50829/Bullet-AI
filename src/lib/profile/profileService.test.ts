@@ -1,0 +1,156 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  sessionUser: { id: "user-1" } as { id: string } | null,
+  existingUsername: null as { user_id: string } | null,
+  repository: {
+    list: vi.fn(),
+    replaceRemote: vi.fn(),
+    mutate: vi.fn(),
+  },
+  findRemoteCollectionRow: vi.fn(),
+  readRemoteCollection: vi.fn(),
+  flushOutbox: vi.fn(),
+}));
+
+vi.mock("../supabase/client", () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn(async () => ({
+        data: {
+          session: mocks.sessionUser ? { user: mocks.sessionUser } : null,
+        },
+        error: null,
+      })),
+    },
+    from: vi.fn(() => ({
+      select: vi.fn(() => {
+        throw new Error("profileService should not query Supabase directly");
+      }),
+      upsert: vi.fn(() => {
+        throw new Error("profileService should not upsert Supabase directly");
+      }),
+    })),
+  },
+}));
+
+vi.mock("../localDb/collectionRepository", () => ({
+  getCollectionRepository: vi.fn(() => mocks.repository),
+}));
+
+vi.mock("../localDb/remoteReader", () => ({
+  findRemoteCollectionRow: mocks.findRemoteCollectionRow,
+  readRemoteCollection: mocks.readRemoteCollection,
+}));
+
+vi.mock("../localDb/syncEngine", () => ({
+  flushOutbox: mocks.flushOutbox,
+}));
+
+const {
+  getCurrentUserProfile,
+  updateCurrentUserDisplayName,
+  updateCurrentUserPreferences,
+} = await import("./profileService");
+
+function profileRow(overrides: Record<string, unknown> = {}) {
+  return {
+    user_id: "user-1",
+    username: "Mira",
+    username_updated_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    preferences_updated_at: "2026-01-01T00:00:00.000Z",
+    preferred_language: "zh",
+    ui_theme: "calm",
+    accent_color: "sage",
+    color_scheme: "system",
+    completed_goal_retention: "next_day",
+    week_starts_on: "auto",
+    ...overrides,
+  };
+}
+
+describe("profileService", () => {
+  beforeEach(() => {
+    mocks.sessionUser = { id: "user-1" };
+    mocks.existingUsername = null;
+    mocks.repository.list.mockReset();
+    mocks.repository.replaceRemote.mockReset();
+    mocks.repository.mutate.mockReset();
+    mocks.findRemoteCollectionRow.mockReset();
+    mocks.readRemoteCollection.mockReset();
+    mocks.flushOutbox.mockReset();
+
+    mocks.repository.list.mockResolvedValue([]);
+    mocks.findRemoteCollectionRow.mockResolvedValue(mocks.existingUsername);
+    mocks.readRemoteCollection.mockResolvedValue([profileRow()]);
+    mocks.repository.replaceRemote.mockResolvedValue([profileRow()]);
+    mocks.repository.mutate.mockResolvedValue(undefined);
+  });
+
+  it("reads profiles through the localDb remote reader and cache", async () => {
+    const profile = await getCurrentUserProfile();
+
+    expect(mocks.readRemoteCollection).toHaveBeenCalledWith(
+      "user-1",
+      "profiles",
+    );
+    expect(mocks.repository.replaceRemote).toHaveBeenCalledWith("user-1", [
+      expect.objectContaining({ user_id: "user-1" }),
+    ]);
+    expect(profile).toEqual(
+      expect.objectContaining({
+        username: "Mira",
+        preferences: expect.objectContaining({ preferred_language: "zh" }),
+      }),
+    );
+  });
+
+  it("writes preferences through the profiles repository and outbox", async () => {
+    const preferences = await updateCurrentUserPreferences({
+      preferred_language: "en",
+    });
+
+    expect(mocks.repository.mutate).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({
+        user_id: "user-1",
+        username: "Mira",
+        preferred_language: "en",
+      }),
+      "upsert",
+    );
+    expect(mocks.flushOutbox).toHaveBeenCalled();
+    expect(preferences.preferred_language).toBe("en");
+  });
+
+  it("writes display names through the profiles repository and outbox", async () => {
+    const profile = await updateCurrentUserDisplayName("New Mira");
+
+    expect(mocks.findRemoteCollectionRow).toHaveBeenCalledWith(
+      "profiles",
+      "username",
+      "New Mira",
+    );
+    expect(mocks.repository.mutate).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({
+        user_id: "user-1",
+        username: "New Mira",
+      }),
+      "upsert",
+    );
+    expect(mocks.flushOutbox).toHaveBeenCalled();
+    expect(profile.username).toBe("New Mira");
+  });
+
+  it("rejects display names owned by another profile", async () => {
+    mocks.existingUsername = { user_id: "user-2" };
+    mocks.findRemoteCollectionRow.mockResolvedValue(mocks.existingUsername);
+
+    await expect(updateCurrentUserDisplayName("Taken")).rejects.toThrow(
+      "该用户名已被使用，请选择其他用户名",
+    );
+    expect(mocks.repository.mutate).not.toHaveBeenCalled();
+  });
+});

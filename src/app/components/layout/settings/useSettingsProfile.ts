@@ -47,11 +47,11 @@ export function useSettingsProfile({
 }: UseSettingsProfileInput) {
   const { t, language, setLanguage } = useLanguage();
   const router = useRouter();
-  const { syncStatus, retrySync } = useWorkspaceSessionContext();
-  const { goals } = useGoals();
-  const { habits } = useHabits();
-  const { moments } = useMoments();
-  const { reflections } = useReflections();
+  const { syncStatus, retrySync, userId } = useWorkspaceSessionContext();
+  const { goals } = useGoals({ userId });
+  const { habits } = useHabits({ userId });
+  const { moments } = useMoments({ userId });
+  const { reflections } = useReflections({ userId });
   const { showToast } = useToast();
   const [username, setUsername] = useState("");
   const [currentUsername, setCurrentUsername] = useState("");

@@ -53,17 +53,19 @@ export type RecentDashboardItem = {
 
 export function useTodayDashboard() {
   const router = useRouter();
-  const { moments, addMoment, updateMoment } = useMoments();
-  const { reflections, addReflection, updateReflection } = useReflections();
+  const { syncStatus, retrySync, userId } = useWorkspaceSessionContext();
+  const { moments, addMoment, updateMoment } = useMoments({ userId });
+  const { reflections, addReflection, updateReflection } = useReflections({
+    userId,
+  });
   const {
     goals,
     loading: goalsLoading,
     addGoal,
     updateGoal,
     deleteGoal,
-  } = useGoals();
-  const { syncStatus, retrySync } = useWorkspaceSessionContext();
-  const habitsState = useHabits();
+  } = useGoals({ userId });
+  const habitsState = useHabits({ userId });
   const { habits } = habitsState;
   const { t, language } = useLanguage();
   const { showToast } = useToast();

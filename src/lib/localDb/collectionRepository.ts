@@ -4,6 +4,7 @@ import {
   readEntities,
   subscribeCollection,
 } from "./repository";
+import { identityValueFor } from "./collectionSchemas";
 import type { LocalCollection, SyncOperation } from "./types";
 
 type EntityIdentity = {
@@ -14,13 +15,14 @@ type EntityIdentity = {
   deleted_at?: string | null;
 };
 
-function entityIdentity(entity: EntityIdentity) {
-  if (entity.client_id) return entity.client_id;
-  if (typeof entity.id !== "undefined" && entity.id !== null) return entity.id;
-  throw new Error("Entity must include client_id or id");
+function entityIdentity(
+  collection: LocalCollection,
+  entity: EntityIdentity & Record<string, unknown>,
+) {
+  return identityValueFor(collection, entity);
 }
 
-export class LocalFirstRepository<T extends EntityIdentity> {
+export class CollectionRepository<T extends EntityIdentity & Record<string, unknown>> {
   constructor(readonly collection: LocalCollection) {}
 
   list(userId: string) {
@@ -42,7 +44,7 @@ export class LocalFirstRepository<T extends EntityIdentity> {
     await commitLocalMutation({
       userId,
       collection: this.collection,
-      entityId: entityIdentity(entity),
+      entityId: entityIdentity(this.collection, entity),
       payload: { ...entity, user_id: entity.user_id ?? userId },
       operation,
     });
@@ -53,7 +55,7 @@ export class LocalFirstRepository<T extends EntityIdentity> {
     await commitLocalMutation({
       userId,
       collection: this.collection,
-      entityId: entityIdentity(entity),
+      entityId: entityIdentity(this.collection, entity),
       payload: {
         id: entity.id,
         client_id: entity.client_id ?? undefined,
@@ -73,16 +75,16 @@ export class LocalFirstRepository<T extends EntityIdentity> {
 
 const repositories = new Map<
   LocalCollection,
-  LocalFirstRepository<EntityIdentity>
+  CollectionRepository<EntityIdentity & Record<string, unknown>>
 >();
 
-export function getLocalFirstRepository<T extends EntityIdentity>(
+export function getCollectionRepository<T extends EntityIdentity & Record<string, unknown>>(
   collection: LocalCollection,
 ) {
   let repository = repositories.get(collection);
   if (!repository) {
-    repository = new LocalFirstRepository(collection);
+    repository = new CollectionRepository(collection);
     repositories.set(collection, repository);
   }
-  return repository as LocalFirstRepository<T>;
+  return repository as CollectionRepository<T>;
 }

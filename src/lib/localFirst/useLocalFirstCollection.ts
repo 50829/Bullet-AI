@@ -7,6 +7,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import type { CollectionOrder } from "../localDb/collectionSchemas";
 import type { LocalCollection } from "../localDb/types";
 import type { LocalFirstEntity } from "./types";
 import { LocalFirstCollectionStore } from "./localFirstCollectionStore";
@@ -14,7 +15,7 @@ import { LocalFirstCollectionStore } from "./localFirstCollectionStore";
 type UseLocalFirstCollectionInput = {
   userId: string | null;
   collection: LocalCollection;
-  remoteOrder?: { column: string; ascending: boolean };
+  remoteOrder?: CollectionOrder;
 };
 
 export type LocalFirstCollectionController<T extends LocalFirstEntity> = {

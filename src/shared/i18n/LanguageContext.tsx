@@ -13,14 +13,12 @@ import {
 import enMessages from "../../../messages/en.json";
 import zhMessages from "../../../messages/zh.json";
 import {
+  LANGUAGE_STORAGE_KEY,
   readLocalPreferences,
   writeLocalPreferences,
   type PreferredLanguage,
+  type UserPreferences,
 } from "../../lib/profile/preferences";
-import {
-  getCurrentUserProfile,
-  updateCurrentUserPreferences,
-} from "../../lib/profile/profileService";
 
 export type Language = PreferredLanguage;
 
@@ -38,44 +36,49 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
   undefined,
 );
 
+type PreferencesUpdatedEvent = CustomEvent<{ preferences?: UserPreferences }>;
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>("zh");
 
   useEffect(() => {
-    let isMounted = true;
-    const localPreferences = readLocalPreferences();
+    const applyLanguage = (nextLanguage: Language) => {
+      setLanguageState(nextLanguage);
+      document.documentElement.lang = nextLanguage;
+    };
 
-    setLanguageState(localPreferences.preferred_language);
-    document.documentElement.lang = localPreferences.preferred_language;
+    applyLanguage(readLocalPreferences().preferred_language);
 
-    getCurrentUserProfile()
-      .then((profile) => {
-        if (!isMounted || !profile) return;
+    const handlePreferencesUpdated = (event: Event) => {
+      const nextLanguage = (event as PreferencesUpdatedEvent).detail
+        ?.preferences?.preferred_language;
 
-        const remoteLanguage = profile.preferences.preferred_language;
-        writeLocalPreferences(profile.preferences);
-        if (remoteLanguage !== localPreferences.preferred_language) {
-          setLanguageState(remoteLanguage);
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to sync language preference:", error);
-      });
+      if (nextLanguage) {
+        applyLanguage(nextLanguage);
+      }
+    };
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === LANGUAGE_STORAGE_KEY) {
+        applyLanguage(readLocalPreferences().preferred_language);
+      }
+    };
+
+    window.addEventListener("preferences-updated", handlePreferencesUpdated);
+    window.addEventListener("storage", handleStorageChange);
 
     return () => {
-      isMounted = false;
+      window.removeEventListener(
+        "preferences-updated",
+        handlePreferencesUpdated,
+      );
+      window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
 
   const setLanguage = useCallback((nextLanguage: Language) => {
     setLanguageState(nextLanguage);
     writeLocalPreferences({ preferred_language: nextLanguage });
-
-    void updateCurrentUserPreferences({
-      preferred_language: nextLanguage,
-    }).catch(() => {
-      return undefined;
-    });
   }, []);
 
   const value = useMemo(

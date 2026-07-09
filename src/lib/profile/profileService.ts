@@ -1,4 +1,10 @@
 import { supabase } from "../supabase/client";
+import { getCollectionRepository } from "../localDb/collectionRepository";
+import {
+  findRemoteCollectionRow,
+  readRemoteCollection,
+} from "../localDb/remoteReader";
+import { flushOutbox } from "../localDb/syncEngine";
 import {
   DEFAULT_USER_PREFERENCES,
   normalizePreferences,
@@ -13,8 +19,21 @@ export type UserProfile = {
   preferences: UserPreferences;
 };
 
-const PROFILE_SELECT =
-  "user_id,username,username_updated_at,updated_at,preferences_updated_at,preferred_language,ui_theme,accent_color,color_scheme,completed_goal_retention,week_starts_on";
+type ProfileRow = {
+  user_id: string;
+  username: string | null;
+  username_updated_at: string | null;
+  updated_at: string | null;
+  preferences_updated_at: string | null;
+  preferred_language: string | null;
+  ui_theme: string | null;
+  accent_color: string | null;
+  color_scheme: string | null;
+  completed_goal_retention: string | null;
+  week_starts_on: string | null;
+};
+
+const profileRepository = getCollectionRepository<ProfileRow>("profiles");
 
 async function getCurrentUser() {
   const {
@@ -26,36 +45,76 @@ async function getCurrentUser() {
   return session?.user ?? null;
 }
 
+function profileFromRow(row: Partial<ProfileRow> | null | undefined) {
+  return {
+    username: row?.username || "",
+    username_updated_at: row?.username_updated_at || row?.updated_at || null,
+    updated_at: row?.updated_at || null,
+    preferences_updated_at: row?.preferences_updated_at || null,
+    preferences: normalizePreferences({
+      preferred_language:
+        row?.preferred_language ?? DEFAULT_USER_PREFERENCES.preferred_language,
+      ui_theme: row?.ui_theme ?? DEFAULT_USER_PREFERENCES.ui_theme,
+      accent_color: row?.accent_color ?? DEFAULT_USER_PREFERENCES.accent_color,
+      color_scheme: row?.color_scheme ?? DEFAULT_USER_PREFERENCES.color_scheme,
+      completed_goal_retention:
+        row?.completed_goal_retention ??
+        DEFAULT_USER_PREFERENCES.completed_goal_retention,
+      week_starts_on:
+        row?.week_starts_on ?? DEFAULT_USER_PREFERENCES.week_starts_on,
+    }),
+  } satisfies UserProfile;
+}
+
+function rowFromProfile(
+  userId: string,
+  profile: UserProfile | null | undefined,
+  updates: Partial<ProfileRow>,
+): ProfileRow {
+  const preferences = normalizePreferences({
+    ...(profile?.preferences ?? DEFAULT_USER_PREFERENCES),
+    preferred_language: updates.preferred_language,
+    ui_theme: updates.ui_theme,
+    accent_color: updates.accent_color,
+    color_scheme: updates.color_scheme,
+    completed_goal_retention: updates.completed_goal_retention,
+    week_starts_on: updates.week_starts_on,
+  });
+
+  return {
+    user_id: userId,
+    username: updates.username ?? profile?.username ?? null,
+    username_updated_at:
+      updates.username_updated_at ?? profile?.username_updated_at ?? null,
+    updated_at: updates.updated_at ?? profile?.updated_at ?? null,
+    preferences_updated_at:
+      updates.preferences_updated_at ?? profile?.preferences_updated_at ?? null,
+    preferred_language: preferences.preferred_language,
+    ui_theme: preferences.ui_theme,
+    accent_color: preferences.accent_color,
+    color_scheme: preferences.color_scheme,
+    completed_goal_retention: preferences.completed_goal_retention,
+    week_starts_on: preferences.week_starts_on,
+  };
+}
+
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select(PROFILE_SELECT)
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const cached = await profileRepository.list(user.id);
 
-  if (error) throw new Error(error.message);
-
-  return {
-    username: data?.username || "",
-    username_updated_at: data?.username_updated_at || data?.updated_at || null,
-    updated_at: data?.updated_at || null,
-    preferences_updated_at: data?.preferences_updated_at || null,
-    preferences: normalizePreferences({
-      preferred_language:
-        data?.preferred_language ?? DEFAULT_USER_PREFERENCES.preferred_language,
-      ui_theme: data?.ui_theme ?? DEFAULT_USER_PREFERENCES.ui_theme,
-      accent_color: data?.accent_color ?? DEFAULT_USER_PREFERENCES.accent_color,
-      color_scheme: data?.color_scheme ?? DEFAULT_USER_PREFERENCES.color_scheme,
-      completed_goal_retention:
-        data?.completed_goal_retention ??
-        DEFAULT_USER_PREFERENCES.completed_goal_retention,
-      week_starts_on:
-        data?.week_starts_on ?? DEFAULT_USER_PREFERENCES.week_starts_on,
-    }),
-  };
+  try {
+    const remoteProfiles = await readRemoteCollection<ProfileRow>(
+      user.id,
+      "profiles",
+    );
+    const rows = await profileRepository.replaceRemote(user.id, remoteProfiles);
+    return profileFromRow(rows[0] ?? cached[0]);
+  } catch (error) {
+    if (cached[0]) return profileFromRow(cached[0]);
+    throw error;
+  }
 }
 
 export async function updateCurrentUserDisplayName(
@@ -68,38 +127,28 @@ export async function updateCurrentUserDisplayName(
   const currentProfile = await getCurrentUserProfile();
 
   if (username) {
-    const { data: existing, error: existingError } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .eq("username", username)
-      .maybeSingle();
+    const existing = await findRemoteCollectionRow<ProfileRow>(
+      "profiles",
+      "username",
+      username,
+    );
 
-    if (existingError) throw new Error(existingError.message);
     if (existing && existing.user_id !== user.id) {
       throw new Error("该用户名已被使用，请选择其他用户名");
     }
   }
 
   const updatedAt = new Date().toISOString();
-  const { error } = await supabase.from("profiles").upsert(
-    {
-      user_id: user.id,
-      username: username || null,
-      username_updated_at: updatedAt,
-      updated_at: updatedAt,
-    },
-    { onConflict: "user_id" },
-  );
-
-  if (error) throw new Error(error.message);
-
-  return {
-    username,
+  const row = rowFromProfile(user.id, currentProfile, {
+    username: username || null,
     username_updated_at: updatedAt,
     updated_at: updatedAt,
-    preferences_updated_at: currentProfile?.preferences_updated_at ?? null,
-    preferences: currentProfile?.preferences ?? DEFAULT_USER_PREFERENCES,
-  };
+  });
+
+  await profileRepository.mutate(user.id, row, "upsert");
+  void flushOutbox();
+
+  return profileFromRow(row);
 }
 
 export async function updateCurrentUserPreferences(
@@ -114,22 +163,18 @@ export async function updateCurrentUserPreferences(
     ...preferences,
   });
 
-  const { error } = await supabase.from("profiles").upsert(
-    {
-      user_id: user.id,
-      username: currentProfile?.username || null,
-      preferred_language: nextPreferences.preferred_language,
-      ui_theme: nextPreferences.ui_theme,
-      accent_color: nextPreferences.accent_color,
-      color_scheme: nextPreferences.color_scheme,
-      completed_goal_retention: nextPreferences.completed_goal_retention,
-      week_starts_on: nextPreferences.week_starts_on,
-      preferences_updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
+  const row = rowFromProfile(user.id, currentProfile, {
+    preferred_language: nextPreferences.preferred_language,
+    ui_theme: nextPreferences.ui_theme,
+    accent_color: nextPreferences.accent_color,
+    color_scheme: nextPreferences.color_scheme,
+    completed_goal_retention: nextPreferences.completed_goal_retention,
+    week_starts_on: nextPreferences.week_starts_on,
+    preferences_updated_at: new Date().toISOString(),
+  });
 
-  if (error) throw new Error(error.message);
+  await profileRepository.mutate(user.id, row, "upsert");
+  void flushOutbox();
 
   return nextPreferences;
 }

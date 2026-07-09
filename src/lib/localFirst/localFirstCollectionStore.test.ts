@@ -22,8 +22,8 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("../localDb/localFirstRepository", () => ({
-  getLocalFirstRepository: vi.fn(() => mocks.repository),
+vi.mock("../localDb/collectionRepository", () => ({
+  getCollectionRepository: vi.fn(() => mocks.repository),
 }));
 
 vi.mock("../localDb/syncEngine", () => ({
@@ -34,29 +34,8 @@ vi.mock("../observability/logger", () => ({
   logger: mocks.logger,
 }));
 
-vi.mock("../supabaseClient", () => ({
-  supabase: {
-    from: vi.fn(() => {
-      const builder = {
-        select: vi.fn(() => builder),
-        eq: vi.fn(() => builder),
-        is: vi.fn(() => builder),
-        order: vi.fn(async () => ({
-          data: mocks.remoteRows,
-          error: null,
-        })),
-      };
-      return builder;
-    }),
-    storage: {
-      from: vi.fn(() => ({
-        createSignedUrl: vi.fn(async () => ({
-          data: { signedUrl: "https://signed.example/image.jpg" },
-          error: null,
-        })),
-      })),
-    },
-  },
+vi.mock("../localDb/remoteReader", () => ({
+  readRemoteCollection: vi.fn(async () => mocks.remoteRows),
 }));
 
 const { LocalFirstCollectionStore } = await import(
