@@ -6,37 +6,51 @@ export type CollectionOrder = {
 };
 
 type CollectionIdentityColumn = "client_id" | "id" | "user_id";
+export type CollectionDeleteMode = "soft" | "none";
+export type CascadeDeleteSpec = {
+  collection: LocalCollection;
+  foreignKey: string;
+  sourceColumn: string;
+};
 
-type CollectionSchema = {
+export type CollectionAdapter = {
+  collection: LocalCollection;
   columns: readonly string[];
   select: string;
-  hasStorage: boolean;
+  storageBucket: string | null;
   defaultOrder: CollectionOrder;
   identityColumn: CollectionIdentityColumn;
   conflictTarget: CollectionIdentityColumn;
-  softDelete: boolean;
+  deleteMode: CollectionDeleteMode;
+  canUseLocalFirstCollectionHook: boolean;
+  cascadeDelete?: readonly CascadeDeleteSpec[];
 };
 
-function defineCollectionSchema(
-  schema: Omit<CollectionSchema, "select">,
-): CollectionSchema {
+function defineCollectionAdapter(
+  adapter: Omit<CollectionAdapter, "select">,
+): CollectionAdapter {
   return {
-    ...schema,
-    select: schema.columns.join(","),
+    ...adapter,
+    select: adapter.columns.join(","),
   };
 }
 
 const defaultLocalFirstConfig = {
   identityColumn: "client_id",
   conflictTarget: "client_id",
-  softDelete: true,
+  deleteMode: "soft",
+  canUseLocalFirstCollectionHook: true,
 } satisfies Pick<
-  CollectionSchema,
-  "identityColumn" | "conflictTarget" | "softDelete"
+  CollectionAdapter,
+  | "identityColumn"
+  | "conflictTarget"
+  | "deleteMode"
+  | "canUseLocalFirstCollectionHook"
 >;
 
-const collectionSchemas: Record<LocalCollection, CollectionSchema> = {
-  moments: defineCollectionSchema({
+const collectionAdapters: Record<LocalCollection, CollectionAdapter> = {
+  moments: defineCollectionAdapter({
+    collection: "moments",
     columns: [
       "id",
       "client_id",
@@ -47,11 +61,12 @@ const collectionSchemas: Record<LocalCollection, CollectionSchema> = {
       "updated_at",
       "deleted_at",
     ],
-    hasStorage: true,
+    storageBucket: "moments",
     defaultOrder: { column: "created_at", ascending: false },
     ...defaultLocalFirstConfig,
   }),
-  reflections: defineCollectionSchema({
+  reflections: defineCollectionAdapter({
+    collection: "reflections",
     columns: [
       "id",
       "client_id",
@@ -67,11 +82,12 @@ const collectionSchemas: Record<LocalCollection, CollectionSchema> = {
       "updated_at",
       "deleted_at",
     ],
-    hasStorage: true,
+    storageBucket: "reflections",
     defaultOrder: { column: "created_at", ascending: false },
     ...defaultLocalFirstConfig,
   }),
-  goals: defineCollectionSchema({
+  goals: defineCollectionAdapter({
+    collection: "goals",
     columns: [
       "id",
       "client_id",
@@ -88,11 +104,12 @@ const collectionSchemas: Record<LocalCollection, CollectionSchema> = {
       "updated_at",
       "deleted_at",
     ],
-    hasStorage: true,
+    storageBucket: "goals",
     defaultOrder: { column: "created_at", ascending: false },
     ...defaultLocalFirstConfig,
   }),
-  habits: defineCollectionSchema({
+  habits: defineCollectionAdapter({
+    collection: "habits",
     columns: [
       "id",
       "client_id",
@@ -105,11 +122,19 @@ const collectionSchemas: Record<LocalCollection, CollectionSchema> = {
       "updated_at",
       "deleted_at",
     ],
-    hasStorage: true,
+    storageBucket: null,
     defaultOrder: { column: "created_at", ascending: false },
+    cascadeDelete: [
+      {
+        collection: "habit_checkins",
+        foreignKey: "habit_client_id",
+        sourceColumn: "client_id",
+      },
+    ],
     ...defaultLocalFirstConfig,
   }),
-  habit_checkins: defineCollectionSchema({
+  habit_checkins: defineCollectionAdapter({
+    collection: "habit_checkins",
     columns: [
       "id",
       "client_id",
@@ -122,11 +147,12 @@ const collectionSchemas: Record<LocalCollection, CollectionSchema> = {
       "updated_at",
       "deleted_at",
     ],
-    hasStorage: false,
+    storageBucket: null,
     defaultOrder: { column: "checked_on", ascending: false },
     ...defaultLocalFirstConfig,
   }),
-  profiles: defineCollectionSchema({
+  profiles: defineCollectionAdapter({
+    collection: "profiles",
     columns: [
       "user_id",
       "username",
@@ -140,40 +166,90 @@ const collectionSchemas: Record<LocalCollection, CollectionSchema> = {
       "completed_goal_retention",
       "week_starts_on",
     ],
-    hasStorage: false,
+    storageBucket: null,
     defaultOrder: { column: "updated_at", ascending: false },
     identityColumn: "user_id",
     conflictTarget: "user_id",
-    softDelete: false,
+    deleteMode: "none",
+    canUseLocalFirstCollectionHook: false,
   }),
 };
 
-function getCollectionSchema(collection: LocalCollection) {
-  return collectionSchemas[collection];
+export function getCollectionAdapter(collection: LocalCollection) {
+  return collectionAdapters[collection];
 }
 
 export function selectColumnsFor(collection: LocalCollection) {
-  return getCollectionSchema(collection).select;
+  return getCollectionAdapter(collection).select;
 }
 
 export function hasStorageBucket(collection: LocalCollection) {
-  return getCollectionSchema(collection).hasStorage;
+  return Boolean(getCollectionAdapter(collection).storageBucket);
+}
+
+export function storageBucketFor(collection: LocalCollection) {
+  return getCollectionAdapter(collection).storageBucket;
 }
 
 export function defaultOrderFor(collection: LocalCollection) {
-  return getCollectionSchema(collection).defaultOrder;
+  return getCollectionAdapter(collection).defaultOrder;
 }
 
 export function identityColumnFor(collection: LocalCollection) {
-  return getCollectionSchema(collection).identityColumn;
+  return getCollectionAdapter(collection).identityColumn;
 }
 
 export function conflictTargetFor(collection: LocalCollection) {
-  return getCollectionSchema(collection).conflictTarget;
+  return getCollectionAdapter(collection).conflictTarget;
 }
 
 export function usesSoftDelete(collection: LocalCollection) {
-  return getCollectionSchema(collection).softDelete;
+  return getCollectionAdapter(collection).deleteMode === "soft";
+}
+
+export function canUseLocalFirstCollectionHook(collection: LocalCollection) {
+  return getCollectionAdapter(collection).canUseLocalFirstCollectionHook;
+}
+
+export function buildDeletePayload(
+  collection: LocalCollection,
+  payload: Record<string, unknown>,
+  deletedAt: string,
+) {
+  if (!usesSoftDelete(collection)) {
+    throw new Error(`${collection} does not support local-first delete`);
+  }
+  void payload;
+  return { deleted_at: deletedAt };
+}
+
+export function buildUpdatePayload(payload: Record<string, unknown>) {
+  const updates = { ...payload };
+  delete updates.id;
+  delete updates.user_id;
+  return updates;
+}
+
+export function buildUpsertPayload(
+  collection: LocalCollection,
+  payload: Record<string, unknown>,
+) {
+  const upsertPayload = { ...payload };
+  if (identityColumnFor(collection) === "client_id") delete upsertPayload.id;
+  return upsertPayload;
+}
+
+export function cascadeDeletesFor(
+  collection: LocalCollection,
+  payload: Record<string, unknown>,
+) {
+  return (getCollectionAdapter(collection).cascadeDelete ?? []).flatMap(
+    (spec) => {
+      const value = payload[spec.sourceColumn];
+      if (typeof value !== "string" && typeof value !== "number") return [];
+      return [{ ...spec, value }];
+    },
+  );
 }
 
 export function identityValueFor(

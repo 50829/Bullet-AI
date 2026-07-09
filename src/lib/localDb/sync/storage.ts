@@ -1,6 +1,6 @@
 import { logger } from "../../observability/logger";
 import { supabase } from "../../supabaseClient";
-import { hasStorageBucket } from "../collectionSchemas";
+import { storageBucketFor } from "../collectionSchemas";
 import { readLocalFile, removeLocalFile } from "../repository";
 import { updateOutboxItem } from "../syncQueue";
 import type { LocalCollection, OutboxItem } from "../types";
@@ -52,8 +52,16 @@ export async function preparePayloadWithFileUpload(
       ? payload.image_path
       : `${item.userId}/${Date.now()}-${item.entityId}.${extension}`;
 
+  const bucket = storageBucketFor(item.collection);
+  if (!bucket) {
+    throw new SyncError(
+      `${item.collection} does not support file uploads`,
+      "permanent",
+    );
+  }
+
   const { error } = await supabase.storage
-    .from(item.collection)
+    .from(bucket)
     .upload(path, localFile.blob, { cacheControl: "3600", upsert: true });
 
   if (error) throw new SyncError(error.message, "storage");
@@ -77,14 +85,11 @@ export async function removeStoredFile(
   collection: LocalCollection,
   imagePath: unknown,
 ) {
-  if (
-    !hasStorageBucket(collection) ||
-    typeof imagePath !== "string" ||
-    !imagePath
-  )
+  const bucket = storageBucketFor(collection);
+  if (!bucket || typeof imagePath !== "string" || !imagePath)
     return;
 
-  const { error } = await supabase.storage.from(collection).remove([imagePath]);
+  const { error } = await supabase.storage.from(bucket).remove([imagePath]);
   if (error) {
     logger.warn("storage_cleanup_failed", {
       collection,

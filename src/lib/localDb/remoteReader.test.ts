@@ -139,6 +139,19 @@ describe("readRemoteCollection", () => {
     });
   });
 
+  it("does not attach signed URLs for collections without storage buckets", async () => {
+    mocks.remoteRows = [
+      moment({
+        image_path: "user-1/legacy-habit-photo.jpg",
+      }),
+    ];
+
+    const rows = await readRemoteCollection<TestRecord>("user-1", "habits");
+
+    expect(rows[0]).toMatchObject({ image_url: null });
+    expect(mocks.createSignedUrl).not.toHaveBeenCalled();
+  });
+
   it("throws when the remote query fails", async () => {
     mocks.queryError = { message: "remote unavailable" };
 

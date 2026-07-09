@@ -465,6 +465,30 @@ export async function commitLocalMutation<
       const existingEntity = await idbRequest<LocalEntity<T> | undefined>(
         stores.entities.get(key),
       );
+      const index = stores.outbox.index("entity");
+      const queued = await idbRequest<OutboxItem[]>(
+        index.getAll(
+          IDBKeyRange.only([
+            input.userId,
+            input.collection,
+            String(input.entityId),
+          ]),
+        ),
+      );
+      const compactable = queued.filter((item) => item.status !== "syncing");
+
+      if (
+        input.operation === "delete" &&
+        compactable.some((item) => item.operation === "upsert")
+      ) {
+        await Promise.all(
+          compactable.map((item) => idbRequest(stores.outbox.delete(item.id))),
+        );
+        await idbRequest(stores.entities.delete(key));
+        await idbRequest(stores.files.delete(fileId));
+        return;
+      }
+
       const entityRow: LocalEntity<T> = {
         key,
         userId: input.userId,
@@ -486,17 +510,6 @@ export async function commitLocalMutation<
 
       await idbRequest(stores.entities.put(entityRow));
 
-      const index = stores.outbox.index("entity");
-      const queued = await idbRequest<OutboxItem[]>(
-        index.getAll(
-          IDBKeyRange.only([
-            input.userId,
-            input.collection,
-            String(input.entityId),
-          ]),
-        ),
-      );
-      const compactable = queued.filter((item) => item.status !== "syncing");
       const previous = compactable.at(-1);
       const operation = compactOperation(previous?.operation, input.operation);
       const payload =

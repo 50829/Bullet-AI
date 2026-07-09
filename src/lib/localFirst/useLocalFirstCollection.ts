@@ -7,7 +7,10 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import type { CollectionOrder } from "../localDb/collectionSchemas";
+import {
+  canUseLocalFirstCollectionHook,
+  type CollectionOrder,
+} from "../localDb/collectionSchemas";
 import type { LocalCollection } from "../localDb/types";
 import type { LocalFirstEntity } from "./types";
 import { LocalFirstCollectionStore } from "./localFirstCollectionStore";
@@ -37,6 +40,10 @@ export function useLocalFirstCollection<T extends LocalFirstEntity>({
   collection,
   remoteOrder,
 }: UseLocalFirstCollectionInput): LocalFirstCollectionController<T> {
+  if (!canUseLocalFirstCollectionHook(collection)) {
+    throw new Error(`${collection} cannot use useLocalFirstCollection`);
+  }
+
   const remoteOrderColumn = remoteOrder?.column;
   const remoteOrderAscending = remoteOrder?.ascending;
   const store = useMemo(

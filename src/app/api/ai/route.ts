@@ -73,6 +73,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
+    const apiKey = process.env.LLM_API_KEY;
+    const model = process.env.LLM_MODEL;
+    let baseUrl = process.env.LLM_BASE_URL;
+
+    if (!apiKey) {
+      logger.error("ai_missing_api_key", { userId: user.id });
+      return NextResponse.json(
+        { error: "服务器配置错误：未设置 API Key" },
+        { status: 500 },
+      );
+    }
+    if (!baseUrl) {
+      logger.error("ai_missing_base_url", { userId: user.id });
+      return NextResponse.json(
+        { error: "服务器配置错误：未设置 API Base URL" },
+        { status: 500 },
+      );
+    }
+    if (!model) {
+      logger.error("ai_missing_model", { userId: user.id });
+      return NextResponse.json(
+        { error: "服务器配置错误：未设置模型" },
+        { status: 500 },
+      );
+    }
+
     const windowStart = new Date(
       Date.now() - AI_RATE_LIMIT_WINDOW_MS,
     ).toISOString();
@@ -100,25 +126,6 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "请求过于频繁，请稍后再试" },
         { status: 429 },
-      );
-    }
-
-    const apiKey = process.env.LLM_API_KEY;
-    const model = process.env.LLM_MODEL;
-    let baseUrl = process.env.LLM_BASE_URL;
-
-    if (!apiKey) {
-      logger.error("ai_missing_api_key", { userId: user.id });
-      return NextResponse.json(
-        { error: "服务器配置错误：未设置 API Key" },
-        { status: 500 },
-      );
-    }
-    if (!baseUrl) {
-      logger.error("ai_missing_base_url", { userId: user.id });
-      return NextResponse.json(
-        { error: "服务器配置错误：未设置 API Base URL" },
-        { status: 500 },
       );
     }
 

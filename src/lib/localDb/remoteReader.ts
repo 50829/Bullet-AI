@@ -1,7 +1,7 @@
 import {
   defaultOrderFor,
-  hasStorageBucket,
   selectColumnsFor,
+  storageBucketFor,
   usesSoftDelete,
   type CollectionOrder,
 } from "./collectionSchemas";
@@ -47,10 +47,11 @@ type RemoteImageEntity = {
 };
 
 async function attachSignedUrls<T extends object>(
-  bucket: LocalCollection,
+  collection: LocalCollection,
   items: T[],
 ) {
-  if (!hasStorageBucket(bucket)) return items;
+  const bucket = storageBucketFor(collection);
+  if (!bucket) return items;
 
   return Promise.all(
     items.map(async (item) => {

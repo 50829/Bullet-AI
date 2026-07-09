@@ -1,5 +1,9 @@
 import { supabase } from "../../supabaseClient";
 import {
+  buildDeletePayload,
+  buildUpdatePayload,
+  buildUpsertPayload,
+  cascadeDeletesFor,
   conflictTargetFor,
   identityColumnFor,
   selectColumnsFor,
@@ -67,6 +71,28 @@ function applyIdentityFilter(
   return query.eq(identityColumn, getIdentityValue(collection, item, payload));
 }
 
+async function applyCascadeDeletes(
+  item: OutboxItem,
+  payload: Record<string, unknown>,
+) {
+  const deletedAt =
+    typeof payload.deleted_at === "string"
+      ? payload.deleted_at
+      : new Date().toISOString();
+
+  await Promise.all(
+    cascadeDeletesFor(item.collection, payload).map(async (cascade) => {
+      const { error } = await supabase
+        .from(cascade.collection)
+        .update({ deleted_at: deletedAt })
+        .eq("user_id", item.userId)
+        .eq(cascade.foreignKey, cascade.value);
+
+      if (error) throw new SyncError(error.message, "transient");
+    }),
+  );
+}
+
 export async function applyOutboxItem(item: OutboxItem) {
   const table = supabase.from(
     item.collection as LocalCollection,
@@ -90,7 +116,7 @@ export async function applyOutboxItem(item: OutboxItem) {
         ? payload.deleted_at
         : new Date().toISOString();
     const query = table
-      .update({ deleted_at: deletedAt })
+      .update(buildDeletePayload(item.collection, payload, deletedAt))
       .eq("user_id", item.userId);
     const deleteQuery = applyIdentityFilter(
       query,
@@ -102,6 +128,7 @@ export async function applyOutboxItem(item: OutboxItem) {
     if (error) throw new SyncError(error.message, "transient");
     if (!data)
       throw new SyncError("Remote row not found for delete", "not_found");
+    await applyCascadeDeletes(item, payload);
     await removeStoredFile(item.collection, payload.image_path);
     await removeQueuedLocalFile(item);
     if (clientId) {
@@ -113,10 +140,9 @@ export async function applyOutboxItem(item: OutboxItem) {
   }
 
   if (item.operation === "update") {
-    const updates = { ...payload };
-    delete updates.id;
-    delete updates.user_id;
-    const query = table.update(updates).eq("user_id", item.userId);
+    const query = table
+      .update(buildUpdatePayload(payload))
+      .eq("user_id", item.userId);
     const updateQuery = applyIdentityFilter(
       query,
       item.collection,
@@ -148,8 +174,7 @@ export async function applyOutboxItem(item: OutboxItem) {
     return;
   }
 
-  const insertPayload = { ...payload };
-  if (clientId) delete insertPayload.id;
+  const insertPayload = buildUpsertPayload(item.collection, payload);
   const { data, error } = await table
     .upsert(insertPayload, { onConflict: conflictTargetFor(item.collection) })
     .select(selectColumnsFor(item.collection))

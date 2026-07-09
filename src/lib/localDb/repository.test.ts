@@ -269,6 +269,72 @@ describe("localDb repository client_id reconciliation", () => {
     ]);
   });
 
+  it("cancels an unsynced create when the entity is deleted before flushing", async () => {
+    await repository.commitLocalMutation({
+      userId: "user-1",
+      collection: "goals",
+      entityId: "goal-client",
+      operation: "upsert",
+      payload: { id: 99, client_id: "goal-client", title: "temporary" },
+    });
+    await repository.commitLocalMutation({
+      userId: "user-1",
+      collection: "goals",
+      entityId: "goal-client",
+      operation: "delete",
+      payload: {
+        id: 99,
+        client_id: "goal-client",
+        deleted_at: "2026-01-01T00:00:00.000Z",
+      },
+    });
+
+    expect(db.stores.outbox.size).toBe(0);
+    expect(await repository.readEntities("user-1", "goals")).toEqual([]);
+  });
+
+  it("cancels an unsynced create after local updates and removes queued files", async () => {
+    await repository.commitLocalMutation({
+      userId: "user-1",
+      collection: "moments",
+      entityId: "moment-client",
+      operation: "upsert",
+      payload: {
+        id: 99,
+        client_id: "moment-client",
+        content: "temporary",
+        local_file: new Blob(["photo"]),
+        local_file_name: "photo.jpg",
+      },
+    });
+    await repository.commitLocalMutation({
+      userId: "user-1",
+      collection: "moments",
+      entityId: "moment-client",
+      operation: "update",
+      payload: {
+        id: 99,
+        client_id: "moment-client",
+        content: "updated temporary",
+      },
+    });
+    await repository.commitLocalMutation({
+      userId: "user-1",
+      collection: "moments",
+      entityId: "moment-client",
+      operation: "delete",
+      payload: {
+        id: 99,
+        client_id: "moment-client",
+        deleted_at: "2026-01-01T00:00:00.000Z",
+      },
+    });
+
+    expect(db.stores.outbox.size).toBe(0);
+    expect(db.stores.files.size).toBe(0);
+    expect(await repository.readEntities("user-1", "moments")).toEqual([]);
+  });
+
   it("keeps transient file fields out of the cached entity row", async () => {
     await repository.commitLocalMutation({
       userId: "user-1",

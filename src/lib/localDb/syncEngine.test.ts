@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   updatePayloads: [] as Record<string, unknown>[],
   upsertPayloads: [] as Record<string, unknown>[],
   upsertOptions: [] as Record<string, unknown>[],
+  eqCalls: [] as Array<[string, string | number]>,
   maybeSingleResult: {
     data: { id: 1, client_id: "moment-client" },
     error: null,
@@ -44,7 +45,10 @@ vi.mock("../supabaseClient", () => ({
       update: vi.fn((payload: Record<string, unknown>) => {
         mocks.updatePayloads.push(payload);
         const builder = {
-          eq: vi.fn(() => builder),
+          eq: vi.fn((column: string, value: string | number) => {
+            mocks.eqCalls.push([column, value]);
+            return builder;
+          }),
           select: vi.fn(() => builder),
           maybeSingle: vi.fn(async () => mocks.maybeSingleResult),
         };
@@ -163,6 +167,7 @@ describe("syncEngine", () => {
     mocks.updatePayloads = [];
     mocks.upsertPayloads = [];
     mocks.upsertOptions = [];
+    mocks.eqCalls = [];
     mocks.maybeSingleResult = {
       data: { id: 1, client_id: "moment-client" },
       error: null,
@@ -197,6 +202,40 @@ describe("syncEngine", () => {
       "user-1",
       "moments",
       "moment-client",
+    );
+    expect(mocks.removeOutboxItem).toHaveBeenCalledWith("outbox-1");
+  });
+
+  it("cascades habit deletes to checkins without treating habits as storage-backed", async () => {
+    mocks.outboxItems = [
+      outboxItem({
+        collection: "habits",
+        entityId: "habit-client",
+        payload: {
+          id: 1,
+          client_id: "habit-client",
+          user_id: "user-1",
+          image_path: "user-1/should-not-exist.jpg",
+          deleted_at: "2026-01-01T00:00:00.000Z",
+        },
+      }),
+    ];
+
+    await flushOutbox();
+
+    expect(mocks.updatePayloads).toEqual([
+      { deleted_at: "2026-01-01T00:00:00.000Z" },
+      { deleted_at: "2026-01-01T00:00:00.000Z" },
+    ]);
+    expect(mocks.storageRemove).not.toHaveBeenCalled();
+    expect(mocks.eqCalls).toContainEqual([
+      "habit_client_id",
+      "habit-client",
+    ]);
+    expect(mocks.removeEntitiesByClientId).toHaveBeenCalledWith(
+      "user-1",
+      "habits",
+      "habit-client",
     );
     expect(mocks.removeOutboxItem).toHaveBeenCalledWith("outbox-1");
   });

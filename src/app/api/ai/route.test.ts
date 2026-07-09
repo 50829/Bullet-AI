@@ -108,6 +108,20 @@ describe("/api/ai", () => {
     expect(mocks.fetch).not.toHaveBeenCalled();
   });
 
+  it("does not reserve rate limit when LLM config is missing", async () => {
+    vi.stubEnv("LLM_API_KEY", "");
+    const supabase = createSupabaseMock();
+    mocks.createClient.mockResolvedValue(supabase);
+
+    const response = await POST(
+      createRequest({ messages: [{ role: "user", content: "hi" }] }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(supabase.rpc).not.toHaveBeenCalled();
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
   it("calls the LLM for valid authenticated requests", async () => {
     mocks.createClient.mockResolvedValue(createSupabaseMock());
     mocks.fetch.mockResolvedValue({
