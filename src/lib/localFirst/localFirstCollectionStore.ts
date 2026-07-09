@@ -27,10 +27,19 @@ type LocalFirstCollectionState<T extends LocalFirstEntity> = {
   hasMore: boolean;
 };
 
+export type LocalFirstInitialSnapshot<T extends LocalFirstEntity> = {
+  userId: string;
+  items: T[];
+  complete: boolean;
+  hasMore?: boolean;
+  nextOffset?: number;
+};
+
 type LocalFirstCollectionStoreInput = {
   collection: LocalCollection;
   remoteOrder?: CollectionOrder;
   initialRemotePageSize?: number;
+  initialSnapshot?: LocalFirstInitialSnapshot<LocalFirstEntity>;
 };
 
 type LocalFirstCollectionListener = () => void;
@@ -48,15 +57,11 @@ export class LocalFirstCollectionStore<T extends LocalFirstEntity> {
   private readonly listeners = new Set<LocalFirstCollectionListener>();
   private remoteOrder: CollectionOrder;
   private readonly initialRemotePageSize?: number;
-  private nextRemoteOffset = 0;
-  private loadedRemoteEntityIds: string[] = [];
-  private state: LocalFirstCollectionState<T> = {
-    userId: null,
-    items: [],
-    loading: false,
-    loadingMore: false,
-    hasMore: false,
-  };
+  private readonly initialSnapshot?: LocalFirstInitialSnapshot<T>;
+  private initialSnapshotApplied = false;
+  private nextRemoteOffset: number;
+  private loadedRemoteEntityIds: string[];
+  private state: LocalFirstCollectionState<T>;
   private loadToken = 0;
   private unsubscribeRepository: (() => void) | null = null;
 
@@ -64,21 +69,41 @@ export class LocalFirstCollectionStore<T extends LocalFirstEntity> {
     readonly collection: LocalCollection,
     remoteOrder?: CollectionOrder,
     initialRemotePageSize?: number,
+    initialSnapshot?: LocalFirstInitialSnapshot<T>,
   ) {
     this.repository = getCollectionRepository<T>(collection);
     this.remoteOrder = remoteOrder ?? defaultOrderFor(collection);
     this.initialRemotePageSize = initialRemotePageSize;
+    this.initialSnapshot = initialSnapshot;
+    this.nextRemoteOffset =
+      initialSnapshot?.nextOffset ?? initialSnapshot?.items.length ?? 0;
+    this.loadedRemoteEntityIds = initialSnapshot
+      ? initialSnapshot.items.map((item) => this.entityIdentityFor(item))
+      : [];
+    this.state = {
+      userId: initialSnapshot?.userId ?? null,
+      items: initialSnapshot
+        ? sortByCreatedAtDesc(
+            initialSnapshot.items.map(withFormattedDate) as T[],
+          )
+        : [],
+      loading: false,
+      loadingMore: false,
+      hasMore: initialSnapshot?.hasMore ?? false,
+    };
   }
 
   static create<T extends LocalFirstEntity>({
     collection,
     remoteOrder,
     initialRemotePageSize,
+    initialSnapshot,
   }: LocalFirstCollectionStoreInput) {
     return new LocalFirstCollectionStore<T>(
       collection,
       remoteOrder,
       initialRemotePageSize,
+      initialSnapshot as LocalFirstInitialSnapshot<T> | undefined,
     );
   }
 
@@ -89,10 +114,19 @@ export class LocalFirstCollectionStore<T extends LocalFirstEntity> {
 
   getSnapshot = () => this.state;
 
-  getServerSnapshot = () => SERVER_SNAPSHOT as LocalFirstCollectionState<T>;
+  getServerSnapshot = () =>
+    (this.initialSnapshot
+      ? this.state
+      : SERVER_SNAPSHOT) as LocalFirstCollectionState<T>;
 
   setUserId = (userId: string | null) => {
-    if (this.state.userId === userId) return;
+    if (this.state.userId === userId) {
+      if (userId && !this.unsubscribeRepository) {
+        const token = ++this.loadToken;
+        this.startUser(userId, token, { preserveInitialState: true });
+      }
+      return;
+    }
 
     const token = ++this.loadToken;
     this.nextRemoteOffset = 0;
@@ -111,18 +145,30 @@ export class LocalFirstCollectionStore<T extends LocalFirstEntity> {
       return;
     }
 
+    this.startUser(userId, token, { preserveInitialState: false });
+  };
+
+  private startUser(
+    userId: string,
+    token: number,
+    options: { preserveInitialState: boolean },
+  ) {
     this.unsubscribeRepository = this.repository.subscribe(userId, () => {
       void this.loadCachedForUser(userId, token);
     });
-    this.setState({
-      userId,
-      items: [],
-      loading: true,
-      loadingMore: false,
-      hasMore: false,
+    if (!options.preserveInitialState) {
+      this.setState({
+        userId,
+        items: [],
+        loading: true,
+        loadingMore: false,
+        hasMore: false,
+      });
+    }
+    void this.loadForUser(userId, token, {
+      preferInitialSnapshot: options.preserveInitialState,
     });
-    void this.loadForUser(userId, token);
-  };
+  }
 
   refresh = async (
     activeUserId = this.state.userId,
@@ -247,7 +293,18 @@ export class LocalFirstCollectionStore<T extends LocalFirstEntity> {
     }));
   };
 
-  private async loadForUser(userId: string, token: number) {
+  private async loadForUser(
+    userId: string,
+    token: number,
+    options?: { preferInitialSnapshot?: boolean },
+  ) {
+    if (
+      options?.preferInitialSnapshot &&
+      (await this.applyInitialSnapshot(userId, token))
+    ) {
+      return;
+    }
+
     await this.loadCachedForUser(userId, token, {
       keepLoadingWhenEmpty: this.isPagedRemoteRead(),
     });
@@ -264,6 +321,44 @@ export class LocalFirstCollectionStore<T extends LocalFirstEntity> {
     }
 
     await this.refresh(userId);
+  }
+
+  private async applyInitialSnapshot(userId: string, token: number) {
+    const snapshot = this.initialSnapshot;
+    if (
+      !snapshot ||
+      snapshot.userId !== userId ||
+      this.initialSnapshotApplied
+    ) {
+      return false;
+    }
+
+    this.initialSnapshotApplied = true;
+
+    try {
+      const merged = snapshot.complete
+        ? await this.repository.replaceRemote(userId, snapshot.items)
+        : await this.repository.cacheRemote(userId, snapshot.items);
+      if (!this.isActiveLoad(userId, token)) return true;
+      this.nextRemoteOffset = snapshot.nextOffset ?? snapshot.items.length;
+      this.rememberLoadedRemoteRows(snapshot.items, true);
+      const items = sortByCreatedAtDesc(merged.map(withFormattedDate)) as T[];
+      this.setState({
+        items: snapshot.complete ? items : this.visibleCachedItems(items),
+        loading: false,
+        loadingMore: false,
+        hasMore: snapshot.hasMore ?? false,
+      });
+    } catch (error) {
+      logger.error("local_first_collection_initial_snapshot_failed", {
+        collection: this.collection,
+        userId,
+        error,
+      });
+      return false;
+    }
+
+    return true;
   }
 
   private async loadCachedForUser(
@@ -322,9 +417,7 @@ export class LocalFirstCollectionStore<T extends LocalFirstEntity> {
       if (this.state.userId !== activeUserId) return;
       this.nextRemoteOffset = page.nextOffset;
       this.rememberLoadedRemoteRows(page.items as T[], options.offset === 0);
-      const items = sortByCreatedAtDesc(
-        merged.map(withFormattedDate),
-      ) as T[];
+      const items = sortByCreatedAtDesc(merged.map(withFormattedDate)) as T[];
       this.setState({
         items: this.visiblePagedItems(items),
         hasMore: page.hasMore,

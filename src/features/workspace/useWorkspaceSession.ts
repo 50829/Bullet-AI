@@ -16,8 +16,14 @@ import {
 import type { DeadOutboxDiagnostic, SyncStatus } from "../../lib/localDb/types";
 import type { WorkspaceSessionState } from "./types";
 
-export function useWorkspaceSession(): WorkspaceSessionState {
-  const [userId, setUserId] = useState<string | null>(null);
+type UseWorkspaceSessionInput = {
+  initialUserId?: string | null;
+};
+
+export function useWorkspaceSession({
+  initialUserId = null,
+}: UseWorkspaceSessionInput = {}): WorkspaceSessionState {
+  const [userId, setUserId] = useState<string | null>(initialUserId);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [deadOutboxCount, setDeadOutboxCount] = useState(0);
   const [deadOutboxItems, setDeadOutboxItems] = useState<
@@ -26,8 +32,8 @@ export function useWorkspaceSession(): WorkspaceSessionState {
 
   useEffect(() => {
     let isMounted = true;
-    let activeUserId: string | null = null;
-    let initialSessionLoaded = false;
+    let activeUserId: string | null = initialUserId;
+    let initialSessionLoaded = Boolean(initialUserId);
 
     const refreshDeadOutboxCount = async (nextUserId: string | null) => {
       if (!nextUserId) {
@@ -69,6 +75,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       if (status === "failed") void refreshDeadOutboxCount(activeUserId);
     });
     const uninstallSyncTriggers = installSyncTriggers();
+    void refreshDeadOutboxCount(initialUserId);
 
     async function loadSession() {
       const {
@@ -91,7 +98,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       unsubscribeSync();
       uninstallSyncTriggers();
     };
-  }, []);
+  }, [initialUserId]);
 
   const retrySync = useCallback(async () => {
     if (userId) {
@@ -148,8 +155,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       retrySync,
       retryDeadOutboxItem: retryOneDeadOutboxItem,
       discardDeadOutboxItem: discardOneDeadOutboxItem,
-      cleanupDeadOutboxOrphanedStorage:
-        cleanupOneDeadOutboxOrphanedStorage,
+      cleanupDeadOutboxOrphanedStorage: cleanupOneDeadOutboxOrphanedStorage,
     }),
     [
       cleanupOneDeadOutboxOrphanedStorage,

@@ -6,16 +6,19 @@ import { createOptimisticId } from "../../../lib/localFirst/ids";
 import { sortByCreatedAtDesc } from "../../../lib/localFirst/ordering";
 import { withFormattedDate } from "../../../lib/localFirst/presentation";
 import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
+import type { LocalFirstInitialSnapshot } from "../../../lib/localFirst/localFirstCollectionStore";
 import type { CreateGoalInput, GoalRecord, UpdateGoalInput } from "../types";
 
 type UseGoalsInput = {
   userId: string | null;
+  initialSnapshot?: LocalFirstInitialSnapshot<GoalRecord>;
 };
 
-export function useGoals({ userId }: UseGoalsInput) {
+export function useGoals({ userId, initialSnapshot }: UseGoalsInput) {
   const collection = useLocalFirstCollection<GoalRecord>({
     userId,
     collection: "goals",
+    initialSnapshot,
   });
 
   const createGoal = useCallback(

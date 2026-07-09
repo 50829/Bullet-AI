@@ -3,6 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { createClientId } from "../../../lib/localDb/repository";
 import { createOptimisticId } from "../../../lib/localFirst/ids";
+import type { LocalFirstInitialSnapshot } from "../../../lib/localFirst/localFirstCollectionStore";
 import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
 import type {
   CreateMomentInput,
@@ -13,13 +14,19 @@ import type {
 type UseMomentsInput = {
   userId: string | null;
   remotePageSize?: number;
+  initialSnapshot?: LocalFirstInitialSnapshot<MomentRecord>;
 };
 
-export function useMoments({ userId, remotePageSize = 20 }: UseMomentsInput) {
+export function useMoments({
+  userId,
+  remotePageSize = 20,
+  initialSnapshot,
+}: UseMomentsInput) {
   const collection = useLocalFirstCollection<MomentRecord>({
     userId,
     collection: "moments",
     initialRemotePageSize: remotePageSize,
+    initialSnapshot,
   });
 
   const createMoment = useCallback(

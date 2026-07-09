@@ -5,7 +5,6 @@ import { BottomSidebar } from "./BottomSidebar";
 import { TopBar, TopBarProvider } from "./TopBar";
 import { WorkspaceNavigationTracker } from "./WorkspaceNavigationTracker";
 import { WorkspaceWarmup } from "./WorkspaceWarmup";
-import { WorkspaceHydrationBoundary } from "./WorkspaceHydrationBoundary";
 import { WorkspaceNavigationProvider } from "./WorkspaceNavigationContext";
 
 export const MainLayout = ({ children }: { children: React.ReactNode }) => {
@@ -19,7 +18,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
           <BottomSidebar />
           <main className="fixed inset-x-0 bottom-0 top-16 overflow-y-auto px-4 pb-24 pt-4 lg:px-8 lg:pb-8 lg:pl-28">
             <WorkspaceNavigationTracker />
-            <WorkspaceHydrationBoundary>{children}</WorkspaceHydrationBoundary>
+            {children}
           </main>
         </div>
       </WorkspaceNavigationProvider>

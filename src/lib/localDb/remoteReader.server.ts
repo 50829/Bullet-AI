@@ -1,24 +1,20 @@
 import type { CollectionOrder } from "./collectionSchemas";
 import type { LocalCollection } from "./types";
-import { supabase } from "../supabaseClient";
+import { createClient } from "../supabase/server";
 import {
-  clearSignedImageUrlCache,
   findRemoteCollectionRowWithClient,
   readRemoteCollectionPageWithClient,
   readRemoteCollectionWithClient,
-  type RemoteCollectionPage,
   type RemoteCollectionReadOptions,
 } from "./remoteReaderCore";
 
-export { clearSignedImageUrlCache };
-export type { RemoteCollectionPage, RemoteCollectionReadOptions };
-
-export function readRemoteCollection<T extends object>(
+export async function readRemoteCollectionServer<T extends object>(
   userId: string,
   collection: LocalCollection,
   order?: CollectionOrder,
   options?: RemoteCollectionReadOptions,
 ) {
+  const supabase = await createClient();
   return readRemoteCollectionWithClient<T>(
     supabase,
     userId,
@@ -28,12 +24,13 @@ export function readRemoteCollection<T extends object>(
   );
 }
 
-export function readRemoteCollectionPage<T extends object>(
+export async function readRemoteCollectionPageServer<T extends object>(
   userId: string,
   collection: LocalCollection,
   options: RemoteCollectionReadOptions & { limit: number },
   order?: CollectionOrder,
 ) {
+  const supabase = await createClient();
   return readRemoteCollectionPageWithClient<T>(
     supabase,
     userId,
@@ -43,11 +40,12 @@ export function readRemoteCollectionPage<T extends object>(
   );
 }
 
-export function findRemoteCollectionRow<T extends object>(
+export async function findRemoteCollectionRowServer<T extends object>(
   collection: LocalCollection,
   column: string,
   value: string | number,
 ) {
+  const supabase = await createClient();
   return findRemoteCollectionRowWithClient<T>(
     supabase,
     collection,

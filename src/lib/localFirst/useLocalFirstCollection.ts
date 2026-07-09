@@ -13,13 +13,17 @@ import {
 } from "../localDb/collectionSchemas";
 import type { LocalCollection } from "../localDb/types";
 import type { LocalFirstEntity } from "./types";
-import { LocalFirstCollectionStore } from "./localFirstCollectionStore";
+import {
+  LocalFirstCollectionStore,
+  type LocalFirstInitialSnapshot,
+} from "./localFirstCollectionStore";
 
-type UseLocalFirstCollectionInput = {
+type UseLocalFirstCollectionInput<T extends LocalFirstEntity> = {
   userId: string | null;
   collection: LocalCollection;
   remoteOrder?: CollectionOrder;
   initialRemotePageSize?: number;
+  initialSnapshot?: LocalFirstInitialSnapshot<T>;
 };
 
 export type LocalFirstCollectionController<T extends LocalFirstEntity> = {
@@ -44,7 +48,8 @@ export function useLocalFirstCollection<T extends LocalFirstEntity>({
   collection,
   remoteOrder,
   initialRemotePageSize,
-}: UseLocalFirstCollectionInput): LocalFirstCollectionController<T> {
+  initialSnapshot,
+}: UseLocalFirstCollectionInput<T>): LocalFirstCollectionController<T> {
   if (!canUseLocalFirstCollectionHook(collection)) {
     throw new Error(`${collection} cannot use useLocalFirstCollection`);
   }
@@ -60,10 +65,12 @@ export function useLocalFirstCollection<T extends LocalFirstEntity>({
             ? undefined
             : { column: remoteOrderColumn, ascending: remoteOrderAscending },
         initialRemotePageSize,
+        initialSnapshot,
       }),
     [
       collection,
       initialRemotePageSize,
+      initialSnapshot,
       remoteOrderAscending,
       remoteOrderColumn,
     ],
