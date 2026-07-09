@@ -6,7 +6,7 @@
 
 create table if not exists public.profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  username text unique,
+  username text,
   created_at timestamptz not null default timezone('utc'::text, now()),
   updated_at timestamptz not null default timezone('utc'::text, now())
 );
@@ -131,22 +131,6 @@ set
   created_at = coalesce(created_at, timezone('utc'::text, now())),
   updated_at = coalesce(updated_at, timezone('utc'::text, now()))
 where true;
-
-with ranked_usernames as (
-  select
-    ctid,
-    row_number() over (
-      partition by lower(username)
-      order by updated_at desc nulls last, created_at desc nulls last, user_id
-    ) as row_number
-  from public.profiles
-  where username is not null
-)
-update public.profiles profiles
-set username = null
-from ranked_usernames
-where profiles.ctid = ranked_usernames.ctid
-  and ranked_usernames.row_number > 1;
 
 update public.moments
 set
@@ -420,7 +404,6 @@ alter table public.habit_checkins
 
 -- 7. Indexes
 
-create unique index if not exists profiles_username_idx on public.profiles(username);
 create index if not exists profiles_user_id_idx on public.profiles(user_id);
 create index if not exists moments_user_id_idx on public.moments(user_id);
 create unique index if not exists moments_client_id_idx on public.moments(client_id);

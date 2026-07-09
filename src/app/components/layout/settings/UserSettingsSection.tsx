@@ -11,8 +11,6 @@ type UserSettingsSectionProps = {
   username: string;
   currentUsername: string;
   savingUsername: boolean;
-  canChangeUsername: boolean;
-  daysRemaining: number;
   message: FormMessage;
   onUsernameChange: Dispatch<SetStateAction<string>>;
   onSubmit: (event: FormEvent) => void | Promise<void>;
@@ -23,8 +21,6 @@ export function UserSettingsSection({
   username,
   currentUsername,
   savingUsername,
-  canChangeUsername,
-  daysRemaining,
   message,
   onUsernameChange,
   onSubmit,
@@ -47,28 +43,15 @@ export function UserSettingsSection({
             value={username}
             onChange={(event) => onUsernameChange(event.target.value)}
             placeholder={language === "en" ? "Display name" : "显示名称"}
-            disabled={savingUsername || !canChangeUsername}
+            disabled={savingUsername}
             maxLength={20}
           />
         </div>
 
-        {!canChangeUsername && (
-          <p className="text-sm text-[var(--color-warning)]">
-            {t("usernameChangeCooldown").replace(
-              "{days}",
-              daysRemaining.toString(),
-            )}
-          </p>
-        )}
-
         <div className="flex flex-wrap items-center gap-3">
           <Button
             type="submit"
-            disabled={
-              savingUsername ||
-              !canChangeUsername ||
-              username.trim() === currentUsername
-            }
+            disabled={savingUsername || username.trim() === currentUsername}
           >
             {savingUsername ? t("saving") : t("save")}
           </Button>

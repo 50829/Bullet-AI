@@ -185,8 +185,6 @@
   "username": "Username",
   "usernamePlaceholder": "Enter username",
   "usernameRequired": "Please enter a username",
-  "usernameTaken": "This username is already taken, please choose another",
-  "usernameChangeCooldown": "You need to wait {days} days before changing your username again",
   "send": "Send",
   "updateFailed": "Update failed, please try again later",
   "updateError": "An error occurred, please try again later",

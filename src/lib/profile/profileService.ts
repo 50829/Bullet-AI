@@ -1,9 +1,6 @@
 import { supabase } from "../supabase/client";
 import { getCollectionRepository } from "../localDb/collectionRepository";
-import {
-  findRemoteCollectionRow,
-  readRemoteCollection,
-} from "../localDb/remoteReader";
+import { readRemoteCollection } from "../localDb/remoteReader";
 import { flushOutbox } from "../localDb/syncEngine";
 import {
   DEFAULT_USER_PREFERENCES,
@@ -125,18 +122,6 @@ export async function updateCurrentUserDisplayName(
 
   const username = displayName.trim();
   const currentProfile = await getCurrentUserProfile();
-
-  if (username) {
-    const existing = await findRemoteCollectionRow<ProfileRow>(
-      "profiles",
-      "username",
-      username,
-    );
-
-    if (existing && existing.user_id !== user.id) {
-      throw new Error("该用户名已被使用，请选择其他用户名");
-    }
-  }
 
   const updatedAt = new Date().toISOString();
   const row = rowFromProfile(user.id, currentProfile, {

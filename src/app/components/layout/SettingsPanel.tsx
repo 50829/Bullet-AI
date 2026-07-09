@@ -41,8 +41,6 @@ export default function SettingsPanel({
           username={settings.username}
           currentUsername={settings.currentUsername}
           savingUsername={settings.savingUsername}
-          canChangeUsername={settings.canChangeUsername}
-          daysRemaining={settings.daysRemaining}
           message={settings.message}
           onUsernameChange={settings.setUsername}
           onSubmit={settings.handleUsernameChange}

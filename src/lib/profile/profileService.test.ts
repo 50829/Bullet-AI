@@ -2,13 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   sessionUser: { id: "user-1" } as { id: string } | null,
-  existingUsername: null as { user_id: string } | null,
   repository: {
     list: vi.fn(),
     replaceRemote: vi.fn(),
     mutate: vi.fn(),
   },
-  findRemoteCollectionRow: vi.fn(),
   readRemoteCollection: vi.fn(),
   flushOutbox: vi.fn(),
 }));
@@ -39,7 +37,6 @@ vi.mock("../localDb/collectionRepository", () => ({
 }));
 
 vi.mock("../localDb/remoteReader", () => ({
-  findRemoteCollectionRow: mocks.findRemoteCollectionRow,
   readRemoteCollection: mocks.readRemoteCollection,
 }));
 
@@ -73,16 +70,13 @@ function profileRow(overrides: Record<string, unknown> = {}) {
 describe("profileService", () => {
   beforeEach(() => {
     mocks.sessionUser = { id: "user-1" };
-    mocks.existingUsername = null;
     mocks.repository.list.mockReset();
     mocks.repository.replaceRemote.mockReset();
     mocks.repository.mutate.mockReset();
-    mocks.findRemoteCollectionRow.mockReset();
     mocks.readRemoteCollection.mockReset();
     mocks.flushOutbox.mockReset();
 
     mocks.repository.list.mockResolvedValue([]);
-    mocks.findRemoteCollectionRow.mockResolvedValue(mocks.existingUsername);
     mocks.readRemoteCollection.mockResolvedValue([profileRow()]);
     mocks.repository.replaceRemote.mockResolvedValue([profileRow()]);
     mocks.repository.mutate.mockResolvedValue(undefined);
@@ -127,11 +121,6 @@ describe("profileService", () => {
   it("writes display names through the profiles repository and outbox", async () => {
     const profile = await updateCurrentUserDisplayName("New Mira");
 
-    expect(mocks.findRemoteCollectionRow).toHaveBeenCalledWith(
-      "profiles",
-      "username",
-      "New Mira",
-    );
     expect(mocks.repository.mutate).toHaveBeenCalledWith(
       "user-1",
       expect.objectContaining({
@@ -142,15 +131,5 @@ describe("profileService", () => {
     );
     expect(mocks.flushOutbox).toHaveBeenCalled();
     expect(profile.username).toBe("New Mira");
-  });
-
-  it("rejects display names owned by another profile", async () => {
-    mocks.existingUsername = { user_id: "user-2" };
-    mocks.findRemoteCollectionRow.mockResolvedValue(mocks.existingUsername);
-
-    await expect(updateCurrentUserDisplayName("Taken")).rejects.toThrow(
-      "该用户名已被使用，请选择其他用户名",
-    );
-    expect(mocks.repository.mutate).not.toHaveBeenCalled();
   });
 });

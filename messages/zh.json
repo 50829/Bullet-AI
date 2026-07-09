@@ -185,8 +185,6 @@
   "username": "用户名",
   "usernamePlaceholder": "请输入用户名",
   "usernameRequired": "请输入用户名",
-  "usernameTaken": "该用户名已被使用，请选择其他用户名",
-  "usernameChangeCooldown": "您需要等待 {days} 天才能再次修改用户名",
   "send": "发送",
   "updateFailed": "更新失败，请稍后再试",
   "updateError": "发生错误，请稍后再试",

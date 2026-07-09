@@ -30,12 +30,6 @@ type UseSettingsProfileInput = {
   onProfileUpdate?: (profile: UserProfile) => void;
 };
 
-function getUsernameTimestamp(
-  profile: Pick<UserProfile, "username_updated_at" | "updated_at">,
-) {
-  return profile.username_updated_at || profile.updated_at;
-}
-
 export function useSettingsProfile({
   onClose,
   initialProfile,
@@ -66,31 +60,11 @@ export function useSettingsProfile({
     keyof UserPreferences | null
   >(null);
   const [message, setMessage] = useState<FormMessage>(null);
-  const [canChangeUsername, setCanChangeUsername] = useState(true);
-  const [daysRemaining, setDaysRemaining] = useState(0);
 
   const applyProfileState = useCallback((nextProfile: UserProfile) => {
     setCurrentUsername(nextProfile.username || "");
     setUsername(nextProfile.username || "");
     setPreferences(normalizePreferences(nextProfile.preferences));
-
-    const usernameUpdatedAt = getUsernameTimestamp(nextProfile);
-    if (usernameUpdatedAt) {
-      const lastUpdate = new Date(usernameUpdatedAt);
-      const now = new Date();
-      const diffDays = Math.floor(
-        (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24),
-      );
-
-      if (diffDays < 3) {
-        setCanChangeUsername(false);
-        setDaysRemaining(3 - diffDays);
-        return;
-      }
-    }
-
-    setCanChangeUsername(true);
-    setDaysRemaining(0);
   }, []);
 
   useEffect(() => {
@@ -172,17 +146,6 @@ export function useSettingsProfile({
 
     const nextUsername = username.trim();
     if (nextUsername === currentUsername) return;
-
-    if (!canChangeUsername) {
-      setMessage({
-        type: "error",
-        text: t("usernameChangeCooldown").replace(
-          "{days}",
-          daysRemaining.toString(),
-        ),
-      });
-      return;
-    }
 
     setSavingUsername(true);
     setMessage(null);
@@ -266,8 +229,6 @@ export function useSettingsProfile({
     savingUsername,
     savingPreference,
     message,
-    canChangeUsername,
-    daysRemaining,
     syncStatus,
     deadOutboxCount,
     deadOutboxItems,
