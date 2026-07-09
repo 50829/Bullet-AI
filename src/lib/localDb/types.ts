@@ -62,7 +62,9 @@ export type DeadOutboxDiagnostic = Pick<
   | "errorKind"
   | "attemptCount"
   | "deadAt"
->;
+> & {
+  orphanedStoragePath?: string;
+};
 
 export type LocalFile = {
   id: string;

@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { supabase } from "../../../lib/supabaseClient";
+import { signOutAndClearLocalData } from "../../../lib/auth/logout";
 import {
   getCurrentUserProfile,
   type UserProfile,
@@ -68,7 +69,7 @@ export const BottomSidebar = () => {
   const handleLogoutConfirm = async () => {
     try {
       setShowLogoutDialog(false);
-      const { error } = await supabase.auth.signOut();
+      const { error } = await signOutAndClearLocalData();
 
       if (error) {
         console.error("退出登录失败:", error);

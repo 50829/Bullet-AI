@@ -9,6 +9,10 @@ import { PlainImage } from "../../../shared/components/ui/PlainImage";
 import { Textarea } from "../../../shared/components/ui/Textarea";
 import { useToast } from "../../../shared/components/ui/Toast";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import {
+  imageValidationMessage,
+  validateImageBlob,
+} from "../../../lib/media/imageValidation";
 import type { CreateMomentInput, MomentRecord, UpdateMomentInput } from "../types";
 
 export type MomentModalInitialMoment = Pick<
@@ -43,7 +47,7 @@ export const MomentModal = ({
   onUpdate,
   initialMoment = null,
 }: Props) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showToast } = useToast();
   const [content, setContent] = useState("");
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue());
@@ -194,6 +198,20 @@ export const MomentModal = ({
           accept="image/*"
           onChange={(e) => {
             const file = e.target.files?.[0] || null;
+            if (file) {
+              const validation = validateImageBlob(file);
+              if (!validation.ok) {
+                e.target.value = "";
+                setImageFile(null);
+                setObjectPreview(null);
+                showToast({
+                  type: "error",
+                  message: imageValidationMessage(validation.error, language),
+                });
+                return;
+              }
+            }
+
             setImageFile(file);
             setObjectPreview(file);
           }}

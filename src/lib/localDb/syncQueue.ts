@@ -47,6 +47,7 @@ function toDeadOutboxDiagnostic(item: OutboxItem): DeadOutboxDiagnostic {
     errorKind: item.errorKind,
     attemptCount: item.attemptCount,
     deadAt: item.deadAt,
+    orphanedStoragePath: item.orphanedStoragePath,
   };
 }
 

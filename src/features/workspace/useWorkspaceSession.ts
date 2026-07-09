@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { clearLocalAppData } from "../../lib/localDb/clearLocalAppData";
 import { supabase } from "../../lib/supabaseClient";
 import {
+  cleanupDeadOutboxOrphanedStorage,
   discardDeadOutboxItem,
   flushOutbox,
   installSyncTriggers,
@@ -25,6 +27,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
   useEffect(() => {
     let isMounted = true;
     let activeUserId: string | null = null;
+    let initialSessionLoaded = false;
 
     const refreshDeadOutboxCount = async (nextUserId: string | null) => {
       if (!nextUserId) {
@@ -41,7 +44,21 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       }
     };
 
-    const setActiveUser = (nextUserId: string | null) => {
+    const setActiveUser = async (nextUserId: string | null) => {
+      const previousUserId = activeUserId;
+      if (
+        initialSessionLoaded &&
+        previousUserId &&
+        previousUserId !== nextUserId
+      ) {
+        try {
+          await clearLocalAppData();
+        } catch (error) {
+          console.warn("Failed to clear local app data:", error);
+        }
+      }
+
+      initialSessionLoaded = true;
       activeUserId = nextUserId;
       if (isMounted) setUserId(nextUserId);
       void refreshDeadOutboxCount(nextUserId);
@@ -57,7 +74,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      setActiveUser(session?.user?.id ?? null);
+      await setActiveUser(session?.user?.id ?? null);
     }
 
     void loadSession();
@@ -65,7 +82,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setActiveUser(session?.user?.id ?? null);
+      void setActiveUser(session?.user?.id ?? null);
     });
 
     return () => {
@@ -111,6 +128,17 @@ export function useWorkspaceSession(): WorkspaceSessionState {
     [userId],
   );
 
+  const cleanupOneDeadOutboxOrphanedStorage = useCallback(
+    async (id: string) => {
+      if (!userId) return;
+      await cleanupDeadOutboxOrphanedStorage(userId, id);
+      const items = await listDeadOutboxDiagnostics(userId);
+      setDeadOutboxItems(items);
+      setDeadOutboxCount(items.length);
+    },
+    [userId],
+  );
+
   return useMemo(
     () => ({
       userId,
@@ -120,8 +148,11 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       retrySync,
       retryDeadOutboxItem: retryOneDeadOutboxItem,
       discardDeadOutboxItem: discardOneDeadOutboxItem,
+      cleanupDeadOutboxOrphanedStorage:
+        cleanupOneDeadOutboxOrphanedStorage,
     }),
     [
+      cleanupOneDeadOutboxOrphanedStorage,
       deadOutboxCount,
       deadOutboxItems,
       discardOneDeadOutboxItem,

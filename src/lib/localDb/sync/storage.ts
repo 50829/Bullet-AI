@@ -1,4 +1,5 @@
 import { logger } from "../../observability/logger";
+import { validateImageBlob } from "../../media/imageValidation";
 import { supabase } from "../../supabaseClient";
 import { storageBucketFor } from "../collectionSchemas";
 import { readLocalFile, removeLocalFile } from "../repository";
@@ -41,6 +42,9 @@ export async function preparePayloadWithFileUpload(
 
   const localFile = await resolveQueuedLocalFile(item);
   if (!localFile) return payload;
+
+  const validation = validateImageBlob(localFile.blob);
+  if (!validation.ok) throw new SyncError(validation.error, "permanent");
 
   const fileName = String(
     (item.payload as Record<string, unknown>)?.local_file_name ||

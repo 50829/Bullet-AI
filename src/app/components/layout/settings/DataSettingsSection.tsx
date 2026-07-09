@@ -28,6 +28,7 @@ type DataSettingsSectionProps = {
   onRetrySync: () => void | Promise<void>;
   onRetryDeadOutboxItem: (id: string) => void | Promise<void>;
   onDiscardDeadOutboxItem: (id: string) => void | Promise<void>;
+  onCleanupOrphanedStorage: (id: string) => void | Promise<void>;
   onExport: () => void;
 };
 
@@ -53,6 +54,7 @@ export function DataSettingsSection({
   onRetrySync,
   onRetryDeadOutboxItem,
   onDiscardDeadOutboxItem,
+  onCleanupOrphanedStorage,
   onExport,
 }: DataSettingsSectionProps) {
   const { t, language } = useLanguage();
@@ -75,6 +77,15 @@ export function DataSettingsSection({
     try {
       await onDiscardDeadOutboxItem(discardTarget.id);
       setDiscardTarget(null);
+    } finally {
+      setBusyItemId(null);
+    }
+  };
+
+  const cleanupOrphanedStorage = async (id: string) => {
+    setBusyItemId(id);
+    try {
+      await onCleanupOrphanedStorage(id);
     } finally {
       setBusyItemId(null);
     }
@@ -166,8 +177,25 @@ export function DataSettingsSection({
                       {item.attemptCount ?? 0} ·{" "}
                       {formatDeadAt(item.deadAt, language)}
                     </p>
+                    {item.orphanedStoragePath && (
+                      <p className="mt-1 break-all text-xs text-red-700">
+                        {language === "en" ? "Orphaned file" : "孤儿文件"}:{" "}
+                        {item.orphanedStoragePath}
+                      </p>
+                    )}
                   </div>
                   <div className="flex shrink-0 gap-2">
+                    {item.orphanedStoragePath && (
+                      <Button
+                        variant="outline"
+                        className="min-h-8 px-3 py-1 text-xs"
+                        disabled={busyItemId === item.id}
+                        onClick={() => void cleanupOrphanedStorage(item.id)}
+                      >
+                        <Trash2 size={14} />
+                        {language === "en" ? "Clean file" : "清理文件"}
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       className="min-h-8 px-3 py-1 text-xs"

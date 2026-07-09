@@ -297,7 +297,7 @@ describe("syncEngine", () => {
       userId: "user-1",
       bucket: "moments",
       path: "",
-      blob: new Blob(["photo"]),
+      blob: new Blob(["photo"], { type: "image/jpeg" }),
       createdAt: "2026-01-01T00:00:00.000Z",
     });
     mocks.maybeSingleResult = {
@@ -346,7 +346,7 @@ describe("syncEngine", () => {
       userId: "user-1",
       bucket: "moments",
       path: "",
-      blob: new Blob(["photo"]),
+      blob: new Blob(["photo"], { type: "image/jpeg" }),
       createdAt: "2026-01-01T00:00:00.000Z",
     });
     mocks.maybeSingleResult = { data: null, error: { message: "db offline" } };

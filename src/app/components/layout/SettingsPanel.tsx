@@ -81,6 +81,9 @@ export default function SettingsPanel({
           onRetrySync={settings.retrySync}
           onRetryDeadOutboxItem={settings.retryDeadOutboxItem}
           onDiscardDeadOutboxItem={settings.discardDeadOutboxItem}
+          onCleanupOrphanedStorage={
+            settings.cleanupDeadOutboxOrphanedStorage
+          }
           onExport={handleExport}
         />
       )}

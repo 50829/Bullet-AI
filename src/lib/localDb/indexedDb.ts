@@ -163,6 +163,32 @@ export function openLocalDb(): Promise<IDBDatabase> {
   return dbPromise;
 }
 
+export async function closeLocalDb() {
+  if (!dbPromise) return;
+
+  try {
+    const db = await dbPromise;
+    db.close();
+  } finally {
+    dbPromise = null;
+  }
+}
+
+export async function deleteLocalDb(): Promise<void> {
+  if (typeof indexedDB === "undefined") return;
+
+  await closeLocalDb();
+
+  await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(DB_NAME);
+    request.onsuccess = () => resolve();
+    request.onerror = () =>
+      reject(request.error ?? new Error("Failed to delete IndexedDB"));
+    request.onblocked = () =>
+      reject(new Error("IndexedDB deletion is blocked by another tab"));
+  });
+}
+
 export async function getStore(
   storeName: string,
   mode: IDBTransactionMode = "readonly",

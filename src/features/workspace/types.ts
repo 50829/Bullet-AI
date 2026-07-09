@@ -11,4 +11,5 @@ export type WorkspaceSessionState = {
   retrySync: () => Promise<void>;
   retryDeadOutboxItem: (id: string) => Promise<void>;
   discardDeadOutboxItem: (id: string) => Promise<void>;
+  cleanupDeadOutboxOrphanedStorage: (id: string) => Promise<void>;
 };

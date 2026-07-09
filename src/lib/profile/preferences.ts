@@ -30,6 +30,14 @@ export const ACCENT_COLOR_STORAGE_KEY = "accent-color";
 export const COLOR_SCHEME_STORAGE_KEY = "color-scheme";
 export const COMPLETED_GOAL_RETENTION_STORAGE_KEY = "completed-goal-retention";
 export const WEEK_STARTS_ON_STORAGE_KEY = "week-starts-on";
+export const USER_PREFERENCE_STORAGE_KEYS = [
+  LANGUAGE_STORAGE_KEY,
+  UI_THEME_STORAGE_KEY,
+  ACCENT_COLOR_STORAGE_KEY,
+  COLOR_SCHEME_STORAGE_KEY,
+  COMPLETED_GOAL_RETENTION_STORAGE_KEY,
+  WEEK_STARTS_ON_STORAGE_KEY,
+] as const;
 
 export function normalizeLanguage(value: unknown): PreferredLanguage {
   return value === "en" ? "en" : "zh";

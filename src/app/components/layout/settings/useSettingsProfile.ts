@@ -21,7 +21,7 @@ import {
   type WeekStartsOnPreference,
 } from "../../../../lib/profile/preferences";
 import { useWorkspaceSessionContext } from "../../../../features/workspace/WorkspaceContext";
-import { supabase } from "../../../../lib/supabaseClient";
+import { signOutAndClearLocalData } from "../../../../lib/auth/logout";
 import type { FormMessage } from "./types";
 
 type UseSettingsProfileInput = {
@@ -50,6 +50,7 @@ export function useSettingsProfile({
     retrySync,
     retryDeadOutboxItem,
     discardDeadOutboxItem,
+    cleanupDeadOutboxOrphanedStorage,
   } =
     useWorkspaceSessionContext();
   const { showToast } = useToast();
@@ -233,7 +234,7 @@ export function useSettingsProfile({
   };
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await signOutAndClearLocalData();
     if (error) {
       showToast({
         type: "error",
@@ -266,6 +267,7 @@ export function useSettingsProfile({
     retrySync,
     retryDeadOutboxItem,
     discardDeadOutboxItem,
+    cleanupDeadOutboxOrphanedStorage,
     handleUsernameChange,
     handleLanguageChange,
     handleAccentChange,

@@ -14,6 +14,10 @@ const signedImageUrlCache = new Map<
 >();
 const SIGNED_IMAGE_URL_TTL_MS = 55 * 60 * 1000;
 
+export function clearSignedImageUrlCache() {
+  signedImageUrlCache.clear();
+}
+
 function visibleRemoteRows<T extends { deleted_at?: string | null }>(
   items: T[] | null,
 ) {

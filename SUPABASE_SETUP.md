@@ -21,6 +21,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 LLM_API_KEY=your-llm-api-key
 LLM_BASE_URL=https://api.openai.com/v1
 LLM_MODEL=your-model-name
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+CRON_SECRET=your-cron-secret
+MAINTENANCE_CLEANUP_SECRET=your-manual-cleanup-secret
+DATA_RETENTION_DAYS=30
 ```
 
 6. 重启开发服务器：
@@ -80,6 +84,8 @@ db/migrations/003_ai_rate_limit_lock.sql
 - 显示名冷却使用 `username_updated_at`，不要用通用 `updated_at` 判断，因为偏好保存也会更新 profiles 行。
 - 习惯打卡历史表 `habit_checkins`、唯一约束、RLS、旧 `habits.last_checkin` 兼容迁移都已经包含在 `000_current_schema.sql` 里。
 - AI 调用频率记录表 `ai_usage_events` 已经包含在 `000_current_schema.sql` 里，默认用于每个登录用户每小时 20 次的限流。成功预留后即计为一次 AI 调用尝试，后续 LLM 超时或供应商错误也会消耗额度；缺少 `LLM_API_KEY`、`LLM_BASE_URL` 或 `LLM_MODEL` 时不会预留额度。
+- 维护清理接口位于 `/api/maintenance/cleanup`，用于物理删除超过 `DATA_RETENTION_DAYS` 的 soft-deleted 行，并清理不再被任何业务表引用的旧 Storage 对象。该接口需要 `SUPABASE_SERVICE_ROLE_KEY`，并要求 `Authorization: Bearer <CRON_SECRET>` 或 `Authorization: Bearer <MAINTENANCE_CLEANUP_SECRET>`。
+- `vercel.json` 已配置每天 UTC 03:00 调用维护清理接口。Vercel 部署时设置 `CRON_SECRET` 后，Vercel Cron 会带上对应 Bearer token；手动触发可使用 `MAINTENANCE_CLEANUP_SECRET`。
 
 ## 验证
 
