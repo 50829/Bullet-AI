@@ -134,7 +134,7 @@ export default function HomePage() {
           isOpen
           onClose={() => setMomentOpen(false)}
           onSuccess={() => undefined}
-          onCreate={dashboard.addMoment}
+          onCreate={dashboard.createMoment}
           onUpdate={dashboard.updateMoment}
         />
       )}
@@ -147,7 +147,7 @@ export default function HomePage() {
             setEditingGoal(null);
           }}
           onSuccess={() => undefined}
-          onCreate={dashboard.addGoal}
+          onCreate={dashboard.createGoal}
           onUpdate={dashboard.updateGoal}
         />
       )}
@@ -156,7 +156,7 @@ export default function HomePage() {
           isOpen
           onClose={() => setReflectionOpen(false)}
           onSuccess={() => undefined}
-          onCreate={dashboard.addReflection}
+          onCreate={dashboard.createReflection}
           onUpdate={dashboard.updateReflection}
         />
       )}

@@ -35,7 +35,7 @@ export function useGoalPlanningPage({
   goalsController,
 }: UseGoalPlanningPageInput) {
   const goalsContext = goalsController;
-  const { goals, updateGoal, addGoal } = goalsContext;
+  const { goals, updateGoal, createGoal } = goalsContext;
   const { t } = useLanguage();
   const { showToast } = useToast();
   const completedGoalRetention = useCompletedGoalRetention();
@@ -128,7 +128,7 @@ export function useGoalPlanningPage({
   const addTasksFromAIReply = async (plan: GoalPlan) => {
     await Promise.all(
       [...plan.daily, ...plan.future].map((task) =>
-        addGoal({
+        createGoal({
           title: task.title,
           description: task.description,
           due_date: null,

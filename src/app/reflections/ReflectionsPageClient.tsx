@@ -46,7 +46,7 @@ export default function ReflectionsPageClient() {
     hasMoreReflections,
     refreshReflections,
     loadMoreReflections,
-    addReflection,
+    createReflection,
     updateReflection,
     deleteReflection,
   } = useWorkspaceData().reflections;
@@ -213,7 +213,7 @@ export default function ReflectionsPageClient() {
             setEditingReflection(null);
           }}
           onSuccess={() => undefined}
-          onCreate={addReflection}
+          onCreate={createReflection}
           onUpdate={updateReflection}
         />
       )}

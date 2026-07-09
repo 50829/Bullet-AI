@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { addDays, toDateKey } from "../../../lib/date/dateUtils";
+import { toDateKey } from "../../../lib/date/dateUtils";
 import { createClientId } from "../../../lib/localDb/repository";
 import { createOptimisticId } from "../../../lib/localFirst/ids";
 import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
+import { projectHabit } from "../habitProjection";
 import type {
   CreateHabitInput,
   HabitCheckin,
@@ -16,48 +17,6 @@ import type {
 type UseHabitsInput = {
   userId: string | null;
 };
-
-function calculateDailyStreak(checkins: HabitCheckin[]) {
-  const checkedDates = new Set(
-    checkins
-      .filter((checkin) => checkin.checked)
-      .map((checkin) => checkin.checked_on),
-  );
-  let cursor = toDateKey();
-  let streak = 0;
-
-  while (checkedDates.has(cursor)) {
-    streak += 1;
-    cursor = addDays(cursor, -1);
-  }
-  return streak;
-}
-
-function projectHabit(
-  habit: HabitRecord,
-  allCheckins: HabitCheckin[],
-): HabitView {
-  const checkins = allCheckins
-    .filter(
-      (checkin) =>
-        checkin.habit_client_id === habit.client_id &&
-        checkin.checked &&
-        !checkin.deleted_at,
-    )
-    .sort((a, b) => b.checked_on.localeCompare(a.checked_on));
-  const todayCheckin =
-    checkins.find((checkin) => checkin.checked_on === toDateKey()) ?? null;
-
-  return {
-    ...habit,
-    checkedToday: Boolean(todayCheckin),
-    todayCheckinId: todayCheckin?.id ?? null,
-    checkinCount: checkins.length,
-    lastCheckedOn: checkins[0]?.checked_on ?? null,
-    streak: habit.frequency === "daily" ? calculateDailyStreak(checkins) : 0,
-    checkins,
-  };
-}
 
 export function useHabits({ userId }: UseHabitsInput) {
   const habitsCollection = useLocalFirstCollection<HabitRecord>({
@@ -104,7 +63,7 @@ export function useHabits({ userId }: UseHabitsInput) {
     [requireUser],
   );
 
-  const refresh = useCallback(async () => {
+  const refreshHabits = useCallback(async () => {
     requireUser();
     await Promise.all([
       habitsCollection.refresh(undefined, { showLoading: true }),
@@ -142,7 +101,8 @@ export function useHabits({ userId }: UseHabitsInput) {
         if (!current) throw new Error("习惯不存在或已删除");
 
         await habitsCollection.update(habitId, {
-          name: typeof input.name === "string" ? input.name.trim() : current.name,
+          name:
+            typeof input.name === "string" ? input.name.trim() : current.name,
           description:
             typeof input.description === "string"
               ? input.description.trim() || null
@@ -155,10 +115,12 @@ export function useHabits({ userId }: UseHabitsInput) {
     [habitsCollection, runMutation],
   );
 
-  const removeHabit = useCallback(
+  const deleteHabit = useCallback(
     async (habitId: number) => {
       await runMutation(async () => {
-        const habit = habitsCollection.items.find((item) => item.id === habitId);
+        const habit = habitsCollection.items.find(
+          (item) => item.id === habitId,
+        );
         if (!habit) return;
 
         const related = checkinsCollection.items.filter(
@@ -236,10 +198,10 @@ export function useHabits({ userId }: UseHabitsInput) {
     loading: habitsCollection.loading || checkinsCollection.loading,
     saving,
     error,
-    refresh,
+    refreshHabits,
     createHabit,
     updateHabit,
-    removeHabit,
+    deleteHabit,
     toggleCheckin,
     checkinToday,
   };

@@ -25,7 +25,7 @@ export function useReflections({
     initialRemotePageSize: remotePageSize,
   });
 
-  const addReflection = useCallback(
+  const createReflection = useCallback(
     async (input: CreateReflectionInput) => {
       const now = new Date().toISOString();
       const createdAt = input.created_at ?? now;
@@ -62,10 +62,10 @@ export function useReflections({
       hasMoreReflections: collection.hasMore,
       refreshReflections: () => collection.refresh(),
       loadMoreReflections: () => collection.loadMore(),
-      addReflection,
+      createReflection,
       updateReflection,
       deleteReflection: collection.remove,
     }),
-    [addReflection, collection, updateReflection],
+    [collection, createReflection, updateReflection],
   );
 }

@@ -1,20 +1,11 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import type { HabitView } from "../../features/habits/types";
-import type { GoalRecord } from "../../features/goals/types";
-import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
 import { ConfirmDialog } from "../../shared/components/ui/ConfirmDialog";
 import { LoadingState } from "../../shared/components/ui/LoadingState";
-import { useToast } from "../../shared/components/ui/Toast";
-import { useLanguage } from "../../shared/i18n/LanguageContext";
-import { useAssistantPanel } from "../hooks/useAssistantPanel";
-import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
-import { useWorkspaceData } from "../../features/workspace/data";
 import { GoalPlanningBoard } from "../../features/goals/planning/GoalPlanningBoard";
 import { HabitsSection } from "./components/HabitsSection";
-import { useGoalPlanningPage } from "../../features/goals/planning/useGoalPlanningPage";
+import { useGoalsPageController } from "./hooks/useGoalsPageController";
 
 const AssistantDrawer = dynamic(
   () =>
@@ -38,75 +29,21 @@ const HabitFormDialog = dynamic(
   { ssr: false },
 );
 
-type DeleteTarget = {
-  type: "goal" | "habit";
-  id: number;
-  name: string;
-  imagePath?: string | null;
-};
-
 export default function GoalsPageClient() {
-  const { goals: goalsController, habits: habitsController } =
-    useWorkspaceData();
-  const goalPage = useGoalPlanningPage({ goalsController });
+  const page = useGoalsPageController();
   const {
-    habits,
-    loading: habitsLoading,
-    saving: habitsSaving,
-    error: habitsError,
-    createHabit,
-    updateHabit,
-    removeHabit,
-    checkinToday,
-    toggleCheckin,
-  } = habitsController;
-  const { t, language } = useLanguage();
-  const { showToast } = useToast();
-  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<GoalRecord | null>(null);
-  const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
-  const [editingHabit, setEditingHabit] = useState<HabitView | null>(null);
-  const deleteConfirm = useDeleteConfirm<DeleteTarget>();
+    t,
+    language,
+    goalPage,
+    assistantPanel,
+    deleteConfirm,
+    goalModal,
+    habitModal,
+    habitsSection,
+  } = page;
 
-  const openGoalModal = useCallback(() => {
-    setEditingGoal(null);
-    setIsGoalModalOpen(true);
-  }, []);
-  const topBarHandlers = useMemo(
-    () => ({
-      onAddGoal: openGoalModal,
-    }),
-    [openGoalModal],
-  );
-  const assistantPanel = useAssistantPanel(topBarHandlers);
-
-  const handleDelete = async () => {
-    await deleteConfirm.confirm(async (target) => {
-      try {
-        if (target.type === "goal") {
-          await goalPage.deleteGoal(target.id, target.imagePath);
-        } else {
-          await removeHabit(target.id);
-        }
-      } catch (err) {
-        console.error("删除异常:", err);
-        showToast({
-          type: "error",
-          message: t("deleteFailed") || "删除失败，请稍后重试",
-        });
-        if (target.type === "goal") void goalPage.refreshGoals();
-        throw err;
-      }
-    });
-  };
-
-  const isInitialLoading =
-    (goalPage.loading && goalPage.goals.length === 0) ||
-    (habitsLoading && habits.length === 0);
-  const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
-
-  if (isInitialLoading) {
-    return isNavigationLoading ? null : (
+  if (page.isInitialLoading) {
+    return page.isNavigationLoading ? null : (
       <LoadingState className="min-h-[50dvh]" />
     );
   }
@@ -142,10 +79,7 @@ export default function GoalsPageClient() {
                 void goalPage.reorderGoals(orderedIds)
               }
               onCompleteGoal={goalPage.toggleGoalCompleted}
-              onEditGoal={(goal) => {
-                setEditingGoal(goal);
-                setIsGoalModalOpen(true);
-              }}
+              onEditGoal={goalModal.openEdit}
               onDeleteGoal={(goal) =>
                 deleteConfirm.open({
                   type: "goal",
@@ -161,16 +95,15 @@ export default function GoalsPageClient() {
             <HabitsSection
               title={t("myHabits") || "我的习惯"}
               newLabel={`+ ${t("new")} ${t("habit")}`}
-              habits={habits}
-              loading={habitsLoading && habits.length === 0}
-              error={habitsError}
-              onCreateClick={() => setIsHabitModalOpen(true)}
-              onCheckinToday={checkinToday}
-              onToggleCheckin={toggleCheckin}
-              onEdit={(habit) => {
-                setEditingHabit(habit);
-                setIsHabitModalOpen(true);
-              }}
+              habits={habitsSection.habits}
+              loading={
+                habitsSection.loading && habitsSection.habits.length === 0
+              }
+              error={habitsSection.error}
+              onCreateClick={habitModal.openCreate}
+              onCheckinToday={habitsSection.checkinToday}
+              onToggleCheckin={habitsSection.toggleCheckin}
+              onEdit={habitModal.openEdit}
               onDelete={(habit) =>
                 deleteConfirm.open({
                   type: "habit",
@@ -183,31 +116,25 @@ export default function GoalsPageClient() {
         </div>
       </div>
 
-      {isGoalModalOpen && (
+      {goalModal.isOpen && (
         <GoalModal
           isOpen
-          initialGoal={editingGoal}
-          onClose={() => {
-            setIsGoalModalOpen(false);
-            setEditingGoal(null);
-          }}
+          initialGoal={goalModal.editingGoal}
+          onClose={goalModal.close}
           onSuccess={() => undefined}
-          onCreate={goalPage.addGoal}
+          onCreate={goalPage.createGoal}
           onUpdate={goalPage.updateGoal}
         />
       )}
 
-      {isHabitModalOpen && (
+      {habitModal.isOpen && (
         <HabitFormDialog
           isOpen
-          saving={habitsSaving}
-          habit={editingHabit}
-          onClose={() => {
-            setIsHabitModalOpen(false);
-            setEditingHabit(null);
-          }}
-          onCreate={createHabit}
-          onUpdate={updateHabit}
+          saving={habitsSection.saving}
+          habit={habitModal.editingHabit}
+          onClose={habitModal.close}
+          onCreate={habitsSection.createHabit}
+          onUpdate={habitsSection.updateHabit}
         />
       )}
 
@@ -220,7 +147,7 @@ export default function GoalsPageClient() {
           cancelLabel={t("cancel") || "取消"}
           loading={deleteConfirm.loading}
           tone="danger"
-          onConfirm={handleDelete}
+          onConfirm={page.handleDelete}
           onCancel={deleteConfirm.cancel}
         />
       )}

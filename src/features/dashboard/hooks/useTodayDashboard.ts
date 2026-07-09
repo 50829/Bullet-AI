@@ -32,9 +32,9 @@ export function useTodayDashboard() {
   const router = useRouter();
   const {
     session: { userId, syncStatus, retrySync },
-    moments: { moments, addMoment, updateMoment },
-    reflections: { reflections, addReflection, updateReflection },
-    goals: { goals, loading: goalsLoading, addGoal, updateGoal, deleteGoal },
+    moments: { moments, createMoment, updateMoment },
+    reflections: { reflections, createReflection, updateReflection },
+    goals: { goals, loading: goalsLoading, createGoal, updateGoal, deleteGoal },
     habits: habitsState,
   } = useWorkspaceData();
   const { habits } = habitsState;
@@ -92,7 +92,7 @@ export function useTodayDashboard() {
   };
 
   const deleteHabit = async (habit: HabitView) => {
-    await habitsState.removeHabit(habit.id);
+    await habitsState.deleteHabit(habit.id);
   };
 
   const deleteTodayGoal = async (goal: Goal) => {
@@ -103,11 +103,11 @@ export function useTodayDashboard() {
     ...habitsState,
     goals,
     goalsLoading,
-    addGoal,
+    createGoal,
     updateGoal,
-    addMoment,
+    createMoment,
     updateMoment,
-    addReflection,
+    createReflection,
     updateReflection,
     syncStatus,
     retrySync,

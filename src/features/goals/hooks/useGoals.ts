@@ -18,7 +18,7 @@ export function useGoals({ userId }: UseGoalsInput) {
     collection: "goals",
   });
 
-  const addGoal = useCallback(
+  const createGoal = useCallback(
     async (input: CreateGoalInput) => {
       const now = new Date().toISOString();
       const createdAt = input.created_at ?? now;
@@ -78,11 +78,11 @@ export function useGoals({ userId }: UseGoalsInput) {
       goals: collection.items,
       loading: collection.loading,
       refreshGoals: () => collection.refresh(),
-      addGoal,
+      createGoal,
       updateGoal,
       reorderGoals,
       deleteGoal: collection.remove,
     }),
-    [addGoal, collection, reorderGoals, updateGoal],
+    [collection, createGoal, reorderGoals, updateGoal],
   );
 }

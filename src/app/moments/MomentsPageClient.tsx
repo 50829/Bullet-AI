@@ -46,7 +46,7 @@ export default function MomentsPageClient() {
     hasMoreMoments,
     refreshMoments,
     loadMoreMoments,
-    addMoment,
+    createMoment,
     updateMoment,
     deleteMoment,
   } = useWorkspaceData().moments;
@@ -221,7 +221,7 @@ export default function MomentsPageClient() {
           initialMoment={editingMoment}
           onClose={handleModalClose}
           onSuccess={handleModalSuccess}
-          onCreate={addMoment}
+          onCreate={createMoment}
           onUpdate={updateMoment}
         />
       )}

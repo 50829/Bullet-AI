@@ -22,7 +22,7 @@ export function useMoments({ userId, remotePageSize = 20 }: UseMomentsInput) {
     initialRemotePageSize: remotePageSize,
   });
 
-  const addMoment = useCallback(
+  const createMoment = useCallback(
     async (input: CreateMomentInput) => {
       const now = new Date().toISOString();
       const createdAt = input.created_at ?? now;
@@ -58,10 +58,10 @@ export function useMoments({ userId, remotePageSize = 20 }: UseMomentsInput) {
       hasMoreMoments: collection.hasMore,
       refreshMoments: () => collection.refresh(),
       loadMoreMoments: () => collection.loadMore(),
-      addMoment,
+      createMoment,
       updateMoment,
       deleteMoment: collection.remove,
     }),
-    [addMoment, collection, updateMoment],
+    [collection, createMoment, updateMoment],
   );
 }
