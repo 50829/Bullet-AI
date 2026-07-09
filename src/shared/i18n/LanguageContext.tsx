@@ -89,7 +89,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   return (
     <LanguageContext.Provider value={value}>
       <NextIntlClientProvider
-        key={language}
         locale={language}
         messages={messages[language]}
         getMessageFallback={({ key }) => key}
