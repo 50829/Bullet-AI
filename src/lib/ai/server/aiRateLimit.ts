@@ -3,8 +3,17 @@ import {
   getAiRateLimitPerHour,
 } from "../requestPolicy";
 
+type ReserveAiUsageEventArgs = {
+  p_user_id: string;
+  p_window_start: string;
+  p_limit: number;
+};
+
 type AiRateLimitClient = {
-  rpc: (...args: unknown[]) => PromiseLike<{ data: boolean | null; error: unknown }>;
+  rpc: (
+    fn: "reserve_ai_usage_event",
+    args: ReserveAiUsageEventArgs,
+  ) => PromiseLike<{ data: boolean | null; error: unknown }>;
 };
 
 export async function reserveAiUsageEvent(

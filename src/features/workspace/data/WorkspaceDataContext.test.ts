@@ -80,6 +80,12 @@ vi.mock("../../reflections/hooks/useReflections", () => ({
 const { WorkspaceDataProvider, useWorkspaceData } =
   await import("./WorkspaceDataContext");
 
+function expectWorkspaceData(
+  value: unknown,
+): asserts value is ReturnType<typeof useWorkspaceData> {
+  expect(value).not.toBeNull();
+}
+
 describe("WorkspaceDataProvider", () => {
   beforeEach(() => {
     mocks.session.userId = "user-1";
@@ -96,11 +102,12 @@ describe("WorkspaceDataProvider", () => {
   });
 
   it("exposes the four workspace controllers to consumers", () => {
-    let captured: ReturnType<typeof useWorkspaceData> | null = null;
+    let captured: unknown = null;
 
     function Consumer() {
-      captured = useWorkspaceData();
-      return createElement("span", null, captured.session.userId);
+      const data = useWorkspaceData();
+      captured = data;
+      return createElement("span", null, data.session.userId);
     }
 
     const html = renderToString(
@@ -108,10 +115,11 @@ describe("WorkspaceDataProvider", () => {
     );
 
     expect(html).toContain("user-1");
-    expect(captured?.goals).toBe(mocks.goalsController);
-    expect(captured?.habits).toBe(mocks.habitsController);
-    expect(captured?.moments).toBe(mocks.momentsController);
-    expect(captured?.reflections).toBe(mocks.reflectionsController);
+    expectWorkspaceData(captured);
+    expect(captured.goals).toBe(mocks.goalsController);
+    expect(captured.habits).toBe(mocks.habitsController);
+    expect(captured.moments).toBe(mocks.momentsController);
+    expect(captured.reflections).toBe(mocks.reflectionsController);
   });
 
   it("passes a null user id through without throwing", () => {

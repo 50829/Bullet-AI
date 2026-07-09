@@ -182,7 +182,10 @@ export function useHabits({ userId }: UseHabitsInput) {
           throw new Error("不能给习惯创建日前的日期打卡");
         if (checkedOn > today) throw new Error("不能提前给未来日期打卡");
 
-        const clientId = `habit-checkin:${habit.client_id}:${checkedOn}`;
+        const habitClientId = habit.client_id;
+        if (!habitClientId) throw new Error("习惯缺少本地同步标识");
+
+        const clientId = `habit-checkin:${habitClientId}:${checkedOn}`;
         const current = checkinsCollection.items.find(
           (checkin) => checkin.client_id === clientId,
         );
@@ -192,7 +195,7 @@ export function useHabits({ userId }: UseHabitsInput) {
           client_id: clientId,
           user_id: activeUserId,
           habit_id: current?.habit_id ?? null,
-          habit_client_id: habit.client_id,
+          habit_client_id: habitClientId,
           checked_on: checkedOn,
           checked,
           created_at: current?.created_at ?? now,
