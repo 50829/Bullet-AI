@@ -15,16 +15,8 @@ function useRequiredContext<T>(value: T | undefined, hookName: string) {
   return value;
 }
 
-type WorkspaceProviderProps = {
-  children: ReactNode;
-  initialUserId?: string | null;
-};
-
-export const WorkspaceProvider = ({
-  children,
-  initialUserId = null,
-}: WorkspaceProviderProps) => {
-  const session = useWorkspaceSession({ initialUserId });
+export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
+  const session = useWorkspaceSession();
 
   return (
     <WorkspaceSessionContext.Provider value={session}>

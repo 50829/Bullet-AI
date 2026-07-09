@@ -50,6 +50,11 @@ const mocks = vi.hoisted(() => ({
   useHabits: vi.fn(),
   useMoments: vi.fn(),
   useReflections: vi.fn(),
+  usePathname: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  usePathname: mocks.usePathname,
 }));
 
 vi.mock("../WorkspaceContext", () => ({
@@ -88,6 +93,8 @@ describe("WorkspaceDataProvider", () => {
     mocks.useHabits.mockReset();
     mocks.useMoments.mockReset();
     mocks.useReflections.mockReset();
+    mocks.usePathname.mockReset();
+    mocks.usePathname.mockReturnValue("/home");
     mocks.useGoals.mockReturnValue(mocks.goalsController);
     mocks.useHabits.mockReturnValue(mocks.habitsController);
     mocks.useMoments.mockReturnValue(mocks.momentsController);
@@ -128,46 +135,20 @@ describe("WorkspaceDataProvider", () => {
         createElement(WorkspaceDataProvider, null, createElement(Consumer)),
       ),
     ).not.toThrow();
-    expect(mocks.useGoals).toHaveBeenCalledWith({
-      userId: null,
-      initialSnapshot: undefined,
-    });
-    expect(mocks.useHabits).toHaveBeenCalledWith({
-      userId: null,
-      initialHabitsSnapshot: undefined,
-      initialCheckinsSnapshot: undefined,
-    });
+    expect(mocks.useGoals).toHaveBeenCalledWith({ userId: null });
+    expect(mocks.useHabits).toHaveBeenCalledWith({ userId: null });
     expect(mocks.useMoments).toHaveBeenCalledWith({
       userId: null,
       remotePageSize: 0,
-      initialSnapshot: undefined,
     });
     expect(mocks.useReflections).toHaveBeenCalledWith({
       userId: null,
       remotePageSize: 0,
-      initialSnapshot: undefined,
     });
   });
 
-  it("enables only the requested route collections and passes initial data", () => {
-    const initialData = {
-      userId: "user-1",
-      moments: {
-        userId: "user-1",
-        items: [
-          {
-            id: 3,
-            client_id: "moment-3",
-            content: "Moment",
-            created_at: "2026-07-09T00:00:00.000Z",
-            updated_at: "2026-07-09T00:00:00.000Z",
-          },
-        ],
-        complete: false,
-        hasMore: true,
-        nextOffset: 1,
-      },
-    };
+  it("enables paged remote reads only for the active collection page", () => {
+    mocks.usePathname.mockReturnValue("/moments");
 
     function Consumer() {
       const data = useWorkspaceData();
@@ -175,34 +156,16 @@ describe("WorkspaceDataProvider", () => {
     }
 
     renderToString(
-      createElement(
-        WorkspaceDataProvider,
-        {
-          enabledCollections: ["moments"],
-          initialData,
-        },
-        createElement(Consumer),
-      ),
+      createElement(WorkspaceDataProvider, null, createElement(Consumer)),
     );
 
-    expect(mocks.useGoals).toHaveBeenCalledWith({
-      userId: null,
-      initialSnapshot: undefined,
-    });
-    expect(mocks.useHabits).toHaveBeenCalledWith({
-      userId: null,
-      initialHabitsSnapshot: undefined,
-      initialCheckinsSnapshot: undefined,
-    });
     expect(mocks.useMoments).toHaveBeenCalledWith({
       userId: "user-1",
       remotePageSize: 20,
-      initialSnapshot: initialData.moments,
     });
     expect(mocks.useReflections).toHaveBeenCalledWith({
-      userId: null,
+      userId: "user-1",
       remotePageSize: 0,
-      initialSnapshot: undefined,
     });
   });
 });

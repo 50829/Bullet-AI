@@ -16,14 +16,8 @@ import {
 import type { DeadOutboxDiagnostic, SyncStatus } from "../../lib/localDb/types";
 import type { WorkspaceSessionState } from "./types";
 
-type UseWorkspaceSessionInput = {
-  initialUserId?: string | null;
-};
-
-export function useWorkspaceSession({
-  initialUserId = null,
-}: UseWorkspaceSessionInput = {}): WorkspaceSessionState {
-  const [userId, setUserId] = useState<string | null>(initialUserId);
+export function useWorkspaceSession(): WorkspaceSessionState {
+  const [userId, setUserId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [deadOutboxCount, setDeadOutboxCount] = useState(0);
   const [deadOutboxItems, setDeadOutboxItems] = useState<
@@ -32,8 +26,8 @@ export function useWorkspaceSession({
 
   useEffect(() => {
     let isMounted = true;
-    let activeUserId: string | null = initialUserId;
-    let initialSessionLoaded = Boolean(initialUserId);
+    let activeUserId: string | null = null;
+    let initialSessionLoaded = false;
 
     const refreshDeadOutboxCount = async (nextUserId: string | null) => {
       if (!nextUserId) {
@@ -75,7 +69,6 @@ export function useWorkspaceSession({
       if (status === "failed") void refreshDeadOutboxCount(activeUserId);
     });
     const uninstallSyncTriggers = installSyncTriggers();
-    void refreshDeadOutboxCount(initialUserId);
 
     async function loadSession() {
       const {
@@ -98,7 +91,7 @@ export function useWorkspaceSession({
       unsubscribeSync();
       uninstallSyncTriggers();
     };
-  }, [initialUserId]);
+  }, []);
 
   const retrySync = useCallback(async () => {
     if (userId) {
@@ -155,7 +148,8 @@ export function useWorkspaceSession({
       retrySync,
       retryDeadOutboxItem: retryOneDeadOutboxItem,
       discardDeadOutboxItem: discardOneDeadOutboxItem,
-      cleanupDeadOutboxOrphanedStorage: cleanupOneDeadOutboxOrphanedStorage,
+      cleanupDeadOutboxOrphanedStorage:
+        cleanupOneDeadOutboxOrphanedStorage,
     }),
     [
       cleanupOneDeadOutboxOrphanedStorage,

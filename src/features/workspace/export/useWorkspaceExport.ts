@@ -2,24 +2,24 @@
 
 import { useCallback } from "react";
 import { useToast } from "../../../shared/components/ui/Toast";
-import { useWorkspaceSessionContext } from "../WorkspaceContext";
+import { useWorkspaceData } from "../data";
 import {
   downloadJsonFile,
   loadWorkspaceExportPayload,
 } from "./workspaceExport";
 
 export function useWorkspaceExport() {
-  const { userId } = useWorkspaceSessionContext();
+  const { session } = useWorkspaceData();
   const { showToast } = useToast();
 
   const handleExport = useCallback(async () => {
-    if (!userId) {
+    if (!session.userId) {
       showToast({ type: "error", message: "请先登录后再导出数据" });
       return;
     }
 
     try {
-      const payload = await loadWorkspaceExportPayload(userId);
+      const payload = await loadWorkspaceExportPayload(session.userId);
       const dateKey = payload.exported_at.slice(0, 10);
       downloadJsonFile(payload, `bullet-ai-export-${dateKey}.json`);
     } catch (error) {
@@ -29,7 +29,7 @@ export function useWorkspaceExport() {
           error instanceof Error ? error.message : "导出失败，请稍后重试",
       });
     }
-  }, [showToast, userId]);
+  }, [session.userId, showToast]);
 
   return { handleExport };
 }

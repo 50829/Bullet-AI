@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState } from "react";
 import { toDateKey } from "../../../lib/date/dateUtils";
 import { createClientId } from "../../../lib/localDb/repository";
 import { createOptimisticId } from "../../../lib/localFirst/ids";
-import type { LocalFirstInitialSnapshot } from "../../../lib/localFirst/localFirstCollectionStore";
 import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
 import { projectHabit } from "../habitProjection";
 import type {
@@ -17,25 +16,17 @@ import type {
 
 type UseHabitsInput = {
   userId: string | null;
-  initialHabitsSnapshot?: LocalFirstInitialSnapshot<HabitRecord>;
-  initialCheckinsSnapshot?: LocalFirstInitialSnapshot<HabitCheckin>;
 };
 
-export function useHabits({
-  userId,
-  initialHabitsSnapshot,
-  initialCheckinsSnapshot,
-}: UseHabitsInput) {
+export function useHabits({ userId }: UseHabitsInput) {
   const habitsCollection = useLocalFirstCollection<HabitRecord>({
     userId,
     collection: "habits",
-    initialSnapshot: initialHabitsSnapshot,
   });
   const checkinsCollection = useLocalFirstCollection<HabitCheckin>({
     userId,
     collection: "habit_checkins",
     remoteOrder: { column: "checked_on", ascending: false },
-    initialSnapshot: initialCheckinsSnapshot,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
