@@ -2,7 +2,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { Card } from "../components/ui/Card";
 import { Trash2, ChevronDown, ChevronUp, Edit2 } from "lucide-react";
 import { useMomentsContext } from "../../features/workspace/WorkspaceContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -32,7 +31,6 @@ const MomentModal = dynamic(
 
 type DayCard = {
   date: string;
-  dateDisplay: string;
   moments: Moment[];
 };
 
@@ -46,7 +44,7 @@ export default function MomentsPageClient() {
   const { moments, loading, refreshMoments, deleteMoment } =
     useMomentsContext();
   const searchParams = useSearchParams();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showToast } = useToast();
   const { setTopBarHandlers } = useTopBar();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -62,17 +60,6 @@ export default function MomentsPageClient() {
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(
     new Set(),
   );
-  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
-
-  const formatDateDisplay = (dateString: string) => {
-    if (dateString.includes("T")) {
-      const datePart = dateString.split("T")[0];
-      return datePart.split("-")[2];
-    }
-
-    const date = new Date(dateString);
-    return String(date.getUTCDate());
-  };
 
   const getDateKey = useCallback((dateString: string): string => {
     if (dateString.includes("T")) {
@@ -86,9 +73,75 @@ export default function MomentsPageClient() {
     return `${year}-${month}-${day}`;
   }, []);
 
-  const formatMonthDisplay = (monthKey: string) => {
-    const [year, month] = monthKey.split("-");
-    return `${parseInt(month)}月（${year}）`;
+  const formatMonthDisplay = useCallback(
+    (monthKey: string) => {
+      const [year, month] = monthKey.split("-");
+      const monthIndex = Number(month) - 1;
+      const date = new Date(Number(year), monthIndex, 1);
+
+      if (language === "en") {
+        return new Intl.DateTimeFormat("en", {
+          month: "long",
+          year: "numeric",
+        }).format(date);
+      }
+
+      const monthLabel = new Intl.DateTimeFormat("zh-CN", {
+        month: "long",
+      }).format(date);
+      return `${monthLabel} ${year}`;
+    },
+    [language],
+  );
+
+  const getDateFromKey = (dateKey: string) => {
+    const [year, month, day] = dateKey.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  const formatDayNumber = (dateKey: string) => {
+    return String(getDateFromKey(dateKey).getDate());
+  };
+
+  const formatDayLabel = (dateKey: string) => {
+    const date = getDateFromKey(dateKey);
+
+    if (language === "en") {
+      return new Intl.DateTimeFormat("en", {
+        month: "short",
+        day: "numeric",
+      }).format(date);
+    }
+
+    return new Intl.DateTimeFormat("zh-CN", {
+      month: "long",
+      day: "numeric",
+    }).format(date);
+  };
+
+  const formatWeekday = (dateKey: string) => {
+    const locale = language === "en" ? "en" : "zh-CN";
+    return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(
+      getDateFromKey(dateKey),
+    );
+  };
+
+  const formatEntryTime = (dateString: string) => {
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return "";
+
+    const locale = language === "en" ? "en" : "zh-CN";
+    return new Intl.DateTimeFormat(locale, {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  };
+
+  const formatEntryCount = (count: number) => {
+    if (language === "en")
+      return `${count} ${count === 1 ? "entry" : "entries"}`;
+    return `${count}篇记录`;
   };
 
   const getMonthKey = useCallback(
@@ -114,7 +167,6 @@ export default function MomentsPageClient() {
       const cards: DayCard[] = Array.from(grouped.entries())
         .map(([dateKey, moments]) => ({
           date: dateKey,
-          dateDisplay: formatDateDisplay(moments[0].created_at),
           moments: moments.sort(
             (a, b) =>
               new Date(b.created_at).getTime() -
@@ -158,7 +210,7 @@ export default function MomentsPageClient() {
 
       return cards;
     },
-    [getMonthKey],
+    [formatMonthDisplay, getMonthKey],
   );
 
   const monthCards = useMemo(
@@ -177,18 +229,6 @@ export default function MomentsPageClient() {
         newSet.delete(monthKey);
       } else {
         newSet.add(monthKey);
-      }
-      return newSet;
-    });
-  };
-
-  const toggleDay = (dateKey: string) => {
-    setCollapsedDays((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(dateKey)) {
-        newSet.delete(dateKey);
-      } else {
-        newSet.add(dateKey);
       }
       return newSet;
     });
@@ -219,7 +259,6 @@ export default function MomentsPageClient() {
 
     setActiveHighlightMomentId(highlightedMomentId);
 
-    const dateKey = getDateKey(target.created_at);
     const monthKey = getMonthKey(target.created_at);
 
     setCollapsedMonths((current) => {
@@ -228,13 +267,6 @@ export default function MomentsPageClient() {
       next.delete(monthKey);
       return next;
     });
-    setCollapsedDays((current) => {
-      if (!current.has(dateKey)) return current;
-      const next = new Set(current);
-      next.delete(dateKey);
-      return next;
-    });
-
     const frame = window.requestAnimationFrame(() => {
       document
         .getElementById(`moment-${highlightedMomentId}`)
@@ -250,7 +282,7 @@ export default function MomentsPageClient() {
       window.cancelAnimationFrame(frame);
       window.clearTimeout(highlightTimer);
     };
-  }, [getDateKey, getMonthKey, highlightedMomentId, moments]);
+  }, [getMonthKey, highlightedMomentId, moments]);
 
   const handleModalClose = () => {
     setIsModalOpen(false);
@@ -305,8 +337,8 @@ export default function MomentsPageClient() {
 
       <div className="flex-1">
         <div className="px-0 pb-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="space-y-6">
+          <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-0">
+            <div className="space-y-10">
               {monthCards.length === 0 ? (
                 <EmptyState
                   title={t("noRecords") || "暂无记录"}
@@ -319,153 +351,151 @@ export default function MomentsPageClient() {
               ) : (
                 monthCards.map((monthCard) => {
                   const isMonthCollapsed = collapsedMonths.has(monthCard.month);
+                  const monthEntryCount = monthCard.dayCards.reduce(
+                    (count, dayCard) => count + dayCard.moments.length,
+                    0,
+                  );
 
                   return (
-                    <Card
+                    <section
                       key={monthCard.month}
-                      className="p-4 rounded-xl w-full max-w-3xl mx-auto"
-                      style={{
-                        backgroundColor:
-                          "var(--color-month-card-bg, rgba(243, 244, 246, 1))",
-                        border: "1px solid var(--color-border-muted)",
-                      }}
+                      className="w-full"
+                      aria-labelledby={`month-${monthCard.month}`}
                     >
-                      <div className="flex flex-col gap-4">
-                        <div
-                          className="flex items-center gap-2 border-b border-[var(--color-border-muted)] pb-2 cursor-pointer transition-colors"
-                          onClick={() => toggleMonth(monthCard.month)}
-                        >
-                          <button
-                            className="flex items-center justify-center w-6 h-6 bg-transparent border-none outline-none p-0 m-0 cursor-pointer"
-                            style={{ background: "none", boxShadow: "none" }}
+                      <button
+                        type="button"
+                        className="group flex w-full items-center gap-3 border-b border-[var(--color-border-muted)] pb-3 text-left transition-colors duration-150 hover:border-[var(--color-border)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 motion-reduce:transition-none"
+                        aria-expanded={!isMonthCollapsed}
+                        aria-controls={`month-days-${monthCard.month}`}
+                        onClick={() => toggleMonth(monthCard.month)}
+                      >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 group-hover:bg-[var(--color-bg-surface)] group-hover:text-[var(--color-primary)] motion-reduce:transition-none">
+                          {isMonthCollapsed ? (
+                            <ChevronDown size={17} />
+                          ) : (
+                            <ChevronUp size={17} />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span
+                            id={`month-${monthCard.month}`}
+                            className="block text-2xl font-semibold text-[var(--color-text-primary)]"
                           >
-                            {isMonthCollapsed ? (
-                              <ChevronDown
-                                size={16}
-                                className="text-theme-primary"
-                              />
-                            ) : (
-                              <ChevronUp
-                                size={16}
-                                className="text-theme-primary"
-                              />
-                            )}
-                          </button>
-                          <h2 className="text-2xl font-semibold text-theme-primary flex-1">
                             {monthCard.monthDisplay}
-                          </h2>
-                        </div>
+                          </span>
+                          <span className="mt-1 block text-sm text-[var(--color-text-secondary)]">
+                            {formatEntryCount(monthEntryCount)}
+                          </span>
+                        </span>
+                      </button>
 
-                        {!isMonthCollapsed && (
-                          <div className="space-y-4 pl-2">
-                            {monthCard.dayCards.map((dayCard) => {
-                              const isDayCollapsed = collapsedDays.has(
-                                dayCard.date,
-                              );
+                      {!isMonthCollapsed && (
+                        <div
+                          id={`month-days-${monthCard.month}`}
+                          className="relative mt-5 space-y-7 sm:before:absolute sm:before:left-[41px] sm:before:top-1 sm:before:h-full sm:before:w-px sm:before:bg-[var(--color-border-muted)]"
+                        >
+                          {monthCard.dayCards.map((dayCard) => {
+                            return (
+                              <article
+                                key={dayCard.date}
+                                className="relative grid gap-3 sm:grid-cols-[84px_minmax(0,1fr)] sm:gap-5"
+                              >
+                                <div className="relative z-10 flex min-h-12 items-center gap-3 rounded-lg bg-[var(--color-bg-primary)] text-left sm:flex-col sm:justify-start sm:gap-1 sm:px-2 sm:py-2">
+                                  <span className="flex items-center gap-2 sm:flex-col sm:gap-0">
+                                    <span className="text-3xl font-semibold leading-none text-[var(--color-text-primary)]">
+                                      {formatDayNumber(dayCard.date)}
+                                    </span>
+                                    <span className="text-sm font-medium text-[var(--color-text-secondary)]">
+                                      {formatWeekday(dayCard.date)}
+                                    </span>
+                                  </span>
+                                  <span className="flex min-w-0 flex-1 items-center gap-2 text-sm text-[var(--color-text-secondary)] sm:hidden">
+                                    <span className="truncate">
+                                      {formatDayLabel(dayCard.date)}
+                                    </span>
+                                    <span>·</span>
+                                    <span className="shrink-0">
+                                      {formatEntryCount(dayCard.moments.length)}
+                                    </span>
+                                  </span>
+                                </div>
 
-                              return (
-                                <Card
-                                  key={dayCard.date}
-                                  className="p-4 rounded-xl"
-                                >
-                                  <div className="flex flex-col gap-4">
-                                    <div
-                                      className="flex items-center gap-2 border-b border-gray-200/50 pb-2 cursor-pointer hover:bg-gray-50/50 rounded-2xl p-2 -m-2 transition-colors"
-                                      onClick={() => toggleDay(dayCard.date)}
-                                    >
-                                      <button className="flex items-center justify-center w-5 h-5 hover:bg-gray-200 rounded transition-colors">
-                                        {isDayCollapsed ? (
-                                          <ChevronDown
-                                            size={14}
-                                            className="text-gray-600"
-                                          />
-                                        ) : (
-                                          <ChevronUp
-                                            size={14}
-                                            className="text-gray-600"
-                                          />
-                                        )}
-                                      </button>
-                                      <h3 className="text-lg font-semibold text-[var(--color-text-primary)] flex-1">
-                                        {dayCard.dateDisplay}
-                                      </h3>
-                                    </div>
-
-                                    {!isDayCollapsed && (
-                                      <div className="space-y-4">
-                                        {dayCard.moments.map((moment) => (
-                                          <div
-                                            key={moment.id}
-                                            id={`moment-${moment.id}`}
-                                            className={`group/item relative flex flex-col gap-3 rounded-xl p-3 transition-[background-color,box-shadow] duration-700 ease-out motion-reduce:transition-none ${
-                                              moment.id ===
-                                              activeHighlightMomentId
-                                                ? "bg-[var(--color-primary-light)] ring-2 ring-[var(--color-primary)]"
-                                                : ""
-                                            }`}
-                                          >
-                                            <div className="absolute right-0 top-0 z-10 flex items-center gap-1">
-                                              <button
-                                                type="button"
-                                                className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
-                                                title={t("edit") || "编辑"}
-                                                aria-label={t("edit") || "编辑"}
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setEditingMoment(moment);
-                                                  setIsModalOpen(true);
-                                                }}
-                                              >
-                                                <Edit2 size={18} />
-                                              </button>
-                                              <button
-                                                type="button"
-                                                className="rounded-lg p-2 text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
-                                                title={t("delete") || "删除"}
-                                                aria-label={
-                                                  t("delete") || "删除"
-                                                }
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setSelectedMoment(moment);
-                                                  setShowConfirm(true);
-                                                }}
-                                              >
-                                                <Trash2 size={18} />
-                                              </button>
-                                            </div>
-
-                                            {moment.content && (
-                                              <div className="min-w-0 pr-20">
-                                                <p className="text-lg text-[var(--color-text-primary)] whitespace-pre-line">
-                                                  {moment.content}
-                                                </p>
-                                              </div>
-                                            )}
-
-                                            {moment.image_url && (
-                                              <div className="flex justify-center">
-                                                <div className="relative">
-                                                  <PlainImage
-                                                    src={moment.image_url}
-                                                    alt="时刻图片"
-                                                    className="w-full max-w-md h-auto rounded-lg object-cover"
-                                                  />
-                                                </div>
-                                              </div>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
+                                <div className="min-w-0 space-y-3">
+                                  <div
+                                    className="hidden text-sm text-[var(--color-text-secondary)] sm:block"
+                                    aria-hidden="true"
+                                  >
+                                    {formatDayLabel(dayCard.date)} ·{" "}
+                                    {formatEntryCount(dayCard.moments.length)}
                                   </div>
-                                </Card>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    </Card>
+
+                                  {dayCard.moments.map((moment) => (
+                                    <div
+                                      key={moment.id}
+                                      id={`moment-${moment.id}`}
+                                      className={`group/item relative overflow-hidden rounded-lg border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] px-4 py-4 shadow-sm transition-[background-color,box-shadow,border-color] duration-700 ease-out hover:border-[var(--color-border)] motion-reduce:transition-none ${
+                                        moment.id === activeHighlightMomentId
+                                          ? "bg-[var(--color-primary-light)] ring-2 ring-[var(--color-primary)]"
+                                          : ""
+                                      }`}
+                                    >
+                                      <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-lg bg-[var(--color-bg-surface)]/90 opacity-100 shadow-sm transition-opacity duration-150 focus-within:opacity-100 group-hover/item:opacity-100 sm:opacity-0 motion-reduce:transition-none">
+                                        <button
+                                          type="button"
+                                          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 motion-reduce:transition-none"
+                                          title={t("edit") || "编辑"}
+                                          aria-label={t("edit") || "编辑"}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingMoment(moment);
+                                            setIsModalOpen(true);
+                                          }}
+                                        >
+                                          <Edit2 size={17} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30 motion-reduce:transition-none"
+                                          title={t("delete") || "删除"}
+                                          aria-label={t("delete") || "删除"}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedMoment(moment);
+                                            setShowConfirm(true);
+                                          }}
+                                        >
+                                          <Trash2 size={17} />
+                                        </button>
+                                      </div>
+
+                                      {moment.content && (
+                                        <p className="whitespace-pre-line pr-20 text-[17px] leading-8 text-[var(--color-text-primary)]">
+                                          {moment.content}
+                                        </p>
+                                      )}
+
+                                      {moment.image_url && (
+                                        <div className="mt-4 overflow-hidden rounded-lg border border-[var(--color-border-muted)] bg-[var(--color-bg-primary)]">
+                                          <PlainImage
+                                            src={moment.image_url}
+                                            alt="时刻图片"
+                                            className="h-auto max-h-[520px] w-full object-cover"
+                                          />
+                                        </div>
+                                      )}
+
+                                      <div className="mt-4 text-xs text-[var(--color-text-secondary)]">
+                                        {formatEntryTime(moment.created_at)}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </section>
                   );
                 })
               )}
