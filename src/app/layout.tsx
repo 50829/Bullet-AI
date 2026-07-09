@@ -6,6 +6,7 @@ import { LanguageProvider } from "../shared/i18n/LanguageContext";
 import { Suspense } from "react";
 import { LoadingState } from "../shared/components/ui/LoadingState";
 import { ToastProvider } from "../shared/components/ui/Toast";
+import { ProfileProvider } from "../lib/profile/ProfileContext";
 import { PreferencesProvider } from "../lib/profile/PreferencesContext";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -24,11 +25,13 @@ export default function RootLayout({
     <html lang="zh" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
         <Suspense fallback={<LoadingState />}>
-          <PreferencesProvider>
-            <LanguageProvider>
-              <ToastProvider>{children}</ToastProvider>
-            </LanguageProvider>
-          </PreferencesProvider>
+          <ProfileProvider>
+            <PreferencesProvider>
+              <LanguageProvider>
+                <ToastProvider>{children}</ToastProvider>
+              </LanguageProvider>
+            </PreferencesProvider>
+          </ProfileProvider>
         </Suspense>
       </body>
     </html>

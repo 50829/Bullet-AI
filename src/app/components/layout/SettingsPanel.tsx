@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import type { UserProfile } from "../../../lib/profile/profileService";
 import { AppearanceSettingsSection } from "./settings/AppearanceSettingsSection";
 import { DataSettingsSection } from "./settings/DataSettingsSection";
 import { LanguageSettingsSection } from "./settings/LanguageSettingsSection";
@@ -13,20 +12,12 @@ import type { SettingsSection } from "./settings/types";
 
 type SettingsPanelProps = {
   onClose: () => void;
-  initialProfile?: UserProfile | null;
-  onProfileUpdate?: (profile: UserProfile) => void;
 };
 
-export default function SettingsPanel({
-  onClose,
-  initialProfile,
-  onProfileUpdate,
-}: SettingsPanelProps) {
+export default function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [activeSection, setActiveSection] = useState<SettingsSection>("user");
   const settings = useSettingsProfile({
     onClose,
-    initialProfile,
-    onProfileUpdate,
   });
   const { handleExport } = useWorkspaceExport();
 
@@ -79,9 +70,7 @@ export default function SettingsPanel({
           onRetrySync={settings.retrySync}
           onRetryDeadOutboxItem={settings.retryDeadOutboxItem}
           onDiscardDeadOutboxItem={settings.discardDeadOutboxItem}
-          onCleanupOrphanedStorage={
-            settings.cleanupDeadOutboxOrphanedStorage
-          }
+          onCleanupOrphanedStorage={settings.cleanupDeadOutboxOrphanedStorage}
           onExport={handleExport}
         />
       )}

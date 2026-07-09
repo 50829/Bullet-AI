@@ -114,52 +114,49 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
   }
 }
 
-export async function updateCurrentUserDisplayName(
+export async function updateUserDisplayName(
+  userId: string,
+  currentProfile: UserProfile | null | undefined,
   displayName: string,
 ): Promise<UserProfile> {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("请先登录");
-
   const username = displayName.trim();
-  const currentProfile = await getCurrentUserProfile();
-
   const updatedAt = new Date().toISOString();
-  const row = rowFromProfile(user.id, currentProfile, {
+  const row = rowFromProfile(userId, currentProfile, {
     username: username || null,
     username_updated_at: updatedAt,
     updated_at: updatedAt,
   });
 
-  await profileRepository.mutate(user.id, row, "upsert");
+  await profileRepository.mutate(userId, row, "upsert");
   void flushOutbox();
 
   return profileFromRow(row);
 }
 
-export async function updateCurrentUserPreferences(
+export async function updateUserPreferences(
+  userId: string,
+  currentProfile: UserProfile | null | undefined,
   preferences: Partial<UserPreferences>,
-): Promise<UserPreferences> {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("请先登录");
-
-  const currentProfile = await getCurrentUserProfile();
+): Promise<UserProfile> {
   const nextPreferences = normalizePreferences({
     ...(currentProfile?.preferences ?? DEFAULT_USER_PREFERENCES),
     ...preferences,
   });
 
-  const row = rowFromProfile(user.id, currentProfile, {
+  const updatedAt = new Date().toISOString();
+  const row = rowFromProfile(userId, currentProfile, {
     preferred_language: nextPreferences.preferred_language,
     ui_theme: nextPreferences.ui_theme,
     accent_color: nextPreferences.accent_color,
     color_scheme: nextPreferences.color_scheme,
     completed_goal_retention: nextPreferences.completed_goal_retention,
     week_starts_on: nextPreferences.week_starts_on,
-    preferences_updated_at: new Date().toISOString(),
+    preferences_updated_at: updatedAt,
+    updated_at: updatedAt,
   });
 
-  await profileRepository.mutate(user.id, row, "upsert");
+  await profileRepository.mutate(userId, row, "upsert");
   void flushOutbox();
 
-  return nextPreferences;
+  return profileFromRow(row);
 }

@@ -9,8 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { supabase } from "../supabaseClient";
-import { getCurrentUserProfile } from "./profileService";
+import { useProfile } from "./ProfileContext";
 import {
   ACCENT_COLOR_STORAGE_KEY,
   COLOR_SCHEME_STORAGE_KEY,
@@ -46,6 +45,7 @@ const PREFERENCE_STORAGE_KEYS = new Set<string>([
 ]);
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
+  const { profile } = useProfile();
   const [preferences, setPreferences] = useState<UserPreferences>(
     DEFAULT_USER_PREFERENCES,
   );
@@ -85,40 +85,20 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = nextPreferences.preferred_language;
   }, []);
 
-  const replacePreferences = useCallback((nextPreferences: UserPreferences) => {
-    const normalized = normalizePreferences(nextPreferences);
-    setPreferences(normalized);
-    writeLocalPreferences(normalized);
-    applyPreferences(normalized);
-    return normalized;
-  }, [applyPreferences]);
+  const replacePreferences = useCallback(
+    (nextPreferences: UserPreferences) => {
+      const normalized = normalizePreferences(nextPreferences);
+      setPreferences(normalized);
+      writeLocalPreferences(normalized);
+      applyPreferences(normalized);
+      return normalized;
+    },
+    [applyPreferences],
+  );
 
   useEffect(() => {
-    let isMounted = true;
-
-    const syncCloudPreferences = () => {
-      void getCurrentUserProfile()
-        .then((profile) => {
-          if (isMounted && profile) replacePreferences(profile.preferences);
-        })
-        .catch((error) => {
-          console.error("Failed to sync user preferences:", error);
-        });
-    };
-
-    syncCloudPreferences();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) syncCloudPreferences();
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [replacePreferences]);
+    if (profile) replacePreferences(profile.preferences);
+  }, [profile, replacePreferences]);
 
   const updatePreferences = useCallback(
     (updates: Partial<UserPreferences>) => {

@@ -2,15 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { useLanguage, type Language } from "../../../../shared/i18n/LanguageContext";
+import {
+  useLanguage,
+  type Language,
+} from "../../../../shared/i18n/LanguageContext";
 import { useToast } from "../../../../shared/components/ui/Toast";
 import { usePreferences } from "../../../../lib/profile/PreferencesContext";
-import {
-  getCurrentUserProfile,
-  updateCurrentUserDisplayName,
-  updateCurrentUserPreferences,
-  type UserProfile,
-} from "../../../../lib/profile/profileService";
+import { useProfile } from "../../../../lib/profile/ProfileContext";
+import { type UserProfile } from "../../../../lib/profile/profileService";
 import {
   DEFAULT_USER_PREFERENCES,
   normalizePreferences,
@@ -26,18 +25,18 @@ import type { FormMessage } from "./types";
 
 type UseSettingsProfileInput = {
   onClose: () => void;
-  initialProfile?: UserProfile | null;
-  onProfileUpdate?: (profile: UserProfile) => void;
 };
 
-export function useSettingsProfile({
-  onClose,
-  initialProfile,
-  onProfileUpdate,
-}: UseSettingsProfileInput) {
+export function useSettingsProfile({ onClose }: UseSettingsProfileInput) {
   const { t, language } = useLanguage();
   const { updatePreferences: updateLocalPreferences, replacePreferences } =
     usePreferences();
+  const {
+    profile,
+    loading: profileLoading,
+    updateUsername,
+    updatePreferences: updateCloudPreferences,
+  } = useProfile();
   const router = useRouter();
   const {
     syncStatus,
@@ -47,8 +46,7 @@ export function useSettingsProfile({
     retryDeadOutboxItem,
     discardDeadOutboxItem,
     cleanupDeadOutboxOrphanedStorage,
-  } =
-    useWorkspaceSessionContext();
+  } = useWorkspaceSessionContext();
   const { showToast } = useToast();
   const [username, setUsername] = useState("");
   const [currentUsername, setCurrentUsername] = useState("");
@@ -68,37 +66,27 @@ export function useSettingsProfile({
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    if (initialProfile) {
-      applyProfileState(initialProfile);
-      return () => {
-        isMounted = false;
-      };
+    if (profile) {
+      applyProfileState(profile);
+      return;
     }
 
-    getCurrentUserProfile()
-      .then((nextProfile) => {
-        if (!isMounted) return;
-        if (!nextProfile) {
-          onClose();
-          return;
-        }
-        applyProfileState(nextProfile);
-      })
-      .catch((error) => {
-        console.error("Failed to load profile:", error);
-        showToast({
-          type: "error",
-          message:
-            language === "en" ? "Failed to load settings." : "设置加载失败。",
-        });
+    if (!profileLoading) {
+      onClose();
+      showToast({
+        type: "error",
+        message:
+          language === "en" ? "Failed to load settings." : "设置加载失败。",
       });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [applyProfileState, initialProfile, language, onClose, showToast]);
+    }
+  }, [
+    applyProfileState,
+    language,
+    onClose,
+    profile,
+    profileLoading,
+    showToast,
+  ]);
 
   const savePreferences = useCallback(
     async (
@@ -114,8 +102,7 @@ export function useSettingsProfile({
       setSavingPreference(savingKey);
 
       try {
-        const savedPreferences =
-          await updateCurrentUserPreferences(nextPartial);
+        const savedPreferences = await updateCloudPreferences(nextPartial);
         const mergedPreferences = normalizePreferences(savedPreferences);
         setPreferences(mergedPreferences);
         replacePreferences(mergedPreferences);
@@ -137,6 +124,7 @@ export function useSettingsProfile({
       preferences,
       replacePreferences,
       showToast,
+      updateCloudPreferences,
       updateLocalPreferences,
     ],
   );
@@ -151,14 +139,8 @@ export function useSettingsProfile({
     setMessage(null);
 
     try {
-      const updatedProfile = await updateCurrentUserDisplayName(nextUsername);
+      const updatedProfile = await updateUsername(nextUsername);
       applyProfileState(updatedProfile);
-      onProfileUpdate?.(updatedProfile);
-      window.dispatchEvent(
-        new CustomEvent("profile-updated", {
-          detail: { username: updatedProfile.username },
-        }),
-      );
     } catch (error) {
       console.error("Failed to update display name:", error);
       setMessage({

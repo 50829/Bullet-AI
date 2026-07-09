@@ -44,11 +44,8 @@ vi.mock("../localDb/syncEngine", () => ({
   flushOutbox: mocks.flushOutbox,
 }));
 
-const {
-  getCurrentUserProfile,
-  updateCurrentUserDisplayName,
-  updateCurrentUserPreferences,
-} = await import("./profileService");
+const { getCurrentUserProfile, updateUserDisplayName, updateUserPreferences } =
+  await import("./profileService");
 
 function profileRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -100,11 +97,28 @@ describe("profileService", () => {
     );
   });
 
-  it("writes preferences through the profiles repository and outbox", async () => {
-    const preferences = await updateCurrentUserPreferences({
-      preferred_language: "en",
-    });
+  it("writes preferences through the profiles repository and outbox without rereading", async () => {
+    const profile = await updateUserPreferences(
+      "user-1",
+      {
+        username: "Mira",
+        username_updated_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z",
+        preferences_updated_at: "2026-01-01T00:00:00.000Z",
+        preferences: {
+          preferred_language: "zh",
+          ui_theme: "calm",
+          accent_color: "sage",
+          color_scheme: "system",
+          completed_goal_retention: "next_day",
+          week_starts_on: "auto",
+        },
+      },
+      { preferred_language: "en" },
+    );
 
+    expect(mocks.repository.list).not.toHaveBeenCalled();
+    expect(mocks.readRemoteCollection).not.toHaveBeenCalled();
     expect(mocks.repository.mutate).toHaveBeenCalledWith(
       "user-1",
       expect.objectContaining({
@@ -115,12 +129,31 @@ describe("profileService", () => {
       "upsert",
     );
     expect(mocks.flushOutbox).toHaveBeenCalled();
-    expect(preferences.preferred_language).toBe("en");
+    expect(profile.preferences.preferred_language).toBe("en");
   });
 
-  it("writes display names through the profiles repository and outbox", async () => {
-    const profile = await updateCurrentUserDisplayName("New Mira");
+  it("writes display names through the profiles repository and outbox without rereading", async () => {
+    const profile = await updateUserDisplayName(
+      "user-1",
+      {
+        username: "Mira",
+        username_updated_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z",
+        preferences_updated_at: "2026-01-01T00:00:00.000Z",
+        preferences: {
+          preferred_language: "zh",
+          ui_theme: "calm",
+          accent_color: "sage",
+          color_scheme: "system",
+          completed_goal_retention: "next_day",
+          week_starts_on: "auto",
+        },
+      },
+      "New Mira",
+    );
 
+    expect(mocks.repository.list).not.toHaveBeenCalled();
+    expect(mocks.readRemoteCollection).not.toHaveBeenCalled();
     expect(mocks.repository.mutate).toHaveBeenCalledWith(
       "user-1",
       expect.objectContaining({

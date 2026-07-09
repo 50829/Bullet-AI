@@ -1,16 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { LogOut, Settings } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import { supabase } from "../../../lib/supabaseClient";
 import { signOutAndClearLocalData } from "../../../lib/auth/logout";
-import {
-  getCurrentUserProfile,
-  type UserProfile,
-} from "../../../lib/profile/profileService";
 import { useToast } from "../../../shared/components/ui/Toast";
 import { IconButton } from "../../../shared/components/ui/IconButton";
 import { WORKSPACE_PAGE_ORDER } from "../../../lib/navigation/workspaceRoutes";
@@ -28,35 +23,6 @@ export const BottomSidebar = () => {
   const { showToast } = useToast();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const profile = await getCurrentUserProfile();
-        setUserProfile(profile);
-      } catch (error) {
-        console.error("获取用户信息失败:", error);
-      }
-    };
-
-    fetchUserProfile();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        const profile = await getCurrentUserProfile();
-        setUserProfile(profile);
-      } else {
-        setUserProfile(null);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
 
   const handleSettingsClick = () => {
     setShowSettingsPanel(true);
@@ -159,13 +125,7 @@ export const BottomSidebar = () => {
       )}
 
       {showSettingsPanel && (
-        <SettingsPanel
-          onClose={() => setShowSettingsPanel(false)}
-          initialProfile={userProfile}
-          onProfileUpdate={(profile) => {
-            setUserProfile(profile);
-          }}
-        />
+        <SettingsPanel onClose={() => setShowSettingsPanel(false)} />
       )}
     </>
   );
