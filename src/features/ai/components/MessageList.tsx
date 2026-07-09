@@ -1,6 +1,6 @@
 "use client";
 
-import type { AssistantMessage, PlanData } from "./types";
+import type { AssistantMessage, PlanData } from "../chat/types";
 import { PlanPreview } from "./PlanPreview";
 
 type MessageListProps = {

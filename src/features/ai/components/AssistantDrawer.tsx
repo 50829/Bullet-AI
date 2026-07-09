@@ -1,11 +1,11 @@
 "use client";
 
-import { ChatComposer } from "./assistant/ChatComposer";
-import { MessageList } from "./assistant/MessageList";
-import type { AssistantMode, PlanData } from "./assistant/types";
-import { useAssistantChat } from "./assistant/useAssistantChat";
-import { Drawer } from "../../shared/components/ui/Drawer";
-import type { AiPurpose } from "../../lib/ai/promptRegistry";
+import { ChatComposer } from "./ChatComposer";
+import { MessageList } from "./MessageList";
+import type { AssistantMode, PlanData } from "../chat/types";
+import { useAssistantChat } from "../chat/useAssistantChat";
+import { Drawer } from "../../../shared/components/ui/Drawer";
+import type { AiPurpose } from "../../../lib/ai/promptRegistry";
 
 type AssistantDrawerProps = {
   isOpen: boolean;

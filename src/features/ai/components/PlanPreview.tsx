@@ -2,7 +2,7 @@
 
 import { Button } from "../../../shared/components/ui/Button";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import type { PlanData } from "./types";
+import type { PlanData } from "../chat/types";
 
 type PlanPreviewProps = {
   plan: PlanData;
