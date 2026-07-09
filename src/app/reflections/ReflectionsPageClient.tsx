@@ -40,6 +40,10 @@ const ReflectionModal = dynamic(
 
 export default function ReflectionsPageClient() {
   const {
+    session,
+    reflections: reflectionsController,
+  } = useWorkspaceData();
+  const {
     reflections,
     loading,
     loadingMoreReflections,
@@ -49,7 +53,7 @@ export default function ReflectionsPageClient() {
     createReflection,
     updateReflection,
     deleteReflection,
-  } = useWorkspaceData().reflections;
+  } = reflectionsController;
   const searchParams = useSearchParams();
   const { t } = useLanguage();
   const { showToast } = useToast();
@@ -135,7 +139,8 @@ export default function ReflectionsPageClient() {
     });
   };
 
-  const isInitialLoading = loading && reflections.length === 0;
+  const isInitialLoading =
+    (!session.ready || loading) && reflections.length === 0;
   const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
 
   if (isInitialLoading) {

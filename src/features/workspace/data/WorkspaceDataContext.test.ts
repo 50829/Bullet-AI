@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   session: {
     userId: "user-1" as string | null,
+    ready: true,
     syncStatus: "idle",
     deadOutboxCount: 0,
     retrySync: vi.fn(),

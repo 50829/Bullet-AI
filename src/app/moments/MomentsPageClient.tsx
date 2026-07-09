@@ -40,6 +40,10 @@ const MomentModal = dynamic(
 
 export default function MomentsPageClient() {
   const {
+    session,
+    moments: momentsController,
+  } = useWorkspaceData();
+  const {
     moments,
     loading,
     loadingMoreMoments,
@@ -49,7 +53,7 @@ export default function MomentsPageClient() {
     createMoment,
     updateMoment,
     deleteMoment,
-  } = useWorkspaceData().moments;
+  } = momentsController;
   const searchParams = useSearchParams();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
@@ -134,7 +138,7 @@ export default function MomentsPageClient() {
     });
   };
 
-  const isInitialLoading = loading && moments.length === 0;
+  const isInitialLoading = (!session.ready || loading) && moments.length === 0;
   const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
 
   if (isInitialLoading) {

@@ -5,6 +5,7 @@ import type {
 
 export type WorkspaceSessionState = {
   userId: string | null;
+  ready: boolean;
   syncStatus: SyncStatus;
   deadOutboxCount: number;
   deadOutboxItems: DeadOutboxDiagnostic[];

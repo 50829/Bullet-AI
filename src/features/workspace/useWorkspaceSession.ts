@@ -18,6 +18,7 @@ import type { WorkspaceSessionState } from "./types";
 
 export function useWorkspaceSession(): WorkspaceSessionState {
   const [userId, setUserId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [deadOutboxCount, setDeadOutboxCount] = useState(0);
   const [deadOutboxItems, setDeadOutboxItems] = useState<
@@ -61,6 +62,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       initialSessionLoaded = true;
       activeUserId = nextUserId;
       if (isMounted) setUserId(nextUserId);
+      if (isMounted) setReady(true);
       void refreshDeadOutboxCount(nextUserId);
     };
 
@@ -142,6 +144,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
   return useMemo(
     () => ({
       userId,
+      ready,
       syncStatus,
       deadOutboxCount,
       deadOutboxItems,
@@ -156,6 +159,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       deadOutboxCount,
       deadOutboxItems,
       discardOneDeadOutboxItem,
+      ready,
       retryOneDeadOutboxItem,
       retrySync,
       syncStatus,
