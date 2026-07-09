@@ -2,6 +2,7 @@
 
 import React from "react";
 import { X } from "lucide-react";
+import { IconButton } from "./IconButton";
 
 type DrawerProps = {
   isOpen: boolean;
@@ -30,14 +31,11 @@ export function Drawer({ isOpen, title, onClose, children }: DrawerProps) {
           <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
             {title}
           </h2>
-          <button
-            type="button"
+          <IconButton
+            icon={<X size={20} />}
+            label="Close drawer"
             onClick={onClose}
-            className="rounded-lg p-2 text-[var(--color-text-secondary)] transition hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-text-primary)] motion-reduce:transition-none"
-            aria-label="Close drawer"
-          >
-            <X size={20} />
-          </button>
+          />
         </div>
         {children}
       </aside>

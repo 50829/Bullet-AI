@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "../../../app/components/ui/Button";
+import { ColorSwatchPicker } from "../../../app/components/ui/ColorSwatchPicker";
+import { FieldLabel } from "../../../app/components/ui/FieldLabel";
+import { FormDialogShell } from "../../../app/components/ui/FormDialogShell";
+import { FormActions } from "../../../app/components/ui/FormActions";
 import { Input } from "../../../app/components/ui/Input";
+import { SegmentedControl } from "../../../app/components/ui/SegmentedControl";
 import { Textarea } from "../../../app/components/ui/Textarea";
-import { Modal } from "../../../app/components/ui/Modal";
 import { useLanguage } from "../../../app/context/LanguageContext";
 import type {
   CreateHabitInput,
@@ -22,6 +25,8 @@ type HabitFormDialogProps = {
   onCreate: (input: CreateHabitInput) => Promise<void>;
   onUpdate?: (habitId: number, input: UpdateHabitInput) => Promise<void>;
 };
+
+const HABIT_COLORS = ["#2f6f5e", "#4f7c8a", "#7c5c9e", "#a16207", "#64748b"];
 
 export function HabitFormDialog({
   isOpen,
@@ -61,7 +66,7 @@ export function HabitFormDialog({
     onClose();
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
     if (!name.trim()) {
@@ -91,104 +96,72 @@ export function HabitFormDialog({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-md">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full rounded-2xl bg-[var(--color-bg-card)] p-5 shadow-xl"
-      >
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
-            {isEditing ? t("edit") || "编辑" : t("newHabit") || "新建习惯"}
-          </h2>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="rounded-full p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)]"
-            aria-label={t("close") || "关闭"}
-          >
-            <X size={20} />
-          </button>
-        </div>
+    <FormDialogShell
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={isEditing ? t("edit") || "编辑" : t("newHabit") || "新建习惯"}
+      closeLabel={t("close") || "关闭"}
+      modalClassName="max-w-md"
+      panelClassName="w-full rounded-2xl bg-[var(--color-bg-card)] p-5 shadow-xl"
+      onSubmit={handleSubmit}
+    >
+      <FieldLabel className="mt-5">{t("habitName") || "习惯名称"}</FieldLabel>
+      <Input
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+        placeholder={t("habitPlaceholder") || "例如：晨间阅读"}
+        maxLength={60}
+        className="mt-2 rounded-xl"
+      />
 
-        <label className="mt-5 block text-sm font-medium text-[var(--color-text-primary)]">
-          {t("habitName") || "习惯名称"}
-        </label>
-        <Input
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder={t("habitPlaceholder") || "例如：晨间阅读"}
-          maxLength={60}
-          className="mt-2 rounded-xl"
-        />
+      <FieldLabel className="mt-4">{t("description") || "描述"}</FieldLabel>
+      <Textarea
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+        placeholder={t("describeHabit") || "描述这个习惯"}
+        rows={4}
+        className="mt-2 rounded-xl"
+      />
 
-        <label className="mt-4 block text-sm font-medium text-[var(--color-text-primary)]">
-          {t("description") || "描述"}
-        </label>
-        <Textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          placeholder={t("describeHabit") || "描述这个习惯"}
-          rows={4}
-          className="mt-2 rounded-xl"
-        />
+      <FieldLabel className="mt-4">
+        {language === "en" ? "Frequency" : "频率"}
+      </FieldLabel>
+      <SegmentedControl<HabitFrequency>
+        value={frequency}
+        onChange={setFrequency}
+        className="mt-2 w-full"
+        options={[
+          { value: "daily", label: t("daily") || "每日" },
+          { value: "weekly", label: t("weekly") || "每周" },
+        ]}
+      />
 
-        <label className="mt-4 block text-sm font-medium text-[var(--color-text-primary)]">
-          {language === "en" ? "Frequency" : "频率"}
-        </label>
-        <div className="mt-2 grid grid-cols-2 gap-2 rounded-xl bg-[var(--color-bg-surface)] p-1">
-          {(["daily", "weekly"] as HabitFrequency[]).map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setFrequency(value)}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
-                frequency === value
-                  ? "bg-[var(--color-primary)] text-[var(--color-text-on-primary)]"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card)]"
-              }`}
-            >
-              {value === "daily" ? t("daily") || "每日" : t("weekly") || "每周"}
-            </button>
-          ))}
-        </div>
+      <FieldLabel className="mt-4">{t("color") || "颜色"}</FieldLabel>
+      <ColorSwatchPicker
+        value={color}
+        options={HABIT_COLORS.map((value) => ({
+          value,
+          swatch: value,
+          label: value,
+        }))}
+        onChange={setColor}
+        className="mt-2"
+      />
 
-        <label className="mt-4 block text-sm font-medium text-[var(--color-text-primary)]">
-          {t("color") || "颜色"}
-        </label>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {["#2f6f5e", "#4f7c8a", "#7c5c9e", "#a16207", "#64748b"].map(
-            (value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setColor(value)}
-                className={`h-8 w-8 rounded-lg border-2 transition-colors duration-150 motion-reduce:transition-none ${
-                  color === value
-                    ? "border-[var(--color-text-primary)]"
-                    : "border-transparent"
-                }`}
-                style={{ backgroundColor: value }}
-                aria-label={value}
-              />
-            ),
-          )}
-        </div>
+      {message && <p className="mt-3 text-sm text-red-500">{message}</p>}
 
-        {message && <p className="mt-3 text-sm text-red-500">{message}</p>}
-
-        <div className="mt-6 flex justify-end gap-3">
-          <Button variant="secondary" onClick={handleClose}>
-            {t("cancel") || "取消"}
-          </Button>
-          <Button type="submit" disabled={saving || !name.trim()}>
-            {saving
-              ? t("saving") || "保存中"
-              : isEditing
-                ? t("update") || "更新"
-                : t("save") || "保存"}
-          </Button>
-        </div>
-      </form>
-    </Modal>
+      <FormActions>
+        <Button variant="secondary" onClick={handleClose}>
+          {t("cancel") || "取消"}
+        </Button>
+        <Button type="submit" disabled={saving || !name.trim()}>
+          {saving
+            ? t("saving") || "保存中"
+            : isEditing
+              ? t("update") || "更新"
+              : t("save") || "保存"}
+        </Button>
+      </FormActions>
+    </FormDialogShell>
   );
 }

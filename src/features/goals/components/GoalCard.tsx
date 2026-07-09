@@ -3,6 +3,8 @@
 import type { CSSProperties } from "react";
 import { ArrowLeft, ArrowRight, Check, Edit2, Trash2 } from "lucide-react";
 import { useLanguage } from "../../../app/context/LanguageContext";
+import { ActionButtonGroup } from "../../../app/components/ui/ActionButtonGroup";
+import { IconButton } from "../../../app/components/ui/IconButton";
 import { isGoalCompleted } from "../goalVisibility";
 
 export type GoalCardGoal = {
@@ -43,7 +45,6 @@ export function GoalCard({
   const MoveIcon = moveAction?.direction === "back" ? ArrowLeft : ArrowRight;
   const isList = variant === "list";
   const showMoveAction = Boolean(moveAction && !completed);
-  const actionGrid = showMoveAction ? "grid-cols-3" : "grid-cols-2";
   const listGrid = showMoveAction
     ? "grid-cols-[36px_minmax(0,1fr)_116px]"
     : "grid-cols-[36px_minmax(0,1fr)_76px]";
@@ -102,41 +103,32 @@ export function GoalCard({
         )}
       </div>
 
-      <div
-        className={`${isList ? "" : "col-span-2 sm:col-span-1"} grid ${actionGrid} justify-self-end gap-1`}
+      <ActionButtonGroup
+        className={`${isList ? "" : "col-span-2 sm:col-span-1"} justify-self-end`}
       >
         {showMoveAction && moveAction ? (
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
-            title={moveAction.label}
-            aria-label={moveAction.label}
+          <IconButton
+            icon={<MoveIcon size={19} />}
+            label={moveAction.label}
+            tone="primary"
             onClick={() => void moveAction.onClick()}
-          >
-            <MoveIcon size={19} />
-          </button>
+          />
         ) : null}
 
-        <button
-          type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
-          title={t("edit") || "编辑"}
-          aria-label={t("edit") || "编辑"}
+        <IconButton
+          icon={<Edit2 size={19} />}
+          label={t("edit") || "编辑"}
+          tone="primary"
           onClick={onEdit}
-        >
-          <Edit2 size={19} />
-        </button>
+        />
 
-        <button
-          type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
-          title={t("delete") || "删除"}
-          aria-label={t("delete") || "删除"}
+        <IconButton
+          icon={<Trash2 size={19} />}
+          label={t("delete") || "删除"}
+          tone="danger"
           onClick={onDelete}
-        >
-          <Trash2 size={19} />
-        </button>
-      </div>
+        />
+      </ActionButtonGroup>
     </div>
   );
 }

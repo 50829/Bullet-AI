@@ -1,14 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  Camera,
-  Home,
-  Lightbulb,
-  LogOut,
-  Settings,
-  Target,
-} from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../../context/LanguageContext";
@@ -18,11 +11,10 @@ import {
   type UserProfile,
 } from "../../../lib/profile/profileService";
 import { useToast } from "../ui/Toast";
-import {
-  WORKSPACE_PAGE_ORDER,
-  type WorkspacePage,
-} from "../../../lib/navigation/workspaceRoutes";
+import { IconButton } from "../ui/IconButton";
+import { WORKSPACE_PAGE_ORDER } from "../../../lib/navigation/workspaceRoutes";
 import { WorkspaceNavLink } from "./WorkspaceNavLink";
+import { getWorkspaceNavItemMeta } from "./workspacePageMeta";
 
 const LogoutConfirmDialog = dynamic(() => import("./LogoutConfirmDialog"), {
   ssr: false,
@@ -36,21 +28,6 @@ export const BottomSidebar = () => {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const navItems: Record<
-    WorkspacePage,
-    { label: string; icon: React.ReactNode }
-  > = {
-    home: { label: t("today") || "Today", icon: <Home size={19} /> },
-    goals: { label: t("goals") || "目标", icon: <Target size={19} /> },
-    moments: {
-      label: t("records") || t("moments") || "记录",
-      icon: <Camera size={19} />,
-    },
-    reflections: {
-      label: t("insights") || "感悟",
-      icon: <Lightbulb size={19} />,
-    },
-  };
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -119,27 +96,23 @@ export const BottomSidebar = () => {
         <nav>
           <ul className="space-y-2">
             <li>
-              <button
-                type="button"
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
+              <IconButton
+                icon={<Settings size={20} />}
+                label={t("settings") || "设置"}
+                tone="primary"
+                size="lg"
                 onClick={handleSettingsClick}
-                title={t("settings") || "设置"}
-                aria-label={t("settings") || "设置"}
-              >
-                <Settings size={20} />
-              </button>
+              />
             </li>
 
             <li>
-              <button
-                type="button"
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
+              <IconButton
+                icon={<LogOut size={20} />}
+                label={t("logout") || "退出登录"}
+                tone="danger"
+                size="lg"
                 onClick={handleLogoutClick}
-                title={t("logout") || "退出登录"}
-                aria-label={t("logout") || "退出登录"}
-              >
-                <LogOut size={20} />
-              </button>
+              />
             </li>
           </ul>
         </nav>
@@ -148,7 +121,11 @@ export const BottomSidebar = () => {
       <nav className="fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-2 shadow-md lg:hidden">
         <ul className="grid grid-cols-5 gap-1">
           {WORKSPACE_PAGE_ORDER.map((page) => {
-            const item = navItems[page];
+            const item = getWorkspaceNavItemMeta({
+              page,
+              t,
+              iconSize: 19,
+            });
             return (
               <li key={page}>
                 <WorkspaceNavLink
@@ -161,15 +138,14 @@ export const BottomSidebar = () => {
             );
           })}
           <li>
-            <button
-              type="button"
+            <IconButton
+              icon={<Settings size={19} />}
+              label={t("settings") || "设置"}
+              tone="primary"
+              size="lg"
               onClick={handleSettingsClick}
-              className="flex h-11 w-full items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
-              title={t("settings") || "设置"}
-              aria-label={t("settings") || "设置"}
-            >
-              <Settings size={19} />
-            </button>
+              className="w-full"
+            />
           </li>
         </ul>
       </nav>

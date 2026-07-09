@@ -3,6 +3,8 @@
 import { CalendarDays, Check, Edit2, Flame, Trash2 } from "lucide-react";
 import { formatDateKey } from "../../../lib/date/dateUtils";
 import { useLanguage } from "../../../app/context/LanguageContext";
+import { ActionButtonGroup } from "../../../app/components/ui/ActionButtonGroup";
+import { IconButton } from "../../../app/components/ui/IconButton";
 import type { HabitView } from "../types";
 
 type HabitCardProps = {
@@ -96,36 +98,26 @@ export function HabitCard({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1">
+      <ActionButtonGroup className="shrink-0">
         {onEdit && (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onEdit(habit);
-            }}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-bg-card)] hover:text-[var(--color-primary)] motion-reduce:transition-none"
-            title={t("edit") || "编辑"}
-            aria-label={t("edit") || "编辑"}
-          >
-            <Edit2 size={18} />
-          </button>
+          <IconButton
+            icon={<Edit2 size={18} />}
+            label={t("edit") || "编辑"}
+            tone="primary"
+            stopPropagation
+            onClick={() => onEdit(habit)}
+          />
         )}
         {onDelete && (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete(habit);
-            }}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors duration-150 hover:bg-red-50 hover:text-red-600 motion-reduce:transition-none"
-            title={t("delete") || "删除"}
-            aria-label={t("delete") || "删除"}
-          >
-            <Trash2 size={18} />
-          </button>
+          <IconButton
+            icon={<Trash2 size={18} />}
+            label={t("delete") || "删除"}
+            tone="danger"
+            stopPropagation
+            onClick={() => onDelete(habit)}
+          />
         )}
-      </div>
+      </ActionButtonGroup>
     </div>
   );
 }

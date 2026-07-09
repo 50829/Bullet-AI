@@ -1,12 +1,14 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/Button";
+import { FieldLabel } from "./ui/FieldLabel";
+import { FormDialogShell } from "./ui/FormDialogShell";
+import { FormActions } from "./ui/FormActions";
 import { Textarea } from "./ui/Textarea";
 import { useLanguage } from "../context/LanguageContext";
 import { useMomentsContext } from "../../features/workspace/WorkspaceContext";
 import { useToast } from "./ui/Toast";
 import { PlainImage } from "./ui/PlainImage";
-import { Modal } from "./ui/Modal";
 import { DateField } from "./date/DateField";
 import type { MomentRecord } from "../../features/workspace/types";
 
@@ -151,19 +153,16 @@ export const MomentModal = ({
   };
 
   return (
-    <Modal
+    <FormDialogShell
       isOpen={isOpen}
       onClose={handleClose}
-      className="max-w-xl rounded-2xl bg-[var(--color-bg-surface)] p-6 shadow-xl"
+      title={isEditing ? t("edit") || "编辑" : t("newMoment") || "记录新时刻"}
+      closeLabel={t("close") || "关闭"}
+      modalClassName="max-w-xl"
+      headerClassName="mb-4"
     >
-      <h2 className="text-2xl font-bold mb-4">
-        {isEditing ? t("edit") || "编辑" : t("newMoment") || "记录新时刻"}
-      </h2>
-
       <div className="mb-4">
-        <label className="block text-sm text-gray-600 mb-1">
-          {t("date") || "日期"}
-        </label>
+        <FieldLabel className="mb-1">{t("date") || "日期"}</FieldLabel>
         <DateField
           value={selectedDate}
           onChange={setSelectedDate}
@@ -172,9 +171,7 @@ export const MomentModal = ({
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm text-gray-600 mb-1">
-          {t("content") || "内容"}
-        </label>
+        <FieldLabel className="mb-1">{t("content") || "内容"}</FieldLabel>
         <Textarea
           placeholder={t("recordFeelings") || "记录这一刻的感受..."}
           value={content}
@@ -184,9 +181,9 @@ export const MomentModal = ({
       </div>
 
       <div className="mt-3">
-        <label className="block text-sm text-gray-600 mb-1">
+        <FieldLabel className="mb-1">
           {t("uploadImage") || "上传图片"}
-        </label>
+        </FieldLabel>
         <input
           type="file"
           accept="image/*"
@@ -206,7 +203,7 @@ export const MomentModal = ({
         )}
       </div>
 
-      <div className="flex justify-end mt-6 space-x-3">
+      <FormActions>
         <Button
           variant="secondary"
           onClick={handleClose}
@@ -217,7 +214,7 @@ export const MomentModal = ({
         <Button onClick={handleSubmit} className="min-w-[60px] h-10">
           {isEditing ? t("update") || "更新" : t("save") || "记录"}
         </Button>
-      </div>
-    </Modal>
+      </FormActions>
+    </FormDialogShell>
   );
 };

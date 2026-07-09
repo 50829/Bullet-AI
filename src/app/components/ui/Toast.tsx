@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { AlertCircle, X } from "lucide-react";
+import { IconButton } from "./IconButton";
 
 type ToastType = "error";
 
@@ -63,14 +64,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 )}
                 <p className="text-sm leading-5">{toast.message}</p>
               </div>
-              <button
-                type="button"
+              <IconButton
+                icon={<X size={14} />}
+                label="Close notification"
+                size="sm"
                 onClick={() => removeToast(toast.id)}
-                className="rounded-md p-1 opacity-60 transition hover:bg-black/5 hover:opacity-100 motion-reduce:transition-none"
-                aria-label="Close notification"
-              >
-                <X size={14} />
-              </button>
+                className="opacity-60 hover:bg-black/5 hover:opacity-100"
+              />
             </div>
           );
         })}

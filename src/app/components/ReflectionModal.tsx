@@ -2,13 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import { Button } from "./ui/Button";
+import { FieldLabel } from "./ui/FieldLabel";
+import { FormDialogShell } from "./ui/FormDialogShell";
+import { FormActions } from "./ui/FormActions";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { useLanguage } from "../context/LanguageContext";
 import { useReflectionsContext } from "../../features/workspace/WorkspaceContext";
 import { useToast } from "./ui/Toast";
 import { parseReflectionContent } from "../../lib/reflections/reflectionContent";
-import { Modal } from "./ui/Modal";
 import type { ReflectionRecord } from "../../features/workspace/types";
 
 type ReflectionDraft = Pick<
@@ -117,20 +119,20 @@ export const ReflectionModal = ({
   };
 
   return (
-    <Modal
+    <FormDialogShell
       isOpen={isOpen}
       onClose={handleClose}
-      className="max-w-xl rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-6 shadow-xl"
-    >
-      <h2 className="mb-4 text-2xl font-bold text-[var(--color-text-primary)]">
-        {isEditing
+      title={
+        isEditing
           ? t("editReflection") || "编辑感悟"
-          : t("newReflection") || "记录新感悟"}
-      </h2>
-
-      <label className="block text-sm text-[var(--color-text-secondary)]">
-        {t("title") || "标题"} *
-      </label>
+          : t("newReflection") || "记录新感悟"
+      }
+      closeLabel={t("close") || "关闭"}
+      modalClassName="max-w-xl"
+      panelClassName="w-full rounded-2xl border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-6 shadow-xl"
+      headerClassName="mb-4"
+    >
+      <FieldLabel>{t("title") || "标题"} *</FieldLabel>
       <Input
         className="mt-1"
         placeholder={t("enterTitle") || "输入标题（必填）"}
@@ -139,9 +141,7 @@ export const ReflectionModal = ({
         maxLength={100}
       />
 
-      <label className="mt-4 block text-sm text-[var(--color-text-secondary)]">
-        {t("content") || "内容"} *
-      </label>
+      <FieldLabel className="mt-4">{t("content") || "内容"} *</FieldLabel>
       <Textarea
         className="mt-1 min-h-[180px]"
         placeholder={t("recordThoughts") || "记录你的思考和感悟..."}
@@ -149,7 +149,7 @@ export const ReflectionModal = ({
         onChange={(event) => setBody(event.target.value)}
       />
 
-      <div className="mt-6 flex justify-end gap-3">
+      <FormActions>
         <Button variant="secondary" onClick={handleClose} disabled={saving}>
           {t("cancel") || "取消"}
         </Button>
@@ -163,7 +163,7 @@ export const ReflectionModal = ({
               ? t("update") || "更新"
               : t("save") || "保存"}
         </Button>
-      </div>
-    </Modal>
+      </FormActions>
+    </FormDialogShell>
   );
 };

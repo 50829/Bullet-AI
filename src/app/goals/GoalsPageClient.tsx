@@ -1,42 +1,24 @@
-// app/goals/page.tsx
 "use client";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+
+import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
-import { Calendar } from "../components/Calendar";
-import { useGoalsContext } from "../../features/workspace/WorkspaceContext";
-import { useLanguage } from "../context/LanguageContext";
-import { useTopBar } from "../components/layout/TopBar";
-import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
 import { useHabits } from "../../features/habits/hooks/useHabits";
-import { HabitList } from "../../features/habits/components/HabitList";
-import type { GoalPlan } from "../../features/goals/types";
-import { useToast } from "../components/ui/Toast";
-import { EmptyState } from "../components/ui/EmptyState";
+import type { HabitView } from "../../features/habits/types";
+import type { GoalRecord } from "../../features/workspace/types";
+import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { LoadingState } from "../components/ui/LoadingState";
-import { GoalCard } from "../../features/goals/components/GoalCard";
-import {
-  SortableGoalList,
-  SortableGoalItem,
-} from "../../features/goals/components/SortableGoalList";
-import {
-  isGoalCompleted,
-  shouldShowGoal,
-  sortGoalsByCompletion,
-  sortGoalsByOrder,
-} from "../../features/goals/goalVisibility";
-import { useCompletedGoalRetention } from "../../features/goals/hooks/useCompletedGoalRetention";
-import { createClientId } from "../../lib/localDb/repository";
+import { useToast } from "../components/ui/Toast";
+import { useLanguage } from "../context/LanguageContext";
+import { useAssistantPanel } from "../hooks/useAssistantPanel";
+import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
+import { GoalPlanningBoard } from "./components/GoalPlanningBoard";
+import { HabitsSection } from "./components/HabitsSection";
+import { useGoalPlanningPage } from "./hooks/useGoalPlanningPage";
 
 const AssistantDrawer = dynamic(
   () =>
     import("../components/AssistantDrawer").then((mod) => mod.AssistantDrawer),
-  { ssr: false },
-);
-const ConfirmDialog = dynamic(
-  () =>
-    import("../components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
   { ssr: false },
 );
 const GoalModal = dynamic(
@@ -51,28 +33,15 @@ const HabitFormDialog = dynamic(
   { ssr: false },
 );
 
-function getTodayDate() {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-}
-
-function formatDateToLocal(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+type DeleteTarget = {
+  type: "goal" | "habit";
+  id: number;
+  name: string;
+  imagePath?: string | null;
+};
 
 export default function GoalsPageClient() {
-  const {
-    goals,
-    loading,
-    refreshGoals,
-    addGoal,
-    deleteGoal,
-    updateGoal,
-    reorderGoals,
-  } = useGoalsContext();
+  const goalPage = useGoalPlanningPage();
   const {
     habits,
     loading: habitsLoading,
@@ -86,146 +55,47 @@ export default function GoalsPageClient() {
   } = useHabits();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
-  const { setTopBarHandlers } = useTopBar();
-  const completedGoalRetention = useCompletedGoalRetention();
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<(typeof goals)[number] | null>(
-    null,
-  );
+  const [editingGoal, setEditingGoal] = useState<GoalRecord | null>(null);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
-  const [editingHabit, setEditingHabit] = useState<
-    (typeof habits)[number] | null
-  >(null);
-  const [showAIPanel, setShowAIPanel] = useState(false);
-  const [hasOpenedAIPanel, setHasOpenedAIPanel] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(() =>
-    getTodayDate(),
+  const [editingHabit, setEditingHabit] = useState<HabitView | null>(null);
+  const deleteConfirm = useDeleteConfirm<DeleteTarget>();
+
+  const openGoalModal = useCallback(() => {
+    setEditingGoal(null);
+    setIsGoalModalOpen(true);
+  }, []);
+  const topBarHandlers = useMemo(
+    () => ({
+      onAddGoal: openGoalModal,
+    }),
+    [openGoalModal],
   );
-  const [rightViewMode, setRightViewMode] = useState<"migration" | "schedule">(
-    "migration",
-  );
-
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<{
-    type: "goal" | "habit";
-    id: number;
-    name: string;
-    imagePath?: string | null;
-  } | null>(null);
-
-  const selectedDateGoals = useMemo(() => {
-    if (!selectedDate) return [];
-    const dateStr = formatDateToLocal(selectedDate);
-    return sortGoalsByCompletion(
-      sortGoalsByOrder(
-        goals.filter((goal) => {
-          if (goal.due_date !== dateStr) return false;
-          return shouldShowGoal(goal, completedGoalRetention);
-        }),
-      ),
-    );
-  }, [completedGoalRetention, goals, selectedDate]);
-
-  const migrationListGoals = useMemo(
-    () =>
-      sortGoalsByCompletion(
-        sortGoalsByOrder(
-          goals.filter(
-            (goal) =>
-              !goal.due_date && shouldShowGoal(goal, completedGoalRetention),
-          ),
-        ),
-      ),
-    [completedGoalRetention, goals],
-  );
-
-  const toggleGoalCompleted = async (goal: (typeof goals)[number]) => {
-    try {
-      const completed = isGoalCompleted(goal);
-      await updateGoal(goal.id, {
-        status: completed ? "pending" : "completed",
-        progress: completed ? 0 : 100,
-      });
-    } catch (err) {
-      showToast({
-        type: "error",
-        message:
-          err instanceof Error ? err.message : t("updateFailed") || "更新失败",
-      });
-    }
-  };
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setRightViewMode("schedule");
-  };
+  const assistantPanel = useAssistantPanel(topBarHandlers);
 
   const handleDelete = async () => {
-    if (!selectedItem) return;
-    const itemToDelete = selectedItem;
-
-    setDeleting(true);
-
-    try {
-      if (itemToDelete.type === "goal") {
-        await deleteGoal(itemToDelete.id, itemToDelete.imagePath);
-      } else {
-        await removeHabit(itemToDelete.id);
+    await deleteConfirm.confirm(async (target) => {
+      try {
+        if (target.type === "goal") {
+          await goalPage.deleteGoal(target.id, target.imagePath);
+        } else {
+          await removeHabit(target.id);
+        }
+      } catch (err) {
+        console.error("删除异常:", err);
+        showToast({
+          type: "error",
+          message: t("deleteFailed") || "删除失败，请稍后重试",
+        });
+        if (target.type === "goal") void goalPage.refreshGoals();
+        throw err;
       }
-      setShowConfirm(false);
-      setSelectedItem(null);
-    } catch (err) {
-      console.error("删除异常:", err);
-      showToast({
-        type: "error",
-        message: t("deleteFailed") || "删除失败，请稍后重试",
-      });
-      if (itemToDelete.type === "goal") {
-        void refreshGoals();
-      }
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const addTasksFromAIReply = async (plan: GoalPlan) => {
-    const temporaryIdBase = Date.now();
-    await Promise.all(
-      [...plan.daily, ...plan.future].map((task, index) =>
-        addGoal({
-          id: temporaryIdBase + index,
-          client_id: createClientId("goal"),
-          title: task.title,
-          description: task.description,
-          due_date: null,
-          status: "pending",
-          progress: 0,
-          image_url: null,
-          image_path: null,
-          created_at: new Date().toISOString(),
-        }),
-      ),
-    );
-  };
-
-  const toggleAIPanel = useCallback(() => {
-    setHasOpenedAIPanel(true);
-    setShowAIPanel((current) => !current);
-  }, []);
-
-  useEffect(() => {
-    setTopBarHandlers({
-      onAddGoal: () => {
-        setEditingGoal(null);
-        setIsGoalModalOpen(true);
-      },
-      onToggleAIPanel: toggleAIPanel,
     });
-  }, [setTopBarHandlers, toggleAIPanel]);
+  };
 
   const isInitialLoading =
-    (loading && goals.length === 0) || (habitsLoading && habits.length === 0);
+    (goalPage.loading && goalPage.goals.length === 0) ||
+    (habitsLoading && habits.length === 0);
   const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
 
   if (isInitialLoading) {
@@ -236,237 +106,72 @@ export default function GoalsPageClient() {
 
   return (
     <div className="flex min-h-full flex-col">
-      {hasOpenedAIPanel && (
+      {assistantPanel.shouldRender && (
         <AssistantDrawer
-          isOpen={showAIPanel}
-          onClose={() => setShowAIPanel(false)}
+          isOpen={assistantPanel.isOpen}
+          onClose={assistantPanel.close}
           mode="planning"
           title={language === "en" ? "Planning" : "规划"}
           placeholder={t("aiGoalInputPlaceholder") || "输入你想完成的大目标..."}
           purpose="goal_planning"
-          onAddGoals={addTasksFromAIReply}
+          onAddGoals={goalPage.addTasksFromAIReply}
         />
       )}
 
       <div className="flex-1">
         <div className="px-0 pb-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="lg:h-[520px]">
-                <Calendar
-                  selectedDate={selectedDate}
-                  onDateSelect={handleDateSelect}
-                  goals={goals}
-                />
-              </div>
+          <div className="mx-auto max-w-6xl">
+            <GoalPlanningBoard
+              allGoals={goalPage.goals}
+              selectedDate={goalPage.selectedDate}
+              rightViewMode={goalPage.rightViewMode}
+              migrationListGoals={goalPage.migrationListGoals}
+              selectedDateGoals={goalPage.selectedDateGoals}
+              language={language}
+              t={t}
+              onDateSelect={goalPage.handleDateSelect}
+              onViewModeChange={goalPage.setRightViewMode}
+              onReorderGoals={(orderedIds) =>
+                void goalPage.reorderGoals(orderedIds)
+              }
+              onCompleteGoal={goalPage.toggleGoalCompleted}
+              onEditGoal={(goal) => {
+                setEditingGoal(goal);
+                setIsGoalModalOpen(true);
+              }}
+              onDeleteGoal={(goal) =>
+                deleteConfirm.open({
+                  type: "goal",
+                  id: goal.id,
+                  name: goal.title,
+                  imagePath: goal.image_path,
+                })
+              }
+              onMigrateGoal={goalPage.migrateGoalToSelectedDate}
+              onMoveGoalBack={goalPage.moveGoalBack}
+            />
 
-              <div className="lg:h-[min(520px,calc(100dvh-6rem))]">
-                <Card
-                  className="relative flex min-h-[400px] flex-col rounded-xl p-5 lg:h-full"
-                  style={{
-                    backgroundColor:
-                      "var(--color-task-panel-card, var(--color-bg-card))",
-                  }}
-                >
-                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between flex-shrink-0">
-                    <h3 className="text-2xl font-semibold text-theme-primary">
-                      {rightViewMode === "migration"
-                        ? t("migrationList") || "待分配任务"
-                        : selectedDate
-                          ? `${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日`
-                          : t("selectDate") || "请选择日期"}
-                    </h3>
-                    <div className="inline-flex rounded-lg border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] p-1">
-                      {(["migration", "schedule"] as const).map((mode) => (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => setRightViewMode(mode)}
-                          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-150 motion-reduce:transition-none ${
-                            rightViewMode === mode
-                              ? "bg-[var(--color-primary)] text-[var(--color-text-on-primary)]"
-                              : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-text-primary)]"
-                          }`}
-                        >
-                          {mode === "migration"
-                            ? t("migrationList") || "待分配任务"
-                            : t("schedulePlanning") || "日程规划"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {rightViewMode === "migration" && (
-                    <div className="flex-1 flex flex-col min-h-0">
-                      {migrationListGoals.length === 0 && (
-                        <EmptyState
-                          title={language === "en" ? "No tasks" : "暂无任务"}
-                        />
-                      )}
-                      <div className="min-h-0 flex-1 divide-y divide-[var(--color-border-muted)] overflow-y-auto">
-                        <SortableGoalList
-                          ids={migrationListGoals.map((goal) => goal.id)}
-                          onReorder={(orderedIds) =>
-                            void reorderGoals(orderedIds)
-                          }
-                        >
-                          {migrationListGoals.map((goal) => (
-                            <SortableGoalItem key={goal.id} id={goal.id}>
-                              <GoalCard
-                                goal={goal}
-                                variant="list"
-                                onComplete={() => toggleGoalCompleted(goal)}
-                                onEdit={() => {
-                                  setEditingGoal(goal);
-                                  setIsGoalModalOpen(true);
-                                }}
-                                onDelete={() => {
-                                  setSelectedItem({
-                                    type: "goal",
-                                    id: goal.id,
-                                    name: goal.title,
-                                    imagePath: goal.image_path,
-                                  });
-                                  setShowConfirm(true);
-                                }}
-                                moveAction={
-                                  selectedDate
-                                    ? {
-                                        direction: "forward",
-                                        label: t("migrate") || "迁移",
-                                        onClick: async () => {
-                                          try {
-                                            const dateStr =
-                                              formatDateToLocal(selectedDate);
-                                            await updateGoal(goal.id, {
-                                              due_date: dateStr,
-                                            });
-                                            setRightViewMode("schedule");
-                                          } catch (err) {
-                                            showToast({
-                                              type: "error",
-                                              message:
-                                                err instanceof Error
-                                                  ? err.message
-                                                  : t("migrateFailed") ||
-                                                    "迁移失败",
-                                            });
-                                          }
-                                        },
-                                      }
-                                    : undefined
-                                }
-                              />
-                            </SortableGoalItem>
-                          ))}
-                        </SortableGoalList>
-                      </div>
-                    </div>
-                  )}
-
-                  {rightViewMode === "schedule" && (
-                    <div className="flex-1 flex flex-col min-h-0 relative">
-                      {selectedDateGoals.length === 0 && (
-                        <EmptyState
-                          title={language === "en" ? "No goals" : "暂无目标"}
-                        />
-                      )}
-                      <div className="min-h-0 flex-1 divide-y divide-[var(--color-border-muted)] overflow-y-auto">
-                        <SortableGoalList
-                          ids={selectedDateGoals.map((goal) => goal.id)}
-                          onReorder={(orderedIds) =>
-                            void reorderGoals(orderedIds)
-                          }
-                        >
-                          {selectedDateGoals.map((goal) => (
-                            <SortableGoalItem key={goal.id} id={goal.id}>
-                              <GoalCard
-                                goal={goal}
-                                variant="list"
-                                onComplete={() => toggleGoalCompleted(goal)}
-                                onEdit={() => {
-                                  setEditingGoal(goal);
-                                  setIsGoalModalOpen(true);
-                                }}
-                                onDelete={() => {
-                                  setSelectedItem({
-                                    type: "goal",
-                                    id: goal.id,
-                                    name: goal.title,
-                                    imagePath: goal.image_path,
-                                  });
-                                  setShowConfirm(true);
-                                }}
-                                moveAction={{
-                                  direction: "back",
-                                  label: t("moveBack") || "迁回",
-                                  onClick: async () => {
-                                    try {
-                                      await updateGoal(goal.id, {
-                                        due_date: null,
-                                      });
-                                      setRightViewMode("migration");
-                                    } catch (err) {
-                                      showToast({
-                                        type: "error",
-                                        message:
-                                          err instanceof Error
-                                            ? err.message
-                                            : t("moveBackFailed") || "迁回失败",
-                                      });
-                                    }
-                                  },
-                                }}
-                              />
-                            </SortableGoalItem>
-                          ))}
-                        </SortableGoalList>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <Card className="rounded-xl">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-[var(--color-text-primary)]">
-                    {t("myHabits") || "我的习惯"}
-                  </h3>
-                  <Button
-                    onClick={() => setIsHabitModalOpen(true)}
-                    variant="outline"
-                  >
-                    + {t("new")} {t("habit")}
-                  </Button>
-                </div>
-                {habitsError && (
-                  <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
-                    {habitsError}
-                  </p>
-                )}
-                <HabitList
-                  habits={habits}
-                  loading={habitsLoading && habits.length === 0}
-                  onCreateClick={() => setIsHabitModalOpen(true)}
-                  onCheckinToday={checkinToday}
-                  onToggleCheckin={toggleCheckin}
-                  onEdit={(habit) => {
-                    setEditingHabit(habit);
-                    setIsHabitModalOpen(true);
-                  }}
-                  onDelete={(habit) => {
-                    setSelectedItem({
-                      type: "habit",
-                      id: habit.id,
-                      name: habit.name,
-                    });
-                    setShowConfirm(true);
-                  }}
-                />
-              </Card>
-            </div>
+            <HabitsSection
+              title={t("myHabits") || "我的习惯"}
+              newLabel={`+ ${t("new")} ${t("habit")}`}
+              habits={habits}
+              loading={habitsLoading && habits.length === 0}
+              error={habitsError}
+              onCreateClick={() => setIsHabitModalOpen(true)}
+              onCheckinToday={checkinToday}
+              onToggleCheckin={toggleCheckin}
+              onEdit={(habit) => {
+                setEditingHabit(habit);
+                setIsHabitModalOpen(true);
+              }}
+              onDelete={(habit) =>
+                deleteConfirm.open({
+                  type: "habit",
+                  id: habit.id,
+                  name: habit.name,
+                })
+              }
+            />
           </div>
         </div>
       </div>
@@ -497,20 +202,17 @@ export default function GoalsPageClient() {
         />
       )}
 
-      {showConfirm && selectedItem && (
+      {deleteConfirm.target && (
         <ConfirmDialog
           isOpen
-          title={`${t("confirmDelete") || "确认删除"} ${selectedItem?.name ?? ""}`}
+          title={`${t("confirmDelete") || "确认删除"} ${deleteConfirm.target.name}`}
           description={t("cannotRecover") || "删除后不可恢复"}
           confirmLabel={t("confirm") || "确认"}
           cancelLabel={t("cancel") || "取消"}
-          loading={deleting}
+          loading={deleteConfirm.loading}
           tone="danger"
           onConfirm={handleDelete}
-          onCancel={() => {
-            setShowConfirm(false);
-            setSelectedItem(null);
-          }}
+          onCancel={deleteConfirm.cancel}
         />
       )}
     </div>

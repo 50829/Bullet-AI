@@ -1,10 +1,12 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { X } from "lucide-react";
 import { Button } from "./ui/Button";
+import { ColorSwatchPicker } from "./ui/ColorSwatchPicker";
+import { FieldLabel } from "./ui/FieldLabel";
+import { FormDialogShell } from "./ui/FormDialogShell";
+import { FormActions } from "./ui/FormActions";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
-import { Modal } from "./ui/Modal";
 import { DateField } from "./date/DateField";
 import { useLanguage } from "../context/LanguageContext";
 import { useGoalsContext } from "../../features/workspace/WorkspaceContext";
@@ -121,31 +123,16 @@ export const GoalModal = ({
   };
 
   return (
-    <Modal
+    <FormDialogShell
       isOpen={isOpen}
       onClose={handleClose}
-      className="max-w-md rounded-2xl bg-[var(--color-bg-surface)] p-6 shadow-xl"
+      title={isEditing ? t("edit") || "编辑" : t("newGoal") || "新建目标"}
+      closeLabel={t("close") || "关闭"}
+      modalClassName="max-w-md"
     >
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
-          {isEditing ? t("edit") || "编辑" : t("newGoal") || "新建目标"}
-        </h2>
-        <button
-          type="button"
-          onClick={handleClose}
-          className="rounded-full p-2 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-card)] motion-reduce:transition-none"
-          aria-label={t("close") || "关闭"}
-        >
-          <X size={20} />
-        </button>
-      </div>
-
-      <label className="mt-5 block text-sm font-medium text-[var(--color-text-primary)]">
+      <FieldLabel className="mt-5" meta={`(${title.length}/30)`}>
         {t("title") || "标题"}
-        <span className="ml-2 text-xs font-normal text-[var(--color-text-secondary)]">
-          ({title.length}/30)
-        </span>
-      </label>
+      </FieldLabel>
       <Input
         placeholder={t("enterGoal") || "输入目标..."}
         value={title}
@@ -156,12 +143,9 @@ export const GoalModal = ({
         className="mt-2 rounded-xl"
       />
 
-      <label className="mt-4 block text-sm font-medium text-[var(--color-text-primary)]">
+      <FieldLabel className="mt-4" meta={`(${description.length}/70)`}>
         {t("description") || "描述"}
-        <span className="ml-2 text-xs font-normal text-[var(--color-text-secondary)]">
-          ({description.length}/70)
-        </span>
-      </label>
+      </FieldLabel>
       <Textarea
         placeholder={t("detailedDescription") || "详细描述..."}
         value={description}
@@ -173,9 +157,7 @@ export const GoalModal = ({
         className="mt-2 rounded-xl"
       />
 
-      <label className="mt-4 block text-sm font-medium text-[var(--color-text-primary)]">
-        {t("dueDate") || "日期"}
-      </label>
+      <FieldLabel className="mt-4">{t("dueDate") || "日期"}</FieldLabel>
       <DateField
         value={dueDate}
         onChange={setDueDate}
@@ -183,29 +165,18 @@ export const GoalModal = ({
         className="mt-2 rounded-xl"
       />
 
-      <label className="mt-4 block text-sm font-medium text-[var(--color-text-primary)]">
-        {t("color") || "标识颜色"}
-      </label>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {GOAL_COLORS.map(({ value, swatch }) => {
-          const selected = color === value;
-          return (
-            <button
-              key={value ?? "theme"}
-              type="button"
-              onClick={() => setColor(value)}
-              className={`h-8 w-8 rounded-lg border-2 transition-colors duration-150 motion-reduce:transition-none ${
-                selected
-                  ? "border-[var(--color-text-primary)]"
-                  : "border-transparent"
-              }`}
-              style={{ backgroundColor: swatch }}
-              aria-label={value ?? (t("themeDefault") || "主题色")}
-              aria-pressed={selected}
-            />
-          );
-        })}
-      </div>
+      <FieldLabel className="mt-4">{t("color") || "标识颜色"}</FieldLabel>
+      <ColorSwatchPicker
+        value={color}
+        options={GOAL_COLORS.map(({ value, swatch }) => ({
+          value,
+          swatch,
+          label: value ?? (t("themeDefault") || "主题色"),
+        }))}
+        onChange={setColor}
+        nullable
+        className="mt-2"
+      />
 
       {message && (
         <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
@@ -213,7 +184,7 @@ export const GoalModal = ({
         </p>
       )}
 
-      <div className="mt-6 flex justify-end gap-3">
+      <FormActions>
         <Button
           variant="secondary"
           onClick={handleClose}
@@ -223,7 +194,8 @@ export const GoalModal = ({
         </Button>
         <Button
           onClick={handleSubmit}
-          className={`min-w-[60px] h-10 ${loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}`}
+          disabled={loading}
+          className="min-w-[60px] h-10"
         >
           {loading
             ? t("saving") || "记录中..."
@@ -231,7 +203,7 @@ export const GoalModal = ({
               ? t("update") || "更新"
               : t("save") || "记录"}
         </Button>
-      </div>
-    </Modal>
+      </FormActions>
+    </FormDialogShell>
   );
 };
