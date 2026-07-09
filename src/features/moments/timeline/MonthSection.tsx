@@ -1,8 +1,8 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import type { MomentRecord as Moment } from "../../../features/workspace/types";
-import type { MomentMonthCard } from "../hooks/useMomentTimeline";
+import type { MomentRecord as Moment } from "../types";
+import type { MomentMonthCard } from "./useMomentTimeline";
 import { DayGroup } from "./DayGroup";
 
 type MonthSectionProps = {

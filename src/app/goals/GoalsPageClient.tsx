@@ -4,7 +4,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useHabits } from "../../features/habits/hooks/useHabits";
 import type { HabitView } from "../../features/habits/types";
-import type { GoalRecord } from "../../features/workspace/types";
+import type { GoalRecord } from "../../features/goals/types";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
 import { ConfirmDialog } from "../../shared/components/ui/ConfirmDialog";
 import { LoadingState } from "../../shared/components/ui/LoadingState";
@@ -12,9 +12,9 @@ import { useToast } from "../../shared/components/ui/Toast";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useAssistantPanel } from "../hooks/useAssistantPanel";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
-import { GoalPlanningBoard } from "./components/GoalPlanningBoard";
+import { GoalPlanningBoard } from "../../features/goals/planning/GoalPlanningBoard";
 import { HabitsSection } from "./components/HabitsSection";
-import { useGoalPlanningPage } from "./hooks/useGoalPlanningPage";
+import { useGoalPlanningPage } from "../../features/goals/planning/useGoalPlanningPage";
 
 const AssistantDrawer = dynamic(
   () =>

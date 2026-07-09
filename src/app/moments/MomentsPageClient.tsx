@@ -2,7 +2,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { useMomentsContext } from "../../features/workspace/WorkspaceContext";
+import { useMoments } from "../../features/moments/hooks/useMoments";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
 import { useToast } from "../../shared/components/ui/Toast";
@@ -12,9 +12,9 @@ import { LoadingState } from "../../shared/components/ui/LoadingState";
 import { useAssistantPanel } from "../hooks/useAssistantPanel";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 import { useHighlightedSearchItem } from "../hooks/useHighlightedSearchItem";
-import { MonthSection } from "./components/MonthSection";
-import { useMomentTimeline } from "./hooks/useMomentTimeline";
-import type { MomentRecord as Moment } from "../../features/workspace/types";
+import { MonthSection } from "../../features/moments/timeline/MonthSection";
+import { useMomentTimeline } from "../../features/moments/timeline/useMomentTimeline";
+import type { MomentRecord as Moment } from "../../features/moments/types";
 
 const AssistantDrawer = dynamic(
   () =>
@@ -36,7 +36,7 @@ const MomentModal = dynamic(
 
 export default function MomentsPageClient() {
   const { moments, loading, refreshMoments, addMoment, updateMoment, deleteMoment } =
-    useMomentsContext();
+    useMoments();
   const searchParams = useSearchParams();
   const { t, language } = useLanguage();
   const { showToast } = useToast();

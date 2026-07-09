@@ -7,19 +7,17 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import type { WorkspaceEntity } from "./types";
-import {
-  WorkspaceCollectionStore,
-  type WorkspaceCollectionBucket,
-} from "./workspaceCollectionStore";
+import type { LocalCollection } from "../localDb/types";
+import type { LocalFirstEntity } from "./types";
+import { LocalFirstCollectionStore } from "./localFirstCollectionStore";
 
-type UseWorkspaceCollectionInput = {
+type UseLocalFirstCollectionInput = {
   userId: string | null;
-  collection: WorkspaceCollectionBucket;
+  collection: LocalCollection;
   remoteOrder?: { column: string; ascending: boolean };
 };
 
-export type WorkspaceCollectionController<T extends WorkspaceEntity> = {
+export type LocalFirstCollectionController<T extends LocalFirstEntity> = {
   items: T[];
   loading: boolean;
   setItems: Dispatch<SetStateAction<T[]>>;
@@ -33,18 +31,23 @@ export type WorkspaceCollectionController<T extends WorkspaceEntity> = {
   queueUpdate: (entity: T, operation?: "upsert" | "update") => Promise<void>;
 };
 
-export function useWorkspaceCollection<T extends WorkspaceEntity>({
+export function useLocalFirstCollection<T extends LocalFirstEntity>({
   userId,
   collection,
   remoteOrder,
-}: UseWorkspaceCollectionInput): WorkspaceCollectionController<T> {
+}: UseLocalFirstCollectionInput): LocalFirstCollectionController<T> {
+  const remoteOrderColumn = remoteOrder?.column;
+  const remoteOrderAscending = remoteOrder?.ascending;
   const store = useMemo(
     () =>
-      WorkspaceCollectionStore.create<T>({
+      LocalFirstCollectionStore.create<T>({
         collection,
-        remoteOrder,
+        remoteOrder:
+          remoteOrderColumn === undefined || remoteOrderAscending === undefined
+            ? undefined
+            : { column: remoteOrderColumn, ascending: remoteOrderAscending },
       }),
-    [collection, remoteOrder],
+    [collection, remoteOrderAscending, remoteOrderColumn],
   );
 
   const snapshot = useSyncExternalStore(

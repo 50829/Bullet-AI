@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { useReflectionsContext } from "../../features/workspace/WorkspaceContext";
+import { useReflections } from "../../features/reflections/hooks/useReflections";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
 import { Button } from "../../shared/components/ui/Button";
@@ -13,8 +13,8 @@ import { useToast } from "../../shared/components/ui/Toast";
 import { useAssistantPanel } from "../hooks/useAssistantPanel";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 import { useHighlightedSearchItem } from "../hooks/useHighlightedSearchItem";
-import { ReflectionCard } from "./components/ReflectionCard";
-import type { ReflectionRecord as Reflection } from "../../features/workspace/types";
+import { ReflectionCard } from "../../features/reflections/components/ReflectionCard";
+import type { ReflectionRecord as Reflection } from "../../features/reflections/types";
 
 const AssistantDrawer = dynamic(
   () =>
@@ -42,7 +42,7 @@ export default function ReflectionsPageClient() {
     addReflection,
     updateReflection,
     deleteReflection,
-  } = useReflectionsContext();
+  } = useReflections();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
   const { showToast } = useToast();

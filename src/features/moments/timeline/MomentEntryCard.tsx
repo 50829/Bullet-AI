@@ -5,7 +5,7 @@ import { PlainImage } from "../../../shared/components/ui/PlainImage";
 import { ActionButtonGroup } from "../../../shared/components/ui/ActionButtonGroup";
 import { IconButton } from "../../../shared/components/ui/IconButton";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import type { MomentRecord as Moment } from "../../../features/workspace/types";
+import type { MomentRecord as Moment } from "../types";
 
 type MomentEntryCardProps = {
   moment: Moment;

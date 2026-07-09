@@ -1,157 +1,83 @@
 "use client";
 
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { addDays, toDateKey } from "../../../lib/date/dateUtils";
+import { createClientId } from "../../../lib/localDb/repository";
+import { createOptimisticId } from "../../../lib/localFirst/collectionUtils";
+import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
 import { useWorkspaceSessionContext } from "../../workspace/WorkspaceContext";
-import { toDateKey } from "../../../lib/date/dateUtils";
-import type { CreateHabitInput, HabitView, UpdateHabitInput } from "../types";
-import {
-  createHabitLocal,
-  deleteHabitLocal,
-  readHabitViews,
-  refreshHabitViews,
-  setHabitCheckinLocal,
-  subscribeHabitViews,
-  updateHabitLocal,
-} from "../services/habitRepository";
-import { shouldRefreshHabits } from "./habitRefreshPolicy";
+import type {
+  CreateHabitInput,
+  HabitCheckin,
+  HabitRecord,
+  HabitView,
+  UpdateHabitInput,
+} from "../types";
 
-type HabitState = {
-  userId: string | null;
-  habits: HabitView[];
-  loading: boolean;
-  saving: boolean;
-  error: string | null;
-  hydrated: boolean;
-  lastRefreshedAt: number | null;
-};
+function calculateDailyStreak(checkins: HabitCheckin[]) {
+  const checkedDates = new Set(
+    checkins
+      .filter((checkin) => checkin.checked)
+      .map((checkin) => checkin.checked_on),
+  );
+  let cursor = toDateKey();
+  let streak = 0;
 
-const SERVER_SNAPSHOT: HabitState = {
-  userId: null,
-  habits: [],
-  loading: false,
-  saving: false,
-  error: null,
-  hydrated: false,
-  lastRefreshedAt: null,
-};
-const listeners = new Set<() => void>();
-let state: HabitState = { ...SERVER_SNAPSHOT };
-let refreshPromise: Promise<void> | null = null;
-let refreshUserId: string | null = null;
-
-function emit() {
-  listeners.forEach((listener) => listener());
+  while (checkedDates.has(cursor)) {
+    streak += 1;
+    cursor = addDays(cursor, -1);
+  }
+  return streak;
 }
 
-function setState(updates: Partial<HabitState>) {
-  state = { ...state, ...updates };
-  emit();
-}
+function projectHabit(
+  habit: HabitRecord,
+  allCheckins: HabitCheckin[],
+): HabitView {
+  const checkins = allCheckins
+    .filter(
+      (checkin) =>
+        checkin.habit_client_id === habit.client_id &&
+        checkin.checked &&
+        !checkin.deleted_at,
+    )
+    .sort((a, b) => b.checked_on.localeCompare(a.checked_on));
+  const todayCheckin =
+    checkins.find((checkin) => checkin.checked_on === toDateKey()) ?? null;
 
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-function getSnapshot() {
-  return state;
-}
-
-function getServerSnapshot() {
-  return SERVER_SNAPSHOT;
-}
-
-async function loadLocal(userId: string) {
-  const habits = await readHabitViews(userId);
-  if (state.userId === userId)
-    setState({ habits, loading: false, hydrated: true });
-}
-
-async function refreshStore(
-  userId: string,
-  options?: { silent?: boolean; force?: boolean },
-) {
-  if (refreshPromise && refreshUserId === userId) return refreshPromise;
-  if (!options?.force && !shouldRefreshHabits(state.lastRefreshedAt)) return;
-  if (!options?.silent) setState({ loading: true, error: null });
-
-  refreshUserId = userId;
-  const promise = (async () => {
-    try {
-      const habits = await refreshHabitViews(userId);
-      if (state.userId === userId) {
-        setState({
-          habits,
-          loading: false,
-          error: null,
-          hydrated: true,
-          lastRefreshedAt: Date.now(),
-        });
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "加载习惯失败";
-      if (state.userId === userId) setState({ loading: false, error: message });
-    } finally {
-      if (refreshPromise === promise) {
-        refreshPromise = null;
-        refreshUserId = null;
-      }
-    }
-  })();
-  refreshPromise = promise;
-  return refreshPromise;
+  return {
+    ...habit,
+    checkedToday: Boolean(todayCheckin),
+    todayCheckinId: todayCheckin?.id ?? null,
+    checkinCount: checkins.length,
+    lastCheckedOn: checkins[0]?.checked_on ?? null,
+    streak: habit.frequency === "daily" ? calculateDailyStreak(checkins) : 0,
+    checkins,
+  };
 }
 
 export function useHabits() {
   const { userId } = useWorkspaceSessionContext();
-  const snapshot = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
+  const habitsCollection = useLocalFirstCollection<HabitRecord>({
+    userId,
+    collection: "habits",
+  });
+  const checkinsCollection = useLocalFirstCollection<HabitCheckin>({
+    userId,
+    collection: "habit_checkins",
+    remoteOrder: { column: "checked_on", ascending: false },
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const habits = useMemo(
+    () =>
+      habitsCollection.items
+        .filter((habit) => !habit.deleted_at)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map((habit) => projectHabit(habit, checkinsCollection.items)),
+    [checkinsCollection.items, habitsCollection.items],
   );
-
-  useEffect(() => {
-    if (!userId) {
-      setState({
-        userId: null,
-        habits: [],
-        loading: false,
-        saving: false,
-        error: null,
-        hydrated: false,
-        lastRefreshedAt: null,
-      });
-      return;
-    }
-
-    const requiresLocalLoad = state.userId !== userId || !state.hydrated;
-    if (state.userId !== userId) {
-      setState({
-        userId,
-        habits: [],
-        loading: true,
-        saving: false,
-        error: null,
-        hydrated: false,
-        lastRefreshedAt: null,
-      });
-    }
-    let disposed = false;
-    const reload = () => {
-      if (!disposed) void loadLocal(userId);
-    };
-    const unsubscribe = subscribeHabitViews(userId, reload);
-
-    const hydration = requiresLocalLoad ? loadLocal(userId) : Promise.resolve();
-    void hydration.then(() => {
-      if (!disposed) void refreshStore(userId, { silent: true });
-    });
-
-    return () => {
-      disposed = true;
-      unsubscribe();
-    };
-  }, [userId]);
 
   const requireUser = useCallback(() => {
     if (!userId) throw new Error("请先登录");
@@ -161,50 +87,126 @@ export function useHabits() {
   const runMutation = useCallback(
     async (operation: (activeUserId: string) => Promise<unknown>) => {
       const activeUserId = requireUser();
-      setState({ saving: true, error: null });
+      setSaving(true);
+      setError(null);
       try {
         await operation(activeUserId);
-        await loadLocal(activeUserId);
       } catch (error) {
         const message = error instanceof Error ? error.message : "保存习惯失败";
-        setState({ error: message });
+        setError(message);
         throw error;
       } finally {
-        if (state.userId === activeUserId) setState({ saving: false });
+        setSaving(false);
       }
     },
     [requireUser],
   );
 
   const refresh = useCallback(async () => {
-    await refreshStore(requireUser(), { force: true });
-  }, [requireUser]);
+    requireUser();
+    await Promise.all([
+      habitsCollection.refresh(undefined, { showLoading: true }),
+      checkinsCollection.refresh(undefined, { showLoading: true }),
+    ]);
+  }, [checkinsCollection, habitsCollection, requireUser]);
 
   const createHabit = useCallback(
     async (input: CreateHabitInput) => {
-      await runMutation((activeUserId) =>
-        createHabitLocal(activeUserId, input),
-      );
+      await runMutation(async (activeUserId) => {
+        const now = new Date().toISOString();
+        await habitsCollection.add({
+          id: createOptimisticId(),
+          client_id: input.client_id ?? createClientId("habit"),
+          user_id: activeUserId,
+          name: input.name.trim(),
+          description: input.description?.trim() || null,
+          frequency: input.frequency,
+          color: input.color ?? null,
+          created_at: now,
+          updated_at: now,
+          deleted_at: null,
+        });
+      });
     },
-    [runMutation],
+    [habitsCollection, runMutation],
   );
 
   const updateHabit = useCallback(
     async (habitId: number, input: UpdateHabitInput) => {
-      await runMutation((activeUserId) =>
-        updateHabitLocal(activeUserId, habitId, input),
-      );
+      await runMutation(async () => {
+        const current = habitsCollection.items.find(
+          (habit) => habit.id === habitId,
+        );
+        if (!current) throw new Error("习惯不存在或已删除");
+
+        await habitsCollection.update(habitId, {
+          name: typeof input.name === "string" ? input.name.trim() : current.name,
+          description:
+            typeof input.description === "string"
+              ? input.description.trim() || null
+              : current.description,
+          frequency: input.frequency ?? current.frequency,
+          color: "color" in input ? (input.color ?? null) : current.color,
+        });
+      });
     },
-    [runMutation],
+    [habitsCollection, runMutation],
   );
 
   const removeHabit = useCallback(
     async (habitId: number) => {
-      await runMutation((activeUserId) =>
-        deleteHabitLocal(activeUserId, habitId),
-      );
+      await runMutation(async () => {
+        const habit = habitsCollection.items.find((item) => item.id === habitId);
+        if (!habit) return;
+
+        const related = checkinsCollection.items.filter(
+          (checkin) => checkin.habit_client_id === habit.client_id,
+        );
+        await Promise.all(
+          related.map((checkin) => checkinsCollection.remove(checkin.id)),
+        );
+        await habitsCollection.remove(habit.id);
+      });
     },
-    [runMutation],
+    [checkinsCollection, habitsCollection, runMutation],
+  );
+
+  const setHabitCheckin = useCallback(
+    async (habit: HabitView, checkedOn: string, checked: boolean) => {
+      await runMutation(async (activeUserId) => {
+        const createdOn = toDateKey(habit.created_at);
+        const today = toDateKey();
+        if (checkedOn < createdOn)
+          throw new Error("不能给习惯创建日前的日期打卡");
+        if (checkedOn > today) throw new Error("不能提前给未来日期打卡");
+
+        const clientId = `habit-checkin:${habit.client_id}:${checkedOn}`;
+        const current = checkinsCollection.items.find(
+          (checkin) => checkin.client_id === clientId,
+        );
+        const now = new Date().toISOString();
+        const checkin: HabitCheckin = {
+          id: current?.id ?? createOptimisticId(),
+          client_id: clientId,
+          user_id: activeUserId,
+          habit_id: current?.habit_id ?? null,
+          habit_client_id: habit.client_id,
+          checked_on: checkedOn,
+          checked,
+          created_at: current?.created_at ?? now,
+          updated_at: now,
+          deleted_at: null,
+        };
+
+        if (current) {
+          await checkinsCollection.update(current.id, checkin);
+          return;
+        }
+
+        await checkinsCollection.add(checkin);
+      });
+    },
+    [checkinsCollection, runMutation],
   );
 
   const toggleCheckin = useCallback(
@@ -212,11 +214,9 @@ export function useHabits() {
       const checked = !habit.checkins.some(
         (checkin) => checkin.checked_on === dateKey,
       );
-      await runMutation((activeUserId) =>
-        setHabitCheckinLocal(activeUserId, habit, dateKey, checked),
-      );
+      await setHabitCheckin(habit, dateKey, checked);
     },
-    [runMutation],
+    [setHabitCheckin],
   );
 
   const checkinToday = useCallback(
@@ -227,10 +227,10 @@ export function useHabits() {
   );
 
   return {
-    habits: snapshot.userId === userId ? snapshot.habits : [],
-    loading: snapshot.userId === userId ? snapshot.loading : Boolean(userId),
-    saving: snapshot.userId === userId ? snapshot.saving : false,
-    error: snapshot.userId === userId ? snapshot.error : null,
+    habits,
+    loading: habitsCollection.loading || checkinsCollection.loading,
+    saving,
+    error,
     refresh,
     createHabit,
     updateHabit,

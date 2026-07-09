@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MomentRecord } from "./types";
+import type { LocalFirstEntity } from "./types";
+
+type TestRecord = LocalFirstEntity & {
+  content: string;
+};
 
 const mocks = vi.hoisted(() => ({
-  remoteRows: [] as MomentRecord[],
+  remoteRows: [] as TestRecord[],
   repository: {
     list: vi.fn(),
     mutate: vi.fn(),
     remove: vi.fn(),
     replaceRemote: vi.fn(),
+    subscribe: vi.fn(() => () => undefined),
   },
   flushOutbox: vi.fn(),
   logger: {
@@ -17,19 +22,19 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("../../lib/localDb/localFirstRepository", () => ({
+vi.mock("../localDb/localFirstRepository", () => ({
   getLocalFirstRepository: vi.fn(() => mocks.repository),
 }));
 
-vi.mock("../../lib/localDb/syncEngine", () => ({
+vi.mock("../localDb/syncEngine", () => ({
   flushOutbox: mocks.flushOutbox,
 }));
 
-vi.mock("../../lib/observability/logger", () => ({
+vi.mock("../observability/logger", () => ({
   logger: mocks.logger,
 }));
 
-vi.mock("../../lib/supabaseClient", () => ({
+vi.mock("../supabaseClient", () => ({
   supabase: {
     from: vi.fn(() => {
       const builder = {
@@ -54,9 +59,11 @@ vi.mock("../../lib/supabaseClient", () => ({
   },
 }));
 
-const { WorkspaceCollectionStore } = await import("./workspaceCollectionStore");
+const { LocalFirstCollectionStore } = await import(
+  "./localFirstCollectionStore"
+);
 
-function moment(overrides: Partial<MomentRecord>): MomentRecord {
+function moment(overrides: Partial<TestRecord>): TestRecord {
   return {
     id: 1,
     client_id: "moment-1",
@@ -75,13 +82,15 @@ async function flushAsync() {
   await Promise.resolve();
 }
 
-describe("WorkspaceCollectionStore", () => {
+describe("LocalFirstCollectionStore", () => {
   beforeEach(() => {
     mocks.remoteRows = [];
     mocks.repository.list.mockReset();
     mocks.repository.mutate.mockReset();
     mocks.repository.remove.mockReset();
     mocks.repository.replaceRemote.mockReset();
+    mocks.repository.subscribe.mockReset();
+    mocks.repository.subscribe.mockReturnValue(() => undefined);
     mocks.flushOutbox.mockReset();
     mocks.logger.error.mockReset();
     mocks.logger.info.mockReset();
@@ -94,7 +103,7 @@ describe("WorkspaceCollectionStore", () => {
     mocks.repository.list.mockResolvedValue([cached]);
     mocks.remoteRows = [remote];
     mocks.repository.replaceRemote.mockResolvedValue([remote]);
-    const store = WorkspaceCollectionStore.create<MomentRecord>({
+    const store = LocalFirstCollectionStore.create<TestRecord>({
       collection: "moments",
     });
     const snapshots: Array<ReturnType<typeof store.getSnapshot>> = [];
@@ -118,7 +127,7 @@ describe("WorkspaceCollectionStore", () => {
     const cached = moment({ id: 1, content: "cached" });
     mocks.repository.list.mockResolvedValue([cached]);
     mocks.repository.replaceRemote.mockResolvedValue([cached]);
-    const store = WorkspaceCollectionStore.create<MomentRecord>({
+    const store = LocalFirstCollectionStore.create<TestRecord>({
       collection: "moments",
     });
 
@@ -137,7 +146,7 @@ describe("WorkspaceCollectionStore", () => {
     const cached = moment({ id: 1, content: "cached" });
     mocks.repository.list.mockResolvedValue([cached]);
     mocks.repository.replaceRemote.mockResolvedValue([cached]);
-    const store = WorkspaceCollectionStore.create<MomentRecord>({
+    const store = LocalFirstCollectionStore.create<TestRecord>({
       collection: "moments",
     });
 

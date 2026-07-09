@@ -10,33 +10,23 @@ import { Textarea } from "../../../shared/components/ui/Textarea";
 import { useToast } from "../../../shared/components/ui/Toast";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { parseReflectionContent } from "../../../lib/reflections/reflectionContent";
+import type {
+  CreateReflectionInput,
+  ReflectionRecord,
+  UpdateReflectionInput,
+} from "../types";
 
-export type ReflectionModalInitialReflection = {
-  id: number;
-  content: string;
-  title?: string | null;
-  body?: string | null;
-  created_at: string;
-};
+export type ReflectionModalInitialReflection = Pick<
+  ReflectionRecord,
+  "id" | "content" | "title" | "body" | "created_at"
+>;
 
-export type ReflectionModalCreateInput = {
-  id: number;
-  title: string;
-  body: string;
-  content: string;
-  created_at: string;
-  source: string | null;
-  source_type: string | null;
-  location: string | null;
-  image_url: string | null;
-  image_path: string | null;
-};
+export type ReflectionModalCreateInput = CreateReflectionInput;
 
-export type ReflectionModalUpdateInput = {
-  title: string;
-  body: string;
-  content: string;
-};
+export type ReflectionModalUpdateInput = Pick<
+  UpdateReflectionInput,
+  "title" | "body" | "content"
+>;
 
 type Props = {
   isOpen: boolean;
@@ -117,11 +107,9 @@ export const ReflectionModal = ({
         });
       } else {
         await onCreate({
-          id: Date.now(),
           title: nextTitle,
           body: nextBody,
           content,
-          created_at: new Date().toISOString(),
           source: null,
           source_type: null,
           location: null,

@@ -9,29 +9,16 @@ import { FormDialogShell } from "../../../shared/components/ui/FormDialogShell";
 import { Input } from "../../../shared/components/ui/Input";
 import { Textarea } from "../../../shared/components/ui/Textarea";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import type { CreateGoalInput, GoalRecord, UpdateGoalInput } from "../types";
 
-export type GoalModalCreateInput = {
-  id: number;
-  title: string;
-  description: string;
-  due_date?: string | null;
-  status: string;
-  progress: number;
-  color?: string | null;
-  image_url?: string | null;
-  image_path?: string | null;
-  created_at: string;
-};
-
-export type GoalModalUpdateInput = {
-  title: string;
-  description: string;
-  due_date: string | null;
-  color: string | null;
-};
+export type GoalModalCreateInput = CreateGoalInput;
+export type GoalModalUpdateInput = Pick<
+  UpdateGoalInput,
+  "title" | "description" | "due_date" | "color"
+>;
 
 export type GoalModalInitialGoal = Pick<
-  GoalModalCreateInput,
+  GoalRecord,
   | "id"
   | "title"
   | "description"
@@ -123,16 +110,10 @@ export const GoalModal = ({
       }
 
       await onCreate({
-        id: Date.now(),
         title: title.trim(),
         description: description.trim(),
         due_date: dueDate || null,
-        status: "pending",
-        progress: 0,
         color,
-        image_url: null,
-        image_path: null,
-        created_at: new Date().toISOString(),
       });
       setLoading(false);
       onSuccess();

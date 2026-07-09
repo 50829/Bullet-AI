@@ -6,7 +6,7 @@ import { ActionButtonGroup } from "../../../shared/components/ui/ActionButtonGro
 import { Card } from "../../../shared/components/ui/Card";
 import { IconButton } from "../../../shared/components/ui/IconButton";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import type { ReflectionRecord as Reflection } from "../../../features/workspace/types";
+import type { ReflectionRecord as Reflection } from "../types";
 
 type ReflectionCardProps = {
   reflection: Reflection;

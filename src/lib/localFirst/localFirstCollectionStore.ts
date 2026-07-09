@@ -1,11 +1,13 @@
 "use client";
 
 import type { SetStateAction } from "react";
-import { supabase } from "../../lib/supabaseClient";
-import { getLocalFirstRepository } from "../../lib/localDb/localFirstRepository";
-import { flushOutbox } from "../../lib/localDb/syncEngine";
-import { logger } from "../../lib/observability/logger";
-import type { WorkspaceEntity } from "./types";
+import { supabase } from "../supabaseClient";
+import { selectColumnsFor } from "../localDb/collectionConfig";
+import { getLocalFirstRepository } from "../localDb/localFirstRepository";
+import { flushOutbox } from "../localDb/syncEngine";
+import type { LocalCollection } from "../localDb/types";
+import { logger } from "../observability/logger";
+import type { LocalFirstEntity } from "./types";
 import {
   attachSignedUrls,
   ensureLocalFields,
@@ -16,49 +18,39 @@ import {
   type RepositoryEntity,
 } from "./collectionUtils";
 
-export type WorkspaceCollectionBucket = "moments" | "reflections" | "goals";
-
-type WorkspaceCollectionState<T extends WorkspaceEntity> = {
+type LocalFirstCollectionState<T extends LocalFirstEntity> = {
   userId: string | null;
   items: T[];
   loading: boolean;
 };
 
-type WorkspaceCollectionStoreInput = {
-  collection: WorkspaceCollectionBucket;
+type LocalFirstCollectionStoreInput = {
+  collection: LocalCollection;
   remoteOrder?: { column: string; ascending: boolean };
 };
 
-type WorkspaceCollectionListener = () => void;
+type LocalFirstCollectionListener = () => void;
 
 const SERVER_SNAPSHOT = {
   userId: null,
   items: [],
   loading: false,
-} satisfies WorkspaceCollectionState<WorkspaceEntity>;
+} satisfies LocalFirstCollectionState<LocalFirstEntity>;
 
-const WORKSPACE_REMOTE_SELECT: Record<WorkspaceCollectionBucket, string> = {
-  moments:
-    "id,client_id,user_id,content,image_path,created_at,updated_at,deleted_at",
-  reflections:
-    "id,client_id,user_id,content,title,body,source,source_type,location,image_path,created_at,updated_at,deleted_at",
-  goals:
-    "id,client_id,user_id,title,description,status,due_date,progress,color,sort_order,image_path,created_at,updated_at,deleted_at",
-};
-
-export class WorkspaceCollectionStore<T extends WorkspaceEntity> {
+export class LocalFirstCollectionStore<T extends LocalFirstEntity> {
   private readonly repository;
-  private readonly listeners = new Set<WorkspaceCollectionListener>();
+  private readonly listeners = new Set<LocalFirstCollectionListener>();
   private remoteOrder: { column: string; ascending: boolean };
-  private state: WorkspaceCollectionState<T> = {
+  private state: LocalFirstCollectionState<T> = {
     userId: null,
     items: [],
     loading: false,
   };
   private loadToken = 0;
+  private unsubscribeRepository: (() => void) | null = null;
 
   constructor(
-    readonly collection: WorkspaceCollectionBucket,
+    readonly collection: LocalCollection,
     remoteOrder?: { column: string; ascending: boolean },
   ) {
     this.repository = getLocalFirstRepository<T>(collection);
@@ -68,31 +60,37 @@ export class WorkspaceCollectionStore<T extends WorkspaceEntity> {
     };
   }
 
-  static create<T extends WorkspaceEntity>({
+  static create<T extends LocalFirstEntity>({
     collection,
     remoteOrder,
-  }: WorkspaceCollectionStoreInput) {
-    return new WorkspaceCollectionStore<T>(collection, remoteOrder);
+  }: LocalFirstCollectionStoreInput) {
+    return new LocalFirstCollectionStore<T>(collection, remoteOrder);
   }
 
-  subscribe = (listener: WorkspaceCollectionListener) => {
+  subscribe = (listener: LocalFirstCollectionListener) => {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   };
 
   getSnapshot = () => this.state;
 
-  getServerSnapshot = () => SERVER_SNAPSHOT as WorkspaceCollectionState<T>;
+  getServerSnapshot = () => SERVER_SNAPSHOT as LocalFirstCollectionState<T>;
 
   setUserId = (userId: string | null) => {
     if (this.state.userId === userId) return;
 
     const token = ++this.loadToken;
+    this.unsubscribeRepository?.();
+    this.unsubscribeRepository = null;
+
     if (!userId) {
       this.setState({ userId: null, items: [], loading: false });
       return;
     }
 
+    this.unsubscribeRepository = this.repository.subscribe(userId, () => {
+      void this.loadCachedForUser(userId, token);
+    });
     this.setState({ userId, items: [], loading: true });
     void this.loadForUser(userId, token);
   };
@@ -107,7 +105,7 @@ export class WorkspaceCollectionStore<T extends WorkspaceEntity> {
     try {
       const { data, error } = await supabase
         .from(this.collection)
-        .select(WORKSPACE_REMOTE_SELECT[this.collection])
+        .select(selectColumnsFor(this.collection))
         .eq("user_id", activeUserId)
         .is("deleted_at", null)
         .order(this.remoteOrder.column, {
@@ -131,7 +129,7 @@ export class WorkspaceCollectionStore<T extends WorkspaceEntity> {
         items: sortByCreatedAtDesc(merged.map(withFormattedDate)),
       });
     } catch (error) {
-      logger.error("workspace_collection_refresh_failed", {
+      logger.error("local_first_collection_refresh_failed", {
         collection: this.collection,
         userId: activeUserId,
         error,
@@ -215,6 +213,12 @@ export class WorkspaceCollectionStore<T extends WorkspaceEntity> {
   };
 
   private async loadForUser(userId: string, token: number) {
+    await this.loadCachedForUser(userId, token);
+
+    if (this.isActiveLoad(userId, token)) await this.refresh(userId);
+  }
+
+  private async loadCachedForUser(userId: string, token: number) {
     try {
       const cached = await this.repository.list(userId);
       if (!this.isActiveLoad(userId, token)) return;
@@ -223,14 +227,12 @@ export class WorkspaceCollectionStore<T extends WorkspaceEntity> {
         loading: false,
       });
     } catch (error) {
-      logger.error("workspace_collection_cache_read_failed", {
+      logger.error("local_first_collection_cache_read_failed", {
         collection: this.collection,
         userId,
         error,
       });
     }
-
-    if (this.isActiveLoad(userId, token)) await this.refresh(userId);
   }
 
   private isActiveLoad(userId: string, token: number) {
@@ -239,10 +241,10 @@ export class WorkspaceCollectionStore<T extends WorkspaceEntity> {
 
   private setState(
     updates:
-      | Partial<WorkspaceCollectionState<T>>
+      | Partial<LocalFirstCollectionState<T>>
       | ((
-          current: WorkspaceCollectionState<T>,
-        ) => Partial<WorkspaceCollectionState<T>>),
+          current: LocalFirstCollectionState<T>,
+        ) => Partial<LocalFirstCollectionState<T>>),
   ) {
     const patch = typeof updates === "function" ? updates(this.state) : updates;
     this.state = { ...this.state, ...patch };

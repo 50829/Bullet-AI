@@ -1,11 +1,11 @@
 "use client";
 
-import { GoalCalendar } from "../../../features/goals/components/GoalCalendar";
+import { GoalCalendar } from "../components/GoalCalendar";
 import { Card } from "../../../shared/components/ui/Card";
 import { SegmentedControl } from "../../../shared/components/ui/SegmentedControl";
-import type { GoalRecord } from "../../../features/workspace/types";
+import type { GoalRecord } from "../types";
 import { GoalBucketPanel } from "./GoalBucketPanel";
-import type { GoalRightViewMode } from "../hooks/useGoalPlanningPage";
+import type { GoalRightViewMode } from "./useGoalPlanningPage";
 
 type GoalPlanningBoardProps = {
   allGoals: GoalRecord[];

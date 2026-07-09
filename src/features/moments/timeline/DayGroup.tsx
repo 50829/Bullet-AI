@@ -1,7 +1,7 @@
 "use client";
 
-import type { MomentRecord as Moment } from "../../../features/workspace/types";
-import type { MomentDayCard } from "../hooks/useMomentTimeline";
+import type { MomentRecord as Moment } from "../types";
+import type { MomentDayCard } from "./useMomentTimeline";
 import { MomentEntryCard } from "./MomentEntryCard";
 
 type DayGroupProps = {

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import type { HabitView } from "../../features/habits/types";
-import type { GoalRecord as Goal } from "../../features/workspace/types";
+import type { GoalRecord as Goal } from "../../features/goals/types";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { ConfirmDialog } from "../../shared/components/ui/ConfirmDialog";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";

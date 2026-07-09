@@ -20,11 +20,11 @@ import {
   type UserPreferences,
   type WeekStartsOnPreference,
 } from "../../../../lib/profile/preferences";
+import { useGoals } from "../../../../features/goals/hooks/useGoals";
 import { useHabits } from "../../../../features/habits/hooks/useHabits";
-import {
-  useWorkspaceExportContext,
-  useWorkspaceSessionContext,
-} from "../../../../features/workspace/WorkspaceContext";
+import { useMoments } from "../../../../features/moments/hooks/useMoments";
+import { useReflections } from "../../../../features/reflections/hooks/useReflections";
+import { useWorkspaceSessionContext } from "../../../../features/workspace/WorkspaceContext";
 import { supabase } from "../../../../lib/supabaseClient";
 import type { FormMessage } from "./types";
 
@@ -48,8 +48,10 @@ export function useSettingsProfile({
   const { t, language, setLanguage } = useLanguage();
   const router = useRouter();
   const { syncStatus, retrySync } = useWorkspaceSessionContext();
-  const { exportData } = useWorkspaceExportContext();
+  const { goals } = useGoals();
   const { habits } = useHabits();
+  const { moments } = useMoments();
+  const { reflections } = useReflections();
   const { showToast } = useToast();
   const [username, setUsername] = useState("");
   const [currentUsername, setCurrentUsername] = useState("");
@@ -231,9 +233,11 @@ export function useSettingsProfile({
   };
 
   const handleExport = () => {
-    const base = JSON.parse(exportData()) as Record<string, unknown>;
     const payload = {
-      ...base,
+      exported_at: new Date().toISOString(),
+      moments,
+      goals,
+      reflections,
       habits,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {

@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import type { MomentRecord as Moment } from "../../../features/workspace/types";
+import type { MomentRecord as Moment } from "../types";
 
 export type MomentDayCard = {
   date: string;

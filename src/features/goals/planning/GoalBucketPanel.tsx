@@ -1,12 +1,12 @@
 "use client";
 
 import { EmptyState } from "../../../shared/components/ui/EmptyState";
-import { GoalCard } from "../../../features/goals/components/GoalCard";
+import { GoalCard } from "../components/GoalCard";
 import {
   SortableGoalItem,
   SortableGoalList,
-} from "../../../features/goals/components/SortableGoalList";
-import type { GoalRecord } from "../../../features/workspace/types";
+} from "../components/SortableGoalList";
+import type { GoalRecord } from "../types";
 
 type GoalBucketPanelProps = {
   goals: GoalRecord[];

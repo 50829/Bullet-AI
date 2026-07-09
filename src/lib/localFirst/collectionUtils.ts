@@ -1,14 +1,16 @@
-import { supabase } from "../../lib/supabaseClient";
-import { getLocalFirstRepository } from "../../lib/localDb/localFirstRepository";
-import { createClientId } from "../../lib/localDb/repository";
-import type { LocalCollection } from "../../lib/localDb/types";
-import type { LocalMeta, WorkspaceEntity } from "./types";
+import { supabase } from "../supabaseClient";
+import { getLocalFirstRepository } from "../localDb/localFirstRepository";
+import { createClientId } from "../localDb/repository";
+import { hasStorageBucket } from "../localDb/collectionConfig";
+import type { LocalCollection } from "../localDb/types";
+import type { LocalFirstEntity, LocalFirstMeta } from "./types";
 
 const signedImageUrlCache = new Map<
   string,
   { url: string; expiresAt: number }
 >();
 const SIGNED_IMAGE_URL_TTL_MS = 55 * 60 * 1000;
+let optimisticIdCounter = 0;
 
 export type RepositoryEntity = {
   id?: number | string | null;
@@ -20,6 +22,11 @@ export type RepositoryEntity = {
 
 export function repositoryFor(collection: LocalCollection) {
   return getLocalFirstRepository<RepositoryEntity>(collection);
+}
+
+export function createOptimisticId() {
+  optimisticIdCounter = (optimisticIdCounter + 1) % 1000;
+  return Date.now() * 1000 + optimisticIdCounter;
 }
 
 export function formatDate(dateString: string) {
@@ -58,7 +65,11 @@ export function withFormattedDate<
 }
 
 export function ensureLocalFields<
-  T extends LocalMeta & { id?: number; user_id?: string; created_at?: string },
+  T extends LocalFirstMeta & {
+    id?: number;
+    user_id?: string;
+    created_at?: string;
+  },
 >(
   collection: LocalCollection,
   item: T,
@@ -73,7 +84,7 @@ export function ensureLocalFields<
   const prefix = collection.replace(/s$/, "");
   return {
     ...item,
-    id: item.id ?? Date.now(),
+    id: item.id ?? createOptimisticId(),
     user_id: item.user_id ?? userId ?? undefined,
     client_id: item.client_id || createClientId(prefix),
     created_at: item.created_at || now,
@@ -110,10 +121,12 @@ async function getSignedImageUrl(bucket: string, imagePath?: string | null) {
   return signedUrl;
 }
 
-export async function attachSignedUrls<T extends WorkspaceEntity>(
-  bucket: "moments" | "reflections" | "goals",
+export async function attachSignedUrls<T extends LocalFirstEntity>(
+  bucket: LocalCollection,
   items: T[],
 ) {
+  if (!hasStorageBucket(bucket)) return items.map(withFormattedDate);
+
   return Promise.all(
     items.map(async (item) => ({
       ...withFormattedDate(item),

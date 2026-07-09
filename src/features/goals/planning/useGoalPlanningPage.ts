@@ -1,16 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { GoalPlan } from "../../../features/goals/types";
+import type { GoalPlan } from "../types";
+import { useGoals } from "../hooks/useGoals";
 import {
   isGoalCompleted,
   shouldShowGoal,
   sortGoalsByCompletion,
   sortGoalsByOrder,
-} from "../../../features/goals/goalVisibility";
-import { useCompletedGoalRetention } from "../../../features/goals/hooks/useCompletedGoalRetention";
-import { useGoalsContext } from "../../../features/workspace/WorkspaceContext";
-import { createClientId } from "../../../lib/localDb/repository";
+} from "../goalVisibility";
+import { useCompletedGoalRetention } from "../hooks/useCompletedGoalRetention";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { useToast } from "../../../shared/components/ui/Toast";
 
@@ -29,7 +28,7 @@ export function formatDateToLocal(date: Date): string {
 }
 
 export function useGoalPlanningPage() {
-  const goalsContext = useGoalsContext();
+  const goalsContext = useGoals();
   const { goals, updateGoal, addGoal } = goalsContext;
   const { t } = useLanguage();
   const { showToast } = useToast();
@@ -121,20 +120,12 @@ export function useGoalPlanningPage() {
   };
 
   const addTasksFromAIReply = async (plan: GoalPlan) => {
-    const temporaryIdBase = Date.now();
     await Promise.all(
-      [...plan.daily, ...plan.future].map((task, index) =>
+      [...plan.daily, ...plan.future].map((task) =>
         addGoal({
-          id: temporaryIdBase + index,
-          client_id: createClientId("goal"),
           title: task.title,
           description: task.description,
           due_date: null,
-          status: "pending",
-          progress: 0,
-          image_url: null,
-          image_path: null,
-          created_at: new Date().toISOString(),
         }),
       ),
     );

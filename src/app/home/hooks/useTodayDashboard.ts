@@ -2,8 +2,12 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useGoals } from "../../../features/goals/hooks/useGoals";
+import type { GoalRecord as Goal } from "../../../features/goals/types";
 import { useHabits } from "../../../features/habits/hooks/useHabits";
 import type { HabitView } from "../../../features/habits/types";
+import { useMoments } from "../../../features/moments/hooks/useMoments";
+import { useReflections } from "../../../features/reflections/hooks/useReflections";
 import {
   isGoalCompleted,
   shouldShowGoal,
@@ -12,13 +16,7 @@ import {
 } from "../../../features/goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../../features/goals/hooks/useCompletedGoalRetention";
 import { parseReflectionContent } from "../../../lib/reflections/reflectionContent";
-import {
-  useGoalsContext,
-  useMomentsContext,
-  useReflectionsContext,
-  useWorkspaceSessionContext,
-} from "../../../features/workspace/WorkspaceContext";
-import type { GoalRecord as Goal } from "../../../features/workspace/types";
+import { useWorkspaceSessionContext } from "../../../features/workspace/WorkspaceContext";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { useToast } from "../../../shared/components/ui/Toast";
 
@@ -55,16 +53,15 @@ export type RecentDashboardItem = {
 
 export function useTodayDashboard() {
   const router = useRouter();
-  const { moments, addMoment, updateMoment } = useMomentsContext();
-  const { reflections, addReflection, updateReflection } =
-    useReflectionsContext();
+  const { moments, addMoment, updateMoment } = useMoments();
+  const { reflections, addReflection, updateReflection } = useReflections();
   const {
     goals,
     loading: goalsLoading,
     addGoal,
     updateGoal,
     deleteGoal,
-  } = useGoalsContext();
+  } = useGoals();
   const { syncStatus, retrySync } = useWorkspaceSessionContext();
   const habitsState = useHabits();
   const { habits } = habitsState;

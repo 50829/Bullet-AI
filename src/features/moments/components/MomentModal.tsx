@@ -9,35 +9,16 @@ import { PlainImage } from "../../../shared/components/ui/PlainImage";
 import { Textarea } from "../../../shared/components/ui/Textarea";
 import { useToast } from "../../../shared/components/ui/Toast";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import type { CreateMomentInput, MomentRecord, UpdateMomentInput } from "../types";
 
-export type MomentModalInitialMoment = {
-  id: number;
-  content: string;
-  created_at: string;
-  image_url?: string | null;
-  image_path?: string | null;
-};
+export type MomentModalInitialMoment = Pick<
+  MomentRecord,
+  "id" | "content" | "created_at" | "image_url" | "image_path"
+>;
 
-export type MomentModalCreateInput = {
-  id: number;
-  content: string;
-  image_path: string | null;
-  image_url?: string | null;
-  local_file?: File | null;
-  local_file_name?: string | null;
-  created_at: string;
-  date: string;
-};
+export type MomentModalCreateInput = CreateMomentInput;
 
-export type MomentModalUpdateInput = {
-  content: string;
-  created_at: string;
-  image_path: string | null;
-  image_url?: string | null;
-  local_file?: File | null;
-  local_file_name?: string | null;
-  previous_image_path?: string | null;
-};
+export type MomentModalUpdateInput = UpdateMomentInput;
 
 type Props = {
   isOpen: boolean;
@@ -153,7 +134,6 @@ export const MomentModal = ({
         });
       } else {
         await onCreate({
-          id: Date.now(),
           content,
           image_path: null,
           image_url: localImageUrl || previewUrl,

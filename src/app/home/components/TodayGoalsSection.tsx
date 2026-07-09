@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { GoalCard } from "../../../features/goals/components/GoalCard";
-import type { GoalRecord as Goal } from "../../../features/workspace/types";
+import type { GoalRecord as Goal } from "../../../features/goals/types";
 import { Button } from "../../../shared/components/ui/Button";
 import { DashboardCardSection } from "../../../shared/components/ui/DashboardCardSection";
 import { EmptyState } from "../../../shared/components/ui/EmptyState";
