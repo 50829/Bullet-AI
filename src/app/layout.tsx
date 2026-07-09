@@ -2,11 +2,11 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { LanguageProvider } from "./context/LanguageContext";
+import { LanguageProvider } from "../shared/i18n/LanguageContext";
 import { ThemeInitializer } from "./components/ThemeInitializer";
 import { Suspense } from "react";
-import { LoadingState } from "./components/ui/LoadingState";
-import { ToastProvider } from "./components/ui/Toast";
+import { LoadingState } from "../shared/components/ui/LoadingState";
+import { ToastProvider } from "../shared/components/ui/Toast";
 
 const inter = Inter({ subsets: ["latin"] });
 

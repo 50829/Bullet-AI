@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-import { useHabits } from "../../../features/habits/hooks/useHabits";
 import {
   getWorkspacePrefetchTargets,
   shouldSkipWorkspacePrefetch,
@@ -20,8 +19,6 @@ const warmedRoutes = new Set<string>();
 export function WorkspaceWarmup() {
   const pathname = usePathname();
   const router = useRouter();
-
-  useHabits();
 
   useEffect(() => {
     const connection = (navigator as NavigatorWithConnection).connection;

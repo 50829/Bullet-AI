@@ -1,7 +1,7 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
-import { Button } from "../ui/Button";
+import { Button } from "../../../shared/components/ui/Button";
 
 type TopBarActionsProps = {
   syncFailed: boolean;

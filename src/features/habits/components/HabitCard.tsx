@@ -3,9 +3,9 @@
 import type { CSSProperties } from "react";
 import { CalendarDays, Check, Edit2, Flame, Trash2 } from "lucide-react";
 import { formatDateKey } from "../../../lib/date/dateUtils";
-import { useLanguage } from "../../../app/context/LanguageContext";
-import { ActionButtonGroup } from "../../../app/components/ui/ActionButtonGroup";
-import { IconButton } from "../../../app/components/ui/IconButton";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { ActionButtonGroup } from "../../../shared/components/ui/ActionButtonGroup";
+import { IconButton } from "../../../shared/components/ui/IconButton";
 import type { HabitView } from "../types";
 
 type HabitCardProps = {

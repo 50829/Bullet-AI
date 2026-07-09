@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import {
   WORKSPACE_PAGE_ORDER,
   type WorkspacePage,

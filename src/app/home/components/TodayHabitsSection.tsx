@@ -3,9 +3,9 @@
 import { Plus } from "lucide-react";
 import { HabitList } from "../../../features/habits/components/HabitList";
 import type { HabitView } from "../../../features/habits/types";
-import { Button } from "../ui/Button";
-import { DashboardCardSection } from "../ui/DashboardCardSection";
-import { useLanguage } from "../../context/LanguageContext";
+import { Button } from "../../../shared/components/ui/Button";
+import { DashboardCardSection } from "../../../shared/components/ui/DashboardCardSection";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 
 type TodayHabitsSectionProps = {
   habits: HabitView[];

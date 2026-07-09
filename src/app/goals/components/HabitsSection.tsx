@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
+import { Button } from "../../../shared/components/ui/Button";
+import { Card } from "../../../shared/components/ui/Card";
 import { HabitList } from "../../../features/habits/components/HabitList";
 import type { HabitView } from "../../../features/habits/types";
 

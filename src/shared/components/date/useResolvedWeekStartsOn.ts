@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import {
   readLocalPreferences,
   resolveWeekStartsOn,

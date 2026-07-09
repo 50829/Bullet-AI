@@ -1,7 +1,7 @@
 import { Suspense, type ReactNode } from "react";
 import { WorkspaceProvider } from "../../features/workspace/WorkspaceContext";
 import { MainLayout } from "../components/layout/MainLayout";
-import { LoadingState } from "../components/ui/LoadingState";
+import { LoadingState } from "../../shared/components/ui/LoadingState";
 
 export default function WorkspaceLayout({ children }: { children: ReactNode }) {
   return (

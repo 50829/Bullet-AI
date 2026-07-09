@@ -1,10 +1,10 @@
 "use client";
 
 import { Edit2, Trash2 } from "lucide-react";
-import { PlainImage } from "../../components/ui/PlainImage";
-import { ActionButtonGroup } from "../../components/ui/ActionButtonGroup";
-import { IconButton } from "../../components/ui/IconButton";
-import { useLanguage } from "../../context/LanguageContext";
+import { PlainImage } from "../../../shared/components/ui/PlainImage";
+import { ActionButtonGroup } from "../../../shared/components/ui/ActionButtonGroup";
+import { IconButton } from "../../../shared/components/ui/IconButton";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import type { MomentRecord as Moment } from "../../../features/workspace/types";
 
 type MomentEntryCardProps = {

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useLanguage } from "./context/LanguageContext";
+import { useLanguage } from "../shared/i18n/LanguageContext";
 
 type FeatureItem = {
   icon: ReactNode;

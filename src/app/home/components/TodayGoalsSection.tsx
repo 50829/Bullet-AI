@@ -3,11 +3,11 @@
 import { Plus } from "lucide-react";
 import { GoalCard } from "../../../features/goals/components/GoalCard";
 import type { GoalRecord as Goal } from "../../../features/workspace/types";
-import { Button } from "../ui/Button";
-import { DashboardCardSection } from "../ui/DashboardCardSection";
-import { EmptyState } from "../ui/EmptyState";
-import { LoadingState } from "../ui/LoadingState";
-import { useLanguage } from "../../context/LanguageContext";
+import { Button } from "../../../shared/components/ui/Button";
+import { DashboardCardSection } from "../../../shared/components/ui/DashboardCardSection";
+import { EmptyState } from "../../../shared/components/ui/EmptyState";
+import { LoadingState } from "../../../shared/components/ui/LoadingState";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 
 type TodayGoalsSectionProps = {
   goals: Goal[];

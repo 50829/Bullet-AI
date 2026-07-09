@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import type { AiPurpose } from "../../../lib/ai/promptRegistry";
 import type { AssistantMessage, AssistantMode, PlanData } from "./types";
 

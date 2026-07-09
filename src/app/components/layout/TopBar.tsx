@@ -3,7 +3,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Sparkles } from "lucide-react";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { useWorkspaceSessionContext } from "../../../features/workspace/WorkspaceContext";
 import { getWorkspacePageFromPathname } from "../../../lib/navigation/workspaceRoutes";
 import { TopBarActions } from "./TopBarActions";

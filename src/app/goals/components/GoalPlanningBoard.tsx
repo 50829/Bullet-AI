@@ -1,8 +1,8 @@
 "use client";
 
-import { Calendar } from "../../components/Calendar";
-import { Card } from "../../components/ui/Card";
-import { SegmentedControl } from "../../components/ui/SegmentedControl";
+import { GoalCalendar } from "../../../features/goals/components/GoalCalendar";
+import { Card } from "../../../shared/components/ui/Card";
+import { SegmentedControl } from "../../../shared/components/ui/SegmentedControl";
 import type { GoalRecord } from "../../../features/workspace/types";
 import { GoalBucketPanel } from "./GoalBucketPanel";
 import type { GoalRightViewMode } from "../hooks/useGoalPlanningPage";
@@ -54,7 +54,7 @@ export function GoalPlanningBoard({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <div className="lg:h-[520px]">
-        <Calendar
+        <GoalCalendar
           selectedDate={selectedDate}
           onDateSelect={onDateSelect}
           goals={allGoals}

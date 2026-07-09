@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 
-import { LoadingState } from "../ui/LoadingState";
+import { LoadingState } from "../../../shared/components/ui/LoadingState";
 
 export function WorkspaceHydrationBoundary({
   children,

@@ -1,31 +1,53 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Button } from "./ui/Button";
-import { ColorSwatchPicker } from "./ui/ColorSwatchPicker";
-import { FieldLabel } from "./ui/FieldLabel";
-import { FormDialogShell } from "./ui/FormDialogShell";
-import { FormActions } from "./ui/FormActions";
-import { Input } from "./ui/Input";
-import { Textarea } from "./ui/Textarea";
-import { DateField } from "./date/DateField";
-import { useLanguage } from "../context/LanguageContext";
-import { useGoalsContext } from "../../features/workspace/WorkspaceContext";
-import type { GoalRecord } from "../../features/workspace/types";
+import { DateField } from "../../../shared/components/date/DateField";
+import { Button } from "../../../shared/components/ui/Button";
+import { ColorSwatchPicker } from "../../../shared/components/ui/ColorSwatchPicker";
+import { FieldLabel } from "../../../shared/components/ui/FieldLabel";
+import { FormActions } from "../../../shared/components/ui/FormActions";
+import { FormDialogShell } from "../../../shared/components/ui/FormDialogShell";
+import { Input } from "../../../shared/components/ui/Input";
+import { Textarea } from "../../../shared/components/ui/Textarea";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
+
+export type GoalModalCreateInput = {
+  id: number;
+  title: string;
+  description: string;
+  due_date?: string | null;
+  status: string;
+  progress: number;
+  color?: string | null;
+  image_url?: string | null;
+  image_path?: string | null;
+  created_at: string;
+};
+
+export type GoalModalUpdateInput = {
+  title: string;
+  description: string;
+  due_date: string | null;
+  color: string | null;
+};
+
+export type GoalModalInitialGoal = Pick<
+  GoalModalCreateInput,
+  | "id"
+  | "title"
+  | "description"
+  | "due_date"
+  | "progress"
+  | "status"
+  | "color"
+>;
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialGoal?: Pick<
-    GoalRecord,
-    | "id"
-    | "title"
-    | "description"
-    | "due_date"
-    | "progress"
-    | "status"
-    | "color"
-  > | null;
+  onCreate: (goal: GoalModalCreateInput) => Promise<void>;
+  onUpdate: (id: number, updates: GoalModalUpdateInput) => Promise<void>;
+  initialGoal?: GoalModalInitialGoal | null;
 };
 
 // First swatch (null) means "use the theme's primary green". The rest are
@@ -42,10 +64,11 @@ export const GoalModal = ({
   isOpen,
   onClose,
   onSuccess,
+  onCreate,
+  onUpdate,
   initialGoal = null,
 }: Props) => {
   const { t } = useLanguage();
-  const { addGoal, updateGoal } = useGoalsContext();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -87,7 +110,7 @@ export const GoalModal = ({
 
     try {
       if (isEditing && initialGoal) {
-        await updateGoal(initialGoal.id, {
+        await onUpdate(initialGoal.id, {
           title: title.trim(),
           description: description.trim(),
           due_date: dueDate || null,
@@ -99,7 +122,7 @@ export const GoalModal = ({
         return;
       }
 
-      await addGoal({
+      await onCreate({
         id: Date.now(),
         title: title.trim(),
         description: description.trim(),

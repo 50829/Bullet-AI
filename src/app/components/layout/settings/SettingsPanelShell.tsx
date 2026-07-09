@@ -2,8 +2,8 @@
 
 import { X } from "lucide-react";
 import React from "react";
-import { useLanguage } from "../../../context/LanguageContext";
-import { IconButton } from "../../ui/IconButton";
+import { useLanguage } from "../../../../shared/i18n/LanguageContext";
+import { IconButton } from "../../../../shared/components/ui/IconButton";
 import { SettingsSidebar } from "./SettingsSidebar";
 import type { SettingsSection } from "./types";
 

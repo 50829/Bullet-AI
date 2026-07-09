@@ -1,5 +1,5 @@
-import HomePage from "../../components/HomePage";
+import HomePageClient from "../../home/HomePageClient";
 
 export default function HomeRoute() {
-  return <HomePage />;
+  return <HomePageClient />;
 }

@@ -1,4 +1,3 @@
-// src/components/ui/Textarea.tsx
 import React from "react";
 
 type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;

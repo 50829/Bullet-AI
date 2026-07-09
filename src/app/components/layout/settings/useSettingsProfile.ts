@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { useLanguage, type Language } from "../../../context/LanguageContext";
-import { useToast } from "../../ui/Toast";
+import { useLanguage, type Language } from "../../../../shared/i18n/LanguageContext";
+import { useToast } from "../../../../shared/components/ui/Toast";
 import {
   getCurrentUserProfile,
   updateCurrentUserDisplayName,

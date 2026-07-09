@@ -6,10 +6,10 @@ import { useHabits } from "../../features/habits/hooks/useHabits";
 import type { HabitView } from "../../features/habits/types";
 import type { GoalRecord } from "../../features/workspace/types";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
-import { ConfirmDialog } from "../components/ui/ConfirmDialog";
-import { LoadingState } from "../components/ui/LoadingState";
-import { useToast } from "../components/ui/Toast";
-import { useLanguage } from "../context/LanguageContext";
+import { ConfirmDialog } from "../../shared/components/ui/ConfirmDialog";
+import { LoadingState } from "../../shared/components/ui/LoadingState";
+import { useToast } from "../../shared/components/ui/Toast";
+import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useAssistantPanel } from "../hooks/useAssistantPanel";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 import { GoalPlanningBoard } from "./components/GoalPlanningBoard";
@@ -22,7 +22,10 @@ const AssistantDrawer = dynamic(
   { ssr: false },
 );
 const GoalModal = dynamic(
-  () => import("../components/GoalModal").then((mod) => mod.GoalModal),
+  () =>
+    import("../../features/goals/components/GoalModal").then(
+      (mod) => mod.GoalModal,
+    ),
   { ssr: false },
 );
 const HabitFormDialog = dynamic(
@@ -185,6 +188,8 @@ export default function GoalsPageClient() {
             setEditingGoal(null);
           }}
           onSuccess={() => undefined}
+          onCreate={goalPage.addGoal}
+          onUpdate={goalPage.updateGoal}
         />
       )}
 

@@ -4,17 +4,20 @@ import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import type { HabitView } from "../../features/habits/types";
 import type { GoalRecord as Goal } from "../../features/workspace/types";
-import { useLanguage } from "../context/LanguageContext";
-import { ConfirmDialog } from "./ui/ConfirmDialog";
+import { useLanguage } from "../../shared/i18n/LanguageContext";
+import { ConfirmDialog } from "../../shared/components/ui/ConfirmDialog";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
-import { RecentRecordsSection } from "./home/RecentRecordsSection";
-import { TodayGoalsSection } from "./home/TodayGoalsSection";
-import { TodayHabitsSection } from "./home/TodayHabitsSection";
-import { TodayHeader } from "./home/TodayHeader";
-import { useTodayDashboard } from "./home/useTodayDashboard";
+import { RecentRecordsSection } from "./components/RecentRecordsSection";
+import { TodayGoalsSection } from "./components/TodayGoalsSection";
+import { TodayHabitsSection } from "./components/TodayHabitsSection";
+import { TodayHeader } from "./components/TodayHeader";
+import { useTodayDashboard } from "./hooks/useTodayDashboard";
 
 const GoalModal = dynamic(
-  () => import("./GoalModal").then((mod) => mod.GoalModal),
+  () =>
+    import("../../features/goals/components/GoalModal").then(
+      (mod) => mod.GoalModal,
+    ),
   { ssr: false },
 );
 const HabitFormDialog = dynamic(
@@ -25,11 +28,17 @@ const HabitFormDialog = dynamic(
   { ssr: false },
 );
 const MomentModal = dynamic(
-  () => import("./MomentModal").then((mod) => mod.MomentModal),
+  () =>
+    import("../../features/moments/components/MomentModal").then(
+      (mod) => mod.MomentModal,
+    ),
   { ssr: false },
 );
 const ReflectionModal = dynamic(
-  () => import("./ReflectionModal").then((mod) => mod.ReflectionModal),
+  () =>
+    import("../../features/reflections/components/ReflectionModal").then(
+      (mod) => mod.ReflectionModal,
+    ),
   { ssr: false },
 );
 
@@ -124,6 +133,8 @@ export default function HomePage() {
           isOpen
           onClose={() => setMomentOpen(false)}
           onSuccess={() => undefined}
+          onCreate={dashboard.addMoment}
+          onUpdate={dashboard.updateMoment}
         />
       )}
       {goalOpen && (
@@ -135,6 +146,8 @@ export default function HomePage() {
             setEditingGoal(null);
           }}
           onSuccess={() => undefined}
+          onCreate={dashboard.addGoal}
+          onUpdate={dashboard.updateGoal}
         />
       )}
       {reflectionOpen && (
@@ -142,6 +155,8 @@ export default function HomePage() {
           isOpen
           onClose={() => setReflectionOpen(false)}
           onSuccess={() => undefined}
+          onCreate={dashboard.addReflection}
+          onUpdate={dashboard.updateReflection}
         />
       )}
       {habitOpen && (

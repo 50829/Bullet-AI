@@ -1,13 +1,13 @@
 "use client";
 
-import type { Language } from "../../../context/LanguageContext";
-import { useLanguage } from "../../../context/LanguageContext";
+import type { Language } from "../../../../shared/i18n/LanguageContext";
+import { useLanguage } from "../../../../shared/i18n/LanguageContext";
 import {
   resolveWeekStartsOn,
   type UserPreferences,
   type WeekStartsOnPreference,
 } from "../../../../lib/profile/preferences";
-import { SegmentedControl } from "../../ui/SegmentedControl";
+import { SegmentedControl } from "../../../../shared/components/ui/SegmentedControl";
 import { WEEK_START_OPTIONS } from "./settingsOptions";
 import { OptionGroup, PreferenceOptionCard } from "./PreferenceOptionCard";
 

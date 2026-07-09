@@ -2,8 +2,8 @@
 "use client";
 
 import React from "react";
-import { useLanguage } from "../../context/LanguageContext";
-import { Button } from "../ui/Button";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { Button } from "../../../shared/components/ui/Button";
 
 interface LogoutConfirmDialogProps {
   onConfirm: () => void;

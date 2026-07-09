@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 import { markWorkspaceNavigationComplete } from "../../../lib/navigation/workspaceNavigationMetrics";
-import { LoadingState } from "../ui/LoadingState";
+import { LoadingState } from "../../../shared/components/ui/LoadingState";
 import { useWorkspaceNavigation } from "./WorkspaceNavigationContext";
 
 const NAVIGATION_TIMEOUT_MS = 10_000;

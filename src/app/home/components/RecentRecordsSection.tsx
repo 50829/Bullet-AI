@@ -1,11 +1,11 @@
 "use client";
 
 import { Clock3, Edit2 } from "lucide-react";
-import type { RecentDashboardItem } from "./useTodayDashboard";
-import { Button } from "../ui/Button";
-import { DashboardCardSection } from "../ui/DashboardCardSection";
-import { EmptyState } from "../ui/EmptyState";
-import { useLanguage } from "../../context/LanguageContext";
+import type { RecentDashboardItem } from "../hooks/useTodayDashboard";
+import { Button } from "../../../shared/components/ui/Button";
+import { DashboardCardSection } from "../../../shared/components/ui/DashboardCardSection";
+import { EmptyState } from "../../../shared/components/ui/EmptyState";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 
 type RecentRecordsSectionProps = {
   items: RecentDashboardItem[];

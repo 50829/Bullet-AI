@@ -1,10 +1,10 @@
 "use client";
 
 import type { Dispatch, FormEvent, SetStateAction } from "react";
-import { Button } from "../../ui/Button";
-import { FieldLabel } from "../../ui/FieldLabel";
-import { Input } from "../../ui/Input";
-import { useLanguage } from "../../../context/LanguageContext";
+import { Button } from "../../../../shared/components/ui/Button";
+import { FieldLabel } from "../../../../shared/components/ui/FieldLabel";
+import { Input } from "../../../../shared/components/ui/Input";
+import { useLanguage } from "../../../../shared/i18n/LanguageContext";
 import type { FormMessage } from "./types";
 
 type UserSettingsSectionProps = {

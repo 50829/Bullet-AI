@@ -4,14 +4,14 @@ import React, { useState, useEffect } from "react";
 import { LogOut, Settings } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { supabase } from "../../../lib/supabaseClient";
 import {
   getCurrentUserProfile,
   type UserProfile,
 } from "../../../lib/profile/profileService";
-import { useToast } from "../ui/Toast";
-import { IconButton } from "../ui/IconButton";
+import { useToast } from "../../../shared/components/ui/Toast";
+import { IconButton } from "../../../shared/components/ui/IconButton";
 import { WORKSPACE_PAGE_ORDER } from "../../../lib/navigation/workspaceRoutes";
 import { WorkspaceNavLink } from "./WorkspaceNavLink";
 import { getWorkspaceNavItemMeta } from "./workspacePageMeta";

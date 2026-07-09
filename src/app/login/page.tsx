@@ -9,7 +9,7 @@ import { AuthInput } from "../components/auth/AuthInput";
 import { OAuthButton } from "../components/auth/OAuthButton";
 import { PasswordField } from "../components/auth/PasswordField";
 import { supabase } from "../../lib/supabaseClient";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { getPostLoginRedirect } from "../../lib/auth/getPostLoginRedirect";
 
 export default function LoginPage() {

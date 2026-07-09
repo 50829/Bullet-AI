@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { DateField } from "../../../app/components/date/DateField";
-import { Button } from "../../../app/components/ui/Button";
-import { DialogHeader } from "../../../app/components/ui/DialogHeader";
-import { FieldLabel } from "../../../app/components/ui/FieldLabel";
-import { Modal } from "../../../app/components/ui/Modal";
+import { DateField } from "../../../shared/components/date/DateField";
+import { Button } from "../../../shared/components/ui/Button";
+import { DialogHeader } from "../../../shared/components/ui/DialogHeader";
+import { FieldLabel } from "../../../shared/components/ui/FieldLabel";
+import { Modal } from "../../../shared/components/ui/Modal";
 import {
   formatDateKey,
   isDateKeyAfter,
   isDateKeyBefore,
   toDateKey,
 } from "../../../lib/date/dateUtils";
-import { useLanguage } from "../../../app/context/LanguageContext";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import type { HabitView } from "../types";
 
 type HabitDetailDialogProps = {

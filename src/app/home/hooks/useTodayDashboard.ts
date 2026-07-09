@@ -19,8 +19,8 @@ import {
   useWorkspaceSessionContext,
 } from "../../../features/workspace/WorkspaceContext";
 import type { GoalRecord as Goal } from "../../../features/workspace/types";
-import { useLanguage } from "../../context/LanguageContext";
-import { useToast } from "../ui/Toast";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { useToast } from "../../../shared/components/ui/Toast";
 
 function todayKey() {
   const now = new Date();
@@ -55,11 +55,13 @@ export type RecentDashboardItem = {
 
 export function useTodayDashboard() {
   const router = useRouter();
-  const { moments } = useMomentsContext();
-  const { reflections } = useReflectionsContext();
+  const { moments, addMoment, updateMoment } = useMomentsContext();
+  const { reflections, addReflection, updateReflection } =
+    useReflectionsContext();
   const {
     goals,
     loading: goalsLoading,
+    addGoal,
     updateGoal,
     deleteGoal,
   } = useGoalsContext();
@@ -153,6 +155,12 @@ export function useTodayDashboard() {
     ...habitsState,
     goals,
     goalsLoading,
+    addGoal,
+    updateGoal,
+    addMoment,
+    updateMoment,
+    addReflection,
+    updateReflection,
     syncStatus,
     retrySync,
     todayGoals,

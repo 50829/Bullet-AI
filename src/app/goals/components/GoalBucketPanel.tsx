@@ -1,6 +1,6 @@
 "use client";
 
-import { EmptyState } from "../../components/ui/EmptyState";
+import { EmptyState } from "../../../shared/components/ui/EmptyState";
 import { GoalCard } from "../../../features/goals/components/GoalCard";
 import {
   SortableGoalItem,

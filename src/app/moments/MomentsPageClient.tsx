@@ -3,12 +3,12 @@ import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useMomentsContext } from "../../features/workspace/WorkspaceContext";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
-import { useToast } from "../components/ui/Toast";
-import { Button } from "../components/ui/Button";
-import { EmptyState } from "../components/ui/EmptyState";
-import { LoadingState } from "../components/ui/LoadingState";
+import { useToast } from "../../shared/components/ui/Toast";
+import { Button } from "../../shared/components/ui/Button";
+import { EmptyState } from "../../shared/components/ui/EmptyState";
+import { LoadingState } from "../../shared/components/ui/LoadingState";
 import { useAssistantPanel } from "../hooks/useAssistantPanel";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 import { useHighlightedSearchItem } from "../hooks/useHighlightedSearchItem";
@@ -23,16 +23,19 @@ const AssistantDrawer = dynamic(
 );
 const ConfirmDialog = dynamic(
   () =>
-    import("../components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
+    import("../../shared/components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
   { ssr: false },
 );
 const MomentModal = dynamic(
-  () => import("../components/MomentModal").then((mod) => mod.MomentModal),
+  () =>
+    import("../../features/moments/components/MomentModal").then(
+      (mod) => mod.MomentModal,
+    ),
   { ssr: false },
 );
 
 export default function MomentsPageClient() {
-  const { moments, loading, refreshMoments, deleteMoment } =
+  const { moments, loading, refreshMoments, addMoment, updateMoment, deleteMoment } =
     useMomentsContext();
   const searchParams = useSearchParams();
   const { t, language } = useLanguage();
@@ -190,6 +193,8 @@ export default function MomentsPageClient() {
           initialMoment={editingMoment}
           onClose={handleModalClose}
           onSuccess={handleModalSuccess}
+          onCreate={addMoment}
+          onUpdate={updateMoment}
         />
       )}
 

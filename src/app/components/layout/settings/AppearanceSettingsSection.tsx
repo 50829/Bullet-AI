@@ -5,8 +5,8 @@ import type {
   ColorScheme,
   UserPreferences,
 } from "../../../../lib/profile/preferences";
-import { ColorSwatchPicker } from "../../ui/ColorSwatchPicker";
-import { useLanguage } from "../../../context/LanguageContext";
+import { ColorSwatchPicker } from "../../../../shared/components/ui/ColorSwatchPicker";
+import { useLanguage } from "../../../../shared/i18n/LanguageContext";
 import { ACCENT_OPTIONS, COLOR_SCHEME_OPTIONS } from "./settingsOptions";
 import { OptionGroup, PreferenceOptionCard } from "./PreferenceOptionCard";
 

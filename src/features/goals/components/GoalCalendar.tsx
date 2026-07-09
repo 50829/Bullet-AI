@@ -1,26 +1,28 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarMonthView } from "./date/CalendarMonthView";
-import { useResolvedWeekStartsOn } from "./date/useResolvedWeekStartsOn";
-import { toDateKey } from "../../lib/date/dateUtils";
-import { useLanguage } from "../context/LanguageContext";
-import type { GoalRecord } from "../../features/workspace/types";
-import type { CalendarMarker } from "./date/CalendarMonthView";
+import { CalendarMonthView } from "../../../shared/components/date/CalendarMonthView";
+import { useResolvedWeekStartsOn } from "../../../shared/components/date/useResolvedWeekStartsOn";
+import type { CalendarMarker } from "../../../shared/components/date/CalendarMonthView";
+import { toDateKey } from "../../../lib/date/dateUtils";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 
-type CalendarGoal = Pick<GoalRecord, "status" | "due_date">;
-
-type CalendarProps = {
-  selectedDate: Date | null;
-  onDateSelect: (date: Date) => void;
-  goals: CalendarGoal[];
+type GoalCalendarGoal = {
+  status?: string | null;
+  due_date?: string | null;
 };
 
-export const Calendar = ({
+type GoalCalendarProps = {
+  selectedDate: Date | null;
+  onDateSelect: (date: Date) => void;
+  goals: GoalCalendarGoal[];
+};
+
+export const GoalCalendar = ({
   selectedDate,
   onDateSelect,
   goals,
-}: CalendarProps) => {
+}: GoalCalendarProps) => {
   const { language } = useLanguage();
   const weekStartsOn = useResolvedWeekStartsOn();
   const [currentMonth, setCurrentMonth] = useState(new Date());

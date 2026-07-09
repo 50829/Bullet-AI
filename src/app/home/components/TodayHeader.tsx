@@ -1,8 +1,8 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { Button } from "../ui/Button";
-import { useLanguage } from "../../context/LanguageContext";
+import { Button } from "../../../shared/components/ui/Button";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import type { SyncStatus } from "../../../lib/localDb/types";
 
 type TodayHeaderProps = {

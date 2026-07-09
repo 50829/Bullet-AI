@@ -4,12 +4,12 @@ import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useReflectionsContext } from "../../features/workspace/WorkspaceContext";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
-import { Button } from "../components/ui/Button";
-import { EmptyState } from "../components/ui/EmptyState";
-import { LoadingState } from "../components/ui/LoadingState";
-import { useToast } from "../components/ui/Toast";
+import { Button } from "../../shared/components/ui/Button";
+import { EmptyState } from "../../shared/components/ui/EmptyState";
+import { LoadingState } from "../../shared/components/ui/LoadingState";
+import { useToast } from "../../shared/components/ui/Toast";
 import { useAssistantPanel } from "../hooks/useAssistantPanel";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 import { useHighlightedSearchItem } from "../hooks/useHighlightedSearchItem";
@@ -23,18 +23,26 @@ const AssistantDrawer = dynamic(
 );
 const ConfirmDialog = dynamic(
   () =>
-    import("../components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
+    import("../../shared/components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
   { ssr: false },
 );
 const ReflectionModal = dynamic(
   () =>
-    import("../components/ReflectionModal").then((mod) => mod.ReflectionModal),
+    import("../../features/reflections/components/ReflectionModal").then(
+      (mod) => mod.ReflectionModal,
+    ),
   { ssr: false },
 );
 
 export default function ReflectionsPageClient() {
-  const { reflections, loading, refreshReflections, deleteReflection } =
-    useReflectionsContext();
+  const {
+    reflections,
+    loading,
+    refreshReflections,
+    addReflection,
+    updateReflection,
+    deleteReflection,
+  } = useReflectionsContext();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
   const { showToast } = useToast();
@@ -183,6 +191,8 @@ export default function ReflectionsPageClient() {
             setEditingReflection(null);
           }}
           onSuccess={() => undefined}
+          onCreate={addReflection}
+          onUpdate={updateReflection}
         />
       )}
       {deleteConfirm.target && (

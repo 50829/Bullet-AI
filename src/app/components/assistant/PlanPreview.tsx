@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "../ui/Button";
-import { useLanguage } from "../../context/LanguageContext";
+import { Button } from "../../../shared/components/ui/Button";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import type { PlanData } from "./types";
 
 type PlanPreviewProps = {

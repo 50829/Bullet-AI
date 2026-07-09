@@ -1,38 +1,64 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Button } from "./ui/Button";
-import { FieldLabel } from "./ui/FieldLabel";
-import { FormDialogShell } from "./ui/FormDialogShell";
-import { FormActions } from "./ui/FormActions";
-import { Input } from "./ui/Input";
-import { Textarea } from "./ui/Textarea";
-import { useLanguage } from "../context/LanguageContext";
-import { useReflectionsContext } from "../../features/workspace/WorkspaceContext";
-import { useToast } from "./ui/Toast";
-import { parseReflectionContent } from "../../lib/reflections/reflectionContent";
-import type { ReflectionRecord } from "../../features/workspace/types";
+import { Button } from "../../../shared/components/ui/Button";
+import { FieldLabel } from "../../../shared/components/ui/FieldLabel";
+import { FormActions } from "../../../shared/components/ui/FormActions";
+import { FormDialogShell } from "../../../shared/components/ui/FormDialogShell";
+import { Input } from "../../../shared/components/ui/Input";
+import { Textarea } from "../../../shared/components/ui/Textarea";
+import { useToast } from "../../../shared/components/ui/Toast";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { parseReflectionContent } from "../../../lib/reflections/reflectionContent";
 
-type ReflectionDraft = Pick<
-  ReflectionRecord,
-  "id" | "content" | "title" | "body" | "created_at"
->;
+export type ReflectionModalInitialReflection = {
+  id: number;
+  content: string;
+  title?: string | null;
+  body?: string | null;
+  created_at: string;
+};
+
+export type ReflectionModalCreateInput = {
+  id: number;
+  title: string;
+  body: string;
+  content: string;
+  created_at: string;
+  source: string | null;
+  source_type: string | null;
+  location: string | null;
+  image_url: string | null;
+  image_path: string | null;
+};
+
+export type ReflectionModalUpdateInput = {
+  title: string;
+  body: string;
+  content: string;
+};
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialReflection?: ReflectionDraft | null;
+  onCreate: (reflection: ReflectionModalCreateInput) => Promise<void>;
+  onUpdate: (
+    id: number,
+    updates: ReflectionModalUpdateInput,
+  ) => Promise<void>;
+  initialReflection?: ReflectionModalInitialReflection | null;
 };
 
 export const ReflectionModal = ({
   isOpen,
   onClose,
   onSuccess,
+  onCreate,
+  onUpdate,
   initialReflection = null,
 }: Props) => {
   const { t } = useLanguage();
-  const { addReflection, updateReflection } = useReflectionsContext();
   const { showToast } = useToast();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -84,13 +110,13 @@ export const ReflectionModal = ({
     setSaving(true);
     try {
       if (isEditing && initialReflection) {
-        await updateReflection(initialReflection.id, {
+        await onUpdate(initialReflection.id, {
           title: nextTitle,
           body: nextBody,
           content,
         });
       } else {
-        await addReflection({
+        await onCreate({
           id: Date.now(),
           title: nextTitle,
           body: nextBody,

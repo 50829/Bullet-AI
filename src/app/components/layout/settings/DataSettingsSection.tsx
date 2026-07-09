@@ -6,8 +6,8 @@ import type {
   UserPreferences,
 } from "../../../../lib/profile/preferences";
 import type { SyncStatus } from "../../../../lib/localDb/types";
-import { Button } from "../../ui/Button";
-import { useLanguage } from "../../../context/LanguageContext";
+import { Button } from "../../../../shared/components/ui/Button";
+import { useLanguage } from "../../../../shared/i18n/LanguageContext";
 import { COMPLETED_GOAL_RETENTION_OPTIONS } from "./settingsOptions";
 import { OptionGroup, PreferenceOptionCard } from "./PreferenceOptionCard";
 

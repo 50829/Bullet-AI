@@ -10,7 +10,7 @@ import { AuthInput } from "../components/auth/AuthInput";
 import { PasswordField } from "../components/auth/PasswordField";
 import { isPasswordStrong } from "../../lib/auth/passwordValidation";
 import { supabase } from "../../lib/supabaseClient";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from "../../shared/i18n/LanguageContext";
 
 export default function RegisterPage() {
   const router = useRouter();

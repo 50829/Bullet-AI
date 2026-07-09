@@ -11,8 +11,8 @@ import {
 import { useCompletedGoalRetention } from "../../../features/goals/hooks/useCompletedGoalRetention";
 import { useGoalsContext } from "../../../features/workspace/WorkspaceContext";
 import { createClientId } from "../../../lib/localDb/repository";
-import { useLanguage } from "../../context/LanguageContext";
-import { useToast } from "../../components/ui/Toast";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { useToast } from "../../../shared/components/ui/Toast";
 
 export type GoalRightViewMode = "migration" | "schedule";
 

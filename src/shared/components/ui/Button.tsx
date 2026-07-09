@@ -1,4 +1,3 @@
-// src/components/ui/Button.tsx
 import React from "react";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {

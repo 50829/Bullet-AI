@@ -7,7 +7,7 @@ import {
   User,
   type LucideIcon,
 } from "lucide-react";
-import { useLanguage } from "../../../context/LanguageContext";
+import { useLanguage } from "../../../../shared/i18n/LanguageContext";
 import type { SettingsSection } from "./types";
 
 type SettingsSidebarProps = {

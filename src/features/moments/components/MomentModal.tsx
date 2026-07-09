@@ -1,27 +1,51 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { Button } from "./ui/Button";
-import { FieldLabel } from "./ui/FieldLabel";
-import { FormDialogShell } from "./ui/FormDialogShell";
-import { FormActions } from "./ui/FormActions";
-import { Textarea } from "./ui/Textarea";
-import { useLanguage } from "../context/LanguageContext";
-import { useMomentsContext } from "../../features/workspace/WorkspaceContext";
-import { useToast } from "./ui/Toast";
-import { PlainImage } from "./ui/PlainImage";
-import { DateField } from "./date/DateField";
-import type { MomentRecord } from "../../features/workspace/types";
+import { DateField } from "../../../shared/components/date/DateField";
+import { Button } from "../../../shared/components/ui/Button";
+import { FieldLabel } from "../../../shared/components/ui/FieldLabel";
+import { FormActions } from "../../../shared/components/ui/FormActions";
+import { FormDialogShell } from "../../../shared/components/ui/FormDialogShell";
+import { PlainImage } from "../../../shared/components/ui/PlainImage";
+import { Textarea } from "../../../shared/components/ui/Textarea";
+import { useToast } from "../../../shared/components/ui/Toast";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 
-type MomentDraft = Pick<
-  MomentRecord,
-  "id" | "content" | "created_at" | "image_url" | "image_path"
->;
+export type MomentModalInitialMoment = {
+  id: number;
+  content: string;
+  created_at: string;
+  image_url?: string | null;
+  image_path?: string | null;
+};
+
+export type MomentModalCreateInput = {
+  id: number;
+  content: string;
+  image_path: string | null;
+  image_url?: string | null;
+  local_file?: File | null;
+  local_file_name?: string | null;
+  created_at: string;
+  date: string;
+};
+
+export type MomentModalUpdateInput = {
+  content: string;
+  created_at: string;
+  image_path: string | null;
+  image_url?: string | null;
+  local_file?: File | null;
+  local_file_name?: string | null;
+  previous_image_path?: string | null;
+};
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialMoment?: MomentDraft | null;
+  onCreate: (moment: MomentModalCreateInput) => Promise<void>;
+  onUpdate: (id: number, updates: MomentModalUpdateInput) => Promise<void>;
+  initialMoment?: MomentModalInitialMoment | null;
 };
 
 function toDateInputValue(value?: string) {
@@ -34,10 +58,11 @@ export const MomentModal = ({
   isOpen,
   onClose,
   onSuccess,
+  onCreate,
+  onUpdate,
   initialMoment = null,
 }: Props) => {
   const { t } = useLanguage();
-  const { addMoment, updateMoment } = useMomentsContext();
   const { showToast } = useToast();
   const [content, setContent] = useState("");
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue());
@@ -114,7 +139,7 @@ export const MomentModal = ({
 
     try {
       if (isEditing && initialMoment) {
-        await updateMoment(initialMoment.id, {
+        await onUpdate(initialMoment.id, {
           content,
           created_at: dateISO,
           image_path: imageFile ? null : (initialMoment.image_path ?? null),
@@ -127,7 +152,7 @@ export const MomentModal = ({
             : null,
         });
       } else {
-        await addMoment({
+        await onCreate({
           id: Date.now(),
           content,
           image_path: null,

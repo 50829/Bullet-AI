@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button } from "../../../app/components/ui/Button";
-import { EmptyState } from "../../../app/components/ui/EmptyState";
-import { LoadingState } from "../../../app/components/ui/LoadingState";
-import { useLanguage } from "../../../app/context/LanguageContext";
+import { Button } from "../../../shared/components/ui/Button";
+import { EmptyState } from "../../../shared/components/ui/EmptyState";
+import { LoadingState } from "../../../shared/components/ui/LoadingState";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import type { HabitView } from "../types";
 import { HabitCard } from "./HabitCard";
 import { HabitDetailDialog } from "./HabitDetailDialog";

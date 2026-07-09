@@ -2,10 +2,10 @@
 
 import { ChevronDown, ChevronUp, Edit2, Trash2 } from "lucide-react";
 import { parseReflectionContent } from "../../../lib/reflections/reflectionContent";
-import { ActionButtonGroup } from "../../components/ui/ActionButtonGroup";
-import { Card } from "../../components/ui/Card";
-import { IconButton } from "../../components/ui/IconButton";
-import { useLanguage } from "../../context/LanguageContext";
+import { ActionButtonGroup } from "../../../shared/components/ui/ActionButtonGroup";
+import { Card } from "../../../shared/components/ui/Card";
+import { IconButton } from "../../../shared/components/ui/IconButton";
+import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import type { ReflectionRecord as Reflection } from "../../../features/workspace/types";
 
 type ReflectionCardProps = {

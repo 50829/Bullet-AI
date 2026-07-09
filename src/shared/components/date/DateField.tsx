@@ -2,7 +2,7 @@
 
 import { CalendarDays } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import {
   formatDateButtonLabel,
   isDateKeyWithinRange,
