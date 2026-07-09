@@ -11,7 +11,7 @@ import { RecentRecordsSection } from "./components/RecentRecordsSection";
 import { TodayGoalsSection } from "./components/TodayGoalsSection";
 import { TodayHabitsSection } from "./components/TodayHabitsSection";
 import { TodayHeader } from "./components/TodayHeader";
-import { useTodayDashboard } from "./hooks/useTodayDashboard";
+import { useTodayDashboard } from "../../features/dashboard/hooks/useTodayDashboard";
 
 const GoalModal = dynamic(
   () =>

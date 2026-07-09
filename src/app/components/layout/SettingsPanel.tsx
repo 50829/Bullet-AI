@@ -8,6 +8,7 @@ import { LanguageSettingsSection } from "./settings/LanguageSettingsSection";
 import { SettingsPanelShell } from "./settings/SettingsPanelShell";
 import { UserSettingsSection } from "./settings/UserSettingsSection";
 import { useSettingsProfile } from "./settings/useSettingsProfile";
+import { useWorkspaceExport } from "../../../features/workspace/export/useWorkspaceExport";
 import type { SettingsSection } from "./settings/types";
 
 type SettingsPanelProps = {
@@ -27,6 +28,7 @@ export default function SettingsPanel({
     initialProfile,
     onProfileUpdate,
   });
+  const { handleExport } = useWorkspaceExport();
 
   return (
     <SettingsPanelShell
@@ -75,7 +77,7 @@ export default function SettingsPanel({
             settings.handleCompletedGoalRetentionChange
           }
           onRetrySync={settings.retrySync}
-          onExport={settings.handleExport}
+          onExport={handleExport}
         />
       )}
     </SettingsPanelShell>

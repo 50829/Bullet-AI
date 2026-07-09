@@ -2,21 +2,17 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useGoals } from "../../../features/goals/hooks/useGoals";
-import type { GoalRecord as Goal } from "../../../features/goals/types";
-import { useHabits } from "../../../features/habits/hooks/useHabits";
-import type { HabitView } from "../../../features/habits/types";
-import { useMoments } from "../../../features/moments/hooks/useMoments";
-import { useReflections } from "../../../features/reflections/hooks/useReflections";
+import type { GoalRecord as Goal } from "../../goals/types";
+import type { HabitView } from "../../habits/types";
 import {
   isGoalCompleted,
   shouldShowGoal,
   sortGoalsByCompletion,
   sortGoalsByOrder,
-} from "../../../features/goals/goalVisibility";
-import { useCompletedGoalRetention } from "../../../features/goals/hooks/useCompletedGoalRetention";
+} from "../../goals/goalVisibility";
+import { useCompletedGoalRetention } from "../../goals/hooks/useCompletedGoalRetention";
 import { parseReflectionContent } from "../../../lib/reflections/reflectionContent";
-import { useWorkspaceSessionContext } from "../../../features/workspace/WorkspaceContext";
+import { useWorkspaceData } from "../../workspace/data";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { useToast } from "../../../shared/components/ui/Toast";
 
@@ -53,19 +49,19 @@ export type RecentDashboardItem = {
 
 export function useTodayDashboard() {
   const router = useRouter();
-  const { syncStatus, retrySync, userId } = useWorkspaceSessionContext();
-  const { moments, addMoment, updateMoment } = useMoments({ userId });
-  const { reflections, addReflection, updateReflection } = useReflections({
-    userId,
-  });
   const {
-    goals,
-    loading: goalsLoading,
-    addGoal,
-    updateGoal,
-    deleteGoal,
-  } = useGoals({ userId });
-  const habitsState = useHabits({ userId });
+    session: { syncStatus, retrySync },
+    moments: { moments, addMoment, updateMoment },
+    reflections: { reflections, addReflection, updateReflection },
+    goals: {
+      goals,
+      loading: goalsLoading,
+      addGoal,
+      updateGoal,
+      deleteGoal,
+    },
+    habits: habitsState,
+  } = useWorkspaceData();
   const { habits } = habitsState;
   const { t, language } = useLanguage();
   const { showToast } = useToast();

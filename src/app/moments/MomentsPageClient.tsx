@@ -2,8 +2,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { useMoments } from "../../features/moments/hooks/useMoments";
-import { useWorkspaceSessionContext } from "../../features/workspace/WorkspaceContext";
+import { useWorkspaceData } from "../../features/workspace/data";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
 import { useToast } from "../../shared/components/ui/Toast";
@@ -36,9 +35,8 @@ const MomentModal = dynamic(
 );
 
 export default function MomentsPageClient() {
-  const { userId } = useWorkspaceSessionContext();
   const { moments, loading, refreshMoments, addMoment, updateMoment, deleteMoment } =
-    useMoments({ userId });
+    useWorkspaceData().moments;
   const searchParams = useSearchParams();
   const { t, language } = useLanguage();
   const { showToast } = useToast();

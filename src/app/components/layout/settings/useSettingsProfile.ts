@@ -20,10 +20,6 @@ import {
   type UserPreferences,
   type WeekStartsOnPreference,
 } from "../../../../lib/profile/preferences";
-import { useGoals } from "../../../../features/goals/hooks/useGoals";
-import { useHabits } from "../../../../features/habits/hooks/useHabits";
-import { useMoments } from "../../../../features/moments/hooks/useMoments";
-import { useReflections } from "../../../../features/reflections/hooks/useReflections";
 import { useWorkspaceSessionContext } from "../../../../features/workspace/WorkspaceContext";
 import { supabase } from "../../../../lib/supabaseClient";
 import type { FormMessage } from "./types";
@@ -47,11 +43,7 @@ export function useSettingsProfile({
 }: UseSettingsProfileInput) {
   const { t, language, setLanguage } = useLanguage();
   const router = useRouter();
-  const { syncStatus, retrySync, userId } = useWorkspaceSessionContext();
-  const { goals } = useGoals({ userId });
-  const { habits } = useHabits({ userId });
-  const { moments } = useMoments({ userId });
-  const { reflections } = useReflections({ userId });
+  const { syncStatus, retrySync } = useWorkspaceSessionContext();
   const { showToast } = useToast();
   const [username, setUsername] = useState("");
   const [currentUsername, setCurrentUsername] = useState("");
@@ -232,25 +224,6 @@ export function useSettingsProfile({
     void savePreferences({ week_starts_on: weekStartsOn }, "week_starts_on");
   };
 
-  const handleExport = () => {
-    const payload = {
-      exported_at: new Date().toISOString(),
-      moments,
-      goals,
-      reflections,
-      habits,
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `bullet-ai-export-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  };
-
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -287,7 +260,6 @@ export function useSettingsProfile({
     handleColorSchemeChange,
     handleCompletedGoalRetentionChange,
     handleWeekStartsOnChange,
-    handleExport,
     handleLogout,
   };
 }

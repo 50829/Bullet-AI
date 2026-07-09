@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { GoalPlan } from "../types";
-import { useGoals } from "../hooks/useGoals";
+import type { WorkspaceDataCollections } from "../../workspace/data";
 import {
   isGoalCompleted,
   shouldShowGoal,
@@ -28,11 +28,13 @@ export function formatDateToLocal(date: Date): string {
 }
 
 type UseGoalPlanningPageInput = {
-  userId: string | null;
+  goalsController: WorkspaceDataCollections["goals"];
 };
 
-export function useGoalPlanningPage({ userId }: UseGoalPlanningPageInput) {
-  const goalsContext = useGoals({ userId });
+export function useGoalPlanningPage({
+  goalsController,
+}: UseGoalPlanningPageInput) {
+  const goalsContext = goalsController;
   const { goals, updateGoal, addGoal } = goalsContext;
   const { t } = useLanguage();
   const { showToast } = useToast();

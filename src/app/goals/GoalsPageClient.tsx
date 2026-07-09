@@ -2,7 +2,6 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { useHabits } from "../../features/habits/hooks/useHabits";
 import type { HabitView } from "../../features/habits/types";
 import type { GoalRecord } from "../../features/goals/types";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
@@ -12,7 +11,7 @@ import { useToast } from "../../shared/components/ui/Toast";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useAssistantPanel } from "../hooks/useAssistantPanel";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
-import { useWorkspaceSessionContext } from "../../features/workspace/WorkspaceContext";
+import { useWorkspaceData } from "../../features/workspace/data";
 import { GoalPlanningBoard } from "../../features/goals/planning/GoalPlanningBoard";
 import { HabitsSection } from "./components/HabitsSection";
 import { useGoalPlanningPage } from "../../features/goals/planning/useGoalPlanningPage";
@@ -45,8 +44,9 @@ type DeleteTarget = {
 };
 
 export default function GoalsPageClient() {
-  const { userId } = useWorkspaceSessionContext();
-  const goalPage = useGoalPlanningPage({ userId });
+  const { goals: goalsController, habits: habitsController } =
+    useWorkspaceData();
+  const goalPage = useGoalPlanningPage({ goalsController });
   const {
     habits,
     loading: habitsLoading,
@@ -57,7 +57,7 @@ export default function GoalsPageClient() {
     removeHabit,
     checkinToday,
     toggleCheckin,
-  } = useHabits({ userId });
+  } = habitsController;
   const { t, language } = useLanguage();
   const { showToast } = useToast();
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);

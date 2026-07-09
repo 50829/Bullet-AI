@@ -3,8 +3,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { useReflections } from "../../features/reflections/hooks/useReflections";
-import { useWorkspaceSessionContext } from "../../features/workspace/WorkspaceContext";
+import { useWorkspaceData } from "../../features/workspace/data";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
 import { Button } from "../../shared/components/ui/Button";
@@ -36,7 +35,6 @@ const ReflectionModal = dynamic(
 );
 
 export default function ReflectionsPageClient() {
-  const { userId } = useWorkspaceSessionContext();
   const {
     reflections,
     loading,
@@ -44,7 +42,7 @@ export default function ReflectionsPageClient() {
     addReflection,
     updateReflection,
     deleteReflection,
-  } = useReflections({ userId });
+  } = useWorkspaceData().reflections;
   const searchParams = useSearchParams();
   const { t } = useLanguage();
   const { showToast } = useToast();
