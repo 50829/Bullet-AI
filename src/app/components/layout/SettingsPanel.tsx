@@ -32,6 +32,8 @@ import {
   type ColorScheme,
   type CompletedGoalRetention,
   type UserPreferences,
+  type WeekStartsOnPreference,
+  resolveWeekStartsOn,
 } from "../../../lib/profile/preferences";
 import { useHabits } from "../../../features/habits/hooks/useHabits";
 import {
@@ -95,6 +97,17 @@ const COMPLETED_GOAL_RETENTION_OPTIONS: Array<{
   { id: "instant", labelZh: "立即归档", labelEn: "Archive now" },
   { id: "next_day", labelZh: "次日归档", labelEn: "Archive tomorrow" },
   { id: "never", labelZh: "保留", labelEn: "Keep" },
+];
+
+const WEEK_START_OPTIONS: Array<{
+  id: Exclude<WeekStartsOnPreference, "auto">;
+  weekStartValue: 0 | 1 | 6;
+  labelZh: string;
+  labelEn: string;
+}> = [
+  { id: "monday", weekStartValue: 1, labelZh: "周一", labelEn: "Monday" },
+  { id: "sunday", weekStartValue: 0, labelZh: "周日", labelEn: "Sunday" },
+  { id: "saturday", weekStartValue: 6, labelZh: "周六", labelEn: "Saturday" },
 ];
 
 function getUsernameTimestamp(
@@ -288,6 +301,12 @@ export default function SettingsPanel({
       { completed_goal_retention: completedGoalRetention },
       "completed_goal_retention",
     );
+  };
+
+  const handleWeekStartsOnChange = (
+    weekStartsOn: Exclude<WeekStartsOnPreference, "auto">,
+  ) => {
+    void savePreferences({ week_starts_on: weekStartsOn }, "week_starts_on");
   };
 
   const handleExport = () => {
@@ -584,6 +603,48 @@ export default function SettingsPanel({
                         </button>
                       );
                     })}
+                  </div>
+
+                  <div className="mt-6">
+                    <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                      {language === "en" ? "Week starts on" : "一周起始日"}
+                    </h4>
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      {WEEK_START_OPTIONS.map((option) => {
+                        const selected =
+                          resolveWeekStartsOn(
+                            preferences.week_starts_on,
+                            language,
+                          ) === option.weekStartValue;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => handleWeekStartsOnChange(option.id)}
+                            disabled={savingPreference === "week_starts_on"}
+                            className={`rounded-xl border p-4 text-left transition-colors duration-150 disabled:cursor-wait disabled:opacity-70 motion-reduce:transition-none ${
+                              selected
+                                ? "border-[var(--color-primary)] bg-[var(--color-primary-light)]"
+                                : "border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-primary)]"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="font-semibold text-[var(--color-text-primary)]">
+                                {language === "en"
+                                  ? option.labelEn
+                                  : option.labelZh}
+                              </span>
+                              {selected && (
+                                <Check
+                                  size={16}
+                                  className="text-[var(--color-primary)]"
+                                />
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </section>
               )}

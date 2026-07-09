@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
+import { DateField } from "../../../app/components/date/DateField";
 import { Button } from "../../../app/components/ui/Button";
 import {
   formatDateKey,
@@ -121,13 +122,12 @@ export function HabitDetailDialog({
             {language === "en" ? "Manage a check-in date" : "管理某一天的打卡"}
           </label>
           <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-            <input
-              type="date"
+            <DateField
               value={dateKey}
               min={createdOn}
               max={today}
-              onChange={(event) => setDateKey(event.target.value)}
-              className="min-h-10 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 text-[var(--color-text-primary)]"
+              onChange={setDateKey}
+              className="flex-1"
             />
             <Button
               onClick={handleToggle}

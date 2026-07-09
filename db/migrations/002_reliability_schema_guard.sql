@@ -8,6 +8,7 @@ alter table public.profiles
   add column if not exists accent_color text default 'sage',
   add column if not exists color_scheme text default 'system',
   add column if not exists completed_goal_retention text default 'next_day',
+  add column if not exists week_starts_on text default 'auto',
   add column if not exists username_updated_at timestamptz,
   add column if not exists preferences_updated_at timestamptz,
   add column if not exists updated_at timestamptz default timezone('utc'::text, now());
@@ -77,6 +78,10 @@ set
   accent_color = coalesce(accent_color, 'sage'),
   color_scheme = coalesce(color_scheme, 'system'),
   completed_goal_retention = coalesce(completed_goal_retention, 'next_day'),
+  week_starts_on = case
+    when week_starts_on in ('auto', 'monday', 'sunday', 'saturday') then week_starts_on
+    else 'auto'
+  end,
   updated_at = coalesce(updated_at, timezone('utc'::text, now()))
 where true;
 

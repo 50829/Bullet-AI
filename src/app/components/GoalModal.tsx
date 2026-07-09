@@ -5,6 +5,7 @@ import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { Modal } from "./ui/Modal";
+import { DateField } from "./date/DateField";
 import { useLanguage } from "../context/LanguageContext";
 import { useGoalsContext } from "../../features/workspace/WorkspaceContext";
 import type { GoalRecord } from "../../features/workspace/types";
@@ -175,10 +176,10 @@ export const GoalModal = ({
       <label className="mt-4 block text-sm font-medium text-[var(--color-text-primary)]">
         {t("dueDate") || "日期"}
       </label>
-      <Input
-        type="date"
+      <DateField
         value={dueDate}
-        onChange={(event) => setDueDate(event.target.value)}
+        onChange={setDueDate}
+        clearable
         className="mt-2 rounded-xl"
       />
 

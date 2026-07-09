@@ -48,6 +48,7 @@ alter table public.profiles
   add column if not exists accent_color text not null default 'sage',
   add column if not exists color_scheme text not null default 'system',
   add column if not exists completed_goal_retention text not null default 'next_day',
+  add column if not exists week_starts_on text not null default 'auto',
   add column if not exists username_updated_at timestamptz,
   add column if not exists preferences_updated_at timestamptz,
   add column if not exists created_at timestamptz default timezone('utc'::text, now()),
@@ -104,6 +105,7 @@ alter table public.profiles drop constraint if exists profiles_ui_theme_check;
 alter table public.profiles drop constraint if exists profiles_accent_color_check;
 alter table public.profiles drop constraint if exists profiles_color_scheme_check;
 alter table public.profiles drop constraint if exists profiles_completed_goal_retention_check;
+alter table public.profiles drop constraint if exists profiles_week_starts_on_check;
 alter table public.goals drop constraint if exists goals_status_check;
 alter table public.goals drop constraint if exists goals_progress_check;
 alter table public.habits drop constraint if exists habits_frequency_check;
@@ -120,6 +122,10 @@ set
   completed_goal_retention = case
     when completed_goal_retention in ('instant', 'next_day', 'never') then completed_goal_retention
     else 'next_day'
+  end,
+  week_starts_on = case
+    when week_starts_on in ('auto', 'monday', 'sunday', 'saturday') then week_starts_on
+    else 'auto'
   end,
   username_updated_at = coalesce(username_updated_at, updated_at),
   created_at = coalesce(created_at, timezone('utc'::text, now())),
@@ -209,6 +215,8 @@ alter table public.profiles
   alter column color_scheme set not null,
   alter column completed_goal_retention set default 'next_day',
   alter column completed_goal_retention set not null,
+  alter column week_starts_on set default 'auto',
+  alter column week_starts_on set not null,
   alter column created_at type timestamptz using created_at::timestamptz,
   alter column created_at set default timezone('utc'::text, now()),
   alter column created_at set not null,
@@ -384,6 +392,11 @@ alter table public.profiles drop constraint if exists profiles_completed_goal_re
 alter table public.profiles
   add constraint profiles_completed_goal_retention_check
   check (completed_goal_retention in ('instant', 'next_day', 'never'));
+
+alter table public.profiles drop constraint if exists profiles_week_starts_on_check;
+alter table public.profiles
+  add constraint profiles_week_starts_on_check
+  check (week_starts_on in ('auto', 'monday', 'sunday', 'saturday'));
 
 alter table public.goals drop constraint if exists goals_status_check;
 alter table public.goals

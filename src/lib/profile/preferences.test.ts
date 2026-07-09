@@ -6,6 +6,8 @@ import {
   normalizeCompletedGoalRetention,
   normalizeLanguage,
   normalizePreferences,
+  normalizeWeekStartsOn,
+  resolveWeekStartsOn,
 } from "./preferences";
 
 describe("preferences", () => {
@@ -18,6 +20,8 @@ describe("preferences", () => {
     expect(normalizeColorScheme("sepia")).toBe("system");
     expect(normalizeCompletedGoalRetention("never")).toBe("never");
     expect(normalizeCompletedGoalRetention("later")).toBe("next_day");
+    expect(normalizeWeekStartsOn("saturday")).toBe("saturday");
+    expect(normalizeWeekStartsOn("friday")).toBe("auto");
   });
 
   it("fills missing preferences with defaults", () => {
@@ -31,6 +35,14 @@ describe("preferences", () => {
       ...DEFAULT_USER_PREFERENCES,
       preferred_language: "en",
       completed_goal_retention: "instant",
+      week_starts_on: "auto",
     });
+  });
+
+  it("resolves automatic week starts from language", () => {
+    expect(resolveWeekStartsOn("auto", "zh")).toBe(1);
+    expect(resolveWeekStartsOn("auto", "en")).toBe(0);
+    expect(resolveWeekStartsOn("saturday", "zh")).toBe(6);
+    expect(resolveWeekStartsOn("saturday", "en")).toBe(6);
   });
 });

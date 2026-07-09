@@ -14,7 +14,7 @@ export type UserProfile = {
 };
 
 const PROFILE_SELECT =
-  "user_id,username,username_updated_at,updated_at,preferences_updated_at,preferred_language,ui_theme,accent_color,color_scheme,completed_goal_retention";
+  "user_id,username,username_updated_at,updated_at,preferences_updated_at,preferred_language,ui_theme,accent_color,color_scheme,completed_goal_retention,week_starts_on";
 
 async function getCurrentUser() {
   const {
@@ -52,6 +52,8 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
       completed_goal_retention:
         data?.completed_goal_retention ??
         DEFAULT_USER_PREFERENCES.completed_goal_retention,
+      week_starts_on:
+        data?.week_starts_on ?? DEFAULT_USER_PREFERENCES.week_starts_on,
     }),
   };
 }
@@ -121,6 +123,7 @@ export async function updateCurrentUserPreferences(
       accent_color: nextPreferences.accent_color,
       color_scheme: nextPreferences.color_scheme,
       completed_goal_retention: nextPreferences.completed_goal_retention,
+      week_starts_on: nextPreferences.week_starts_on,
       preferences_updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" },

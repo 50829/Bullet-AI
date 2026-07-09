@@ -3,6 +3,8 @@ export type UiTheme = "calm";
 export type AccentColor = "sage" | "green" | "purple" | "amber";
 export type ColorScheme = "system" | "light" | "dark";
 export type CompletedGoalRetention = "instant" | "next_day" | "never";
+export type WeekStartsOnPreference = "auto" | "monday" | "sunday" | "saturday";
+export type ResolvedWeekStartsOn = 0 | 1 | 6;
 
 export type UserPreferences = {
   preferred_language: PreferredLanguage;
@@ -10,6 +12,7 @@ export type UserPreferences = {
   accent_color: AccentColor;
   color_scheme: ColorScheme;
   completed_goal_retention: CompletedGoalRetention;
+  week_starts_on: WeekStartsOnPreference;
 };
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
@@ -18,6 +21,7 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   accent_color: "sage",
   color_scheme: "system",
   completed_goal_retention: "next_day",
+  week_starts_on: "auto",
 };
 
 export const LANGUAGE_STORAGE_KEY = "language";
@@ -25,6 +29,7 @@ export const UI_THEME_STORAGE_KEY = "ui-theme";
 export const ACCENT_COLOR_STORAGE_KEY = "accent-color";
 export const COLOR_SCHEME_STORAGE_KEY = "color-scheme";
 export const COMPLETED_GOAL_RETENTION_STORAGE_KEY = "completed-goal-retention";
+export const WEEK_STARTS_ON_STORAGE_KEY = "week-starts-on";
 
 export function normalizeLanguage(value: unknown): PreferredLanguage {
   return value === "en" ? "en" : "zh";
@@ -61,6 +66,29 @@ export function normalizeCompletedGoalRetention(
   return "next_day";
 }
 
+export function normalizeWeekStartsOn(value: unknown): WeekStartsOnPreference {
+  if (
+    value === "auto" ||
+    value === "monday" ||
+    value === "sunday" ||
+    value === "saturday"
+  ) {
+    return value;
+  }
+
+  return "auto";
+}
+
+export function resolveWeekStartsOn(
+  preference: WeekStartsOnPreference,
+  language: PreferredLanguage,
+): ResolvedWeekStartsOn {
+  if (preference === "monday") return 1;
+  if (preference === "saturday") return 6;
+  if (preference === "sunday") return 0;
+  return language === "en" ? 0 : 1;
+}
+
 export function normalizePreferences(
   value: Partial<Record<keyof UserPreferences, unknown>> | null | undefined,
 ): UserPreferences {
@@ -72,6 +100,7 @@ export function normalizePreferences(
     completed_goal_retention: normalizeCompletedGoalRetention(
       value?.completed_goal_retention,
     ),
+    week_starts_on: normalizeWeekStartsOn(value?.week_starts_on),
   };
 }
 
@@ -121,6 +150,7 @@ export function readLocalPreferences(): UserPreferences {
     completed_goal_retention: window.localStorage.getItem(
       COMPLETED_GOAL_RETENTION_STORAGE_KEY,
     ),
+    week_starts_on: window.localStorage.getItem(WEEK_STARTS_ON_STORAGE_KEY),
   });
 }
 
@@ -138,6 +168,7 @@ export function writeLocalPreferences(preferences: Partial<UserPreferences>) {
     COMPLETED_GOAL_RETENTION_STORAGE_KEY,
     next.completed_goal_retention,
   );
+  window.localStorage.setItem(WEEK_STARTS_ON_STORAGE_KEY, next.week_starts_on);
   document.documentElement.lang = next.preferred_language;
   applyAppearancePreference(next);
 

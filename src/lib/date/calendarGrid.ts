@@ -1,4 +1,5 @@
 import { toDateKey } from "./dateUtils";
+import type { ResolvedWeekStartsOn } from "../profile/preferences";
 
 export type CalendarGridDay = {
   date: Date;
@@ -9,9 +10,11 @@ export type CalendarGridDay = {
 export function buildCalendarGrid(
   year: number,
   month: number,
+  weekStartsOn: ResolvedWeekStartsOn = 0,
 ): CalendarGridDay[] {
   const monthStart = new Date(year, month, 1);
-  const gridStart = new Date(year, month, 1 - monthStart.getDay());
+  const daysFromWeekStart = (monthStart.getDay() - weekStartsOn + 7) % 7;
+  const gridStart = new Date(year, month, 1 - daysFromWeekStart);
 
   return Array.from({ length: 42 }, (_, index) => {
     const date = new Date(

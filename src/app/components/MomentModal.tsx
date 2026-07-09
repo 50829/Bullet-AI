@@ -2,12 +2,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/Button";
 import { Textarea } from "./ui/Textarea";
-import { Input } from "./ui/Input";
 import { useLanguage } from "../context/LanguageContext";
 import { useMomentsContext } from "../../features/workspace/WorkspaceContext";
 import { useToast } from "./ui/Toast";
 import { PlainImage } from "./ui/PlainImage";
 import { Modal } from "./ui/Modal";
+import { DateField } from "./date/DateField";
 import type { MomentRecord } from "../../features/workspace/types";
 
 type MomentDraft = Pick<
@@ -164,10 +164,9 @@ export const MomentModal = ({
         <label className="block text-sm text-gray-600 mb-1">
           {t("date") || "日期"}
         </label>
-        <Input
-          type="date"
+        <DateField
           value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
+          onChange={setSelectedDate}
           className="w-full"
         />
       </div>
