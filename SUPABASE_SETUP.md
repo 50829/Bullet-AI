@@ -18,6 +18,9 @@ cp .env.example .env.local
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+LLM_API_KEY=your-llm-api-key
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=your-model-name
 ```
 
 6. 重启开发服务器：
@@ -58,14 +61,17 @@ db/migrations/000_current_schema.sql
 
 这个文件会创建缺失表、修补旧表字段、配置 RLS、创建 Storage buckets 和 policies，并在最后执行 `notify pgrst, 'reload schema';` 刷新 Supabase PostgREST schema cache。
 
+如果线上项目已经执行过早期增量迁移，历史迁移文件的后续编辑不会自动重放，仍需继续执行新的增量迁移。
+
 已经运行过旧版 SQL 的 Supabase 项目，按文件序号继续执行增量迁移：
 
 ```sql
 db/migrations/001_goal_color_and_sort_order.sql
 db/migrations/002_reliability_schema_guard.sql
+db/migrations/003_ai_rate_limit_lock.sql
 ```
 
-`001_goal_color_and_sort_order.sql` 是历史增量迁移，相关字段已经合入 `000_current_schema.sql`。`002_reliability_schema_guard.sql` 是幂等守护迁移，用于补齐当前代码依赖的查询列、`deleted_at`、`client_id` 唯一索引、habit check-in 历史、触发器、AI 限流 RPC、RLS 和 Storage policies。所有迁移都应保持可重复执行。
+`001_goal_color_and_sort_order.sql` 是历史增量迁移，相关字段已经合入 `000_current_schema.sql`。`002_reliability_schema_guard.sql` 是幂等守护迁移，用于补齐当前代码依赖的查询列、`deleted_at`、`client_id` 唯一索引、habit check-in 历史、触发器、AI 限流 RPC、RLS 和 Storage policies。`003_ai_rate_limit_lock.sql` 会重新创建带 per-user advisory lock 的 AI 限流 RPC，避免已经跑过 `002` 的项目漏掉并发保护。所有迁移都应保持可重复执行。
 
 说明：
 
@@ -73,7 +79,7 @@ db/migrations/002_reliability_schema_guard.sql
 - 语言、外观、强调色、颜色模式和完成目标保留策略保存在 `profiles.preferred_language/ui_theme/accent_color/color_scheme/completed_goal_retention`，前端会先读 localStorage，再用云端偏好校准。
 - 显示名冷却使用 `username_updated_at`，不要用通用 `updated_at` 判断，因为偏好保存也会更新 profiles 行。
 - 习惯打卡历史表 `habit_checkins`、唯一约束、RLS、旧 `habits.last_checkin` 兼容迁移都已经包含在 `000_current_schema.sql` 里。
-- AI 调用频率记录表 `ai_usage_events` 已经包含在 `000_current_schema.sql` 里，默认用于每个登录用户每小时 20 次的限流。
+- AI 调用频率记录表 `ai_usage_events` 已经包含在 `000_current_schema.sql` 里，默认用于每个登录用户每小时 20 次的限流。成功预留后即计为一次 AI 调用尝试，后续 LLM 超时或供应商错误也会消耗额度；缺少 `LLM_API_KEY`、`LLM_BASE_URL` 或 `LLM_MODEL` 时不会预留额度。
 
 ## 验证
 
@@ -89,11 +95,14 @@ pnpm dev
 未登录访问：
 
 ```text
-http://localhost:3000/dashboard
+http://localhost:3000/home
+http://localhost:3000/goals
+http://localhost:3000/moments
+http://localhost:3000/reflections
 ```
 
-应该跳转到：
+应该分别跳转到对应的登录地址，例如：
 
 ```text
-http://localhost:3000/login?next=%2Fdashboard
+http://localhost:3000/login?next=%2Fhome
 ```

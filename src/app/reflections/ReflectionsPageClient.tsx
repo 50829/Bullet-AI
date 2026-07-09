@@ -25,7 +25,9 @@ const AssistantDrawer = dynamic(
 );
 const ConfirmDialog = dynamic(
   () =>
-    import("../../shared/components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
+    import("../../shared/components/ui/ConfirmDialog").then(
+      (mod) => mod.ConfirmDialog,
+    ),
   { ssr: false },
 );
 const ReflectionModal = dynamic(
@@ -40,7 +42,10 @@ export default function ReflectionsPageClient() {
   const {
     reflections,
     loading,
+    loadingMoreReflections,
+    hasMoreReflections,
     refreshReflections,
+    loadMoreReflections,
     addReflection,
     updateReflection,
     deleteReflection,
@@ -161,27 +166,42 @@ export default function ReflectionsPageClient() {
           }
         />
       ) : (
-        sortedReflections.map((reflection) => (
-          <ReflectionCard
-            key={reflection.id}
-            reflection={reflection}
-            collapsed={collapsedReflections.has(reflection.id)}
-            highlighted={reflection.id === activeHighlightReflectionId}
-            onToggle={toggleReflection}
-            onEdit={(target) => {
-              setEditingReflection(target);
-              setIsModalOpen(true);
-            }}
-            onDelete={(target) =>
-              deleteConfirm.open({
-                id: target.id,
-                name:
-                  target.title || target.content.slice(0, 42) || "reflection",
-                imagePath: target.image_path,
-              })
-            }
-          />
-        ))
+        <>
+          {sortedReflections.map((reflection) => (
+            <ReflectionCard
+              key={reflection.id}
+              reflection={reflection}
+              collapsed={collapsedReflections.has(reflection.id)}
+              highlighted={reflection.id === activeHighlightReflectionId}
+              onToggle={toggleReflection}
+              onEdit={(target) => {
+                setEditingReflection(target);
+                setIsModalOpen(true);
+              }}
+              onDelete={(target) =>
+                deleteConfirm.open({
+                  id: target.id,
+                  name:
+                    target.title || target.content.slice(0, 42) || "reflection",
+                  imagePath: target.image_path,
+                })
+              }
+            />
+          ))}
+          {hasMoreReflections && (
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                onClick={() => void loadMoreReflections()}
+                disabled={loadingMoreReflections}
+              >
+                {loadingMoreReflections
+                  ? t("loadingReflections") || "加载中..."
+                  : "加载更多 / Load more"}
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       {isModalOpen && (

@@ -96,31 +96,64 @@ describe("/api/ai", () => {
   });
 
   it("returns 429 when the hourly user limit is reached", async () => {
-    mocks.createClient.mockResolvedValue(
-      createSupabaseMock({ reserved: false }),
-    );
-
-    const response = await POST(
-      createRequest({ messages: [{ role: "user", content: "hi" }] }),
-    );
-
-    expect(response.status).toBe(429);
-    expect(mocks.fetch).not.toHaveBeenCalled();
-  });
-
-  it("does not reserve rate limit when LLM config is missing", async () => {
-    vi.stubEnv("LLM_API_KEY", "");
-    const supabase = createSupabaseMock();
+    const supabase = createSupabaseMock({ reserved: false });
     mocks.createClient.mockResolvedValue(supabase);
 
     const response = await POST(
       createRequest({ messages: [{ role: "user", content: "hi" }] }),
     );
 
-    expect(response.status).toBe(500);
-    expect(supabase.rpc).not.toHaveBeenCalled();
+    expect(response.status).toBe(429);
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
     expect(mocks.fetch).not.toHaveBeenCalled();
   });
+
+  it("returns 500 when the rate limiter is unavailable", async () => {
+    const supabase = createSupabaseMock({
+      reserveError: { message: "rpc failed" },
+    });
+    mocks.createClient.mockResolvedValue(supabase);
+
+    const response = await POST(
+      createRequest({ messages: [{ role: "user", content: "hi" }] }),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe("AI rate limit unavailable");
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    expect(mocks.fetch).not.toHaveBeenCalled();
+    expect(mocks.logger.error).toHaveBeenCalledWith(
+      "ai_rate_limit_reservation_failed",
+      expect.objectContaining({
+        userId: "user-1",
+        error: { message: "rpc failed" },
+      }),
+    );
+  });
+
+  it.each([
+    ["LLM_API_KEY", "服务器配置错误：未设置 API Key"],
+    ["LLM_BASE_URL", "服务器配置错误：未设置 API Base URL"],
+    ["LLM_MODEL", "服务器配置错误：未设置模型"],
+  ])(
+    "does not reserve rate limit when %s is missing",
+    async (envName, error) => {
+      vi.stubEnv(envName, "");
+      const supabase = createSupabaseMock();
+      mocks.createClient.mockResolvedValue(supabase);
+
+      const response = await POST(
+        createRequest({ messages: [{ role: "user", content: "hi" }] }),
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(body.error).toBe(error);
+      expect(supabase.rpc).not.toHaveBeenCalled();
+      expect(mocks.fetch).not.toHaveBeenCalled();
+    },
+  );
 
   it("calls the LLM for valid authenticated requests", async () => {
     mocks.createClient.mockResolvedValue(createSupabaseMock());
@@ -169,7 +202,8 @@ describe("/api/ai", () => {
   it("returns 504 when the LLM request times out", async () => {
     vi.useFakeTimers();
     vi.stubEnv("LLM_TIMEOUT_MS", "10");
-    mocks.createClient.mockResolvedValue(createSupabaseMock());
+    const supabase = createSupabaseMock();
+    mocks.createClient.mockResolvedValue(supabase);
     mocks.fetch.mockImplementation(
       (_url: string, init?: RequestInit) =>
         new Promise((_resolve, reject) => {
@@ -190,11 +224,36 @@ describe("/api/ai", () => {
 
     expect(response.status).toBe(504);
     expect(body.error).toContain("超时");
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
     expect(mocks.logger.warn).toHaveBeenCalledWith(
       "ai_llm_timeout",
       expect.objectContaining({
         purpose: "moment_chat",
         timeoutMs: 10,
+      }),
+    );
+  });
+
+  it("returns 502 when the provider request fails after reservation", async () => {
+    const supabase = createSupabaseMock();
+    const error = new Error("network down");
+    mocks.createClient.mockResolvedValue(supabase);
+    mocks.fetch.mockRejectedValue(error);
+
+    const response = await POST(
+      createRequest({ messages: [{ role: "user", content: "hi" }] }),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(502);
+    expect(body.error).toBe("AI 服务暂时不可用，请稍后再试");
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    expect(mocks.logger.error).toHaveBeenCalledWith(
+      "ai_llm_request_failed",
+      expect.objectContaining({
+        userId: "user-1",
+        purpose: "moment_chat",
+        error,
       }),
     );
   });

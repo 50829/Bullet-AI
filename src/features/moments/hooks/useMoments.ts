@@ -4,16 +4,22 @@ import { useCallback, useMemo } from "react";
 import { createClientId } from "../../../lib/localDb/repository";
 import { createOptimisticId } from "../../../lib/localFirst/ids";
 import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
-import type { CreateMomentInput, MomentRecord, UpdateMomentInput } from "../types";
+import type {
+  CreateMomentInput,
+  MomentRecord,
+  UpdateMomentInput,
+} from "../types";
 
 type UseMomentsInput = {
   userId: string | null;
+  remotePageSize?: number;
 };
 
-export function useMoments({ userId }: UseMomentsInput) {
+export function useMoments({ userId, remotePageSize = 20 }: UseMomentsInput) {
   const collection = useLocalFirstCollection<MomentRecord>({
     userId,
     collection: "moments",
+    initialRemotePageSize: remotePageSize,
   });
 
   const addMoment = useCallback(
@@ -48,7 +54,10 @@ export function useMoments({ userId }: UseMomentsInput) {
     () => ({
       moments: collection.items,
       loading: collection.loading,
+      loadingMoreMoments: collection.loadingMore,
+      hasMoreMoments: collection.hasMore,
       refreshMoments: () => collection.refresh(),
+      loadMoreMoments: () => collection.loadMore(),
       addMoment,
       updateMoment,
       deleteMoment: collection.remove,

@@ -1,5 +1,11 @@
 import { idbDelete, idbGet, idbGetAll, idbPut } from "./indexedDb";
-import type { OutboxErrorKind, OutboxItem, OutboxStatus } from "./types";
+import { clearEntitySyncFailure } from "./repository";
+import type {
+  DeadOutboxDiagnostic,
+  OutboxErrorKind,
+  OutboxItem,
+  OutboxStatus,
+} from "./types";
 
 export const MAX_OUTBOX_ATTEMPTS = 5;
 
@@ -31,8 +37,46 @@ export async function getDeadOutboxItems(userId: string) {
   return all.filter((item) => item.userId === userId && item.status === "dead");
 }
 
+function toDeadOutboxDiagnostic(item: OutboxItem): DeadOutboxDiagnostic {
+  return {
+    id: item.id,
+    collection: item.collection,
+    entityId: item.entityId,
+    operation: item.operation,
+    error: item.error,
+    errorKind: item.errorKind,
+    attemptCount: item.attemptCount,
+    deadAt: item.deadAt,
+  };
+}
+
+export async function listDeadOutboxDiagnostics(userId: string) {
+  const deadItems = await getDeadOutboxItems(userId);
+  return deadItems
+    .sort(
+      (a, b) =>
+        (b.deadAt ?? b.updatedAt).localeCompare(a.deadAt ?? a.updatedAt) ||
+        a.createdAt.localeCompare(b.createdAt),
+    )
+    .map(toDeadOutboxDiagnostic);
+}
+
 export async function getDeadOutboxCount(userId: string) {
   return (await getDeadOutboxItems(userId)).length;
+}
+
+function requeueDeadOutboxItem(item: OutboxItem) {
+  const next: OutboxItem = {
+    ...item,
+    status: "pending",
+    attemptCount: 0,
+    updatedAt: new Date().toISOString(),
+  };
+  delete next.error;
+  delete next.errorKind;
+  delete next.deadAt;
+  delete next.orphanedStoragePath;
+  return idbPut("outbox", next);
 }
 
 export async function updateOutboxItem(item: OutboxItem) {
@@ -96,23 +140,26 @@ export async function markOutboxItem(
 export async function retryDeadOutboxItems(userId: string) {
   const deadItems = await getDeadOutboxItems(userId);
 
-  await Promise.all(
-    deadItems.map((item) => {
-      const next: OutboxItem = {
-        ...item,
-        status: "pending",
-        attemptCount: 0,
-        updatedAt: new Date().toISOString(),
-      };
-      delete next.error;
-      delete next.errorKind;
-      delete next.deadAt;
-      delete next.orphanedStoragePath;
-      return idbPut("outbox", next);
-    }),
-  );
+  await Promise.all(deadItems.map(requeueDeadOutboxItem));
 
   return deadItems.length;
+}
+
+export async function retryDeadOutboxItem(userId: string, id: string) {
+  const item = await idbGet<OutboxItem>("outbox", id);
+  if (!item || item.userId !== userId || item.status !== "dead") return false;
+
+  await requeueDeadOutboxItem(item);
+  return true;
+}
+
+export async function discardDeadOutboxItem(userId: string, id: string) {
+  const item = await idbGet<OutboxItem>("outbox", id);
+  if (!item || item.userId !== userId || item.status !== "dead") return false;
+
+  await clearEntitySyncFailure(userId, item.collection, item.entityId);
+  await idbDelete("outbox", id);
+  return true;
 }
 
 export async function removeOutboxItem(id: string) {

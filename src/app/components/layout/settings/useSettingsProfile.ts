@@ -43,7 +43,14 @@ export function useSettingsProfile({
 }: UseSettingsProfileInput) {
   const { t, language, setLanguage } = useLanguage();
   const router = useRouter();
-  const { syncStatus, deadOutboxCount, retrySync } =
+  const {
+    syncStatus,
+    deadOutboxCount,
+    deadOutboxItems,
+    retrySync,
+    retryDeadOutboxItem,
+    discardDeadOutboxItem,
+  } =
     useWorkspaceSessionContext();
   const { showToast } = useToast();
   const [username, setUsername] = useState("");
@@ -255,7 +262,10 @@ export function useSettingsProfile({
     daysRemaining,
     syncStatus,
     deadOutboxCount,
+    deadOutboxItems,
     retrySync,
+    retryDeadOutboxItem,
+    discardDeadOutboxItem,
     handleUsernameChange,
     handleLanguageChange,
     handleAccentChange,

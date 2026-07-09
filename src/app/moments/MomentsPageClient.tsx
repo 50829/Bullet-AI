@@ -25,7 +25,9 @@ const AssistantDrawer = dynamic(
 );
 const ConfirmDialog = dynamic(
   () =>
-    import("../../shared/components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
+    import("../../shared/components/ui/ConfirmDialog").then(
+      (mod) => mod.ConfirmDialog,
+    ),
   { ssr: false },
 );
 const MomentModal = dynamic(
@@ -37,8 +39,17 @@ const MomentModal = dynamic(
 );
 
 export default function MomentsPageClient() {
-  const { moments, loading, refreshMoments, addMoment, updateMoment, deleteMoment } =
-    useWorkspaceData().moments;
+  const {
+    moments,
+    loading,
+    loadingMoreMoments,
+    hasMoreMoments,
+    refreshMoments,
+    loadMoreMoments,
+    addMoment,
+    updateMoment,
+    deleteMoment,
+  } = useWorkspaceData().moments;
   const searchParams = useSearchParams();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
@@ -158,31 +169,46 @@ export default function MomentsPageClient() {
                   }
                 />
               ) : (
-                monthCards.map((monthCard) => (
-                  <MonthSection
-                    key={monthCard.month}
-                    monthCard={monthCard}
-                    collapsed={collapsedMonths.has(monthCard.month)}
-                    activeHighlightMomentId={activeHighlightMomentId}
-                    formatDayNumber={formatDayNumber}
-                    formatDayLabel={formatDayLabel}
-                    formatWeekday={formatWeekday}
-                    formatEntryCount={formatEntryCount}
-                    formatEntryTime={formatEntryTime}
-                    onToggle={toggleMonth}
-                    onEdit={(moment) => {
-                      setEditingMoment(moment);
-                      setIsModalOpen(true);
-                    }}
-                    onDelete={(moment) =>
-                      deleteConfirm.open({
-                        id: moment.id,
-                        name: moment.content.slice(0, 42) || "moment",
-                        imagePath: moment.image_path,
-                      })
-                    }
-                  />
-                ))
+                <>
+                  {monthCards.map((monthCard) => (
+                    <MonthSection
+                      key={monthCard.month}
+                      monthCard={monthCard}
+                      collapsed={collapsedMonths.has(monthCard.month)}
+                      activeHighlightMomentId={activeHighlightMomentId}
+                      formatDayNumber={formatDayNumber}
+                      formatDayLabel={formatDayLabel}
+                      formatWeekday={formatWeekday}
+                      formatEntryCount={formatEntryCount}
+                      formatEntryTime={formatEntryTime}
+                      onToggle={toggleMonth}
+                      onEdit={(moment) => {
+                        setEditingMoment(moment);
+                        setIsModalOpen(true);
+                      }}
+                      onDelete={(moment) =>
+                        deleteConfirm.open({
+                          id: moment.id,
+                          name: moment.content.slice(0, 42) || "moment",
+                          imagePath: moment.image_path,
+                        })
+                      }
+                    />
+                  ))}
+                  {hasMoreMoments && (
+                    <div className="flex justify-center">
+                      <Button
+                        variant="outline"
+                        onClick={() => void loadMoreMoments()}
+                        disabled={loadingMoreMoments}
+                      >
+                        {loadingMoreMoments
+                          ? t("loadingMoments") || "加载中..."
+                          : "加载更多 / Load more"}
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

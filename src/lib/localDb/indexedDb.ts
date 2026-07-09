@@ -3,6 +3,64 @@ const DB_VERSION = 1;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
+type LocalDbIndexSchema = {
+  name: string;
+  keyPath: string | string[];
+  options?: IDBIndexParameters;
+};
+
+type LocalDbStoreSchema = {
+  name: string;
+  options: IDBObjectStoreParameters;
+  indexes?: LocalDbIndexSchema[];
+};
+
+type LocalDbMigrationContext = {
+  db: IDBDatabase;
+  transaction: IDBTransaction | null;
+};
+
+type LocalDbMigration = {
+  version: number;
+  upgrade: (context: LocalDbMigrationContext) => void;
+};
+
+export const LOCAL_DB_VERSION = DB_VERSION;
+
+export const LOCAL_DB_STORES: LocalDbStoreSchema[] = [
+  {
+    name: "entities",
+    options: { keyPath: "key" },
+    indexes: [
+      {
+        name: "userCollection",
+        keyPath: ["userId", "collection"],
+        options: { unique: false },
+      },
+      { name: "collection", keyPath: "collection", options: { unique: false } },
+    ],
+  },
+  {
+    name: "outbox",
+    options: { keyPath: "id" },
+    indexes: [
+      { name: "status", keyPath: "status", options: { unique: false } },
+      { name: "userId", keyPath: "userId", options: { unique: false } },
+      {
+        name: "entity",
+        keyPath: ["userId", "collection", "entityId"],
+        options: { unique: false },
+      },
+    ],
+  },
+  {
+    name: "files",
+    options: { keyPath: "id" },
+    indexes: [{ name: "userId", keyPath: "userId", options: { unique: false } }],
+  },
+  { name: "meta", options: { keyPath: "key" } },
+];
+
 function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
@@ -22,6 +80,59 @@ function createStore(
   return null;
 }
 
+function createIndexes(
+  store: IDBObjectStore,
+  indexes: LocalDbIndexSchema[] = [],
+) {
+  for (const index of indexes) {
+    if (!store.indexNames.contains(index.name)) {
+      store.createIndex(index.name, index.keyPath, index.options);
+    }
+  }
+}
+
+function createStoreFromSchema(db: IDBDatabase, schema: LocalDbStoreSchema) {
+  const store = createStore(db, schema.name, schema.options);
+  if (store) createIndexes(store, schema.indexes);
+}
+
+function createInitialSchema({ db }: LocalDbMigrationContext) {
+  for (const storeSchema of LOCAL_DB_STORES) {
+    createStoreFromSchema(db, storeSchema);
+  }
+}
+
+const LOCAL_DB_MIGRATIONS: LocalDbMigration[] = [
+  {
+    version: 1,
+    upgrade: createInitialSchema,
+  },
+  // Add future schema changes as new version entries and bump DB_VERSION once.
+  // Keep older migrations append-only so existing browsers can upgrade safely.
+];
+
+export function getPendingLocalDbMigrationVersions(
+  oldVersion: number,
+  targetVersion = DB_VERSION,
+) {
+  return LOCAL_DB_MIGRATIONS.filter(
+    (migration) =>
+      migration.version > oldVersion && migration.version <= targetVersion,
+  ).map((migration) => migration.version);
+}
+
+export function applyLocalDbMigrations(
+  context: LocalDbMigrationContext,
+  oldVersion: number,
+  targetVersion = DB_VERSION,
+) {
+  for (const migration of LOCAL_DB_MIGRATIONS) {
+    if (migration.version > oldVersion && migration.version <= targetVersion) {
+      migration.upgrade(context);
+    }
+  }
+}
+
 export function openLocalDb(): Promise<IDBDatabase> {
   if (typeof indexedDB === "undefined") {
     return Promise.reject(
@@ -34,32 +145,12 @@ export function openLocalDb(): Promise<IDBDatabase> {
   dbPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    request.onupgradeneeded = () => {
-      const db = request.result;
-
-      const entities = createStore(db, "entities", { keyPath: "key" });
-      if (entities) {
-        entities.createIndex("userCollection", ["userId", "collection"], {
-          unique: false,
-        });
-        entities.createIndex("collection", "collection", { unique: false });
-      }
-
-      const outbox = createStore(db, "outbox", { keyPath: "id" });
-      if (outbox) {
-        outbox.createIndex("status", "status", { unique: false });
-        outbox.createIndex("userId", "userId", { unique: false });
-        outbox.createIndex("entity", ["userId", "collection", "entityId"], {
-          unique: false,
-        });
-      }
-
-      const files = createStore(db, "files", { keyPath: "id" });
-      if (files) {
-        files.createIndex("userId", "userId", { unique: false });
-      }
-
-      createStore(db, "meta", { keyPath: "key" });
+    request.onupgradeneeded = (event) => {
+      applyLocalDbMigrations(
+        { db: request.result, transaction: request.transaction },
+        event.oldVersion,
+        DB_VERSION,
+      );
     };
 
     request.onsuccess = () => resolve(request.result);

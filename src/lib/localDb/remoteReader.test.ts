@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   eq: vi.fn(),
   is: vi.fn(),
   order: vi.fn(),
+  range: vi.fn(),
 }));
 
 vi.mock("../supabaseClient", () => ({
@@ -38,13 +39,20 @@ vi.mock("../supabaseClient", () => ({
           mocks.is(column, value);
           return builder;
         }),
-        order: vi.fn(async (column: string, options: unknown) => {
+        order: vi.fn((column: string, options: unknown) => {
           mocks.order(column, options);
-          return {
-          data: mocks.remoteRows,
-          error: mocks.queryError,
-          };
+          return builder;
         }),
+        range: vi.fn((from: number, to: number) => {
+          mocks.range(from, to);
+          return builder;
+        }),
+        then: (resolve: (value: unknown) => unknown, reject: () => unknown) => {
+          return Promise.resolve({
+            data: mocks.remoteRows,
+            error: mocks.queryError,
+          }).then(resolve, reject);
+        },
       };
       return builder;
     }),
@@ -56,7 +64,8 @@ vi.mock("../supabaseClient", () => ({
   },
 }));
 
-const { readRemoteCollection } = await import("./remoteReader");
+const { readRemoteCollection, readRemoteCollectionPage } =
+  await import("./remoteReader");
 
 function moment(overrides: Partial<TestRecord>): TestRecord {
   return {
@@ -85,6 +94,7 @@ describe("readRemoteCollection", () => {
     mocks.eq.mockReset();
     mocks.is.mockReset();
     mocks.order.mockReset();
+    mocks.range.mockReset();
   });
 
   it("filters deleted rows and attaches signed image URLs", async () => {
@@ -137,6 +147,57 @@ describe("readRemoteCollection", () => {
     expect(mocks.order).toHaveBeenCalledWith("updated_at", {
       ascending: false,
     });
+    expect(mocks.range).not.toHaveBeenCalled();
+  });
+
+  it("reads a paginated range without changing the default collection API", async () => {
+    mocks.remoteRows = [
+      moment({ id: 5, client_id: "moment-5" }),
+      moment({ id: 4, client_id: "moment-4" }),
+    ];
+
+    const rows = await readRemoteCollection<TestRecord>(
+      "user-1",
+      "moments",
+      { column: "created_at", ascending: false },
+      { limit: 2, offset: 4 },
+    );
+
+    expect(rows).toHaveLength(2);
+    expect(mocks.range).toHaveBeenCalledWith(4, 5);
+  });
+
+  it("returns page metadata and signs only the loaded page items", async () => {
+    mocks.remoteRows = [
+      moment({ id: 3, client_id: "moment-3", image_path: "user-1/3.jpg" }),
+      moment({ id: 2, client_id: "moment-2", image_path: "user-1/2.jpg" }),
+      moment({ id: 1, client_id: "moment-1", image_path: "user-1/1.jpg" }),
+    ];
+
+    const page = await readRemoteCollectionPage<TestRecord>(
+      "user-1",
+      "moments",
+      { limit: 2, offset: 0 },
+      { column: "created_at", ascending: false },
+    );
+
+    expect(page).toMatchObject({
+      hasMore: true,
+      nextOffset: 2,
+      items: [{ id: 3 }, { id: 2 }],
+    });
+    expect(mocks.range).toHaveBeenCalledWith(0, 2);
+    expect(mocks.createSignedUrl).toHaveBeenCalledTimes(2);
+    expect(mocks.createSignedUrl).toHaveBeenNthCalledWith(
+      1,
+      "user-1/3.jpg",
+      60 * 60,
+    );
+    expect(mocks.createSignedUrl).toHaveBeenNthCalledWith(
+      2,
+      "user-1/2.jpg",
+      60 * 60,
+    );
   });
 
   it("does not attach signed URLs for collections without storage buckets", async () => {

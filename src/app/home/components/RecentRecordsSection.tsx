@@ -5,10 +5,12 @@ import type { RecentDashboardItem } from "../../../features/dashboard/hooks/useT
 import { Button } from "../../../shared/components/ui/Button";
 import { DashboardCardSection } from "../../../shared/components/ui/DashboardCardSection";
 import { EmptyState } from "../../../shared/components/ui/EmptyState";
+import { LoadingState } from "../../../shared/components/ui/LoadingState";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 
 type RecentRecordsSectionProps = {
   items: RecentDashboardItem[];
+  loading?: boolean;
   onOpen: (item: RecentDashboardItem) => void;
   onNewMoment: () => void;
   onNewReflection: () => void;
@@ -16,6 +18,7 @@ type RecentRecordsSectionProps = {
 
 export function RecentRecordsSection({
   items,
+  loading = false,
   onOpen,
   onNewMoment,
   onNewReflection,
@@ -36,7 +39,9 @@ export function RecentRecordsSection({
         </Button>
       }
     >
-      {items.length === 0 ? (
+      {loading && items.length === 0 ? (
+        <LoadingState className="min-h-[180px]" />
+      ) : items.length === 0 ? (
         <EmptyState
           title={t("noRecords") || "暂无记录"}
           action={

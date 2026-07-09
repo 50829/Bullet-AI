@@ -3,19 +3,24 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import {
+  discardDeadOutboxItem,
   flushOutbox,
-  getDeadOutboxCount,
   installSyncTriggers,
+  listDeadOutboxDiagnostics,
+  retryDeadOutboxItem,
   retryDeadOutboxItems,
   subscribeSyncStatus,
 } from "../../lib/localDb/syncEngine";
-import type { SyncStatus } from "../../lib/localDb/types";
+import type { DeadOutboxDiagnostic, SyncStatus } from "../../lib/localDb/types";
 import type { WorkspaceSessionState } from "./types";
 
 export function useWorkspaceSession(): WorkspaceSessionState {
   const [userId, setUserId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [deadOutboxCount, setDeadOutboxCount] = useState(0);
+  const [deadOutboxItems, setDeadOutboxItems] = useState<
+    DeadOutboxDiagnostic[]
+  >([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -24,13 +29,15 @@ export function useWorkspaceSession(): WorkspaceSessionState {
     const refreshDeadOutboxCount = async (nextUserId: string | null) => {
       if (!nextUserId) {
         if (isMounted) setDeadOutboxCount(0);
+        if (isMounted) setDeadOutboxItems([]);
         return;
       }
 
-      const count = await getDeadOutboxCount(nextUserId);
+      const items = await listDeadOutboxDiagnostics(nextUserId);
       if (isMounted && activeUserId === nextUserId) {
-        setDeadOutboxCount(count);
-        if (count > 0) setSyncStatus("failed");
+        setDeadOutboxItems(items);
+        setDeadOutboxCount(items.length);
+        if (items.length > 0) setSyncStatus("failed");
       }
     };
 
@@ -75,17 +82,53 @@ export function useWorkspaceSession(): WorkspaceSessionState {
     }
     await flushOutbox();
     if (userId) {
-      setDeadOutboxCount(await getDeadOutboxCount(userId));
+      const items = await listDeadOutboxDiagnostics(userId);
+      setDeadOutboxItems(items);
+      setDeadOutboxCount(items.length);
     }
   }, [userId]);
+
+  const retryOneDeadOutboxItem = useCallback(
+    async (id: string) => {
+      if (!userId) return;
+      await retryDeadOutboxItem(userId, id);
+      await flushOutbox();
+      const items = await listDeadOutboxDiagnostics(userId);
+      setDeadOutboxItems(items);
+      setDeadOutboxCount(items.length);
+    },
+    [userId],
+  );
+
+  const discardOneDeadOutboxItem = useCallback(
+    async (id: string) => {
+      if (!userId) return;
+      await discardDeadOutboxItem(userId, id);
+      const items = await listDeadOutboxDiagnostics(userId);
+      setDeadOutboxItems(items);
+      setDeadOutboxCount(items.length);
+    },
+    [userId],
+  );
 
   return useMemo(
     () => ({
       userId,
       syncStatus,
       deadOutboxCount,
+      deadOutboxItems,
       retrySync,
+      retryDeadOutboxItem: retryOneDeadOutboxItem,
+      discardDeadOutboxItem: discardOneDeadOutboxItem,
     }),
-    [deadOutboxCount, retrySync, syncStatus, userId],
+    [
+      deadOutboxCount,
+      deadOutboxItems,
+      discardOneDeadOutboxItem,
+      retryOneDeadOutboxItem,
+      retrySync,
+      syncStatus,
+      userId,
+    ],
   );
 }

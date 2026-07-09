@@ -50,6 +50,11 @@ const mocks = vi.hoisted(() => ({
   useHabits: vi.fn(),
   useMoments: vi.fn(),
   useReflections: vi.fn(),
+  usePathname: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  usePathname: mocks.usePathname,
 }));
 
 vi.mock("../WorkspaceContext", () => ({
@@ -72,9 +77,8 @@ vi.mock("../../reflections/hooks/useReflections", () => ({
   useReflections: mocks.useReflections,
 }));
 
-const { WorkspaceDataProvider, useWorkspaceData } = await import(
-  "./WorkspaceDataContext"
-);
+const { WorkspaceDataProvider, useWorkspaceData } =
+  await import("./WorkspaceDataContext");
 
 describe("WorkspaceDataProvider", () => {
   beforeEach(() => {
@@ -83,6 +87,8 @@ describe("WorkspaceDataProvider", () => {
     mocks.useHabits.mockReset();
     mocks.useMoments.mockReset();
     mocks.useReflections.mockReset();
+    mocks.usePathname.mockReset();
+    mocks.usePathname.mockReturnValue("/home");
     mocks.useGoals.mockReturnValue(mocks.goalsController);
     mocks.useHabits.mockReturnValue(mocks.habitsController);
     mocks.useMoments.mockReturnValue(mocks.momentsController);
@@ -123,7 +129,35 @@ describe("WorkspaceDataProvider", () => {
     ).not.toThrow();
     expect(mocks.useGoals).toHaveBeenCalledWith({ userId: null });
     expect(mocks.useHabits).toHaveBeenCalledWith({ userId: null });
-    expect(mocks.useMoments).toHaveBeenCalledWith({ userId: null });
-    expect(mocks.useReflections).toHaveBeenCalledWith({ userId: null });
+    expect(mocks.useMoments).toHaveBeenCalledWith({
+      userId: null,
+      remotePageSize: 0,
+    });
+    expect(mocks.useReflections).toHaveBeenCalledWith({
+      userId: null,
+      remotePageSize: 0,
+    });
+  });
+
+  it("enables paged remote reads only for the active collection page", () => {
+    mocks.usePathname.mockReturnValue("/moments");
+
+    function Consumer() {
+      const data = useWorkspaceData();
+      return createElement("span", null, data.session.userId ?? "anonymous");
+    }
+
+    renderToString(
+      createElement(WorkspaceDataProvider, null, createElement(Consumer)),
+    );
+
+    expect(mocks.useMoments).toHaveBeenCalledWith({
+      userId: "user-1",
+      remotePageSize: 20,
+    });
+    expect(mocks.useReflections).toHaveBeenCalledWith({
+      userId: "user-1",
+      remotePageSize: 0,
+    });
   });
 });

@@ -11,10 +11,13 @@ import {
   sortGoalsByOrder,
 } from "../../goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../goals/hooks/useCompletedGoalRetention";
-import { parseReflectionContent } from "../../../lib/reflections/reflectionContent";
 import { useWorkspaceData } from "../../workspace/data";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { useToast } from "../../../shared/components/ui/Toast";
+import {
+  useRecentDashboardRecords,
+  type RecentDashboardItem,
+} from "./useRecentDashboardRecords";
 
 function todayKey() {
   const now = new Date();
@@ -23,48 +26,27 @@ function todayKey() {
   ).padStart(2, "0")}`;
 }
 
-function formatRecentItemDate(value: string, language: "zh" | "en") {
-  const dateKey = value.includes("T") ? value.split("T")[0] : value;
-  const [year, month, day] = dateKey.split("-");
-  if (!year || !month || !day) return value;
-
-  const date = new Date(Number(year), Number(month) - 1, Number(day));
-  if (Number.isNaN(date.getTime())) return value;
-
-  const weekday = date.toLocaleDateString(
-    language === "en" ? "en-US" : "zh-CN",
-    { weekday: "short" },
-  );
-  return `${month}-${day} ${weekday}`;
-}
-
-export type RecentDashboardItem = {
-  id: string;
-  kind: "moment" | "reflection";
-  itemId: number;
-  title: string;
-  time: string;
-  dateLabel: string;
-};
+export type { RecentDashboardItem };
 
 export function useTodayDashboard() {
   const router = useRouter();
   const {
-    session: { syncStatus, retrySync },
+    session: { userId, syncStatus, retrySync },
     moments: { moments, addMoment, updateMoment },
     reflections: { reflections, addReflection, updateReflection },
-    goals: {
-      goals,
-      loading: goalsLoading,
-      addGoal,
-      updateGoal,
-      deleteGoal,
-    },
+    goals: { goals, loading: goalsLoading, addGoal, updateGoal, deleteGoal },
     habits: habitsState,
   } = useWorkspaceData();
   const { habits } = habitsState;
   const { t, language } = useLanguage();
   const { showToast } = useToast();
+  const recentRecords = useRecentDashboardRecords({
+    userId,
+    language,
+    newMomentLabel: t("newMoment") || "记录",
+    fallbackMoments: moments,
+    fallbackReflections: reflections,
+  });
   const completedGoalRetention = useCompletedGoalRetention();
   const today = todayKey();
   const todayGoals = useMemo(
@@ -86,35 +68,6 @@ export function useTodayDashboard() {
     [completedGoalRetention, todayGoals],
   );
   const todayHabits = habits.slice(0, 5);
-  const recentItems = useMemo<RecentDashboardItem[]>(() => {
-    const momentItems = moments.slice(0, 4).map((moment) => ({
-      id: `moment-${moment.id}`,
-      kind: "moment" as const,
-      itemId: moment.id,
-      title: moment.content.slice(0, 42) || t("newMoment") || "记录",
-      time: moment.created_at,
-      dateLabel: formatRecentItemDate(moment.created_at, language),
-    }));
-    const reflectionItems = reflections.slice(0, 3).map((reflection) => {
-      const parsed = parseReflectionContent(reflection);
-      return {
-        id: `reflection-${reflection.id}`,
-        kind: "reflection" as const,
-        itemId: reflection.id,
-        title: parsed.title || parsed.body.slice(0, 42),
-        time: reflection.updated_at || reflection.created_at,
-        dateLabel: formatRecentItemDate(
-          reflection.updated_at || reflection.created_at,
-          language,
-        ),
-      };
-    });
-
-    return [...momentItems, ...reflectionItems]
-      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-      .slice(0, 5);
-  }, [language, moments, reflections, t]);
-
   const openRecentItem = (item: RecentDashboardItem) => {
     if (item.kind === "moment") router.push(`/moments?moment=${item.itemId}`);
     else router.push(`/reflections?reflection=${item.itemId}`);
@@ -162,7 +115,8 @@ export function useTodayDashboard() {
     openTodayGoals,
     visibleTodayGoals,
     todayHabits,
-    recentItems,
+    recentItems: recentRecords.items,
+    recentItemsLoading: recentRecords.loading,
     openRecentItem,
     toggleGoalCompleted,
     deleteHabit,

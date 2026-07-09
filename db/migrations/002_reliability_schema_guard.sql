@@ -225,6 +225,16 @@ begin
     return false;
   end if;
 
+  if p_limit <= 0 then
+    return false;
+  end if;
+
+  -- Serialize per-user reservations so concurrent requests cannot all pass
+  -- the count check before any insert commits.
+  perform pg_advisory_xact_lock(
+    hashtextextended('ai_usage_events:' || p_user_id::text, 0)
+  );
+
   select count(*) into event_count
   from public.ai_usage_events
   where user_id = p_user_id

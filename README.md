@@ -36,8 +36,12 @@ pnpm dev
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `LLM_API_KEY`（可选对话服务）
-- `LLM_BASE_URL`（可选对话服务）
+
+AI 对话服务默认可不配置；未配置时应用仍可运行，但 AI 接口会返回服务端配置错误。启用 AI 需要同时配置：
+
+- `LLM_API_KEY`
+- `LLM_BASE_URL`
+- `LLM_MODEL`
 
 ## 数据库迁移
 
@@ -47,11 +51,17 @@ pnpm dev
 db/migrations/000_current_schema.sql
 ```
 
+已经执行过旧版迁移的线上项目需要继续按序执行新的增量迁移；历史迁移文件的后续编辑不会自动重放。完整增量列表见 `SUPABASE_SETUP.md`，已经跑过 `002` 的项目至少还需要执行：
+
+```sql
+db/migrations/003_ai_rate_limit_lock.sql
+```
+
 这个脚本会：
 
 - 创建 `habit_checkins` 历史打卡表。
 - 为习惯打卡补齐稳定 `client_id`、`habit_client_id` 和可合并的打卡状态字段。
-- 创建 `ai_usage_events`，用于限制登录用户的 AI 调用频率。
+- 创建 `ai_usage_events`，用于限制登录用户的 AI 调用频率；成功预留后即计为一次 AI 调用尝试，后续 LLM 超时或供应商错误也会消耗额度。
 - 为同一用户、同一习惯客户端 ID、同一日期添加唯一约束。
 - 为目标补齐颜色和手动排序字段。
 - 启用 RLS，限制用户只能读写自己的打卡记录。

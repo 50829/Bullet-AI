@@ -420,6 +420,24 @@ export async function removeEntity(
   emitCollectionChange(userId, collection);
 }
 
+export async function clearEntitySyncFailure(
+  userId: string,
+  collection: LocalCollection,
+  entityId: string | number,
+) {
+  const existing = await readEntity(userId, collection, entityId);
+  if (!existing) return false;
+
+  await idbPut<LocalEntity<unknown>>("entities", {
+    ...existing,
+    pending: false,
+    failed: false,
+    updatedAt: new Date().toISOString(),
+  });
+  emitCollectionChange(userId, collection);
+  return true;
+}
+
 function createMutationId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto)
     return crypto.randomUUID();

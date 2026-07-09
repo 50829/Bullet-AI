@@ -74,10 +74,13 @@ export default function SettingsPanel({
           savingPreference={settings.savingPreference}
           syncStatus={settings.syncStatus}
           deadOutboxCount={settings.deadOutboxCount}
+          deadOutboxItems={settings.deadOutboxItems}
           onCompletedGoalRetentionChange={
             settings.handleCompletedGoalRetentionChange
           }
           onRetrySync={settings.retrySync}
+          onRetryDeadOutboxItem={settings.retryDeadOutboxItem}
+          onDiscardDeadOutboxItem={settings.discardDeadOutboxItem}
           onExport={handleExport}
         />
       )}

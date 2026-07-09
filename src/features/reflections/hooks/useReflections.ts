@@ -12,12 +12,17 @@ import type {
 
 type UseReflectionsInput = {
   userId: string | null;
+  remotePageSize?: number;
 };
 
-export function useReflections({ userId }: UseReflectionsInput) {
+export function useReflections({
+  userId,
+  remotePageSize = 20,
+}: UseReflectionsInput) {
   const collection = useLocalFirstCollection<ReflectionRecord>({
     userId,
     collection: "reflections",
+    initialRemotePageSize: remotePageSize,
   });
 
   const addReflection = useCallback(
@@ -53,7 +58,10 @@ export function useReflections({ userId }: UseReflectionsInput) {
     () => ({
       reflections: collection.items,
       loading: collection.loading,
+      loadingMoreReflections: collection.loadingMore,
+      hasMoreReflections: collection.hasMore,
       refreshReflections: () => collection.refresh(),
+      loadMoreReflections: () => collection.loadMore(),
       addReflection,
       updateReflection,
       deleteReflection: collection.remove,

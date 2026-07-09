@@ -46,6 +46,18 @@ type RemoteImageEntity = {
   image_path?: string | null;
 };
 
+export type RemoteCollectionReadOptions = {
+  limit?: number;
+  offset?: number;
+  includeSignedImageUrls?: boolean;
+};
+
+export type RemoteCollectionPage<T> = {
+  items: T[];
+  hasMore: boolean;
+  nextOffset: number;
+};
+
 async function attachSignedUrls<T extends object>(
   collection: LocalCollection,
   items: T[],
@@ -59,16 +71,19 @@ async function attachSignedUrls<T extends object>(
 
       return {
         ...item,
-        image_url: imagePath ? await getSignedImageUrl(bucket, imagePath) : null,
+        image_url: imagePath
+          ? await getSignedImageUrl(bucket, imagePath)
+          : null,
       };
     }),
   );
 }
 
-export async function readRemoteCollection<T extends object>(
+async function readRemoteCollectionRows<T extends object>(
   userId: string,
   collection: LocalCollection,
   order: CollectionOrder = defaultOrderFor(collection),
+  options?: RemoteCollectionReadOptions,
 ) {
   let query = supabase
     .from(collection)
@@ -79,18 +94,64 @@ export async function readRemoteCollection<T extends object>(
     query = query.is("deleted_at", null);
   }
 
-  const { data, error } = await query.order(order.column, {
+  let orderedQuery = query.order(order.column, {
     ascending: order.ascending,
   });
 
+  if (typeof options?.limit === "number") {
+    const offset = options.offset ?? 0;
+    orderedQuery = orderedQuery.range(offset, offset + options.limit - 1);
+  }
+
+  const { data, error } = await orderedQuery;
+
   if (error) throw new Error(error.message);
 
-  return attachSignedUrls(
+  return visibleRemoteRows(
+    (data ?? []) as unknown as Array<T & { deleted_at?: string | null }>,
+  ) as T[];
+}
+
+export async function readRemoteCollection<T extends object>(
+  userId: string,
+  collection: LocalCollection,
+  order: CollectionOrder = defaultOrderFor(collection),
+  options?: RemoteCollectionReadOptions,
+) {
+  const rows = await readRemoteCollectionRows<T>(
+    userId,
     collection,
-    visibleRemoteRows(
-      (data ?? []) as unknown as Array<T & { deleted_at?: string | null }>,
-    ) as T[],
+    order,
+    options,
   );
+
+  if (options?.includeSignedImageUrls === false) return rows;
+  return attachSignedUrls(collection, rows);
+}
+
+export async function readRemoteCollectionPage<T extends object>(
+  userId: string,
+  collection: LocalCollection,
+  options: RemoteCollectionReadOptions & { limit: number },
+  order: CollectionOrder = defaultOrderFor(collection),
+): Promise<RemoteCollectionPage<T>> {
+  const offset = options.offset ?? 0;
+  const rows = await readRemoteCollectionRows<T>(userId, collection, order, {
+    ...options,
+    offset,
+    limit: options.limit + 1,
+  });
+  const pageRows = rows.slice(0, options.limit);
+  const items =
+    options.includeSignedImageUrls === false
+      ? pageRows
+      : await attachSignedUrls(collection, pageRows);
+
+  return {
+    items,
+    hasMore: rows.length > options.limit,
+    nextOffset: offset + pageRows.length,
+  };
 }
 
 export async function findRemoteCollectionRow<T extends object>(

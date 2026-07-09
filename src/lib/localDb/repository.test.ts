@@ -207,6 +207,63 @@ describe("localDb repository client_id reconciliation", () => {
     expect(await repository.readEntities("user-1", "moments")).toEqual([]);
   });
 
+  it("keeps existing synced rows when caching a partial remote page", async () => {
+    await repository.upsertEntity("user-1", "moments", {
+      id: 1,
+      client_id: "older-local",
+      content: "older",
+    });
+
+    await repository.cacheRemoteEntities(
+      "user-1",
+      "moments",
+      [{ id: 2, client_id: "newer-remote", content: "newer" }],
+      { pruneMissing: false },
+    );
+
+    expect(
+      await repository.readEntities<{ id: number; content: string }>(
+        "user-1",
+        "moments",
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 1, content: "older" }),
+        expect.objectContaining({ id: 2, content: "newer" }),
+      ]),
+    );
+  });
+
+  it("clears the failed marker when a dead-letter retry item is discarded", async () => {
+    await repository.upsertEntity(
+      "user-1",
+      "moments",
+      {
+        id: 1,
+        client_id: "moment-1",
+        content: "failed local record",
+      },
+      { failed: true },
+    );
+
+    await repository.clearEntitySyncFailure("user-1", "moments", "moment-1");
+
+    expect(
+      await repository.readEntities<{ id: number; content: string }>(
+        "user-1",
+        "moments",
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        content: "failed local record",
+        _local: expect.objectContaining({
+          pending: false,
+          failed: false,
+        }),
+      }),
+    ]);
+  });
+
   it("does not overwrite a newer pending mutation with an older sync response", async () => {
     await repository.upsertEntity(
       "user-1",

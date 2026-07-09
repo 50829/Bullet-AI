@@ -7,6 +7,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import { useGoals } from "../../goals/hooks/useGoals";
 import { useHabits } from "../../habits/hooks/useHabits";
 import { useMoments } from "../../moments/hooks/useMoments";
@@ -31,10 +32,19 @@ const WorkspaceDataContext = createContext<WorkspaceDataState | undefined>(
 
 export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
   const session = useWorkspaceSessionContext();
+  const pathname = usePathname();
+  const momentsRemotePageSize = pathname?.includes("/moments") ? 20 : 0;
+  const reflectionsRemotePageSize = pathname?.includes("/reflections") ? 20 : 0;
   const goals = useGoals({ userId: session.userId });
   const habits = useHabits({ userId: session.userId });
-  const moments = useMoments({ userId: session.userId });
-  const reflections = useReflections({ userId: session.userId });
+  const moments = useMoments({
+    userId: session.userId,
+    remotePageSize: momentsRemotePageSize,
+  });
+  const reflections = useReflections({
+    userId: session.userId,
+    remotePageSize: reflectionsRemotePageSize,
+  });
 
   const value = useMemo<WorkspaceDataState>(
     () => ({
@@ -53,7 +63,9 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
 export function useWorkspaceData() {
   const value = useContext(WorkspaceDataContext);
   if (!value) {
-    throw new Error("useWorkspaceData must be used within WorkspaceDataProvider");
+    throw new Error(
+      "useWorkspaceData must be used within WorkspaceDataProvider",
+    );
   }
   return value;
 }

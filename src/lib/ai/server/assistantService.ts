@@ -3,10 +3,7 @@ import {
   removePlanFromReply,
   toFrontendPlan,
 } from "../planParser";
-import {
-  getAiSystemPrompt,
-  normalizeAiPurpose,
-} from "../promptRegistry";
+import { getAiSystemPrompt, normalizeAiPurpose } from "../promptRegistry";
 import { normalizeLanguage } from "../../profile/preferences";
 import { logger } from "../../observability/logger";
 import { reserveAiUsageEvent } from "./aiRateLimit";
@@ -65,6 +62,8 @@ export async function runAssistantTurn({
     };
   }
 
+  // A successful reservation represents an attempted provider call. Timeouts
+  // and provider failures intentionally consume quota.
   const normalizedLanguage = normalizeLanguage(input.language);
   const normalizedPurpose = normalizeAiPurpose(input.purpose);
 
@@ -140,9 +139,7 @@ export async function runAssistantTurn({
   let reply: string = data.choices?.[0]?.message?.content || "";
   const internalPlan = extractPlanFromReply(reply);
   reply = removePlanFromReply(reply);
-  const frontendPlan = internalPlan
-    ? toFrontendPlan(internalPlan)
-    : undefined;
+  const frontendPlan = internalPlan ? toFrontendPlan(internalPlan) : undefined;
 
   return {
     status: 200,

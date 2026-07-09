@@ -122,6 +122,7 @@ export default function HomePage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <RecentRecordsSection
           items={dashboard.recentItems}
+          loading={dashboard.recentItemsLoading}
           onOpen={dashboard.openRecentItem}
           onNewMoment={() => setMomentOpen(true)}
           onNewReflection={() => setReflectionOpen(true)}

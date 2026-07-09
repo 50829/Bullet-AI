@@ -52,6 +52,18 @@ export type OutboxItem<T = unknown> = {
   orphanedStoragePath?: string;
 };
 
+export type DeadOutboxDiagnostic = Pick<
+  OutboxItem,
+  | "id"
+  | "collection"
+  | "entityId"
+  | "operation"
+  | "error"
+  | "errorKind"
+  | "attemptCount"
+  | "deadAt"
+>;
+
 export type LocalFile = {
   id: string;
   userId: string;

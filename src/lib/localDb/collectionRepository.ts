@@ -1,5 +1,6 @@
 import {
   cacheRemoteEntities,
+  clearEntitySyncFailure,
   commitLocalMutation,
   readEntities,
   subscribeCollection,
@@ -22,7 +23,9 @@ function entityIdentity(
   return identityValueFor(collection, entity);
 }
 
-export class CollectionRepository<T extends EntityIdentity & Record<string, unknown>> {
+export class CollectionRepository<
+  T extends EntityIdentity & Record<string, unknown>,
+> {
   constructor(readonly collection: LocalCollection) {}
 
   list(userId: string) {
@@ -34,6 +37,17 @@ export class CollectionRepository<T extends EntityIdentity & Record<string, unkn
       pruneMissing: true,
     });
     return this.list(userId);
+  }
+
+  async cacheRemote(userId: string, rows: T[]) {
+    await cacheRemoteEntities(userId, this.collection, rows, {
+      pruneMissing: false,
+    });
+    return this.list(userId);
+  }
+
+  clearSyncFailure(userId: string, entityId: string | number) {
+    return clearEntitySyncFailure(userId, this.collection, entityId);
   }
 
   async mutate(
@@ -78,9 +92,9 @@ const repositories = new Map<
   CollectionRepository<EntityIdentity & Record<string, unknown>>
 >();
 
-export function getCollectionRepository<T extends EntityIdentity & Record<string, unknown>>(
-  collection: LocalCollection,
-) {
+export function getCollectionRepository<
+  T extends EntityIdentity & Record<string, unknown>,
+>(collection: LocalCollection) {
   let repository = repositories.get(collection);
   if (!repository) {
     repository = new CollectionRepository(collection);

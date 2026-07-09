@@ -19,16 +19,20 @@ type UseLocalFirstCollectionInput = {
   userId: string | null;
   collection: LocalCollection;
   remoteOrder?: CollectionOrder;
+  initialRemotePageSize?: number;
 };
 
 export type LocalFirstCollectionController<T extends LocalFirstEntity> = {
   items: T[];
   loading: boolean;
+  loadingMore: boolean;
+  hasMore: boolean;
   setItems: Dispatch<SetStateAction<T[]>>;
   refresh: (
     activeUserId?: string,
     options?: { showLoading?: boolean },
   ) => Promise<void>;
+  loadMore: (activeUserId?: string) => Promise<void>;
   add: (item: T) => Promise<void>;
   update: (id: number, updates: Partial<T>) => Promise<void>;
   remove: (id: number, imagePath?: string | null) => Promise<void>;
@@ -39,6 +43,7 @@ export function useLocalFirstCollection<T extends LocalFirstEntity>({
   userId,
   collection,
   remoteOrder,
+  initialRemotePageSize,
 }: UseLocalFirstCollectionInput): LocalFirstCollectionController<T> {
   if (!canUseLocalFirstCollectionHook(collection)) {
     throw new Error(`${collection} cannot use useLocalFirstCollection`);
@@ -54,8 +59,14 @@ export function useLocalFirstCollection<T extends LocalFirstEntity>({
           remoteOrderColumn === undefined || remoteOrderAscending === undefined
             ? undefined
             : { column: remoteOrderColumn, ascending: remoteOrderAscending },
+        initialRemotePageSize,
       }),
-    [collection, remoteOrderAscending, remoteOrderColumn],
+    [
+      collection,
+      initialRemotePageSize,
+      remoteOrderAscending,
+      remoteOrderColumn,
+    ],
   );
 
   const snapshot = useSyncExternalStore(
@@ -72,13 +83,22 @@ export function useLocalFirstCollection<T extends LocalFirstEntity>({
     () => ({
       items: snapshot.items,
       loading: snapshot.loading,
+      loadingMore: snapshot.loadingMore,
+      hasMore: snapshot.hasMore,
       setItems: store.setItems,
       refresh: store.refresh,
+      loadMore: store.loadMore,
       add: store.add,
       update: store.update,
       remove: store.remove,
       queueUpdate: store.queueUpdate,
     }),
-    [snapshot.items, snapshot.loading, store],
+    [
+      snapshot.hasMore,
+      snapshot.items,
+      snapshot.loading,
+      snapshot.loadingMore,
+      store,
+    ],
   );
 }
