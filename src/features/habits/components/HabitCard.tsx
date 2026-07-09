@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { CalendarDays, Check, Edit2, Flame, Trash2 } from "lucide-react";
 import { formatDateKey } from "../../../lib/date/dateUtils";
 import { useLanguage } from "../../../app/context/LanguageContext";
@@ -26,6 +27,7 @@ export function HabitCard({
   const frequencyLabel =
     habit.frequency === "daily" ? t("daily") || "每日" : t("weekly") || "每周";
   const checked = habit.checkedToday;
+  const accent = habit.color || "var(--color-primary)";
 
   return (
     <div
@@ -44,14 +46,15 @@ export function HabitCard({
           if (!checked) void onCheckinToday(habit);
         }}
         disabled={checked}
+        style={{ "--habit-accent": accent } as CSSProperties}
         title={checked ? t("checkedIn") || "已打卡" : t("checkin") || "打卡"}
         aria-label={
           checked ? t("checkedIn") || "已打卡" : t("checkin") || "打卡"
         }
         className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-150 motion-reduce:transition-none ${
           checked
-            ? "cursor-default bg-[var(--color-primary)] text-[var(--color-text-on-primary)]"
-            : "text-[var(--color-primary)] ring-2 ring-inset ring-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-on-primary)]"
+            ? "cursor-default bg-[var(--habit-accent)] text-[var(--color-text-on-primary)]"
+            : "text-[var(--habit-accent)] ring-2 ring-inset ring-[var(--habit-accent)] hover:bg-[var(--habit-accent)] hover:text-[var(--color-text-on-primary)]"
         }`}
       >
         <Check size={18} strokeWidth={2.5} />

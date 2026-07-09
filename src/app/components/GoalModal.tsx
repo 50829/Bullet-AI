@@ -34,7 +34,7 @@ const GOAL_COLORS: Array<{ value: string | null; swatch: string }> = [
   { value: null, swatch: "var(--color-primary)" },
   { value: "#4f7c8a", swatch: "#4f7c8a" },
   { value: "#7c5c9e", swatch: "#7c5c9e" },
-  { value: "#a16207", swatch: "#a16207" },
+  { value: "#b45309", swatch: "#b45309" },
   { value: "#64748b", swatch: "#64748b" },
 ];
 

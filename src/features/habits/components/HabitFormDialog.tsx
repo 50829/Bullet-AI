@@ -26,7 +26,7 @@ type HabitFormDialogProps = {
   onUpdate?: (habitId: number, input: UpdateHabitInput) => Promise<void>;
 };
 
-const HABIT_COLORS = ["#2f6f5e", "#4f7c8a", "#7c5c9e", "#a16207", "#64748b"];
+const HABIT_COLORS = ["#2f6f5e", "#4f7c8a", "#7c5c9e", "#b45309", "#64748b"];
 
 export function HabitFormDialog({
   isOpen,

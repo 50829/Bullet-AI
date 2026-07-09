@@ -15,7 +15,7 @@ export const ACCENT_OPTIONS: Array<{
   { id: "sage", labelZh: "鼠尾草", labelEn: "Sage", color: "#2f6f5e" },
   { id: "green", labelZh: "森林绿", labelEn: "Forest", color: "#2f7d52" },
   { id: "purple", labelZh: "雾紫", labelEn: "Mauve", color: "#7c5c9e" },
-  { id: "amber", labelZh: "琥珀", labelEn: "Amber", color: "#a16207" },
+  { id: "amber", labelZh: "琥珀", labelEn: "Amber", color: "#b45309" },
 ];
 
 export const COLOR_SCHEME_OPTIONS: Array<{
