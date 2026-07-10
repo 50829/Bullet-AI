@@ -1,6 +1,13 @@
 # Bullet-AI
 
-Bullet-AI 是一个以 Today 为入口的个人生活工作区，用于记录生活、沉淀感悟、安排目标和追踪习惯。AI 只负责把大目标拆成可执行步骤，不承担泛聊天、陪伴或自动读取个人记录。
+Bullet-AI 是一个以 Today 为入口的个人生活工作区，用于记录生活、沉淀感悟、安排目标和追踪习惯。当前版本来说，AI 只负责把大目标拆成可执行步骤，不承担泛聊天、陪伴或自动读取个人记录。
+
+> 2025 年 10 月版: https://bullet-ai.vercel.app/
+>
+> 2026 年 1 月版：https://www.bulletai.top/
+>
+> 2026 年 7 月版：在 [Preview](https://github.com/50829/Bullet-AI/deployments/Preview) 中获取新版网址来体验
+
 
 ## 当前业务
 
