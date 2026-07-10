@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useToast } from "../../../shared/components/ui/Toast";
-import { useWorkspaceData } from "../data";
+import { useWorkspaceSessionContext } from "../WorkspaceContext";
 import { useDataV2 } from "../../../lib/data-v2";
 import {
   downloadJsonFile,
@@ -10,7 +10,7 @@ import {
 } from "./workspaceExport";
 
 export function useWorkspaceExport() {
-  const { session } = useWorkspaceData();
+  const session = useWorkspaceSessionContext();
   const { store } = useDataV2();
   const { showToast } = useToast();
 

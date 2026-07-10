@@ -2,7 +2,6 @@ import { dataEntityKey } from "./database";
 import { rebaseQueuedMutation } from "./mutation-policy";
 import {
   compareMutations,
-  isCurrentMutation,
   notifyMutation,
   type MutationRepositoryDependencies,
 } from "./mutation-repository-internal";
@@ -58,7 +57,7 @@ export class MutationSyncRepository {
       "readwrite",
     );
     const mutation = await transaction.objectStore("mutations").get(mutationId);
-    if (!mutation || !isCurrentMutation(this.dependencies, mutation)) {
+    if (!mutation) {
       await transaction.done;
       return;
     }
@@ -102,9 +101,7 @@ export class MutationSyncRepository {
     const successor = successors
       .filter(
         (candidate) =>
-          candidate.mutationId !== mutationId &&
-          candidate.status === "queued" &&
-          isCurrentMutation(this.dependencies, candidate),
+          candidate.mutationId !== mutationId && candidate.status === "queued",
       )
       .sort(compareMutations)[0];
     if (
@@ -183,7 +180,7 @@ export class MutationSyncRepository {
       "readwrite",
     );
     const mutation = await transaction.objectStore("mutations").get(mutationId);
-    if (!mutation || !isCurrentMutation(this.dependencies, mutation)) {
+    if (!mutation) {
       await transaction.done;
       return;
     }
@@ -233,6 +230,8 @@ export class MutationSyncRepository {
       resource: mutation.resource,
       clientId: mutation.clientId,
       baseVersion: mutation.baseVersion,
+      kind: mutation.kind,
+      changes: mutation.changes,
       local: mutation.optimistic,
       remote,
       reason,
@@ -276,7 +275,7 @@ export class MutationSyncRepository {
     const transaction = db.transaction("mutations", "readwrite");
     const store = transaction.objectStore("mutations");
     const current = await store.get(mutationId);
-    if (!current || !isCurrentMutation(this.dependencies, current)) {
+    if (!current) {
       await transaction.done;
       return;
     }
@@ -298,7 +297,6 @@ export class MutationSyncRepository {
       .index("by-user-status")
       .getAll([userId, status]);
     const updates = matches
-      .filter((mutation) => isCurrentMutation(this.dependencies, mutation))
       .map(update)
       .filter((mutation): mutation is AnyMutationRecord => mutation !== null);
     await Promise.all(updates.map((mutation) => store.put(mutation)));

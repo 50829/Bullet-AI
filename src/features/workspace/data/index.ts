@@ -1,6 +1,14 @@
 export {
-  WorkspaceDataProvider,
-  useWorkspaceData,
-  type WorkspaceDataCollections,
-  type WorkspaceDataState,
+  WorkspaceGoalsProvider,
+  WorkspaceHabitsProvider,
+  WorkspaceMomentsProvider,
+  WorkspaceReflectionsProvider,
+  useWorkspaceGoals,
+  useWorkspaceHabits,
+  useWorkspaceMoments,
+  useWorkspaceReflections,
+  type WorkspaceGoalsController,
+  type WorkspaceHabitsController,
+  type WorkspaceMomentsController,
+  type WorkspaceReflectionsController,
 } from "./WorkspaceDataContext";

@@ -98,7 +98,9 @@ export function useDataResource<R extends DataResource>(
   userId: string | null,
   resource: R,
   options?: {
-    remoteLoader?: () => Promise<EntityByResource[R][]>;
+    remoteLoader?: () => Promise<
+      EntityByResource[R][] | { kind: "snapshots-managed" }
+    >;
   },
 ) {
   const { store } = useDataV2();

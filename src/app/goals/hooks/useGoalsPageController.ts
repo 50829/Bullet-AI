@@ -3,7 +3,10 @@
 import { useCallback, useMemo, useState } from "react";
 import type { GoalRecord } from "../../../features/goals/types";
 import type { HabitView } from "../../../features/habits/types";
-import { useWorkspaceData } from "../../../features/workspace/data";
+import {
+  useWorkspaceGoals,
+  useWorkspaceHabits,
+} from "../../../features/workspace/data";
 import { useGoalPlanningPage } from "../../../features/goals/planning/useGoalPlanningPage";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { useToast } from "../../../shared/components/ui/Toast";
@@ -18,8 +21,8 @@ type DeleteTarget = {
 };
 
 export function useGoalsPageController() {
-  const { goals: goalsController, habits: habitsController } =
-    useWorkspaceData();
+  const goalsController = useWorkspaceGoals();
+  const habitsController = useWorkspaceHabits();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
   const deferredDelete = useDeferredHardDelete<DeleteTarget>({

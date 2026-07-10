@@ -5,12 +5,18 @@ import type {
   MomentEntity,
 } from "../../../domain/entities";
 import type {
+  DataByResource,
   RemoteMutationExecutor,
   RemoteMutationRequest,
   RemoteMutationResult,
 } from "../../../lib/data-v2";
 import { logger } from "../../../lib/observability/logger";
 import { supabase } from "../../../lib/supabase/client";
+import {
+  buildRemoteInsertPayload,
+  buildRemotePatchPayload,
+  persistedChangeKeysFor,
+} from "./remotePayloadContracts";
 import {
   type DatabaseRow,
   fromDynamicTable,
@@ -19,101 +25,22 @@ import {
 } from "./remoteResourceReaderV2";
 
 function mutationPayload<R extends DataResource>(
-  resource: R,
   request: RemoteMutationRequest<R>,
 ) {
-  const changes = (request.changes ?? {}) as Record<string, unknown>;
-  switch (resource) {
-    case "profiles":
-      return {
-        user_id: request.userId,
-        ...(Object.hasOwn(changes, "username")
-          ? { username: changes.username || null }
-          : {}),
-        ...(Object.hasOwn(changes, "preferredLanguage")
-          ? { preferred_language: changes.preferredLanguage }
-          : {}),
-        ...(Object.hasOwn(changes, "accentColor")
-          ? { accent_color: changes.accentColor }
-          : {}),
-        ...(Object.hasOwn(changes, "colorScheme")
-          ? { color_scheme: changes.colorScheme }
-          : {}),
-        ...(Object.hasOwn(changes, "completedGoalRetention")
-          ? { completed_goal_retention: changes.completedGoalRetention }
-          : {}),
-        ...(Object.hasOwn(changes, "weekStartsOn")
-          ? { week_starts_on: changes.weekStartsOn }
-          : {}),
-      };
-    case "moments":
-      return {
-        client_id: request.clientId,
-        user_id: request.userId,
-        ...(Object.hasOwn(changes, "content")
-          ? { content: changes.content }
-          : {}),
-        ...(Object.hasOwn(changes, "occurredOn")
-          ? { occurred_on: changes.occurredOn }
-          : {}),
-        ...(Object.hasOwn(changes, "imagePath")
-          ? { image_path: changes.imagePath }
-          : {}),
-      };
-    case "reflections":
-      return {
-        client_id: request.clientId,
-        user_id: request.userId,
-        ...(Object.hasOwn(changes, "title") ? { title: changes.title } : {}),
-        ...(Object.hasOwn(changes, "body") ? { body: changes.body } : {}),
-      };
-    case "goals":
-      return {
-        client_id: request.clientId,
-        user_id: request.userId,
-        ...(Object.hasOwn(changes, "title") ? { title: changes.title } : {}),
-        ...(Object.hasOwn(changes, "description")
-          ? { description: changes.description }
-          : {}),
-        ...(Object.hasOwn(changes, "dueDate")
-          ? { due_date: changes.dueDate }
-          : {}),
-        ...(Object.hasOwn(changes, "completedAt")
-          ? { completed_at: changes.completedAt }
-          : {}),
-        ...(Object.hasOwn(changes, "color") ? { color: changes.color } : {}),
-        ...(Object.hasOwn(changes, "startedOn")
-          ? { started_on: changes.startedOn }
-          : {}),
-        ...(Object.hasOwn(changes, "sortOrder")
-          ? { sort_order: changes.sortOrder }
-          : {}),
-      };
-    case "habits":
-      return {
-        client_id: request.clientId,
-        user_id: request.userId,
-        ...(Object.hasOwn(changes, "name") ? { name: changes.name } : {}),
-        ...(Object.hasOwn(changes, "description")
-          ? { description: changes.description }
-          : {}),
-        ...(Object.hasOwn(changes, "frequency")
-          ? { frequency: changes.frequency }
-          : {}),
-        ...(Object.hasOwn(changes, "color") ? { color: changes.color } : {}),
-      };
-    case "habit_checkins":
-      return {
-        client_id: request.clientId,
-        user_id: request.userId,
-        ...(Object.hasOwn(changes, "habitClientId")
-          ? { habit_client_id: changes.habitClientId }
-          : {}),
-        ...(Object.hasOwn(changes, "checkedOn")
-          ? { checked_on: changes.checkedOn }
-          : {}),
-      };
+  if (!request.changes) {
+    throw new Error(`Missing changes for ${request.kind} mutation`);
   }
+  if (request.kind === "create") {
+    return buildRemoteInsertPayload(
+      request.resource,
+      { userId: request.userId, clientId: request.clientId },
+      request.changes as DataByResource[R],
+    );
+  }
+  return buildRemotePatchPayload(
+    request.resource,
+    request.changes as Partial<DataByResource[R]>,
+  );
 }
 
 async function findRemote<R extends DataResource>(
@@ -205,49 +132,31 @@ function momentImagePath<R extends DataResource>(
   return `${request.userId}/${request.clientId}/${request.mutationId}.${extension}`;
 }
 
-const PERSISTED_CHANGE_KEYS = {
-  profiles: [
-    "username",
-    "preferredLanguage",
-    "accentColor",
-    "colorScheme",
-    "completedGoalRetention",
-    "weekStartsOn",
-  ],
-  moments: ["content", "occurredOn", "imagePath"],
-  reflections: ["title", "body"],
-  goals: [
-    "title",
-    "description",
-    "dueDate",
-    "completedAt",
-    "color",
-    "sortOrder",
-  ],
-  habits: ["name", "description", "frequency", "color", "startedOn"],
-  habit_checkins: ["habitClientId", "checkedOn"],
-} as const satisfies Record<DataResource, readonly string[]>;
-
-function patchWasAlreadyApplied<R extends DataResource>(
+function persistedChangesMatch<R extends DataResource>(
   request: RemoteMutationRequest<R>,
   existing: EntityByResource[R],
 ) {
-  if (
-    request.kind !== "patch" ||
-    request.baseVersion === null ||
-    existing.version !== request.baseVersion + 1
-  ) {
-    return false;
-  }
-  const changes = (request.changes ?? {}) as Record<string, unknown>;
-  const remote = existing as unknown as Record<string, unknown>;
+  const changes = (request.changes ?? {}) as Partial<DataByResource[R]>;
+  const remote = existing as EntityByResource[R] & DataByResource[R];
   const expectedImagePath = momentImagePath(request);
-  return PERSISTED_CHANGE_KEYS[request.resource].every((key) => {
+  return persistedChangeKeysFor(request.resource).every((key) => {
     if (key === "imagePath" && expectedImagePath) {
       return remote[key] === expectedImagePath;
     }
     return !Object.hasOwn(changes, key) || remote[key] === changes[key];
   });
+}
+
+function patchWasAlreadyApplied<R extends DataResource>(
+  request: RemoteMutationRequest<R>,
+  existing: EntityByResource[R],
+) {
+  return Boolean(
+    request.kind === "patch" &&
+    request.baseVersion !== null &&
+    existing.version === request.baseVersion + 1 &&
+    persistedChangesMatch(request, existing),
+  );
 }
 
 async function removeMomentImage(path: string | null | undefined) {
@@ -302,6 +211,16 @@ export class SupabaseRemoteMutationExecutor implements RemoteMutationExecutor {
         signal,
       );
       if (request.kind === "create" && existing) {
+        if (
+          request.conflictRecoveryCreate &&
+          !persistedChangesMatch(request, existing)
+        ) {
+          return {
+            kind: "conflict",
+            remote: existing,
+            reason: "Remote record was recreated with different data",
+          };
+        }
         const cleanupError = await removeMomentImageIfUnreferenced(
           momentImagePath(request),
           existing,
@@ -372,8 +291,8 @@ export class SupabaseRemoteMutationExecutor implements RemoteMutationExecutor {
       }
 
       const uploadedPath = await uploadMomentImage(request);
-      const payload = mutationPayload(request.resource, request) as DatabaseRow;
-      if (uploadedPath) payload.image_path = uploadedPath;
+      let payload = mutationPayload(request);
+      if (uploadedPath) payload = { ...payload, image_path: uploadedPath };
 
       if (request.kind === "create") {
         const { data, error } = await fromDynamicTable(request.resource)
@@ -394,8 +313,14 @@ export class SupabaseRemoteMutationExecutor implements RemoteMutationExecutor {
                 uploadedPath,
                 duplicate,
               );
-              return cleanupError
-                ? cleanupFailure<R>(cleanupError)
+              if (cleanupError) return cleanupFailure<R>(cleanupError);
+              return request.conflictRecoveryCreate &&
+                !persistedChangesMatch(request, duplicate)
+                ? {
+                    kind: "conflict",
+                    remote: duplicate,
+                    reason: "Remote record was recreated with different data",
+                  }
                 : { kind: "applied", entity: duplicate };
             }
           }
@@ -446,8 +371,6 @@ export class SupabaseRemoteMutationExecutor implements RemoteMutationExecutor {
           reason: "Remote record changed",
         };
       }
-      delete payload.client_id;
-      delete payload.user_id;
       const { data, error } = await fromDynamicTable(request.resource)
         .update(payload)
         .eq("user_id", request.userId)

@@ -65,19 +65,6 @@ export function collectMutationTree(
   return [...collected.values()];
 }
 
-export function isCurrentMutation(
-  dependencies: MutationRepositoryDependencies,
-  mutation: AnyMutationRecord,
-) {
-  return (
-    mutation.sessionToken === undefined ||
-    dependencies.database.isUserSessionCurrent(
-      mutation.userId,
-      mutation.sessionToken,
-    )
-  );
-}
-
 export function assertCurrentUserSession(
   dependencies: MutationRepositoryDependencies,
   userId: string,

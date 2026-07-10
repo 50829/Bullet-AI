@@ -31,7 +31,7 @@ function reflection(overrides: Partial<ReflectionRecord>): ReflectionRecord {
   };
 }
 
-describe("dashboard recent records", () => {
+describe("today recent records", () => {
   it("sorts v2 snapshots and returns the five most recently updated records", () => {
     const items = buildRecentDashboardItems(
       [

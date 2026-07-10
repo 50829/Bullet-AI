@@ -232,6 +232,7 @@ export class DataSyncWorker {
       optimistic: mutation.optimistic,
       blobs,
       cleanup: mutation.cleanup,
+      conflictRecoveryCreate: mutation.conflictRecoveryCreate,
     };
     const controller = new AbortController();
     this.currentRequest = controller;

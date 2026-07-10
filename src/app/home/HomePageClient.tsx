@@ -11,7 +11,7 @@ import { RecentRecordsSection } from "./components/RecentRecordsSection";
 import { TodayGoalsSection } from "./components/TodayGoalsSection";
 import { TodayHabitsSection } from "./components/TodayHabitsSection";
 import { TodayHeader } from "./components/TodayHeader";
-import { useTodayDashboard } from "../../features/dashboard/hooks/useTodayDashboard";
+import { useTodayDashboard } from "../../features/today/hooks/useTodayDashboard";
 import { UndoDeleteNotice } from "../../features/workspace/components/UndoDeleteNotice";
 
 const GoalModal = dynamic(
@@ -48,7 +48,7 @@ type DeleteTarget =
   | { type: "habit"; id: string; name: string; habit: HabitView };
 
 export default function HomePage() {
-  const dashboard = useTodayDashboard();
+  const today = useTodayDashboard();
   const { t, language } = useLanguage();
   const [momentOpen, setMomentOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
@@ -61,30 +61,30 @@ export default function HomePage() {
   const handleDelete = async () => {
     await deleteConfirm.confirm(async (target) => {
       if (target.type === "goal") {
-        await dashboard.deleteTodayGoal(target.goal);
+        await today.deleteTodayGoal(target.goal);
         return;
       }
-      await dashboard.deleteHabit(target.habit);
+      await today.deleteHabit(target.habit);
     });
   };
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <TodayHeader
-        syncStatus={dashboard.syncStatus}
-        onRetrySync={dashboard.retrySync}
+        syncStatus={today.syncStatus}
+        onRetrySync={today.retrySync}
         onNewMoment={() => setMomentOpen(true)}
         onNewGoal={() => setGoalOpen(true)}
       />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <TodayGoalsSection
-          goals={dashboard.visibleTodayGoals}
-          loading={dashboard.goalsLoading && dashboard.goals.length === 0}
-          error={dashboard.goalsError}
-          remainingCount={dashboard.openTodayGoals.length}
+          goals={today.visibleTodayGoals}
+          loading={today.goalsLoading && today.goals.length === 0}
+          error={today.goalsError}
+          remainingCount={today.openTodayGoals.length}
           onCreate={() => setGoalOpen(true)}
-          onComplete={dashboard.toggleGoalCompleted}
+          onComplete={today.toggleGoalCompleted}
           onEdit={(goal) => {
             setEditingGoal(goal);
             setGoalOpen(true);
@@ -100,13 +100,13 @@ export default function HomePage() {
         />
 
         <TodayHabitsSection
-          habits={dashboard.todayHabits}
-          allHabits={dashboard.habits}
-          loading={dashboard.loading && dashboard.todayHabits.length === 0}
-          error={dashboard.error}
+          habits={today.todayHabits}
+          allHabits={today.habits}
+          loading={today.loading && today.todayHabits.length === 0}
+          error={today.error}
           onCreate={() => setHabitOpen(true)}
-          onCheckinToday={dashboard.checkinToday}
-          onToggleCheckin={dashboard.toggleCheckin}
+          onCheckinToday={today.checkinToday}
+          onToggleCheckin={today.toggleCheckin}
           onEdit={(habit) => {
             setEditingHabit(habit);
             setHabitOpen(true);
@@ -124,9 +124,9 @@ export default function HomePage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <RecentRecordsSection
-          items={dashboard.recentItems}
-          loading={dashboard.recentItemsLoading}
-          onOpen={dashboard.openRecentItem}
+          items={today.recentItems}
+          loading={today.recentItemsLoading}
+          onOpen={today.openRecentItem}
           onNewMoment={() => setMomentOpen(true)}
           onNewReflection={() => setReflectionOpen(true)}
         />
@@ -136,8 +136,8 @@ export default function HomePage() {
         <MomentModal
           isOpen
           onClose={() => setMomentOpen(false)}
-          onCreate={dashboard.createMoment}
-          onUpdate={dashboard.updateMoment}
+          onCreate={today.createMoment}
+          onUpdate={today.updateMoment}
         />
       )}
       {goalOpen && (
@@ -148,29 +148,29 @@ export default function HomePage() {
             setGoalOpen(false);
             setEditingGoal(null);
           }}
-          onCreate={dashboard.createGoal}
-          onUpdate={dashboard.updateGoal}
+          onCreate={today.createGoal}
+          onUpdate={today.updateGoal}
         />
       )}
       {reflectionOpen && (
         <ReflectionModal
           isOpen
           onClose={() => setReflectionOpen(false)}
-          onCreate={dashboard.createReflection}
-          onUpdate={dashboard.updateReflection}
+          onCreate={today.createReflection}
+          onUpdate={today.updateReflection}
         />
       )}
       {habitOpen && (
         <HabitFormDialog
           isOpen
-          saving={dashboard.saving}
+          saving={today.saving}
           habit={editingHabit}
           onClose={() => {
             setHabitOpen(false);
             setEditingHabit(null);
           }}
-          onCreate={dashboard.createHabit}
-          onUpdate={dashboard.updateHabit}
+          onCreate={today.createHabit}
+          onUpdate={today.updateHabit}
         />
       )}
       {deleteConfirm.target && (
@@ -190,10 +190,10 @@ export default function HomePage() {
           onCancel={deleteConfirm.cancel}
         />
       )}
-      {dashboard.deferredDelete.pendingDelete && (
+      {today.deferredDelete.pendingDelete && (
         <UndoDeleteNotice
-          itemName={dashboard.deferredDelete.pendingDelete.name}
-          onUndo={dashboard.deferredDelete.undoDelete}
+          itemName={today.deferredDelete.pendingDelete.name}
+          onUndo={today.deferredDelete.undoDelete}
         />
       )}
     </div>

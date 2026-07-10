@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { useWorkspaceData } from "../../features/workspace/data";
+import { useWorkspaceMoments } from "../../features/workspace/data";
+import { useWorkspaceSessionContext } from "../../features/workspace/WorkspaceContext";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useTopBar } from "../components/layout/TopBarContext";
 import { useToast } from "../../shared/components/ui/Toast";
@@ -38,10 +39,14 @@ const MomentModal = dynamic(
 );
 
 export default function MomentsPageClient() {
-  const { session, moments: momentsController } = useWorkspaceData();
+  const session = useWorkspaceSessionContext();
+  const momentsController = useWorkspaceMoments();
   const {
     moments,
     loading,
+    hasMore,
+    loadingMore,
+    loadMore,
     error: momentsError,
     refreshMoments,
     createMoment,
@@ -196,6 +201,20 @@ export default function MomentsPageClient() {
                     }
                   />
                 ))
+              )}
+              {hasMore && (
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    disabled={loadingMore}
+                    aria-busy={loadingMore}
+                    onClick={() => void loadMore()}
+                  >
+                    {loadingMore
+                      ? t("loadingEarlierRecords", "正在加载更早记录...")
+                      : t("loadEarlierRecords", "加载更早记录")}
+                  </Button>
+                </div>
               )}
             </div>
           </div>

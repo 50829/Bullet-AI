@@ -1,7 +1,12 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
 import type {
   DataResource,
   EntityByResource,
@@ -9,14 +14,37 @@ import type {
   OverlayRecord,
 } from "../../../lib/data-v2";
 import type { MomentEntity, ReflectionEntity } from "../../../domain/entities";
-import {
-  dataV2QueryKey,
-  applyMutationOverlay,
-  useDataResource,
-  useDataV2,
-} from "../../../lib/data-v2";
+import { useDataResource, useDataV2 } from "../../../lib/data-v2";
 import { logger } from "../../../lib/observability/logger";
-import { loadRemoteResource } from "./remoteRepositoryV2";
+import {
+  createHistoryPaginationController,
+  historyOverlayKeyForEvent,
+  mergeHistoryOverlay,
+  mergeHistorySnapshot,
+  readWithStableHistoryWatermark,
+  workspaceHistoryOverlayQueryKey,
+  workspaceHistoryQueryKey,
+} from "./historyPagination";
+import { loadRemoteChangeWatermark } from "./remoteChangeReaderV2";
+import {
+  loadRemoteResourcePage,
+  type MomentPageCursor,
+  type PaginatedResource,
+  type ReflectionPageCursor,
+} from "./remoteRepositoryV2";
+import { synchronizeRemoteResource } from "./remoteSyncV2";
+
+type WorkspaceHistoryCursor = MomentPageCursor | ReflectionPageCursor;
+type WorkspaceHistoryEntity = MomentEntity | ReflectionEntity;
+type WorkspaceHistoryPage = {
+  items: WorkspaceHistoryEntity[];
+  nextCursor: WorkspaceHistoryCursor | null;
+  watermark: string;
+};
+type WorkspaceHistoryPageParam = {
+  cursor: WorkspaceHistoryCursor | null;
+  watermark: string | null;
+};
 
 function withSyncState<R extends DataResource>(record: OverlayRecord<R>) {
   const { entity, sync } = record;
@@ -34,25 +62,28 @@ function withSyncState<R extends DataResource>(record: OverlayRecord<R>) {
   } as EntityByResource[R];
 }
 
-function recentSnapshotEntities<R extends DataResource>(
-  resource: R,
-  entities: EntityByResource[R][],
-) {
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 90);
+function isPaginatedResource(
+  resource: DataResource,
+): resource is PaginatedResource {
+  return resource === "moments" || resource === "reflections";
+}
+
+async function loadHistoryPage(
+  userId: string,
+  resource: DataResource,
+  cursor: WorkspaceHistoryCursor | null,
+): Promise<Omit<WorkspaceHistoryPage, "watermark">> {
   if (resource === "moments") {
-    const dateKey = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
-    return entities.filter(
-      (entity) => (entity as MomentEntity).occurredOn >= dateKey,
-    );
+    return loadRemoteResourcePage(userId, resource, {
+      cursor: cursor as MomentPageCursor | null,
+    });
   }
   if (resource === "reflections") {
-    const timestamp = cutoff.toISOString();
-    return entities.filter(
-      (entity) => (entity as ReflectionEntity).updatedAt >= timestamp,
-    );
+    return loadRemoteResourcePage(userId, resource, {
+      cursor: cursor as ReflectionPageCursor | null,
+    });
   }
-  return entities;
+  throw new Error(`${resource} does not support history pagination`);
 }
 
 export function useWorkspaceResource<R extends DataResource>(
@@ -62,57 +93,110 @@ export function useWorkspaceResource<R extends DataResource>(
 ) {
   const { notifier, store } = useDataV2();
   const queryClient = useQueryClient();
-  const [historyRevision, setHistoryRevision] = useState(0);
+  const fullHistory = Boolean(options.fullHistory);
+  const query = useDataResource(userId, resource, {
+    remoteLoader: userId
+      ? async () => {
+          await synchronizeRemoteResource({ store, userId, resource });
+          return { kind: "snapshots-managed" as const };
+        }
+      : undefined,
+  });
+
+  const historyOverlayQuery = useQuery<MutationRecord<R>[]>({
+    queryKey: workspaceHistoryOverlayQueryKey(userId ?? "anonymous", resource),
+    enabled: Boolean(userId && fullHistory),
+    queryFn: async () => {
+      const mutations = await store.listPendingMutations(userId!);
+      return mutations.filter(
+        (mutation) => mutation.resource === resource,
+      ) as MutationRecord<R>[];
+    },
+  });
+
   useEffect(() => {
-    if (!userId || !options.fullHistory) return;
+    if (!userId || !fullHistory) return;
     return notifier.subscribe((event) => {
-      if (event.userId === userId && event.resource === resource) {
-        setHistoryRevision((revision) => revision + 1);
+      const overlayKey = historyOverlayKeyForEvent(event, userId, resource);
+      if (overlayKey) {
+        void queryClient.invalidateQueries({
+          queryKey: overlayKey,
+          exact: true,
+        });
+        void Promise.all([
+          store.getSnapshot(userId, resource, event.clientId),
+          store.listPendingMutations(userId),
+        ])
+          .then(([snapshot, pending]) => {
+            const hasPendingEntityMutation = pending.some(
+              (mutation) =>
+                mutation.resource === resource &&
+                mutation.clientId === event.clientId,
+            );
+            // No snapshot can mean either an unloaded old row or a completed
+            // delete. Only remove a loaded row once no durable mutation still
+            // owns its optimistic representation.
+            if (!snapshot && hasPendingEntityMutation) return;
+            queryClient.setQueryData<
+              InfiniteData<WorkspaceHistoryPage, WorkspaceHistoryPageParam>
+            >(workspaceHistoryQueryKey(userId, resource), (current) => {
+              if (!current) return current;
+              const pages = mergeHistorySnapshot<R>(
+                current.pages.map((page) => ({
+                  items: page.items as EntityByResource[R][],
+                })),
+                event.clientId,
+                (snapshot?.entity as EntityByResource[R] | undefined) ?? null,
+                {
+                  insertIfMissing:
+                    event.type === "snapshot-changed" &&
+                    Boolean(event.mutationId),
+                },
+              );
+              return {
+                ...current,
+                pages: current.pages.map((page, index) => ({
+                  ...page,
+                  items: pages[index].items as WorkspaceHistoryEntity[],
+                })),
+              };
+            });
+          })
+          .catch((error) => {
+            logger.warn("workspace_history_overlay_snapshot_failed", {
+              userId,
+              resource,
+              clientId: event.clientId,
+              error,
+            });
+          });
       }
     });
-  }, [notifier, options.fullHistory, resource, userId]);
-  const query = useDataResource(userId, resource, {
-    remoteLoader:
-      userId && !options.fullHistory
-        ? () => loadRemoteResource(userId, resource)
-        : undefined,
-  });
-  const historyQuery = useQuery({
-    queryKey: [
-      ...dataV2QueryKey(userId ?? "anonymous", resource),
-      "full-history",
-      historyRevision,
-    ] as const,
-    enabled: Boolean(userId && options.fullHistory),
-    queryFn: async () => {
+  }, [fullHistory, notifier, queryClient, resource, store, userId]);
+
+  const historyQuery = useInfiniteQuery({
+    queryKey: workspaceHistoryQueryKey(userId ?? "anonymous", resource),
+    enabled: Boolean(userId && fullHistory && isPaginatedResource(resource)),
+    initialPageParam: {
+      cursor: null,
+      watermark: null,
+    } as WorkspaceHistoryPageParam,
+    queryFn: async ({ pageParam }): Promise<WorkspaceHistoryPage> => {
       const activeUserId = userId!;
       if (typeof navigator !== "undefined" && navigator.onLine === false) {
         throw new Error("完整历史需要联网读取");
       }
       try {
-        const sessionToken = store.getUserSessionToken(activeUserId);
-        const readStartedAt = new Date().toISOString();
-        const remote = await loadRemoteResource(activeUserId, resource, {
-          fullHistory: true,
+        const stable = await readWithStableHistoryWatermark({
+          expectedWatermark: pageParam.watermark,
+          readWatermark: () =>
+            loadRemoteChangeWatermark(activeUserId, resource),
+          readPage: () =>
+            loadHistoryPage(activeUserId, resource, pageParam.cursor),
         });
-        await store.replaceSnapshots(
-          activeUserId,
-          resource,
-          recentSnapshotEntities(resource, remote),
-          { notify: false, readStartedAt, sessionToken },
-        );
-        queryClient.setQueryData(
-          dataV2QueryKey(activeUserId, resource),
-          await store.readOverlayCollection(activeUserId, resource),
-        );
-        const mutations = (
-          await store.listPendingMutations(activeUserId)
-        ).filter(
-          (mutation) => mutation.resource === resource,
-        ) as MutationRecord<R>[];
-        return applyMutationOverlay(remote, mutations).map(withSyncState);
+        return { ...stable.page, watermark: stable.watermark };
       } catch (error) {
-        logger.warn("workspace_history_read_fell_back_to_snapshot", {
+        logger.warn("workspace_history_page_read_failed", {
           userId: activeUserId,
           resource,
           error,
@@ -120,14 +204,35 @@ export function useWorkspaceResource<R extends DataResource>(
         throw error;
       }
     },
+    getNextPageParam: (lastPage) =>
+      lastPage.nextCursor
+        ? {
+            cursor: lastPage.nextCursor,
+            watermark: lastPage.watermark,
+          }
+        : undefined,
   });
 
   const recentItems = useMemo(
     () => (query.data ?? []).map(withSyncState),
     [query.data],
   );
-  const items =
-    (options.fullHistory ? historyQuery.data : undefined) ?? recentItems;
+  const historyItems = useMemo(() => {
+    if (!historyQuery.data) return undefined;
+    return mergeHistoryOverlay<R>(
+      historyQuery.data.pages.map((page) => ({
+        items: page.items as EntityByResource[R][],
+      })),
+      historyOverlayQuery.data ?? [],
+    ).map(withSyncState);
+  }, [historyOverlayQuery.data, historyQuery.data]);
+  const items = (fullHistory ? historyItems : undefined) ?? recentItems;
+  const pagination = createHistoryPaginationController({
+    enabled: fullHistory,
+    hasNextPage: Boolean(historyQuery.hasNextPage),
+    isFetchingNextPage: historyQuery.isFetchingNextPage,
+    fetchNextPage: historyQuery.fetchNextPage,
+  });
 
   return {
     ...query,
@@ -135,14 +240,25 @@ export function useWorkspaceResource<R extends DataResource>(
     loading:
       query.isLoading ||
       Boolean(
-        options.fullHistory &&
-        historyQuery.isLoading &&
+        fullHistory &&
+        (historyQuery.isLoading || historyOverlayQuery.isLoading) &&
         recentItems.length === 0,
       ),
-    error: query.error ?? (options.fullHistory ? historyQuery.error : null),
+    error:
+      query.error ??
+      (fullHistory ? (historyQuery.error ?? historyOverlayQuery.error) : null),
+    ...pagination,
     refresh: async () => {
       const result = await query.refetch();
-      if (options.fullHistory) await historyQuery.refetch();
+      if (fullHistory) {
+        await Promise.all([
+          queryClient.resetQueries({
+            queryKey: workspaceHistoryQueryKey(userId!, resource),
+            exact: true,
+          }),
+          historyOverlayQuery.refetch(),
+        ]);
+      }
       return result;
     },
   };

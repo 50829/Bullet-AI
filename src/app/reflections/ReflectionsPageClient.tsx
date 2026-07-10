@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { useWorkspaceData } from "../../features/workspace/data";
+import { useWorkspaceReflections } from "../../features/workspace/data";
+import { useWorkspaceSessionContext } from "../../features/workspace/WorkspaceContext";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { useTopBar } from "../components/layout/TopBarContext";
 import { Button } from "../../shared/components/ui/Button";
@@ -37,10 +38,14 @@ const ReflectionModal = dynamic(
 );
 
 export default function ReflectionsPageClient() {
-  const { session, reflections: reflectionsController } = useWorkspaceData();
+  const session = useWorkspaceSessionContext();
+  const reflectionsController = useWorkspaceReflections();
   const {
     reflections,
     loading,
+    hasMore,
+    loadingMore,
+    loadMore,
     error: reflectionsError,
     refreshReflections,
     createReflection,
@@ -182,6 +187,21 @@ export default function ReflectionsPageClient() {
             }
           />
         ))
+      )}
+
+      {hasMore && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            disabled={loadingMore}
+            aria-busy={loadingMore}
+            onClick={() => void loadMore()}
+          >
+            {loadingMore
+              ? t("loadingEarlierRecords", "正在加载更早记录...")
+              : t("loadEarlierRecords", "加载更早记录")}
+          </Button>
+        </div>
       )}
 
       {isModalOpen && (

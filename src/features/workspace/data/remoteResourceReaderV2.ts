@@ -16,6 +16,7 @@ import {
 import { supabase } from "../../../lib/supabase/client";
 
 const PAGE_SIZE = 100;
+const MAX_PAGE_SIZE = 500;
 const SNAPSHOT_DAYS = 90;
 
 const SELECTS = {
@@ -33,8 +34,37 @@ const SELECTS = {
 
 export type DatabaseRow = Record<string, unknown>;
 
-export function fromDynamicTable(table: string) {
-  // Supabase cannot represent a runtime-selected table as one finite generic.
+export type PaginatedResource = "moments" | "reflections";
+
+export type MomentPageCursor = Readonly<{
+  occurredOn: string;
+  createdAt: string;
+  clientId: string;
+}>;
+
+export type ReflectionPageCursor = Readonly<{
+  updatedAt: string;
+  clientId: string;
+}>;
+
+export type RemoteResourceCursor<R extends PaginatedResource> =
+  R extends "moments" ? MomentPageCursor : ReflectionPageCursor;
+
+export type RemoteResourcePage<R extends PaginatedResource> = Readonly<{
+  items: EntityByResource[R][];
+  nextCursor: RemoteResourceCursor<R> | null;
+}>;
+
+export type LoadRemoteResourcePageOptions<R extends PaginatedResource> = {
+  cursor?: RemoteResourceCursor<R> | null;
+  pageSize?: number;
+  recentOnly?: boolean;
+};
+
+export function fromDynamicTable(table: DataResource) {
+  // Supabase cannot preserve a runtime table/payload correlation without a
+  // generated Database type. Keep the untyped boundary here; the finite table
+  // name plus the adapters on either side are strongly checked.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase as any).from(table);
 }
@@ -135,69 +165,128 @@ function escapeFilterValue(value: string) {
   return `"${value.replaceAll('"', '\\"')}"`;
 }
 
-async function readMoments(
-  userId: string,
-  options: { fullHistory?: boolean } = {},
-) {
-  const rows: DatabaseRow[] = [];
-  let cursor: DatabaseRow | null = null;
-  do {
-    let query = supabase
-      .from("moments")
-      .select(SELECTS.moments)
-      .eq("user_id", userId);
-    if (!options.fullHistory) {
-      query = query.gte("occurred_on", cutoffDateKey());
-    }
-    if (cursor) {
-      const occurredOn = requiredString(cursor, "occurred_on");
-      const createdAt = requiredString(cursor, "created_at");
-      const clientId = requiredString(cursor, "client_id");
-      query = query.or(
-        `occurred_on.lt.${occurredOn},and(occurred_on.eq.${occurredOn},created_at.lt.${escapeFilterValue(createdAt)}),and(occurred_on.eq.${occurredOn},created_at.eq.${escapeFilterValue(createdAt)},client_id.lt.${escapeFilterValue(clientId)})`,
-      );
-    }
-    const { data, error } = await query
-      .order("occurred_on", { ascending: false })
-      .order("created_at", { ascending: false })
-      .order("client_id", { ascending: false })
-      .limit(PAGE_SIZE);
-    if (error) throw error;
-    const page = (data ?? []) as unknown as DatabaseRow[];
-    rows.push(...page);
-    cursor = page.length === PAGE_SIZE ? page.at(-1)! : null;
-  } while (cursor);
-  return rows.map(mapMoment);
+function normalizedPageSize(pageSize = PAGE_SIZE) {
+  if (!Number.isInteger(pageSize) || pageSize < 1) {
+    throw new Error("pageSize must be a positive integer");
+  }
+  return Math.min(pageSize, MAX_PAGE_SIZE);
 }
 
-async function readReflections(userId: string, fullHistory = false) {
-  const rows: DatabaseRow[] = [];
-  let cursor: DatabaseRow | null = null;
+async function readMomentsPage(
+  userId: string,
+  options: LoadRemoteResourcePageOptions<"moments"> = {},
+): Promise<RemoteResourcePage<"moments">> {
+  const pageSize = normalizedPageSize(options.pageSize);
+  let query = supabase
+    .from("moments")
+    .select(SELECTS.moments)
+    .eq("user_id", userId);
+  if (options.recentOnly) {
+    query = query.gte("occurred_on", cutoffDateKey());
+  }
+  const cursor = options.cursor;
+  if (cursor) {
+    query = query.or(
+      `occurred_on.lt.${cursor.occurredOn},and(occurred_on.eq.${cursor.occurredOn},created_at.lt.${escapeFilterValue(cursor.createdAt)}),and(occurred_on.eq.${cursor.occurredOn},created_at.eq.${escapeFilterValue(cursor.createdAt)},client_id.lt.${escapeFilterValue(cursor.clientId)})`,
+    );
+  }
+  const { data, error } = await query
+    .order("occurred_on", { ascending: false })
+    .order("created_at", { ascending: false })
+    .order("client_id", { ascending: false })
+    .limit(pageSize + 1);
+  if (error) throw error;
+  const rows = ((data ?? []) as unknown as DatabaseRow[]).slice(0, pageSize);
+  const last = rows.at(-1);
+  return {
+    items: rows.map(mapMoment),
+    nextCursor:
+      data && data.length > pageSize && last
+        ? {
+            occurredOn: requiredString(last, "occurred_on"),
+            createdAt: requiredString(last, "created_at"),
+            clientId: requiredString(last, "client_id"),
+          }
+        : null,
+  };
+}
+
+async function readReflectionsPage(
+  userId: string,
+  options: LoadRemoteResourcePageOptions<"reflections"> = {},
+): Promise<RemoteResourcePage<"reflections">> {
+  const pageSize = normalizedPageSize(options.pageSize);
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - SNAPSHOT_DAYS);
+  let query = supabase
+    .from("reflections")
+    .select(SELECTS.reflections)
+    .eq("user_id", userId);
+  if (options.recentOnly) {
+    query = query.gte("updated_at", cutoff.toISOString());
+  }
+  const cursor = options.cursor;
+  if (cursor) {
+    query = query.or(
+      `updated_at.lt.${escapeFilterValue(cursor.updatedAt)},and(updated_at.eq.${escapeFilterValue(cursor.updatedAt)},client_id.lt.${escapeFilterValue(cursor.clientId)})`,
+    );
+  }
+  const { data, error } = await query
+    .order("updated_at", { ascending: false })
+    .order("client_id", { ascending: false })
+    .limit(pageSize + 1);
+  if (error) throw error;
+  const rows = ((data ?? []) as unknown as DatabaseRow[]).slice(0, pageSize);
+  const last = rows.at(-1);
+  return {
+    items: rows.map(mapReflection),
+    nextCursor:
+      data && data.length > pageSize && last
+        ? {
+            updatedAt: requiredString(last, "updated_at"),
+            clientId: requiredString(last, "client_id"),
+          }
+        : null,
+  };
+}
+
+export async function loadRemoteResourcePage<R extends PaginatedResource>(
+  userId: string,
+  resource: R,
+  options: LoadRemoteResourcePageOptions<R> = {},
+): Promise<RemoteResourcePage<R>> {
+  if (resource === "moments") {
+    return readMomentsPage(
+      userId,
+      options as LoadRemoteResourcePageOptions<"moments">,
+    ) as Promise<RemoteResourcePage<R>>;
+  }
+  return readReflectionsPage(
+    userId,
+    options as LoadRemoteResourcePageOptions<"reflections">,
+  ) as Promise<RemoteResourcePage<R>>;
+}
+
+async function readAllPages<R extends PaginatedResource>(
+  userId: string,
+  resource: R,
+  recentOnly: boolean,
+) {
+  const items: EntityByResource[R][] = [];
+  let cursor: RemoteResourceCursor<R> | null = null;
   do {
-    let query = supabase
-      .from("reflections")
-      .select(SELECTS.reflections)
-      .eq("user_id", userId);
-    if (!fullHistory) query = query.gte("updated_at", cutoff.toISOString());
-    if (cursor) {
-      const updatedAt = requiredString(cursor, "updated_at");
-      const clientId = requiredString(cursor, "client_id");
-      query = query.or(
-        `updated_at.lt.${escapeFilterValue(updatedAt)},and(updated_at.eq.${escapeFilterValue(updatedAt)},client_id.lt.${escapeFilterValue(clientId)})`,
-      );
-    }
-    const { data, error } = await query
-      .order("updated_at", { ascending: false })
-      .order("client_id", { ascending: false })
-      .limit(PAGE_SIZE);
-    if (error) throw error;
-    const page = (data ?? []) as unknown as DatabaseRow[];
-    rows.push(...page);
-    cursor = page.length === PAGE_SIZE ? page.at(-1)! : null;
+    const page: RemoteResourcePage<R> = await loadRemoteResourcePage(
+      userId,
+      resource,
+      {
+        cursor,
+        recentOnly,
+      },
+    );
+    items.push(...page.items);
+    cursor = page.nextCursor;
   } while (cursor);
-  return rows.map(mapReflection);
+  return items;
 }
 
 async function readByClientId(
@@ -237,12 +326,17 @@ export async function loadRemoteResource<R extends DataResource>(
     return (await loadRemoteProfiles(userId)) as EntityByResource[R][];
   }
   if (resource === "moments") {
-    return (await readMoments(userId, options)) as EntityByResource[R][];
+    return (await readAllPages(
+      userId,
+      "moments",
+      !options.fullHistory,
+    )) as EntityByResource[R][];
   }
   if (resource === "reflections") {
-    return (await readReflections(
+    return (await readAllPages(
       userId,
-      options.fullHistory,
+      "reflections",
+      !options.fullHistory,
     )) as EntityByResource[R][];
   }
   const rows = await readByClientId(userId, resource);

@@ -82,6 +82,24 @@ describe("loadLocalFirstResource", () => {
     expect(store.replaceSnapshots).toHaveBeenCalledOnce();
   });
 
+  it("does not rewrite snapshots after an incremental loader commits them atomically", async () => {
+    const store = storeMock([localMoment]);
+
+    await loadLocalFirstResource({
+      store,
+      userId: "user-1",
+      resource: "moments",
+      online: true,
+      remoteLoader: async () => ({ kind: "snapshots-managed" }),
+      onBackgroundRefresh: vi.fn(),
+    });
+
+    await vi.waitFor(() =>
+      expect(store.readOverlayCollection).toHaveBeenCalledTimes(2),
+    );
+    expect(store.replaceSnapshots).not.toHaveBeenCalled();
+  });
+
   it("does not wait for the network when a durable collection is known to be empty", async () => {
     const remote = deferred<MomentEntity[]>();
     const store = storeMock([], true);

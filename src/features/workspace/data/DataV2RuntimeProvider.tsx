@@ -11,6 +11,7 @@ import {
 } from "../../../lib/data-v2";
 import { useAuthSession } from "../../../lib/auth/AuthSessionContext";
 import { SupabaseRemoteMutationExecutor } from "./remoteRepositoryV2";
+import { clearWorkspaceUserQueryCache } from "./historyPagination";
 
 export function DataV2RuntimeProvider({ children }: { children: ReactNode }) {
   const session = useAuthSession();
@@ -49,10 +50,7 @@ export function DataV2RuntimeProvider({ children }: { children: ReactNode }) {
     const previous = previousUserId.current;
     previousUserId.current = session.userId;
     if (previous && previous !== session.userId) {
-      void queryClient.cancelQueries({
-        queryKey: ["data-v2", previous],
-      });
-      queryClient.removeQueries({ queryKey: ["data-v2", previous] });
+      void clearWorkspaceUserQueryCache(queryClient, previous);
       void store.clearUser(previous);
     }
   }, [queryClient, session.userId, store]);

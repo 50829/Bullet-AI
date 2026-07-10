@@ -1,5 +1,10 @@
 import MomentsPageClient from "../../moments/MomentsPageClient";
+import { WorkspaceMomentsProvider } from "../../../features/workspace/data";
 
 export default function MomentsRoute() {
-  return <MomentsPageClient />;
+  return (
+    <WorkspaceMomentsProvider fullHistory>
+      <MomentsPageClient />
+    </WorkspaceMomentsProvider>
+  );
 }

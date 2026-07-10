@@ -11,11 +11,13 @@ describe("useWorkspaceSession v2 diagnostics wiring", () => {
       encoding: "utf8",
     });
 
-    expect(source).toContain("store.getDiagnostics(userId)");
+    expect(source).toContain("store.getDiagnostics(targetUserId)");
     expect(source).toContain('mutation.status === "blocked"');
     expect(source).toContain('mutation.status === "conflict"');
     expect(source).toContain("worker?.requestFlush()");
     expect(source).toContain("store.discardMutation(id)");
+    expect(source).toContain("diagnosticsGeneration.current");
+    expect(source).toContain("activeUserId.current !== targetUserId");
     expect(source).not.toContain("localDb");
     expect(typeSource).toContain("pendingCount: number");
     expect(typeSource).toContain("syncIssues: SyncIssue[]");

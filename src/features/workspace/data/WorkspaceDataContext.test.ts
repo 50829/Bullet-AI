@@ -3,165 +3,98 @@ import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  session: {
-    userId: "user-1" as string | null,
-    ready: true,
-    syncStatus: "idle",
-    pendingCount: 0,
-    syncIssues: [],
-    retrySync: vi.fn(),
-    discardSyncItem: vi.fn(),
-  },
-  goalsController: {
-    goals: [{ id: 1, title: "Goal" }],
-    loading: false,
-    refreshGoals: vi.fn(),
-    createGoal: vi.fn(),
-    updateGoal: vi.fn(),
-    reorderGoals: vi.fn(),
-    deleteGoal: vi.fn(),
-  },
-  habitsController: {
-    habits: [{ id: 2, name: "Habit" }],
-    loading: false,
-    saving: false,
-    error: null,
-    refreshHabits: vi.fn(),
-    createHabit: vi.fn(),
-    updateHabit: vi.fn(),
-    deleteHabit: vi.fn(),
-    toggleCheckin: vi.fn(),
-    checkinToday: vi.fn(),
-  },
-  momentsController: {
-    moments: [{ clientId: "moment-3", content: "Moment" }],
-    loading: false,
-    refreshMoments: vi.fn(),
-    createMoment: vi.fn(),
-    updateMoment: vi.fn(),
-    deleteMoment: vi.fn(),
-  },
-  reflectionsController: {
-    reflections: [
-      { clientId: "reflection-4", title: "Reflection", body: "Body" },
-    ],
-    loading: false,
-    refreshReflections: vi.fn(),
-    createReflection: vi.fn(),
-    updateReflection: vi.fn(),
-    deleteReflection: vi.fn(),
-  },
+  session: { userId: "user-1" as string | null },
+  goalsController: { goals: [{ clientId: "goal-1" }] },
+  habitsController: { habits: [{ clientId: "habit-1" }] },
+  momentsController: { moments: [{ clientId: "moment-1" }] },
+  reflectionsController: { reflections: [{ clientId: "reflection-1" }] },
   useGoals: vi.fn(),
   useHabits: vi.fn(),
   useMoments: vi.fn(),
   useReflections: vi.fn(),
-  usePathname: vi.fn(),
-}));
-
-vi.mock("next/navigation", () => ({
-  usePathname: mocks.usePathname,
 }));
 
 vi.mock("../WorkspaceContext", () => ({
   useWorkspaceSessionContext: vi.fn(() => mocks.session),
 }));
-
-vi.mock("../../goals/hooks/useGoals", () => ({
-  useGoals: mocks.useGoals,
-}));
-
-vi.mock("../../habits/hooks/useHabits", () => ({
-  useHabits: mocks.useHabits,
-}));
-
+vi.mock("../../goals/hooks/useGoals", () => ({ useGoals: mocks.useGoals }));
+vi.mock("../../habits/hooks/useHabits", () => ({ useHabits: mocks.useHabits }));
 vi.mock("../../moments/hooks/useMoments", () => ({
   useMoments: mocks.useMoments,
 }));
-
 vi.mock("../../reflections/hooks/useReflections", () => ({
   useReflections: mocks.useReflections,
 }));
 
-const { WorkspaceDataProvider, useWorkspaceData } =
-  await import("./WorkspaceDataContext");
+const {
+  WorkspaceGoalsProvider,
+  WorkspaceHabitsProvider,
+  WorkspaceMomentsProvider,
+  WorkspaceReflectionsProvider,
+  useWorkspaceGoals,
+  useWorkspaceHabits,
+  useWorkspaceMoments,
+  useWorkspaceReflections,
+} = await import("./WorkspaceDataContext");
 
-function expectWorkspaceData(
-  value: unknown,
-): asserts value is ReturnType<typeof useWorkspaceData> {
-  expect(value).not.toBeNull();
-}
-
-describe("WorkspaceDataProvider", () => {
+describe("route-scoped workspace data providers", () => {
   beforeEach(() => {
     mocks.session.userId = "user-1";
-    mocks.useGoals.mockReset();
-    mocks.useHabits.mockReset();
-    mocks.useMoments.mockReset();
-    mocks.useReflections.mockReset();
-    mocks.usePathname.mockReset();
-    mocks.usePathname.mockReturnValue("/home");
-    mocks.useGoals.mockReturnValue(mocks.goalsController);
-    mocks.useHabits.mockReturnValue(mocks.habitsController);
-    mocks.useMoments.mockReturnValue(mocks.momentsController);
-    mocks.useReflections.mockReturnValue(mocks.reflectionsController);
+    mocks.useGoals.mockReset().mockReturnValue(mocks.goalsController);
+    mocks.useHabits.mockReset().mockReturnValue(mocks.habitsController);
+    mocks.useMoments.mockReset().mockReturnValue(mocks.momentsController);
+    mocks.useReflections
+      .mockReset()
+      .mockReturnValue(mocks.reflectionsController);
   });
 
-  it("exposes the four workspace controllers to consumers", () => {
-    let captured: unknown = null;
-
+  it("mounts only the domain controllers explicitly composed by a route", () => {
     function Consumer() {
-      const data = useWorkspaceData();
-      captured = data;
-      return createElement("span", null, data.session.userId);
+      const goals = useWorkspaceGoals();
+      const habits = useWorkspaceHabits();
+      return createElement(
+        "span",
+        null,
+        `${goals.goals[0].clientId}:${habits.habits[0].clientId}`,
+      );
     }
 
     const html = renderToString(
-      createElement(WorkspaceDataProvider, null, createElement(Consumer)),
+      createElement(
+        WorkspaceGoalsProvider,
+        null,
+        createElement(WorkspaceHabitsProvider, null, createElement(Consumer)),
+      ),
     );
 
-    expect(html).toContain("user-1");
-    expectWorkspaceData(captured);
-    expect(captured.goals).toBe(mocks.goalsController);
-    expect(captured.habits).toBe(mocks.habitsController);
-    expect(captured.moments).toBe(mocks.momentsController);
-    expect(captured.reflections).toBe(mocks.reflectionsController);
+    expect(html).toContain("goal-1:habit-1");
+    expect(mocks.useGoals).toHaveBeenCalledWith({ userId: "user-1" });
+    expect(mocks.useHabits).toHaveBeenCalledWith({ userId: "user-1" });
+    expect(mocks.useMoments).not.toHaveBeenCalled();
+    expect(mocks.useReflections).not.toHaveBeenCalled();
   });
 
-  it("passes a null user id through without throwing", () => {
-    mocks.session.userId = null;
-
+  it("makes full-history behavior an explicit route-level choice", () => {
     function Consumer() {
-      const data = useWorkspaceData();
-      return createElement("span", null, data.session.userId ?? "anonymous");
-    }
-
-    expect(() =>
-      renderToString(
-        createElement(WorkspaceDataProvider, null, createElement(Consumer)),
-      ),
-    ).not.toThrow();
-    expect(mocks.useGoals).toHaveBeenCalledWith({ userId: null });
-    expect(mocks.useHabits).toHaveBeenCalledWith({ userId: null });
-    expect(mocks.useMoments).toHaveBeenCalledWith({
-      userId: null,
-      fullHistory: false,
-    });
-    expect(mocks.useReflections).toHaveBeenCalledWith({
-      userId: null,
-      fullHistory: false,
-    });
-  });
-
-  it("loads full history only for the active collection page", () => {
-    mocks.usePathname.mockReturnValue("/moments");
-
-    function Consumer() {
-      const data = useWorkspaceData();
-      return createElement("span", null, data.session.userId ?? "anonymous");
+      const moments = useWorkspaceMoments();
+      const reflections = useWorkspaceReflections();
+      return createElement(
+        "span",
+        null,
+        `${moments.moments[0].clientId}:${reflections.reflections[0].clientId}`,
+      );
     }
 
     renderToString(
-      createElement(WorkspaceDataProvider, null, createElement(Consumer)),
+      createElement(
+        WorkspaceMomentsProvider,
+        { fullHistory: true },
+        createElement(
+          WorkspaceReflectionsProvider,
+          { fullHistory: true },
+          createElement(Consumer),
+        ),
+      ),
     );
 
     expect(mocks.useMoments).toHaveBeenCalledWith({
@@ -169,10 +102,23 @@ describe("WorkspaceDataProvider", () => {
       fullHistory: true,
     });
     expect(mocks.useReflections).toHaveBeenCalledWith({
-      userId: null,
-      fullHistory: false,
+      userId: "user-1",
+      fullHistory: true,
     });
+  });
+
+  it("passes a null session through without pathname-derived behavior", () => {
+    mocks.session.userId = null;
+    function Consumer() {
+      useWorkspaceGoals();
+      return createElement("span", null, "anonymous");
+    }
+
+    expect(() =>
+      renderToString(
+        createElement(WorkspaceGoalsProvider, null, createElement(Consumer)),
+      ),
+    ).not.toThrow();
     expect(mocks.useGoals).toHaveBeenCalledWith({ userId: null });
-    expect(mocks.useHabits).toHaveBeenCalledWith({ userId: null });
   });
 });

@@ -28,7 +28,8 @@ React feature hook
 - create 使用稳定 `clientId`，可幂等重试。
 - patch/delete 使用 `version` 做 compare-and-swap，冲突不会静默覆盖云端。
 - 临时网络错误无限退避；鉴权错误暂停；永久错误和冲突在设置页可见。
-- Moments/Reflections 离线保留近期快照；在线记录页读取完整历史但不把完整历史写入近期缓存。
+- 首次读取建立 change-log 游标；后续只拉取变更行和物理删除 tombstone，并与游标一起原子写入本地快照。
+- Moments/Reflections 离线保留近期快照；在线记录页用稳定 keyset 游标按页加载完整历史，不把旧页整体写入近期缓存。
 - IndexedDB 有数据时先立即渲染，云端读取与队列 flush 在后台进行；过期远端响应不能覆盖较新的本地快照。
 - 已同步的空集合也有持久标记，冷启动不会因为“没有行”退化成等待慢网络。
 - Moment 只持久化私有 Storage 路径，签名 URL 与本地 `blob:` URL 只存在于内存视图。
@@ -69,10 +70,11 @@ LLM_MODEL
 
 ## 数据库
 
-新项目只执行：
+新项目执行基线和后续前向迁移：
 
 ```text
 db/migrations/000_current_schema.sql
+db/migrations/006_incremental_sync_change_log.sql
 ```
 
 旧项目先备份并在 SQL Editor 运行只读预检
@@ -82,15 +84,23 @@ db/migrations/000_current_schema.sql
 db/migrations/005_domain_schema_v2.sql
 ```
 
-`005` 会收敛旧字段、迁移可保留数据并移除软删除语义。旧 Storage bucket 不由线上任务自动删除，需按 [SUPABASE_SETUP.md](SUPABASE_SETUP.md) 审计后显式处理。
+`005` 会收敛旧字段、迁移可保留数据并移除软删除语义；旧项目完成 `005` 后同样继续执行 `006` 及后续前向迁移。旧 Storage bucket 不由线上任务自动删除，需按 [SUPABASE_SETUP.md](SUPABASE_SETUP.md) 审计后显式处理。
 
 ## 验证
 
 ```bash
 pnpm exec tsc --noEmit
 pnpm lint
+pnpm format:check
+pnpm migration:check
 pnpm test
 pnpm build
+```
+
+安装 Docker 后还可运行真实 Supabase/pgTAP 契约测试：
+
+```bash
+pnpm test:db
 ```
 
 `docs/requirements-analysis.md`、数据库课程报告和 ER 材料是历史交付快照，不是当前实现契约。

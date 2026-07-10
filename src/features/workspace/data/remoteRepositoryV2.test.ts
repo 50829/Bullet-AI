@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { RemoteMutationRequest } from "../../../lib/data-v2";
 
 const mocks = vi.hoisted(() => {
   const query: Record<string, ReturnType<typeof vi.fn>> = {};
@@ -36,6 +37,34 @@ vi.mock("../../../lib/supabase/client", () => ({
 const { createSignedMomentImageUrl, SupabaseRemoteMutationExecutor } =
   await import("./remoteRepositoryV2");
 
+function recoveryCreate(content: string): RemoteMutationRequest<"moments"> {
+  return {
+    mutationId: "mutation-recovery",
+    userId: "user-1",
+    resource: "moments",
+    clientId: "moment-1",
+    kind: "create",
+    baseVersion: null,
+    changes: {
+      content,
+      occurredOn: "2026-07-10",
+      imagePath: null,
+    },
+    optimistic: {
+      clientId: "moment-1",
+      userId: "user-1",
+      version: 0,
+      createdAt: "2026-07-10T00:00:00.000Z",
+      updatedAt: "2026-07-10T00:01:00.000Z",
+      content,
+      occurredOn: "2026-07-10",
+      imagePath: null,
+    },
+    blobs: [],
+    conflictRecoveryCreate: true,
+  };
+}
+
 describe("SupabaseRemoteMutationExecutor idempotency", () => {
   beforeEach(() => {
     mocks.from.mockClear();
@@ -50,6 +79,128 @@ describe("SupabaseRemoteMutationExecutor idempotency", () => {
     mocks.createSignedUrl.mockReset();
     mocks.upload.mockReset();
     mocks.remove.mockReset();
+  });
+
+  it("inserts habits with their original local start date", async () => {
+    mocks.query.maybeSingle.mockResolvedValue({ data: null, error: null });
+    mocks.query.single.mockResolvedValue({
+      data: {
+        id: 1,
+        client_id: "habit-1",
+        user_id: "user-1",
+        name: "Read",
+        description: null,
+        frequency: "daily",
+        color: null,
+        started_on: "2026-06-28",
+        version: 1,
+        created_at: "2026-07-10T00:00:00.000Z",
+        updated_at: "2026-07-10T00:00:00.000Z",
+      },
+      error: null,
+    });
+
+    const result = await new SupabaseRemoteMutationExecutor().execute(
+      {
+        mutationId: "mutation-habit",
+        userId: "user-1",
+        resource: "habits",
+        clientId: "habit-1",
+        kind: "create",
+        baseVersion: null,
+        changes: {
+          name: "Read",
+          description: null,
+          frequency: "daily",
+          color: null,
+          startedOn: "2026-06-28",
+        },
+        optimistic: {
+          clientId: "habit-1",
+          userId: "user-1",
+          version: 0,
+          createdAt: "2026-06-28T00:00:00.000Z",
+          updatedAt: "2026-06-28T00:00:00.000Z",
+          name: "Read",
+          description: null,
+          frequency: "daily",
+          color: null,
+          startedOn: "2026-06-28",
+        },
+        blobs: [],
+      },
+      new AbortController().signal,
+    );
+
+    expect(mocks.query.insert).toHaveBeenCalledWith({
+      client_id: "habit-1",
+      user_id: "user-1",
+      name: "Read",
+      description: null,
+      frequency: "daily",
+      color: null,
+      started_on: "2026-06-28",
+    });
+    expect(result).toMatchObject({
+      kind: "applied",
+      entity: { startedOn: "2026-06-28" },
+    });
+  });
+
+  it("reopens a conflict when a deleted record was recreated differently", async () => {
+    mocks.query.maybeSingle.mockResolvedValue({
+      data: {
+        id: 1,
+        client_id: "moment-1",
+        user_id: "user-1",
+        content: "different cloud copy",
+        occurred_on: "2026-07-10",
+        image_path: null,
+        version: 1,
+        created_at: "2026-07-10T00:00:00.000Z",
+        updated_at: "2026-07-10T00:01:00.000Z",
+      },
+      error: null,
+    });
+
+    await expect(
+      new SupabaseRemoteMutationExecutor().execute(
+        recoveryCreate("restore local copy"),
+        new AbortController().signal,
+      ),
+    ).resolves.toMatchObject({
+      kind: "conflict",
+      remote: { content: "different cloud copy" },
+    });
+    expect(mocks.query.insert).not.toHaveBeenCalled();
+  });
+
+  it("treats an identical recovery create as an idempotent retry", async () => {
+    mocks.query.maybeSingle.mockResolvedValue({
+      data: {
+        id: 1,
+        client_id: "moment-1",
+        user_id: "user-1",
+        content: "restore local copy",
+        occurred_on: "2026-07-10",
+        image_path: null,
+        version: 1,
+        created_at: "2026-07-10T00:00:00.000Z",
+        updated_at: "2026-07-10T00:01:00.000Z",
+      },
+      error: null,
+    });
+
+    await expect(
+      new SupabaseRemoteMutationExecutor().execute(
+        recoveryCreate("restore local copy"),
+        new AbortController().signal,
+      ),
+    ).resolves.toMatchObject({
+      kind: "applied",
+      entity: { content: "restore local copy" },
+    });
+    expect(mocks.query.insert).not.toHaveBeenCalled();
   });
 
   it("accepts a previously committed image patch without deleting its object", async () => {

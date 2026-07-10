@@ -70,6 +70,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
           }
           onRetrySync={settings.retrySync}
           onDiscardSyncItem={settings.discardSyncItem}
+          onResolveSyncConflict={settings.resolveSyncConflict}
           onExport={handleExport}
         />
       )}

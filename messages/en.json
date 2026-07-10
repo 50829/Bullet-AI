@@ -57,6 +57,8 @@
   "loading": "Loading...",
   "loadingMoments": "Loading moments...",
   "loadingReflections": "Loading reflections...",
+  "loadEarlierRecords": "Load earlier records",
+  "loadingEarlierRecords": "Loading earlier records...",
   "addNewMoment": "+ New Moment",
   "addNewReflection": "+ New Reflection",
   "search": "Search",

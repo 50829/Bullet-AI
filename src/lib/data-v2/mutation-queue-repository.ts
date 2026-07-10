@@ -6,7 +6,6 @@ import {
   collectMutationTree,
   compareMutations,
   dependencyReadyMutationHeads,
-  isCurrentMutation,
   notifyMutation,
   type MutationRepositoryDependencies,
 } from "./mutation-repository-internal";
@@ -26,6 +25,8 @@ export class MutationQueueRepository {
   ): Promise<MutationRecord<R> | null> {
     const { database, now: getNow, createId, notifier } = this.dependencies;
     const sessionToken = database.getUserSessionToken(input.userId);
+    assertCurrentUserSession(this.dependencies, input.userId, sessionToken);
+    await database.waitForUserCleanup(input.userId, sessionToken);
     assertCurrentUserSession(this.dependencies, input.userId, sessionToken);
     if (
       input.optimistic.userId !== input.userId ||
@@ -70,15 +71,12 @@ export class MutationQueueRepository {
     const existing = await mutationStore
       .index("by-user-entity")
       .getAll([input.userId, input.resource, input.clientId]);
-    const currentExisting = existing.filter((mutation) =>
-      isCurrentMutation(this.dependencies, mutation),
-    );
     const dependsOnMutationId = await this.findHabitDependency(
       mutationStore,
       input,
     );
     if (
-      currentExisting.some(
+      existing.some(
         (mutation) =>
           mutation.status === "blocked" || mutation.status === "conflict",
       )
@@ -89,7 +87,7 @@ export class MutationQueueRepository {
       );
     }
 
-    const compactable = currentExisting
+    const compactable = existing
       .filter(
         (mutation) =>
           mutation.status === "queued" && mutation.attemptCount === 0,
@@ -99,9 +97,7 @@ export class MutationQueueRepository {
     if (compactable) {
       const compacted = compactQueuedMutation(compactable, input, now);
       if (compacted === "cancel") {
-        const all = (
-          await mutationStore.index("by-user").getAll(input.userId)
-        ).filter((mutation) => isCurrentMutation(this.dependencies, mutation));
+        const all = await mutationStore.index("by-user").getAll(input.userId);
         const cancelled = collectMutationTree(all, [
           compactable as AnyMutationRecord,
         ]);
@@ -151,7 +147,6 @@ export class MutationQueueRepository {
       createdAt: now,
       updatedAt: now,
       dependsOnMutationId,
-      sessionToken,
       cleanup: input.cleanup,
     } as MutationRecord<R>;
 
@@ -183,11 +178,9 @@ export class MutationQueueRepository {
   }
 
   async listRunnable(userId: string, now: string) {
-    const all = (
-      await (
-        await this.dependencies.database.open()
-      ).getAllFromIndex("mutations", "by-user", userId)
-    ).filter((mutation) => isCurrentMutation(this.dependencies, mutation));
+    const all = await (
+      await this.dependencies.database.open()
+    ).getAllFromIndex("mutations", "by-user", userId);
     return dependencyReadyMutationHeads(all).filter(
       (mutation) =>
         mutation.status === "queued" && mutation.nextAttemptAt <= now,
@@ -199,11 +192,7 @@ export class MutationQueueRepository {
     const transaction = db.transaction("mutations", "readwrite");
     const store = transaction.objectStore("mutations");
     const current = await store.get(mutationId);
-    if (
-      !current ||
-      current.status !== "queued" ||
-      !isCurrentMutation(this.dependencies, current)
-    ) {
+    if (!current || current.status !== "queued") {
       await transaction.done;
       return null;
     }
@@ -233,11 +222,9 @@ export class MutationQueueRepository {
   }
 
   async getNextQueuedAt(userId: string) {
-    const mutations = (
-      await (
-        await this.dependencies.database.open()
-      ).getAllFromIndex("mutations", "by-user", userId)
-    ).filter((mutation) => isCurrentMutation(this.dependencies, mutation));
+    const mutations = await (
+      await this.dependencies.database.open()
+    ).getAllFromIndex("mutations", "by-user", userId);
     const queued = dependencyReadyMutationHeads(mutations).filter(
       (mutation) => mutation.status === "queued",
     );
@@ -270,7 +257,6 @@ export class MutationQueueRepository {
             .habitClientId,
         ])
     )
-      .filter((mutation) => isCurrentMutation(this.dependencies, mutation))
       .filter((mutation) => mutation.kind === "create")
       .sort(compareMutations)[0]?.mutationId;
   }

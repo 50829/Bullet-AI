@@ -3,15 +3,20 @@ import { GOAL_PLANNING_PURPOSE } from "../../../lib/ai/goalPlan";
 import { MAX_AI_MESSAGE_CHARS } from "../../../lib/ai/requestPolicy";
 import { POST } from "./route";
 
-const mocks = vi.hoisted(() => ({
-  createClient: vi.fn(),
-  fetch: vi.fn(),
-  logger: {
+const mocks = vi.hoisted(() => {
+  const logger = {
     error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-  },
-}));
+    child: vi.fn(),
+  };
+  logger.child.mockReturnValue(logger);
+  return {
+    createClient: vi.fn(),
+    fetch: vi.fn(),
+    logger,
+  };
+});
 
 vi.mock("../../../lib/supabase/server", () => ({
   createClient: mocks.createClient,
@@ -23,7 +28,7 @@ vi.mock("../../../lib/observability/logger", () => ({
 
 function createRequest(
   body: unknown,
-  options: { defaultPurpose?: boolean } = {},
+  options: { defaultPurpose?: boolean; requestId?: string } = {},
 ) {
   const requestBody =
     options.defaultPurpose !== false &&
@@ -36,7 +41,10 @@ function createRequest(
 
   return new Request("http://localhost/api/ai", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.requestId ? { "x-request-id": options.requestId } : {}),
+    },
     body: JSON.stringify(requestBody),
   });
 }
@@ -78,6 +86,7 @@ describe("/api/ai", () => {
     mocks.logger.error.mockReset();
     mocks.logger.info.mockReset();
     mocks.logger.warn.mockReset();
+    mocks.logger.child.mockReset().mockReturnValue(mocks.logger);
     vi.stubGlobal("fetch", mocks.fetch);
     vi.stubEnv("LLM_API_KEY", "test-key");
     vi.stubEnv("LLM_BASE_URL", "https://llm.example/v1");
@@ -94,6 +103,24 @@ describe("/api/ai", () => {
 
     expect(response.status).toBe(401);
     expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  it("preserves a valid request id in response telemetry headers", async () => {
+    mocks.createClient.mockResolvedValue(createSupabaseMock({ user: null }));
+
+    const response = await POST(
+      createRequest(
+        { messages: [{ role: "user", content: "hi" }] },
+        { requestId: "trace-123" },
+      ),
+    );
+
+    expect(response.headers.get("x-request-id")).toBe("trace-123");
+    expect(response.headers.get("Server-Timing")).toMatch(/^app;dur=/);
+    expect(mocks.logger.info).toHaveBeenCalledWith(
+      "http_request_completed",
+      expect.objectContaining({ status: 401, durationMs: expect.any(Number) }),
+    );
   });
 
   it("returns 400 for oversized message content", async () => {
@@ -384,9 +411,13 @@ describe("/api/ai", () => {
     await expect(response.json()).resolves.toEqual({
       error: "AI 服务返回了无效响应，请稍后再试",
     });
-    expect(mocks.logger.warn).toHaveBeenCalledWith("ai_llm_invalid_response", {
-      userId: "user-1",
-      purpose: GOAL_PLANNING_PURPOSE,
-    });
+    expect(mocks.logger.warn).toHaveBeenCalledWith(
+      "ai_llm_invalid_response",
+      expect.objectContaining({
+        userId: "user-1",
+        purpose: GOAL_PLANNING_PURPOSE,
+        requestId: expect.any(String),
+      }),
+    );
   });
 });

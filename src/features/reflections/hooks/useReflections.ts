@@ -128,6 +128,9 @@ export function useReflections({
     () => ({
       reflections: resource.items,
       loading: resource.loading,
+      hasMore: resource.hasMore,
+      loadingMore: resource.loadingMore,
+      loadMore: resource.loadMore,
       error: resource.error,
       refreshReflections,
       createReflection,
@@ -139,8 +142,11 @@ export function useReflections({
       deleteReflection,
       refreshReflections,
       resource.error,
+      resource.hasMore,
       resource.items,
+      resource.loadMore,
       resource.loading,
+      resource.loadingMore,
       updateReflection,
     ],
   );

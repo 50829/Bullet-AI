@@ -22,14 +22,20 @@ export async function runAssistantTurn({
   userId,
   supabase,
   input,
+  requestId,
 }: {
   userId: string;
   supabase: AssistantSupabaseClient;
   input: AssistantTurnInput;
+  requestId?: string;
 }): Promise<AssistantServiceResponse> {
+  const logContext = {
+    userId,
+    ...(requestId ? { requestId } : {}),
+  };
   const config = readLlmConfig();
   if ("logCode" in config) {
-    logger.error(config.logCode, { userId });
+    logger.error(config.logCode, logContext);
     return {
       status: 500,
       body: { error: config.error },
@@ -41,7 +47,7 @@ export async function runAssistantTurn({
 
   if (reserveError) {
     logger.error("ai_rate_limit_reservation_failed", {
-      userId,
+      ...logContext,
       error: reserveError,
     });
     return {
@@ -76,7 +82,7 @@ export async function runAssistantTurn({
   } catch (error) {
     if (error instanceof LlmTimeoutError) {
       logger.warn("ai_llm_timeout", {
-        userId,
+        ...logContext,
         purpose: GOAL_PLANNING_PURPOSE,
         timeoutMs: config.config.timeoutMs,
       });
@@ -87,7 +93,7 @@ export async function runAssistantTurn({
     }
 
     logger.error("ai_llm_request_failed", {
-      userId,
+      ...logContext,
       purpose: GOAL_PLANNING_PURPOSE,
       error,
     });
@@ -100,7 +106,7 @@ export async function runAssistantTurn({
   if (!resp.ok) {
     const errorText = await resp.text();
     logger.warn("ai_llm_bad_response", {
-      userId,
+      ...logContext,
       purpose: GOAL_PLANNING_PURPOSE,
       status: resp.status,
       errorText,
@@ -116,7 +122,7 @@ export async function runAssistantTurn({
       }
     } catch (error) {
       logger.warn("ai_llm_error_parse_failed", {
-        userId,
+        ...logContext,
         purpose: GOAL_PLANNING_PURPOSE,
         error,
       });
@@ -132,7 +138,7 @@ export async function runAssistantTurn({
   const providerReply = data?.choices?.[0]?.message?.content;
   if (typeof providerReply !== "string" || !providerReply.trim()) {
     logger.warn("ai_llm_invalid_response", {
-      userId,
+      ...logContext,
       purpose: GOAL_PLANNING_PURPOSE,
     });
     return {

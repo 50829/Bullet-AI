@@ -4,74 +4,115 @@ import {
   createContext,
   createElement,
   useContext,
-  useMemo,
   type ReactNode,
 } from "react";
-import { usePathname } from "next/navigation";
 import { useGoals } from "../../goals/hooks/useGoals";
 import { useHabits } from "../../habits/hooks/useHabits";
 import { useMoments } from "../../moments/hooks/useMoments";
 import { useReflections } from "../../reflections/hooks/useReflections";
 import { useWorkspaceSessionContext } from "../WorkspaceContext";
-import type { WorkspaceSessionState } from "../types";
 
-export type WorkspaceDataCollections = {
-  goals: ReturnType<typeof useGoals>;
-  habits: ReturnType<typeof useHabits>;
-  moments: ReturnType<typeof useMoments>;
-  reflections: ReturnType<typeof useReflections>;
-};
+export type WorkspaceGoalsController = ReturnType<typeof useGoals>;
+export type WorkspaceHabitsController = ReturnType<typeof useHabits>;
+export type WorkspaceMomentsController = ReturnType<typeof useMoments>;
+export type WorkspaceReflectionsController = ReturnType<typeof useReflections>;
 
-export type WorkspaceDataState = WorkspaceDataCollections & {
-  session: WorkspaceSessionState;
-};
-
-const WorkspaceDataContext = createContext<WorkspaceDataState | undefined>(
-  undefined,
+const WorkspaceGoalsContext = createContext<WorkspaceGoalsController | null>(
+  null,
 );
+const WorkspaceHabitsContext = createContext<WorkspaceHabitsController | null>(
+  null,
+);
+const WorkspaceMomentsContext =
+  createContext<WorkspaceMomentsController | null>(null);
+const WorkspaceReflectionsContext =
+  createContext<WorkspaceReflectionsController | null>(null);
 
-export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
-  const session = useWorkspaceSessionContext();
-  const pathname = usePathname();
-  const isHome = pathname?.includes("/home") ?? false;
-  const isGoals = pathname?.includes("/goals") ?? false;
-  const isMoments = pathname?.includes("/moments") ?? false;
-  const isReflections = pathname?.includes("/reflections") ?? false;
-  const goals = useGoals({
-    userId: isHome || isGoals ? session.userId : null,
-  });
-  const habits = useHabits({
-    userId: isHome || isGoals ? session.userId : null,
-  });
-  const moments = useMoments({
-    userId: isHome || isMoments ? session.userId : null,
-    fullHistory: isMoments,
-  });
-  const reflections = useReflections({
-    userId: isHome || isReflections ? session.userId : null,
-    fullHistory: isReflections,
-  });
-
-  const value = useMemo<WorkspaceDataState>(
-    () => ({
-      session,
-      goals,
-      habits,
-      moments,
-      reflections,
-    }),
-    [goals, habits, moments, reflections, session],
-  );
-
-  return createElement(WorkspaceDataContext.Provider, { value }, children);
+function useRequiredController<T>(value: T | null, hookName: string) {
+  if (!value) throw new Error(`${hookName} must be used within its provider`);
+  return value;
 }
 
-export function useWorkspaceData() {
-  const value = useContext(WorkspaceDataContext);
-  if (!value) {
-    throw new Error(
-      "useWorkspaceData must be used within WorkspaceDataProvider",
-    );
-  }
-  return value;
+export function WorkspaceGoalsProvider({ children }: { children?: ReactNode }) {
+  const { userId } = useWorkspaceSessionContext();
+  const controller = useGoals({ userId });
+  return createElement(
+    WorkspaceGoalsContext.Provider,
+    { value: controller },
+    children,
+  );
+}
+
+export function WorkspaceHabitsProvider({
+  children,
+}: {
+  children?: ReactNode;
+}) {
+  const { userId } = useWorkspaceSessionContext();
+  const controller = useHabits({ userId });
+  return createElement(
+    WorkspaceHabitsContext.Provider,
+    { value: controller },
+    children,
+  );
+}
+
+export function WorkspaceMomentsProvider({
+  children,
+  fullHistory = false,
+}: {
+  children?: ReactNode;
+  fullHistory?: boolean;
+}) {
+  const { userId } = useWorkspaceSessionContext();
+  const controller = useMoments({ userId, fullHistory });
+  return createElement(
+    WorkspaceMomentsContext.Provider,
+    { value: controller },
+    children,
+  );
+}
+
+export function WorkspaceReflectionsProvider({
+  children,
+  fullHistory = false,
+}: {
+  children?: ReactNode;
+  fullHistory?: boolean;
+}) {
+  const { userId } = useWorkspaceSessionContext();
+  const controller = useReflections({ userId, fullHistory });
+  return createElement(
+    WorkspaceReflectionsContext.Provider,
+    { value: controller },
+    children,
+  );
+}
+
+export function useWorkspaceGoals() {
+  return useRequiredController(
+    useContext(WorkspaceGoalsContext),
+    "useWorkspaceGoals",
+  );
+}
+
+export function useWorkspaceHabits() {
+  return useRequiredController(
+    useContext(WorkspaceHabitsContext),
+    "useWorkspaceHabits",
+  );
+}
+
+export function useWorkspaceMoments() {
+  return useRequiredController(
+    useContext(WorkspaceMomentsContext),
+    "useWorkspaceMoments",
+  );
+}
+
+export function useWorkspaceReflections() {
+  return useRequiredController(
+    useContext(WorkspaceReflectionsContext),
+    "useWorkspaceReflections",
+  );
 }

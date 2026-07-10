@@ -47,6 +47,7 @@ export function useSettingsProfile({ onClose }: UseSettingsProfileInput) {
     syncIssues,
     retrySync,
     discardSyncItem,
+    resolveSyncConflict,
   } = useWorkspaceSessionContext();
   const { showToast } = useToast();
   const [username, setUsername] = useState("");
@@ -221,6 +222,7 @@ export function useSettingsProfile({ onClose }: UseSettingsProfileInput) {
     syncIssues,
     retrySync,
     discardSyncItem,
+    resolveSyncConflict,
     handleUsernameChange,
     handleLanguageChange,
     handleAccentChange,

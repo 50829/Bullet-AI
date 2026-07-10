@@ -1,4 +1,6 @@
 import type {
+  AnyConflictDetails,
+  ConflictResolution,
   DataResource,
   MutationKind,
   MutationStatus,
@@ -14,6 +16,7 @@ export type SyncIssue = {
   error: string | null;
   attemptCount: number;
   updatedAt: string;
+  conflict: AnyConflictDetails | null;
 };
 
 export type WorkspaceSessionState = {
@@ -24,4 +27,9 @@ export type WorkspaceSessionState = {
   syncIssues: SyncIssue[];
   retrySync: () => Promise<void>;
   discardSyncItem: (id: string) => Promise<void>;
+  getSyncConflictDetails: (id: string) => Promise<AnyConflictDetails | null>;
+  resolveSyncConflict: <R extends DataResource>(
+    id: string,
+    resolution: ConflictResolution<R>,
+  ) => Promise<void>;
 };

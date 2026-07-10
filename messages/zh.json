@@ -57,6 +57,8 @@
   "loading": "加载中...",
   "loadingMoments": "记忆生成中...",
   "loadingReflections": "思考即将开始...",
+  "loadEarlierRecords": "加载更早记录",
+  "loadingEarlierRecords": "正在加载更早记录...",
   "addNewMoment": "+ 记录新时刻",
   "addNewReflection": "+ 记录新感悟",
   "search": "搜索",

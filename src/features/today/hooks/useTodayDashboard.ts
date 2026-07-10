@@ -11,7 +11,13 @@ import {
   sortGoalsByOrder,
 } from "../../goals/goalVisibility";
 import { useCompletedGoalRetention } from "../../goals/hooks/useCompletedGoalRetention";
-import { useWorkspaceData } from "../../workspace/data";
+import {
+  useWorkspaceGoals,
+  useWorkspaceHabits,
+  useWorkspaceMoments,
+  useWorkspaceReflections,
+} from "../../workspace/data";
+import { useWorkspaceSessionContext } from "../../workspace/WorkspaceContext";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { useToast } from "../../../shared/components/ui/Toast";
 import { toDateKey } from "../../../lib/date/dateUtils";
@@ -25,21 +31,20 @@ export type { RecentDashboardItem };
 
 export function useTodayDashboard() {
   const router = useRouter();
+  const { syncStatus, retrySync } = useWorkspaceSessionContext();
+  const { moments, createMoment, updateMoment } = useWorkspaceMoments();
+  const { reflections, createReflection, updateReflection } =
+    useWorkspaceReflections();
   const {
-    session: { syncStatus, retrySync },
-    moments: { moments, createMoment, updateMoment },
-    reflections: { reflections, createReflection, updateReflection },
-    goals: {
-      goals,
-      loading: goalsLoading,
-      error: goalsError,
-      createGoal,
-      updateGoal,
-      toggleGoalCompleted: toggleGoalCompletedCommand,
-      deleteGoal,
-    },
-    habits: habitsState,
-  } = useWorkspaceData();
+    goals,
+    loading: goalsLoading,
+    error: goalsError,
+    createGoal,
+    updateGoal,
+    toggleGoalCompleted: toggleGoalCompletedCommand,
+    deleteGoal,
+  } = useWorkspaceGoals();
+  const habitsState = useWorkspaceHabits();
   const { t, language } = useLanguage();
   const { showToast } = useToast();
   const deferredDelete = useDeferredHardDelete<{

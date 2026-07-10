@@ -33,13 +33,14 @@ https://your-domain.com/auth/callback
 
 ## 新项目
 
-新 Supabase 项目只执行最终 schema：
+新 Supabase 项目先执行最终 schema，再执行当前的前向迁移：
 
 ```sql
 db/migrations/000_current_schema.sql
+db/migrations/006_incremental_sync_change_log.sql
 ```
 
-不要再对新项目执行 `001` 至 `005`。`000_current_schema.sql` 已包含最终表结构、版本触发器、索引、RLS、AI 限流 RPC 和 Moments Storage 策略；Auth 用户创建后会由数据库触发器原子创建对应 Profile。
+不要再对新项目执行 `001` 至 `005`。`000_current_schema.sql` 是 v2 基线，`006` 及后续编号是基线之上的前向迁移。基线已包含最终表结构、版本触发器、索引、RLS、AI 限流 RPC 和 Moments Storage 策略；Auth 用户创建后会由数据库触发器原子创建对应 Profile。
 
 ## 已有项目升级
 
@@ -62,11 +63,37 @@ db/migrations/000_current_schema.sql
 2. 确认项目已经执行过历史 `000` 至 `004`。
 3. 在 SQL Editor 执行只读的 `db/operations/preflight_domain_schema_v2.sql`，保存每个结果集。
 4. 使用下方脚本审计 Storage，保存 JSON 输出。
-5. 执行 `db/migrations/005_domain_schema_v2.sql`。
+5. 执行 `db/migrations/005_domain_schema_v2.sql`，再执行 `db/migrations/006_incremental_sync_change_log.sql` 及后续前向迁移。
 6. 部署新版应用并完成冒烟测试。
 7. 再次审计，确认无需保留旧 bucket 后显式删除。
 
 迁移应在维护窗口执行。它会锁定核心业务表，并且不应在已经使用新版 `000` 创建的数据库上运行。
+
+## 本地数据库契约测试
+
+仓库固定使用 Node `24.15.0`、pnpm `11.9.x` 和 Supabase CLI `2.101.0`。安装 Docker 后运行：
+
+```bash
+pnpm install --frozen-lockfile
+pnpm test:db
+```
+
+该命令启动隔离的本地 Supabase，重置本地数据库，按新库路径应用 `000 + 006`，再运行 `supabase/tests/database` 下的 pgTAP 测试。重置只作用于 project id 为 `bullet-ai` 的本地 Docker 数据库，不会读取线上项目凭据。
+
+契约测试覆盖：
+
+- `version` 触发器与实际 CAS 竞争；
+- 所有用户资源及增量日志的自有/跨用户 RLS；
+- Habit 的显式 `started_on`、同用户引用与级联删除；
+- 删除 tombstone 和 change-log 游标基础契约；
+- AI 限流 RPC 的角色权限及禁止直接写事件；
+- Moments bucket 的私有属性、5 MiB/MIME 元数据和用户目录策略。
+
+文件大小和 MIME 的拒绝发生在 Storage API 层；pgTAP 验证数据库保存的 bucket 限制，上传 API 的端到端验证应另行保留。GitHub Actions 会在每次 push/PR 同时执行应用检查和这套数据库契约。
+
+### 迁移链约定
+
+`001` 至 `005` 是既有部署的历史升级材料，不能交给 Supabase CLI 从头顺序回放。当前保持两个明确入口：新库为 `000 + 006...`，旧库为 `005 + 006...`。后续迁移必须是前向、不可改写且能同时应用于这两个已收敛到 v2 的入口；待所有部署都记录 v2 基线后，再一次性建立 Supabase migration history，避免在当前阶段破坏线上升级路径。
 
 ## Storage 审计与清理
 
@@ -116,6 +143,8 @@ pnpm storage:audit \
 ```bash
 pnpm exec tsc --noEmit
 pnpm lint
+pnpm format:check
+pnpm migration:check
 pnpm test
 pnpm build
 ```

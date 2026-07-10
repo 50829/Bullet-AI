@@ -8,9 +8,12 @@ import { applyPendingOverlay } from "./overlay";
 import { SnapshotRepository } from "./snapshot-repository";
 import type {
   AnyConflictRecord,
+  AnyConflictDetails,
   AnyMutationRecord,
   DataResource,
   DataV2Diagnostics,
+  ConflictResolution,
+  ConflictResolutionResult,
   EnqueueMutationInput,
   EntityByResource,
   MutationBlobRecord,
@@ -31,6 +34,10 @@ export interface DataV2StoreApi {
     resource: R,
   ): Promise<EntityByResource[R][]>;
   hasLoadedCollection(userId: string, resource: DataResource): Promise<boolean>;
+  getRemoteCursor(
+    userId: string,
+    resource: DataResource,
+  ): Promise<string | null>;
   readOverlayCollection<R extends DataResource>(
     userId: string,
     resource: R,
@@ -48,6 +55,19 @@ export interface DataV2StoreApi {
       notify?: boolean;
       readStartedAt?: string;
       sessionToken?: number;
+      remoteCursor?: string;
+    },
+  ): Promise<void>;
+  applyRemoteDelta<R extends DataResource>(
+    userId: string,
+    resource: R,
+    input: {
+      upserts: EntityByResource[R][];
+      deletedClientIds: string[];
+      resetClientIds?: string[];
+      remoteCursor: string;
+      sessionToken?: number;
+      notify?: boolean;
     },
   ): Promise<void>;
   beginUserSession(userId: string): number;
@@ -85,6 +105,12 @@ export interface DataV2StoreApi {
   getNextQueuedAt(userId: string): Promise<string | null>;
   listPendingMutations(userId: string): Promise<AnyMutationRecord[]>;
   listConflicts(userId: string): Promise<AnyConflictRecord[]>;
+  listConflictDetails(userId: string): Promise<AnyConflictDetails[]>;
+  getConflictDetails(id: string): Promise<AnyConflictDetails | null>;
+  resolveConflict<R extends DataResource>(
+    id: string,
+    resolution: ConflictResolution<R>,
+  ): Promise<ConflictResolutionResult | null>;
   getDiagnostics(userId: string): Promise<DataV2Diagnostics>;
   discardMutation(mutationId: string): Promise<boolean>;
   clearUser(userId: string): Promise<void>;
@@ -155,6 +181,10 @@ export class DataV2Store implements DataV2StoreApi {
     return this.snapshots.hasLoadedCollection(userId, resource);
   }
 
+  getRemoteCursor(userId: string, resource: DataResource) {
+    return this.snapshots.getRemoteCursor(userId, resource);
+  }
+
   async readOverlayCollection<R extends DataResource>(
     userId: string,
     resource: R,
@@ -182,9 +212,25 @@ export class DataV2Store implements DataV2StoreApi {
       notify?: boolean;
       readStartedAt?: string;
       sessionToken?: number;
+      remoteCursor?: string;
     },
   ) {
     return this.snapshots.replace(userId, resource, entities, options);
+  }
+
+  applyRemoteDelta<R extends DataResource>(
+    userId: string,
+    resource: R,
+    input: {
+      upserts: EntityByResource[R][];
+      deletedClientIds: string[];
+      resetClientIds?: string[];
+      remoteCursor: string;
+      sessionToken?: number;
+      notify?: boolean;
+    },
+  ) {
+    return this.snapshots.applyDelta(userId, resource, input);
   }
 
   enqueueMutation<R extends DataResource>(input: EnqueueMutationInput<R>) {
@@ -248,6 +294,21 @@ export class DataV2Store implements DataV2StoreApi {
 
   listConflicts(userId: string) {
     return this.mutationMaintenance.listConflicts(userId);
+  }
+
+  listConflictDetails(userId: string) {
+    return this.mutationMaintenance.listConflictDetails(userId);
+  }
+
+  getConflictDetails(id: string) {
+    return this.mutationMaintenance.getConflictDetails(id);
+  }
+
+  resolveConflict<R extends DataResource>(
+    id: string,
+    resolution: ConflictResolution<R>,
+  ) {
+    return this.mutationMaintenance.resolveConflict(id, resolution);
   }
 
   getDiagnostics(userId: string) {

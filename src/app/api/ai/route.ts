@@ -2,9 +2,16 @@ import { NextResponse } from "next/server";
 import { parseAssistantRequestBody } from "../../../lib/ai/server/assistantRequest";
 import { runAssistantTurn } from "../../../lib/ai/server/assistantService";
 import { logger } from "../../../lib/observability/logger";
+import { createRequestContext } from "../../../lib/observability/requestContext";
 import { createClient } from "../../../lib/supabase/server";
 
 export async function POST(req: Request) {
+  const requestContext = createRequestContext(req, "/api/ai");
+  const respond = (body: unknown, status: number) =>
+    NextResponse.json(body, {
+      status,
+      headers: requestContext.responseHeaders(status),
+    });
   try {
     const supabase = await createClient();
     const {
@@ -13,28 +20,32 @@ export async function POST(req: Request) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+      return respond({ error: "请先登录" }, 401);
     }
 
     const body = await req.json().catch(() => null);
     if (!body) {
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+      return respond({ error: "Invalid JSON body" }, 400);
     }
 
     const parsedRequest = parseAssistantRequestBody(body);
     if ("error" in parsedRequest) {
-      return NextResponse.json({ error: parsedRequest.error }, { status: 400 });
+      return respond({ error: parsedRequest.error }, 400);
     }
 
     const result = await runAssistantTurn({
       userId: user.id,
       supabase,
       input: parsedRequest.input,
+      requestId: requestContext.requestId,
     });
 
-    return NextResponse.json(result.body, { status: result.status });
+    return respond(result.body, result.status);
   } catch (err) {
-    logger.error("ai_route_unhandled_error", { error: err });
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    logger.error("ai_route_unhandled_error", {
+      requestId: requestContext.requestId,
+      error: err,
+    });
+    return respond({ error: "Server error" }, 500);
   }
 }

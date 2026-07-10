@@ -28,6 +28,9 @@ export type MutationCleanup = {
 };
 
 type MutationBase<R extends DataResource, K extends MutationKind> = {
+  // Mutations outlive a JavaScript runtime and are scoped by userId. An
+  // in-memory session token must never decide whether this durable record is
+  // visible after a refresh or in another tab.
   mutationId: string;
   userId: string;
   resource: R;
@@ -43,8 +46,9 @@ type MutationBase<R extends DataResource, K extends MutationKind> = {
   blockedReason?: MutationBlockedReason;
   lastError?: string;
   dependsOnMutationId?: string;
-  sessionToken?: number;
   cleanup?: MutationCleanup;
+  /** Marks a create produced while restoring a remotely deleted conflict. */
+  conflictRecoveryCreate?: boolean;
 };
 
 export type CreateMutationRecord<R extends DataResource = DataResource> =
@@ -148,6 +152,8 @@ export type ConflictRecord<R extends DataResource = DataResource> = {
   resource: R;
   clientId: string;
   baseVersion: number | null;
+  kind: MutationKind;
+  changes: DataByResource[R] | Partial<DataByResource[R]> | null;
   local: EntityByResource[R];
   remote: EntityByResource[R] | null;
   reason: string;
@@ -157,6 +163,43 @@ export type ConflictRecord<R extends DataResource = DataResource> = {
 export type AnyConflictRecord = {
   [R in DataResource]: ConflictRecord<R>;
 }[DataResource];
+
+export type ConflictDetails<R extends DataResource = DataResource> =
+  ConflictRecord<R> & {
+    mutation: MutationRecord<R>;
+    blobs: MutationBlobRecord[];
+  };
+
+export type AnyConflictDetails = {
+  [R in DataResource]: ConflictDetails<R>;
+}[DataResource];
+
+export type ConflictFieldSource = "local" | "remote" | "custom";
+
+type ConflictResolutionRemoteOverride<R extends DataResource> = {
+  /**
+   * Current remote state read immediately before resolution. Presence matters:
+   * an explicit null is an authoritative remote tombstone.
+   */
+  remoteOverride?: EntityByResource[R] | null;
+};
+
+export type ConflictResolution<R extends DataResource = DataResource> =
+  ConflictResolutionRemoteOverride<R> &
+    (
+      | { action: "accept-remote" }
+      | { action: "keep-local" }
+      | {
+          action: "merge";
+          changes: DataByResource[R];
+          fieldSources: Record<string, ConflictFieldSource>;
+        }
+    );
+
+export type ConflictResolutionResult = {
+  mutationId: string;
+  outcome: "accepted-remote" | "already-applied" | "requeued";
+};
 
 export type OverlayRecord<R extends DataResource> = {
   entity: EntityByResource[R];
@@ -178,6 +221,7 @@ export type RemoteMutationRequest<R extends DataResource = DataResource> = {
   optimistic: EntityByResource[R];
   blobs: MutationBlobRecord[];
   cleanup?: MutationCleanup;
+  conflictRecoveryCreate?: boolean;
 };
 
 export type RemoteMutationResult<R extends DataResource = DataResource> =

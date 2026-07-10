@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDataV2 } from "../../lib/data-v2";
+import type { ConflictResolution, DataResource } from "../../lib/data-v2";
 import { useAuthSession } from "../../lib/auth/AuthSessionContext";
 import type { SyncIssue, SyncStatus, WorkspaceSessionState } from "./types";
+import { resolveWorkspaceConflict } from "./resolveWorkspaceConflict";
 
 export function useWorkspaceSession(): WorkspaceSessionState {
   const { userId, ready } = useAuthSession();
@@ -11,15 +13,32 @@ export function useWorkspaceSession(): WorkspaceSessionState {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [pendingCount, setPendingCount] = useState(0);
   const [syncIssues, setSyncIssues] = useState<SyncIssue[]>([]);
+  const activeUserId = useRef(userId);
+  const diagnosticsGeneration = useRef(0);
+  activeUserId.current = userId;
 
   const refreshDiagnostics = useCallback(async () => {
-    if (!userId) {
+    const targetUserId = userId;
+    const generation = ++diagnosticsGeneration.current;
+    if (!targetUserId) {
       setPendingCount(0);
       setSyncIssues([]);
       setSyncStatus("idle");
       return;
     }
-    const diagnostics = await store.getDiagnostics(userId);
+    const [diagnostics, conflictDetails] = await Promise.all([
+      store.getDiagnostics(targetUserId),
+      store.listConflictDetails(targetUserId),
+    ]);
+    if (
+      generation !== diagnosticsGeneration.current ||
+      activeUserId.current !== targetUserId
+    ) {
+      return;
+    }
+    const conflictsByMutation = new Map(
+      conflictDetails.map((conflict) => [conflict.mutationId, conflict]),
+    );
     const online = typeof navigator === "undefined" || navigator.onLine;
     const issues = diagnostics.mutations
       .filter(
@@ -34,6 +53,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
         error: mutation.lastError ?? null,
         attemptCount: mutation.attemptCount,
         updatedAt: mutation.updatedAt,
+        conflict: conflictsByMutation.get(mutation.mutationId) ?? null,
       }));
     setPendingCount(diagnostics.mutations.length);
     setSyncIssues(issues);
@@ -76,6 +96,22 @@ export function useWorkspaceSession(): WorkspaceSessionState {
     [refreshDiagnostics, store],
   );
 
+  const getSyncConflictDetails = useCallback(
+    (id: string) => store.getConflictDetails(id),
+    [store],
+  );
+
+  const resolveSyncConflict = useCallback(
+    async <R extends DataResource>(
+      id: string,
+      resolution: ConflictResolution<R>,
+    ) => {
+      await resolveWorkspaceConflict(store, worker, id, resolution);
+      await refreshDiagnostics();
+    },
+    [refreshDiagnostics, store, worker],
+  );
+
   return useMemo(
     () => ({
       userId,
@@ -85,12 +121,16 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       syncIssues,
       retrySync,
       discardSyncItem,
+      getSyncConflictDetails,
+      resolveSyncConflict,
     }),
     [
       discardSyncItem,
+      getSyncConflictDetails,
       pendingCount,
       ready,
       retrySync,
+      resolveSyncConflict,
       syncIssues,
       syncStatus,
       userId,

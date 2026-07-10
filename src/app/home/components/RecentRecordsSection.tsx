@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock3, Edit2 } from "lucide-react";
-import type { RecentDashboardItem } from "../../../features/dashboard/hooks/useTodayDashboard";
+import type { RecentDashboardItem } from "../../../features/today/hooks/useTodayDashboard";
 import { Button } from "../../../shared/components/ui/Button";
 import { DashboardCardSection } from "../../../shared/components/ui/DashboardCardSection";
 import { EmptyState } from "../../../shared/components/ui/EmptyState";

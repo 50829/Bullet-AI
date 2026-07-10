@@ -6,7 +6,9 @@ type LocalFirstResourceInput<R extends DataResource> = {
   userId: string;
   resource: R;
   online: boolean;
-  remoteLoader?: () => Promise<EntityByResource[R][]>;
+  remoteLoader?: () => Promise<
+    EntityByResource[R][] | { kind: "snapshots-managed" }
+  >;
   onBackgroundRefresh: (records: OverlayRecord<R>[]) => void;
   onBackgroundError?: (error: unknown) => void;
 };
@@ -31,6 +33,9 @@ export async function loadLocalFirstResource<R extends DataResource>({
   const refreshRemote = async () => {
     const readStartedAt = new Date().toISOString();
     const remote = await remoteLoader();
+    if (!Array.isArray(remote)) {
+      return store.readOverlayCollection(userId, resource);
+    }
     await store.replaceSnapshots(userId, resource, remote, {
       notify: false,
       readStartedAt,
