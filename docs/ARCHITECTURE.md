@@ -57,7 +57,7 @@ Transient errors use unbounded exponential backoff with jitter. Auth failures pa
 - Supabase is the canonical fact source; IndexedDB durably holds pending writes but may be cleared on logout.
 - Domain code is camelCase. Snake_case exists only in the Supabase adapter and SQL.
 - Deletion is physical. The 5-second undo window happens before enqueueing delete.
-- A weekly habit has at most one check-in per configured week; `checkedOn` preserves the actual chosen day.
+- Weekly habit completion and streaks are calculated by grouping check-ins according to the configured week start; `checkedOn` preserves the actual chosen day.
 - A Habit's immutable `startedOn` is business data; `createdAt` is only a technical audit timestamp.
 - The database requires `started_on` on insert and rejects every later attempt to change it.
 - Reflections contain only `title` and `body`.

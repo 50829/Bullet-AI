@@ -54,4 +54,4 @@ docs/dev/*
 !docs/dev/FRONTEND_BOUNDARIES.md
 !docs/log/
 docs/log/*
-!docs/log/KNOWN_DATA_CONSISTENCY_RISKS.md
+!docs/log/*.md
