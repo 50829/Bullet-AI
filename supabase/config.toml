@@ -1,6 +1,5 @@
-# Local Supabase exists only to exercise the maintained SQL contract. The
-# 005 records the already-applied production baseline. Local resets use the
-# maintained fresh schema plus forward migrations only.
+# Local Supabase exists only to exercise the maintained SQL contract.
+# Local resets load the project's unified schema definition.
 project_id = "bullet-ai"
 
 [api]
@@ -20,14 +19,12 @@ major_version = 17
 enabled = false
 schema_paths = []
 
-# Keep a single source of truth: reset loads the fresh-install baseline and
-# then the forward-only migrations directly from db/migrations.
+# Keep a single source of truth: reset loads the unified schema directly from
+# db/migrations.
 [db.seed]
 enabled = true
 sql_paths = [
   "../db/migrations/000_current_schema.sql",
-  "../db/migrations/006_incremental_sync_change_log.sql",
-  "../db/migrations/007_habit_started_on_invariant.sql",
 ]
 
 [realtime]

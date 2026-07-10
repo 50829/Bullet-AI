@@ -31,21 +31,15 @@ http://localhost:3000/auth/callback
 https://your-domain.com/auth/callback
 ```
 
-## 新项目
+## 数据库初始化
 
-新 Supabase 项目先执行最终 schema，再执行当前的前向迁移：
+创建 Supabase 项目时执行统一的数据库定义：
 
 ```sql
 db/migrations/000_current_schema.sql
-db/migrations/006_incremental_sync_change_log.sql
-db/migrations/007_habit_started_on_invariant.sql
 ```
 
-不要对新项目执行 `005`。`000_current_schema.sql` 是当前基线，`006` 及后续编号是基线之上的前向迁移。基线已包含最终表结构、版本触发器、索引、RLS、AI 限流 RPC 和 Moments Storage 策略；Auth 用户创建后会由数据库触发器原子创建对应 Profile。
-
-## 已有项目升级
-
-生产数据库已经应用至 `007_habit_started_on_invariant.sql`，不要重复执行 `005-007`。下一条迁移从 `008` 开始，继续遵守前向、连续编号和不可改写约束。
+`000_current_schema.sql` 包含完整表结构、同步日志、版本触发器、索引、RLS、AI 限流 RPC 和 Moments Storage 策略；Auth 用户创建后会由数据库触发器原子创建对应 Profile。
 
 ## 本地数据库契约测试
 
@@ -56,7 +50,7 @@ pnpm install --frozen-lockfile
 pnpm test:db
 ```
 
-该命令启动隔离的本地 Supabase，重置本地数据库，按新库路径应用 `000 + 006 + 007`，再运行 `supabase/tests/database` 下的 pgTAP 测试。重置只作用于 project id 为 `bullet-ai` 的本地 Docker 数据库，不会读取线上项目凭据。
+该命令启动隔离的本地 Supabase，重置本地数据库，应用 `000_current_schema.sql`，再运行 `supabase/tests/database` 下的 pgTAP 测试。重置只作用于 project id 为 `bullet-ai` 的本地 Docker 数据库，不会读取线上项目凭据。
 
 契约测试覆盖：
 
@@ -68,10 +62,6 @@ pnpm test:db
 - Moments bucket 的私有属性、5 MiB/MIME 元数据和用户目录策略。
 
 文件大小和 MIME 的拒绝发生在 Storage API 层；pgTAP 验证数据库保存的 bucket 限制，上传 API 的端到端验证应另行保留。GitHub Actions 会在每次 push/PR 同时执行应用检查和这套数据库契约。
-
-### 迁移链约定
-
-`005` 是已经执行的生产基线，只保留校验记录，不再由测试或部署流程运行。`001-004` 已退役删除。新数据库使用 `000 + 006 + 007...`；manifest 记录生产已应用至 `007`。以后只新增连续编号的前向迁移，不改写已执行文件。
 
 ## Storage 审计与清理
 

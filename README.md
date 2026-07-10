@@ -8,7 +8,6 @@ Bullet-AI 是一个以 Today 为入口的个人生活工作区，用于记录生
 >
 > 2026 年 7 月版：在 [Preview](https://github.com/50829/Bullet-AI/deployments/Preview) 中获取新版网址来体验
 
-
 ## 当前业务
 
 - **Today**：聚合今日目标、当前周期习惯和近期记录。
@@ -77,15 +76,13 @@ LLM_MODEL
 
 ## 数据库
 
-新项目执行基线和后续前向迁移：
+创建 Supabase 项目时执行统一的数据库定义：
 
 ```text
 db/migrations/000_current_schema.sql
-db/migrations/006_incremental_sync_change_log.sql
-db/migrations/007_habit_started_on_invariant.sql
 ```
 
-生产数据库已经应用至 `007_habit_started_on_invariant.sql`，不要重复执行 `005-007`。`005` 只作为已应用基线记录保留，`001-004` 和对应 legacy 测试已经退役删除；下一条迁移从 `008` 开始。
+该文件包含完整的表、约束、索引、触发器、RLS 策略、AI 限流函数和 Moments Storage 策略。
 
 ## 验证
 
@@ -104,4 +101,4 @@ pnpm build
 pnpm test:db
 ```
 
-`docs/requirements-analysis.md`、数据库课程报告和 ER 材料是历史交付快照，不是当前实现契约。
+`docs/requirements-analysis.md` 已按当前业务重写；数据库课程报告的其他章节和 ER 材料仍可能是历史交付快照。当前实现契约以本文、`docs/ARCHITECTURE.md` 和数据库迁移为准。

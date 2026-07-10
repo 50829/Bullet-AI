@@ -67,9 +67,8 @@ Transient errors use unbounded exponential backoff with jitter. Auth failures pa
 
 ## Operational Rules
 
-- Fresh databases use `000_current_schema.sql` followed by every forward migration starting at `006`.
-- Production has applied migrations through `007_habit_started_on_invariant.sql`; the next forward migration starts at `008`.
-- `db/migration-manifest.json` records the fresh path, applied `005` baseline, production migration level, and immutable checksums; `pnpm migration:check` rejects rewritten or unlisted SQL.
+- Database initialization uses the unified `000_current_schema.sql` definition.
+- `db/migration-manifest.json` records the initialization entry point and SQL checksums; `pnpm migration:check` rejects rewritten or unlisted SQL.
 - CI runs type, lint, formatting, migration, unit, build, and isolated local Supabase/pgTAP contracts. The local database script disables telemetry and always stops its Docker stack.
 - API responses carry a request ID and `Server-Timing`; structured logs retain sanitized stack/cause data, and `/api/health` exposes configuration readiness without secret values.
 - Moment image replace, clear, duplicate-create, and hard-delete paths retry mutation-specific Storage cleanup before the mutation completes. The manual audit script handles legacy or otherwise orphaned objects; there is no service-role cleanup route or scheduled cron.

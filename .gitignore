@@ -49,6 +49,7 @@ package-lock.json
 # Keep course artifacts local, but version the maintained architecture contract.
 docs/*
 !docs/ARCHITECTURE.md
+docs/FINAL/
 !docs/dev/
 docs/dev/*
 !docs/dev/FRONTEND_BOUNDARIES.md

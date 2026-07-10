@@ -1,8 +1,6 @@
--- BulletAI v2 fresh schema.
+-- BulletAI database schema.
 --
--- This file describes the final schema for a new Supabase project. Existing
--- installations must run 005_domain_schema_v2.sql instead so legacy data is
--- migrated before obsolete columns are removed.
+-- This file is the single initialization entry point for a Supabase project.
 
 -- Core tables -----------------------------------------------------------------
 
@@ -112,6 +110,25 @@ create table public.ai_usage_events (
   created_at timestamptz not null default now()
 );
 
+create table public.workspace_change_log (
+  sequence bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  resource text not null check (
+    resource in (
+      'profiles',
+      'moments',
+      'reflections',
+      'goals',
+      'habits',
+      'habit_checkins'
+    )
+  ),
+  client_id text not null check (btrim(client_id) <> ''),
+  operation text not null check (operation in ('upsert', 'delete')),
+  version bigint not null check (version >= 1),
+  changed_at timestamptz not null default now()
+);
+
 -- Keep the one-to-one auth/profile invariant at the database boundary.
 create or replace function public.handle_new_user()
 returns trigger
@@ -126,7 +143,8 @@ begin
 end;
 $$;
 
-revoke all on function public.handle_new_user() from public;
+revoke all on function public.handle_new_user()
+  from public, anon, authenticated;
 
 create trigger on_auth_user_created
   after insert on auth.users
@@ -168,6 +186,9 @@ begin
 end;
 $$;
 
+revoke all on function public.resolve_habit_checkin_reference()
+  from public, anon, authenticated;
+
 create trigger resolve_habit_checkin_reference
   before insert or update of user_id, habit_id, habit_client_id
   on public.habit_checkins
@@ -206,6 +227,9 @@ begin
 end;
 $$;
 
+revoke all on function public.advance_entity_version()
+  from public, anon, authenticated;
+
 create trigger advance_profiles_version
   before update on public.profiles
   for each row execute function public.advance_entity_version();
@@ -224,6 +248,80 @@ create trigger advance_habits_version
 create trigger advance_habit_checkins_version
   before update on public.habit_checkins
   for each row execute function public.advance_entity_version();
+
+-- Record durable incremental-sync changes after each committed domain write.
+create or replace function public.record_workspace_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  row_data jsonb := case
+    when tg_op = 'DELETE' then to_jsonb(old)
+    else to_jsonb(new)
+  end;
+  owner_id uuid := (row_data ->> 'user_id')::uuid;
+  stable_client_id text;
+  entity_version bigint := (row_data ->> 'version')::bigint;
+begin
+  stable_client_id := case
+    when tg_table_name = 'profiles' then owner_id::text
+    else row_data ->> 'client_id'
+  end;
+
+  if not exists (
+    select 1 from auth.users where id = owner_id
+  ) then
+    return case when tg_op = 'DELETE' then old else new end;
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(
+      'workspace_change_log:' || owner_id::text,
+      0
+    )
+  );
+
+  insert into public.workspace_change_log (
+    user_id,
+    resource,
+    client_id,
+    operation,
+    version
+  ) values (
+    owner_id,
+    tg_table_name,
+    stable_client_id,
+    case when tg_op = 'DELETE' then 'delete' else 'upsert' end,
+    entity_version
+  );
+
+  return case when tg_op = 'DELETE' then old else new end;
+end;
+$$;
+
+revoke all on function public.record_workspace_change()
+  from public, anon, authenticated;
+
+create trigger record_workspace_change
+  after insert or update or delete on public.profiles
+  for each row execute function public.record_workspace_change();
+create trigger record_workspace_change
+  after insert or update or delete on public.moments
+  for each row execute function public.record_workspace_change();
+create trigger record_workspace_change
+  after insert or update or delete on public.reflections
+  for each row execute function public.record_workspace_change();
+create trigger record_workspace_change
+  after insert or update or delete on public.goals
+  for each row execute function public.record_workspace_change();
+create trigger record_workspace_change
+  after insert or update or delete on public.habits
+  for each row execute function public.record_workspace_change();
+create trigger record_workspace_change
+  after insert or update or delete on public.habit_checkins
+  for each row execute function public.record_workspace_change();
 
 -- Fixed server-side AI rate limit. Clients cannot choose an identity, window,
 -- or quota. Old events are pruned opportunistically for the current user.
@@ -263,7 +361,7 @@ begin
 end;
 $$;
 
-revoke all on function public.reserve_ai_usage_event() from public;
+revoke all on function public.reserve_ai_usage_event() from public, anon;
 grant execute on function public.reserve_ai_usage_event() to authenticated;
 
 -- Query indexes ----------------------------------------------------------------
@@ -288,6 +386,8 @@ create index habit_checkins_habit_history_idx
   on public.habit_checkins(habit_id, checked_on desc);
 create index ai_usage_events_user_created_at_idx
   on public.ai_usage_events(user_id, created_at desc);
+create index workspace_change_log_pull_idx
+  on public.workspace_change_log(user_id, resource, sequence);
 
 -- Row Level Security -----------------------------------------------------------
 
@@ -298,6 +398,7 @@ alter table public.goals enable row level security;
 alter table public.habits enable row level security;
 alter table public.habit_checkins enable row level security;
 alter table public.ai_usage_events enable row level security;
+alter table public.workspace_change_log enable row level security;
 
 create policy "Users can view own profile"
   on public.profiles for select using ((select auth.uid()) = user_id);
@@ -365,6 +466,13 @@ create policy "Users can delete own habit checkins"
 
 create policy "Users can select own AI usage events"
   on public.ai_usage_events for select using ((select auth.uid()) = user_id);
+
+create policy "Users can pull own workspace changes"
+  on public.workspace_change_log for select
+  using ((select auth.uid()) = user_id);
+
+revoke all on public.workspace_change_log from anon, authenticated;
+grant select on public.workspace_change_log to authenticated;
 
 -- Storage ---------------------------------------------------------------------
 

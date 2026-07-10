@@ -35,45 +35,8 @@ for (const file of files) {
   }
 }
 
-const numbered = files.map((file) => ({
-  file,
-  number: Number(file.slice(0, 3)),
-}));
-const duplicateNumbers = numbered.filter(
-  ({ number }, index) =>
-    numbered.findIndex((candidate) => candidate.number === number) !== index,
-);
-if (duplicateNumbers.length > 0) {
-  throw new Error(
-    `Migration numbers must be unique: ${duplicateNumbers.map(({ file }) => file).join(",")}`,
-  );
-}
-
-const forward = files.filter((file) => Number(file.slice(0, 3)) >= 6);
-forward.forEach((file, index) => {
-  const expectedNumber = index + 6;
-  if (Number(file.slice(0, 3)) !== expectedNumber) {
-    throw new Error(
-      `Forward migrations must be contiguous from 006; expected ${String(expectedNumber).padStart(3, "0")}, found ${file}`,
-    );
-  }
-});
-const expectedFresh = ["000_current_schema.sql", ...forward];
-if (JSON.stringify(manifest.freshInstall) !== JSON.stringify(expectedFresh)) {
-  throw new Error(
-    "freshInstall must contain 000 followed by every forward migration",
-  );
-}
-if (manifest.appliedBaseline !== "005_domain_schema_v2.sql") {
-  throw new Error("appliedBaseline must record 005_domain_schema_v2.sql");
-}
-if (manifest.productionAppliedThrough !== forward.at(-1)) {
-  throw new Error(
-    "productionAppliedThrough must record the latest forward migration",
-  );
-}
-if (files.some((file) => /^00[1-4]_/.test(file))) {
-  throw new Error("Retired migrations 001-004 must not be restored");
+if (manifest.initialization !== "000_current_schema.sql") {
+  throw new Error("initialization must be 000_current_schema.sql");
 }
 
 const seedSection = supabaseConfig.match(
@@ -84,12 +47,12 @@ const seedPaths = seedSection
       (match) => match[1],
     )
   : [];
-if (JSON.stringify(seedPaths) !== JSON.stringify(manifest.freshInstall)) {
+if (JSON.stringify(seedPaths) !== JSON.stringify([manifest.initialization])) {
   throw new Error(
-    "supabase/config.toml seed paths must match the freshInstall manifest",
+    "supabase/config.toml must initialize the database from 000_current_schema.sql",
   );
 }
 
 console.log(
-  `Verified ${files.length} immutable SQL files; forward chain: ${forward.join(", ")}`,
+  `Verified ${files.length} SQL files; initialization: ${manifest.initialization}`,
 );
