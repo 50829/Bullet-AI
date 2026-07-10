@@ -1,15 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useDataV2 } from "../../lib/data-v2";
-import type { ConflictResolution, DataResource } from "../../lib/data-v2";
+import { useDataRuntime } from "@/data";
+import type { ConflictResolution, DataResource } from "@/data";
 import { useAuthSession } from "../../lib/auth/AuthSessionContext";
 import type { SyncIssue, SyncStatus, WorkspaceSessionState } from "./types";
 import { resolveWorkspaceConflict } from "./resolveWorkspaceConflict";
 
 export function useWorkspaceSession(): WorkspaceSessionState {
   const { userId, ready } = useAuthSession();
-  const { store, worker, notifier } = useDataV2();
+  const { store, worker, notifier } = useDataRuntime();
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [pendingCount, setPendingCount] = useState(0);
   const [syncIssues, setSyncIssues] = useState<SyncIssue[]>([]);
@@ -96,6 +96,15 @@ export function useWorkspaceSession(): WorkspaceSessionState {
     [refreshDiagnostics, store],
   );
 
+  const retrySyncItem = useCallback(
+    async (id: string) => {
+      const requeued = await store.retryBlockedMutation(id);
+      if (requeued) await worker?.requestFlush();
+      await refreshDiagnostics();
+    },
+    [refreshDiagnostics, store, worker],
+  );
+
   const getSyncConflictDetails = useCallback(
     (id: string) => store.getConflictDetails(id),
     [store],
@@ -120,6 +129,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       pendingCount,
       syncIssues,
       retrySync,
+      retrySyncItem,
       discardSyncItem,
       getSyncConflictDetails,
       resolveSyncConflict,
@@ -130,6 +140,7 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       pendingCount,
       ready,
       retrySync,
+      retrySyncItem,
       resolveSyncConflict,
       syncIssues,
       syncStatus,

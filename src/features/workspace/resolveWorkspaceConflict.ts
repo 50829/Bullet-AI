@@ -1,11 +1,11 @@
 import type {
   ConflictResolution,
   DataResource,
-  DataV2StoreApi,
-  DataV2SyncControl,
+  DataStoreApi,
+  DataSyncControl,
   EntityByResource,
-} from "../../lib/data-v2";
-import { loadRemoteEntitiesByClientId } from "./data/remoteChangeReaderV2";
+} from "@/data";
+import { loadRemoteEntitiesByClientId } from "@/data/supabase/change-reader";
 import { logger } from "../../lib/observability/logger";
 
 export type ConflictRemoteLoader = (
@@ -26,8 +26,8 @@ const loadLatestConflictRemote: ConflictRemoteLoader = async (
 };
 
 export async function resolveWorkspaceConflict<R extends DataResource>(
-  store: DataV2StoreApi,
-  worker: DataV2SyncControl | null,
+  store: DataStoreApi,
+  worker: DataSyncControl | null,
   id: string,
   resolution: ConflictResolution<R>,
   loadRemote: ConflictRemoteLoader = loadLatestConflictRemote,

@@ -1,4 +1,4 @@
-import { LoadingState } from "../../shared/components/ui/LoadingState";
+import { LoadingState } from "@/shared/components/ui/LoadingState";
 
 export default function WorkspaceLoading() {
   return (

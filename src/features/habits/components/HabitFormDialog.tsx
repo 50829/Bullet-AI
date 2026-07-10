@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Button } from "../../../shared/components/ui/Button";
-import { ColorSwatchPicker } from "../../../shared/components/ui/ColorSwatchPicker";
-import { FieldLabel } from "../../../shared/components/ui/FieldLabel";
-import { FormDialogShell } from "../../../shared/components/ui/FormDialogShell";
-import { FormActions } from "../../../shared/components/ui/FormActions";
-import { Input } from "../../../shared/components/ui/Input";
-import { SegmentedControl } from "../../../shared/components/ui/SegmentedControl";
-import { Textarea } from "../../../shared/components/ui/Textarea";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { Button } from "@/shared/components/ui/Button";
+import { ColorSwatchPicker } from "@/shared/components/ui/ColorSwatchPicker";
+import { FieldLabel } from "@/shared/components/ui/FieldLabel";
+import { FormDialogShell } from "@/shared/components/ui/FormDialogShell";
+import { FormActions } from "@/shared/components/ui/FormActions";
+import { Input } from "@/shared/components/ui/Input";
+import { SegmentedControl } from "@/shared/components/ui/SegmentedControl";
+import { Textarea } from "@/shared/components/ui/Textarea";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
 import type {
   CreateHabitInput,
   HabitFrequency,

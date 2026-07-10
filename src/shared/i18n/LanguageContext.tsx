@@ -8,8 +8,8 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import enMessages from "../../../messages/en.json";
-import zhMessages from "../../../messages/zh.json";
+import enMessages from "@messages/en.json";
+import zhMessages from "@messages/zh.json";
 import { usePreferences } from "../../lib/profile/PreferencesContext";
 import type { PreferredLanguage } from "../../lib/profile/preferences";
 

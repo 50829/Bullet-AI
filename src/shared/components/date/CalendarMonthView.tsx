@@ -1,13 +1,13 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { ResolvedWeekStartsOn } from "../../../lib/profile/preferences";
-import { buildCalendarGrid } from "../../../lib/date/calendarGrid";
+import type { ResolvedWeekStartsOn } from "@/lib/profile/preferences";
+import { buildCalendarGrid } from "@/lib/date/calendarGrid";
 import {
   formatMonthLabel,
   getWeekdayLabels,
   isDateKeyWithinRange,
-} from "../../../lib/date/dateUtils";
+} from "@/lib/date/dateUtils";
 
 export type CalendarMarker = {
   tone: "open" | "completed";

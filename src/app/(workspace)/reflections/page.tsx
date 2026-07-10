@@ -1,5 +1,5 @@
-import ReflectionsPageClient from "../../reflections/ReflectionsPageClient";
-import { WorkspaceReflectionsProvider } from "../../../features/workspace/data";
+import ReflectionsPageClient from "./_components/ReflectionsPageClient";
+import { WorkspaceReflectionsProvider } from "@/features/workspace/providers";
 
 export default function ReflectionsRoute() {
   return (

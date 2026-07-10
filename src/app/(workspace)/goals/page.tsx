@@ -1,8 +1,8 @@
-import GoalsPageClient from "../../goals/GoalsPageClient";
+import GoalsPageClient from "./_components/GoalsPageClient";
 import {
   WorkspaceGoalsProvider,
   WorkspaceHabitsProvider,
-} from "../../../features/workspace/data";
+} from "@/features/workspace/providers";
 
 export default function GoalsRoute() {
   return (

@@ -1,19 +1,19 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { DateField } from "../../../shared/components/date/DateField";
-import { Button } from "../../../shared/components/ui/Button";
-import { FieldLabel } from "../../../shared/components/ui/FieldLabel";
-import { FormActions } from "../../../shared/components/ui/FormActions";
-import { FormDialogShell } from "../../../shared/components/ui/FormDialogShell";
-import { PlainImage } from "../../../shared/components/ui/PlainImage";
-import { Textarea } from "../../../shared/components/ui/Textarea";
-import { useToast } from "../../../shared/components/ui/Toast";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { DateField } from "@/shared/components/date/DateField";
+import { Button } from "@/shared/components/ui/Button";
+import { FieldLabel } from "@/shared/components/ui/FieldLabel";
+import { FormActions } from "@/shared/components/ui/FormActions";
+import { FormDialogShell } from "@/shared/components/ui/FormDialogShell";
+import { PlainImage } from "@/shared/components/ui/PlainImage";
+import { Textarea } from "@/shared/components/ui/Textarea";
+import { useToast } from "@/shared/components/ui/Toast";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
 import {
   imageValidationMessage,
   validateImageBlob,
-} from "../../../lib/media/imageValidation";
-import { toDateKey } from "../../../lib/date/dateUtils";
+} from "@/lib/media/imageValidation";
+import { toDateKey } from "@/lib/date/dateUtils";
 import type {
   CreateMomentInput,
   MomentRecord,

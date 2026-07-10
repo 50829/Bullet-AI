@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GOAL_PLANNING_PURPOSE } from "../../../lib/ai/goalPlan";
-import { MAX_AI_MESSAGE_CHARS } from "../../../lib/ai/requestPolicy";
+import { GOAL_PLANNING_PURPOSE } from "@/lib/ai/goalPlan";
+import { MAX_AI_MESSAGE_CHARS } from "@/lib/ai/requestPolicy";
 import { POST } from "./route";
 
 const mocks = vi.hoisted(() => {

@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { createEntityId } from "../../../domain/ids";
-import { hasUnresolvedSyncIssue } from "../../../domain/sync";
-import type { MomentEntity } from "../../../domain/entities";
-import { useDataMutation, useDataV2 } from "../../../lib/data-v2";
-import { useWorkspaceResource } from "../../workspace/data/useWorkspaceResourceV2";
+import { createEntityId } from "@/domain/ids";
+import { hasUnresolvedSyncIssue } from "@/domain/sync";
+import type { MomentEntity } from "@/domain/entities";
+import { useDataMutation, useDataRuntime } from "@/data";
+import { useSyncedResource } from "@/data/react/useSyncedResource";
 import type {
   CreateMomentInput,
   MomentRecord,
@@ -27,11 +27,11 @@ function blobFileName(blob: Blob, requestedName?: string | null) {
 }
 
 export function useMoments({ userId, fullHistory = false }: UseMomentsInput) {
-  const resource = useWorkspaceResource(userId, "moments", {
+  const resource = useSyncedResource(userId, "moments", {
     fullHistory,
   });
   const mutation = useDataMutation(userId ?? "anonymous", "moments");
-  const { store } = useDataV2();
+  const { store } = useDataRuntime();
   const media = useMomentImageUrls({
     userId,
     moments: resource.items,

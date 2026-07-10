@@ -1,10 +1,10 @@
 import type {
   AnyMutationRecord,
   DataResource,
-  DataV2StoreApi,
+  DataStoreApi,
   EntityByResource,
-} from "../../../lib/data-v2";
-import { loadRemoteResource } from "../data/remoteRepositoryV2";
+} from "@/data";
+import { loadRemoteResource } from "@/data/supabase";
 
 const EXPORT_RESOURCES = [
   "profiles",
@@ -38,7 +38,7 @@ export type WorkspaceExportPayload = ExportCollections & {
       size: number;
     }>;
   }>;
-  conflicts: Awaited<ReturnType<DataV2StoreApi["listConflicts"]>>;
+  conflicts: Awaited<ReturnType<DataStoreApi["listConflicts"]>>;
 };
 
 function sortEntities<R extends DataResource>(items: EntityByResource[R][]) {
@@ -84,7 +84,7 @@ function applyMutations<R extends DataResource>(
 
 export async function loadWorkspaceExportPayload(
   userId: string,
-  store: DataV2StoreApi,
+  store: DataStoreApi,
   exportedAt = new Date().toISOString(),
 ): Promise<WorkspaceExportPayload> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {

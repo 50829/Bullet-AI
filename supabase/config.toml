@@ -1,6 +1,6 @@
 # Local Supabase exists only to exercise the maintained SQL contract. The
-# historical 001-005 files are upgrade artifacts and are intentionally not run
-# as a sequential migration chain.
+# 005 records the already-applied production baseline. Local resets use the
+# maintained fresh schema plus forward migrations only.
 project_id = "bullet-ai"
 
 [api]
@@ -27,6 +27,7 @@ enabled = true
 sql_paths = [
   "../db/migrations/000_current_schema.sql",
   "../db/migrations/006_incremental_sync_change_log.sql",
+  "../db/migrations/007_habit_started_on_invariant.sql",
 ]
 
 [realtime]

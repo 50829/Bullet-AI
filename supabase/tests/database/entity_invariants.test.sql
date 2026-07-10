@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(21);
+select plan(22);
 
 select results_eq(
   $$
@@ -162,6 +162,16 @@ select ok(
       'authenticated',
       'public.advance_entity_version()',
       'EXECUTE'
+    )
+    and not has_function_privilege(
+      'anon',
+      'public.enforce_habit_started_on_immutable()',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'authenticated',
+      'public.enforce_habit_started_on_immutable()',
+      'EXECUTE'
     ),
   'browser roles cannot directly execute trigger-only functions'
 );
@@ -201,7 +211,14 @@ values
   ('20000000-0000-0000-0000-000000000002', 'contract-user-2@example.com');
 
 select is(
-  (select count(*) from public.profiles)::bigint,
+  (
+    select count(*)
+    from public.profiles
+    where user_id in (
+      '10000000-0000-0000-0000-000000000001',
+      '20000000-0000-0000-0000-000000000002'
+    )
+  )::bigint,
   2::bigint,
   'creating auth users atomically creates their profiles'
 );
@@ -237,14 +254,6 @@ values
     date '2024-02-04'
   );
 
-insert into public.habits (user_id, client_id, name, frequency)
-values (
-  '10000000-0000-0000-0000-000000000001',
-  'habit-default-start',
-  'Default start',
-  'daily'
-);
-
 select is(
   (
     select started_on
@@ -255,14 +264,19 @@ select is(
   'an offline client supplied started_on is preserved'
 );
 
-select is(
-  (
-    select started_on
-    from public.habits
-    where client_id = 'habit-default-start'
-  ),
-  current_date,
-  'started_on still has a safe server default'
+select throws_ok(
+  $$
+    insert into public.habits (user_id, client_id, name, frequency)
+    values (
+      '10000000-0000-0000-0000-000000000001',
+      'habit-missing-start',
+      'Missing start',
+      'daily'
+    )
+  $$,
+  '23502',
+  'null value in column "started_on" of relation "habits" violates not-null constraint',
+  'habit creation requires an explicit business start date'
 );
 
 select results_eq(
@@ -317,6 +331,17 @@ select is(
   'ordinary habit updates do not rewrite started_on'
 );
 
+select throws_ok(
+  $$
+    update public.habits
+    set started_on = date '2024-02-04'
+    where client_id = 'habit-explicit-start'
+  $$,
+  '23514',
+  'Habit started_on is immutable',
+  'started_on cannot be changed after habit creation'
+);
+
 insert into public.habit_checkins (
   user_id,
   client_id,
@@ -367,7 +392,11 @@ select throws_ok(
 );
 
 select is(
-  (select count(*) from public.habit_checkins)::bigint,
+  (
+    select count(*)
+    from public.habit_checkins
+    where client_id = 'checkin-valid'
+  )::bigint,
   1::bigint,
   'the valid check-in exists before deleting its habit'
 );
@@ -375,7 +404,11 @@ select is(
 delete from public.habits where client_id = 'habit-explicit-start';
 
 select is(
-  (select count(*) from public.habit_checkins)::bigint,
+  (
+    select count(*)
+    from public.habit_checkins
+    where client_id = 'checkin-valid'
+  )::bigint,
   0::bigint,
   'deleting a habit cascades to its check-ins'
 );

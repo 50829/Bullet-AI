@@ -11,18 +11,21 @@ Bullet-AI is a Today-centered personal workspace. The maintained domains are pro
 - `src/domain`: explicit camelCase entities and stable identity helpers.
 - `src/features/<domain>`: domain reads, writes, projections, and reusable domain UI.
 - `src/features/today`: Today-only aggregation across goals, habits, moments, and reflections.
-- `src/features/workspace`: route-scoped data providers, Supabase mapping, export, and sync diagnostics.
-- `src/lib/data-v2`: IndexedDB lifecycle, snapshot repository, mutation state machine, pending overlay, query provider, and sync worker.
+- `src/features/workspace`: route-scoped domain composition, export, logout cleanup, and sync diagnostics.
+- `src/features/profile`: cloud-backed profile state and preference synchronization.
+- `src/data/local`: IndexedDB lifecycle, snapshots, mutation state machine, and sync worker.
+- `src/data/react`: React Query providers, pending overlays, incremental reads, and history pagination.
+- `src/data/supabase`: snake_case mapping, remote reads, CAS writes, and change-log synchronization.
 - `src/lib/profile`, `src/lib/auth`, `src/lib/supabase`: cross-feature infrastructure.
 - `src/app`: routes, shell, and page-only interaction state.
 - `src/shared`: UI and i18n primitives with no product-domain dependency.
 
-Dependencies flow from `app -> features -> shared/lib`. `src/lib` and `src/shared` must not import `features` or `app`; ESLint enforces this.
+Dependencies flow from `app -> composition features -> domain features -> data -> domain/lib infrastructure`. Domain features cannot import one another or composition features. `domain`, `data`, `lib`, and `shared` cannot depend upward; ESLint enforces these boundaries and rejects deep relative imports.
 
 ## Read Path
 
 1. `AuthSessionProvider` owns the browser Supabase session.
-2. A route-scoped feature hook requests its resource through `useWorkspaceResource`.
+2. A route-scoped feature hook requests its resource through `useSyncedResource`.
 3. IndexedDB snapshots and pending mutations produce the first render without waiting for the network.
 4. A resource without a durable cursor performs one baseline read after first capturing its change-log high-water sequence.
 5. Later refreshes pull `workspace_change_log` pages after that cursor, fetch only changed current rows, and atomically apply upserts, physical deletes, and the new cursor.
@@ -36,7 +39,7 @@ Moments and reflections keep a 90-day durable recent set. Their dedicated pages 
 ## Write Path
 
 1. A feature hook creates the complete optimistic entity.
-2. `DataV2Store.enqueueMutation` atomically writes the mutation and optional Blob.
+2. `DataStore.enqueueMutation` atomically writes the mutation and optional Blob.
 3. Same-entity never-sent mutations compact (`create+patch`, `patch+patch`, `patch+delete`); `create+delete` cancels locally.
 4. A check-in created for an offline-new Habit depends on the Habit create mutation; runnable selection and atomic claim both enforce that dependency.
 5. `DataSyncWorker` runs only while online and visible, under a per-user Web Lock.
@@ -56,6 +59,7 @@ Transient errors use unbounded exponential backoff with jitter. Auth failures pa
 - Deletion is physical. The 5-second undo window happens before enqueueing delete.
 - A weekly habit has at most one check-in per configured week; `checkedOn` preserves the actual chosen day.
 - A Habit's immutable `startedOn` is business data; `createdAt` is only a technical audit timestamp.
+- The database requires `started_on` on insert and rejects every later attempt to change it.
 - Reflections contain only `title` and `body`.
 - Moment images use the private `moments` bucket and mutation-specific object paths.
 - Moment entities persist only `imagePath`; signed URLs and local Blob URLs exist only in the in-memory view layer.
@@ -64,8 +68,8 @@ Transient errors use unbounded exponential backoff with jitter. Auth failures pa
 ## Operational Rules
 
 - Fresh databases use `000_current_schema.sql` followed by every forward migration starting at `006`.
-- Existing legacy databases require backup, preflight, `005_domain_schema_v2.sql`, then the same `006+` forward chain.
-- `db/migration-manifest.json` records both entry paths and immutable checksums; `pnpm migration:check` rejects rewritten or unlisted SQL.
+- Production has applied migrations through `007_habit_started_on_invariant.sql`; the next forward migration starts at `008`.
+- `db/migration-manifest.json` records the fresh path, applied `005` baseline, production migration level, and immutable checksums; `pnpm migration:check` rejects rewritten or unlisted SQL.
 - CI runs type, lint, formatting, migration, unit, build, and isolated local Supabase/pgTAP contracts. The local database script disables telemetry and always stops its Docker stack.
 - API responses carry a request ID and `Server-Timing`; structured logs retain sanitized stack/cause data, and `/api/health` exposes configuration readiness without secret values.
 - Moment image replace, clear, duplicate-create, and hard-delete paths retry mutation-specific Storage cleanup before the mutation completes. The manual audit script handles legacy or otherwise orphaned objects; there is no service-role cleanup route or scheduled cron.

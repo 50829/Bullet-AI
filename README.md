@@ -75,16 +75,10 @@ LLM_MODEL
 ```text
 db/migrations/000_current_schema.sql
 db/migrations/006_incremental_sync_change_log.sql
+db/migrations/007_habit_started_on_invariant.sql
 ```
 
-旧项目先备份并在 SQL Editor 运行只读预检
-`db/operations/preflight_domain_schema_v2.sql`，再执行破坏性增量迁移：
-
-```text
-db/migrations/005_domain_schema_v2.sql
-```
-
-`005` 会收敛旧字段、迁移可保留数据并移除软删除语义；旧项目完成 `005` 后同样继续执行 `006` 及后续前向迁移。旧 Storage bucket 不由线上任务自动删除，需按 [SUPABASE_SETUP.md](SUPABASE_SETUP.md) 审计后显式处理。
+生产数据库已经应用至 `007_habit_started_on_invariant.sql`，不要重复执行 `005-007`。`005` 只作为已应用基线记录保留，`001-004` 和对应 legacy 测试已经退役删除；下一条迁移从 `008` 开始。
 
 ## 验证
 

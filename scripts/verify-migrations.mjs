@@ -59,28 +59,21 @@ forward.forEach((file, index) => {
   }
 });
 const expectedFresh = ["000_current_schema.sql", ...forward];
-const expectedLegacy = ["005_domain_schema_v2.sql", ...forward];
-const expectedHistorical = files.filter((file) => {
-  const number = Number(file.slice(0, 3));
-  return number >= 1 && number <= 4;
-});
 if (JSON.stringify(manifest.freshInstall) !== JSON.stringify(expectedFresh)) {
   throw new Error(
     "freshInstall must contain 000 followed by every forward migration",
   );
 }
-if (JSON.stringify(manifest.legacyUpgrade) !== JSON.stringify(expectedLegacy)) {
+if (manifest.appliedBaseline !== "005_domain_schema_v2.sql") {
+  throw new Error("appliedBaseline must record 005_domain_schema_v2.sql");
+}
+if (manifest.productionAppliedThrough !== forward.at(-1)) {
   throw new Error(
-    "legacyUpgrade must contain 005 followed by every forward migration",
+    "productionAppliedThrough must record the latest forward migration",
   );
 }
-if (
-  JSON.stringify(manifest.historicalArtifacts) !==
-  JSON.stringify(expectedHistorical)
-) {
-  throw new Error(
-    "historicalArtifacts must contain exactly migrations 001-004",
-  );
+if (files.some((file) => /^00[1-4]_/.test(file))) {
+  throw new Error("Retired migrations 001-004 must not be restored");
 }
 
 const seedSection = supabaseConfig.match(

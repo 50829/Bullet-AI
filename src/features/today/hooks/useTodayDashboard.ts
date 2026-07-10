@@ -16,11 +16,11 @@ import {
   useWorkspaceHabits,
   useWorkspaceMoments,
   useWorkspaceReflections,
-} from "../../workspace/data";
+} from "@/features/workspace/providers";
 import { useWorkspaceSessionContext } from "../../workspace/WorkspaceContext";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import { useToast } from "../../../shared/components/ui/Toast";
-import { toDateKey } from "../../../lib/date/dateUtils";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
+import { useToast } from "@/shared/components/ui/Toast";
+import { toDateKey } from "@/lib/date/dateUtils";
 import { useDeferredHardDelete } from "../../workspace/hooks/useDeferredHardDelete";
 import {
   useRecentDashboardRecords,

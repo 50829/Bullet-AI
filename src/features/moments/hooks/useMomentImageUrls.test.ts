@@ -1,13 +1,13 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";
-import type { MomentEntity } from "../../../domain/entities";
-import { DataV2Store } from "../../../lib/data-v2/store";
+import type { MomentEntity } from "@/domain/entities";
+import { DataStore } from "@/data/local/store";
 import {
   isMomentImageSourceReusable,
   loadMomentImageSources,
 } from "./useMomentImageUrls";
 
-const stores: DataV2Store[] = [];
+const stores: DataStore[] = [];
 
 function moment(imagePath: string | null): MomentEntity {
   return {
@@ -23,7 +23,7 @@ function moment(imagePath: string | null): MomentEntity {
 }
 
 function createStore() {
-  const store = new DataV2Store({
+  const store = new DataStore({
     databaseName: `moment-images-${crypto.randomUUID()}`,
   });
   stores.push(store);

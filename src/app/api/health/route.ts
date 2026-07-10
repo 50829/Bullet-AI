@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createRequestContext } from "../../../lib/observability/requestContext";
+import { createRequestContext } from "@/lib/observability/requestContext";
 
 export const dynamic = "force-dynamic";
 

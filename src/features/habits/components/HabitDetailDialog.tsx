@@ -1,19 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { DateField } from "../../../shared/components/date/DateField";
-import { Button } from "../../../shared/components/ui/Button";
-import { DialogHeader } from "../../../shared/components/ui/DialogHeader";
-import { FieldLabel } from "../../../shared/components/ui/FieldLabel";
-import { Modal } from "../../../shared/components/ui/Modal";
+import { DateField } from "@/shared/components/date/DateField";
+import { Button } from "@/shared/components/ui/Button";
+import { DialogHeader } from "@/shared/components/ui/DialogHeader";
+import { FieldLabel } from "@/shared/components/ui/FieldLabel";
+import { Modal } from "@/shared/components/ui/Modal";
 import {
   formatDateKey,
   isDateKeyAfter,
   isDateKeyBefore,
   toDateKey,
-} from "../../../lib/date/dateUtils";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import { useResolvedWeekStartsOn } from "../../../shared/components/date/useResolvedWeekStartsOn";
+} from "@/lib/date/dateUtils";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
+import { useResolvedWeekStartsOn } from "@/shared/components/date/useResolvedWeekStartsOn";
 import { startOfWeekKey } from "../habitProjection";
 import type { HabitView } from "../types";
 

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
 import {
   GOAL_PLANNING_PURPOSE,
   parseGoalPlanningResponse,
   type GoalPlan,
-} from "../../../lib/ai/goalPlan";
+} from "@/lib/ai/goalPlan";
 import type { AssistantMessage } from "./types";
 
 type UseAssistantChatInput = {

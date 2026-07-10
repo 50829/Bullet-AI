@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback } from "react";
-import { hasUnresolvedSyncIssue } from "../../../domain/sync";
-import { toDateKey } from "../../../lib/date/dateUtils";
-import { useDataMutation } from "../../../lib/data-v2";
-import type { ResolvedWeekStartsOn } from "../../../lib/profile/preferences";
-import { useWorkspaceResource } from "../../workspace/data/useWorkspaceResourceV2";
+import { hasUnresolvedSyncIssue } from "@/domain/sync";
+import { toDateKey } from "@/lib/date/dateUtils";
+import { useDataMutation } from "@/data";
+import type { ResolvedWeekStartsOn } from "@/lib/profile/preferences";
+import { useSyncedResource } from "@/data/react/useSyncedResource";
 import { startOfWeekKey } from "../habitProjection";
 import type { HabitCheckin, HabitView } from "../types";
 
@@ -29,7 +29,7 @@ export function useHabitCheckins({
   weekStartsOn: ResolvedWeekStartsOn;
   runMutation: RunHabitMutation;
 }) {
-  const resource = useWorkspaceResource(userId, "habit_checkins");
+  const resource = useSyncedResource(userId, "habit_checkins");
   const mutation = useDataMutation(userId ?? "anonymous", "habit_checkins");
 
   const setHabitCheckin = useCallback(

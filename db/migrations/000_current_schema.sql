@@ -79,7 +79,7 @@ create table public.habits (
   frequency text not null default 'daily'
     check (frequency in ('daily', 'weekly')),
   color text,
-  started_on date not null default current_date,
+  started_on date not null,
   version bigint not null default 1 check (version >= 1),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -172,6 +172,27 @@ create trigger resolve_habit_checkin_reference
   before insert or update of user_id, habit_id, habit_client_id
   on public.habit_checkins
   for each row execute function public.resolve_habit_checkin_reference();
+
+create or replace function public.enforce_habit_started_on_immutable()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.started_on is distinct from old.started_on then
+    raise check_violation using
+      message = 'Habit started_on is immutable';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_habit_started_on_immutable()
+  from public, anon, authenticated;
+
+create trigger enforce_habit_started_on_immutable
+  before update of started_on on public.habits
+  for each row execute function public.enforce_habit_started_on_immutable();
 
 create or replace function public.advance_entity_version()
 returns trigger

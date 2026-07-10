@@ -1,8 +1,8 @@
 "use client";
 
 import { GoalCalendar } from "../components/GoalCalendar";
-import { Card } from "../../../shared/components/ui/Card";
-import { SegmentedControl } from "../../../shared/components/ui/SegmentedControl";
+import { Card } from "@/shared/components/ui/Card";
+import { SegmentedControl } from "@/shared/components/ui/SegmentedControl";
 import type { GoalRecord } from "../types";
 import { GoalBucketPanel } from "./GoalBucketPanel";
 import type { GoalRightViewMode } from "./useGoalPlanningPage";

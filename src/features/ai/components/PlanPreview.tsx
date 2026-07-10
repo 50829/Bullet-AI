@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Button } from "../../../shared/components/ui/Button";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import type { GoalPlan } from "../../../lib/ai/goalPlan";
+import { Button } from "@/shared/components/ui/Button";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
+import type { GoalPlan } from "@/lib/ai/goalPlan";
 
 type PlanPreviewProps = {
   plan: GoalPlan;

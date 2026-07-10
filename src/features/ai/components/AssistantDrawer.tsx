@@ -3,8 +3,8 @@
 import { ChatComposer } from "./ChatComposer";
 import { MessageList } from "./MessageList";
 import { useAssistantChat } from "../chat/useAssistantChat";
-import { Drawer } from "../../../shared/components/ui/Drawer";
-import type { GoalPlan } from "../../../lib/ai/goalPlan";
+import { Drawer } from "@/shared/components/ui/Drawer";
+import type { GoalPlan } from "@/lib/ai/goalPlan";
 
 type AssistantDrawerProps = {
   isOpen: boolean;

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { parseAssistantRequestBody } from "../../../lib/ai/server/assistantRequest";
-import { runAssistantTurn } from "../../../lib/ai/server/assistantService";
-import { logger } from "../../../lib/observability/logger";
-import { createRequestContext } from "../../../lib/observability/requestContext";
-import { createClient } from "../../../lib/supabase/server";
+import { parseAssistantRequestBody } from "@/lib/ai/server/assistantRequest";
+import { runAssistantTurn } from "@/lib/ai/server/assistantService";
+import { logger } from "@/lib/observability/logger";
+import { createRequestContext } from "@/lib/observability/requestContext";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   const requestContext = createRequestContext(req, "/api/ai");

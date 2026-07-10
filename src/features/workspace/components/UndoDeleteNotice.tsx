@@ -1,7 +1,7 @@
 "use client";
 
 import { Undo2 } from "lucide-react";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
 
 export function UndoDeleteNotice({
   itemName,

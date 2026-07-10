@@ -2,9 +2,9 @@
 
 import type { CSSProperties } from "react";
 import { ArrowLeft, ArrowRight, Check, Edit2, Trash2 } from "lucide-react";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import { ActionButtonGroup } from "../../../shared/components/ui/ActionButtonGroup";
-import { IconButton } from "../../../shared/components/ui/IconButton";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
+import { ActionButtonGroup } from "@/shared/components/ui/ActionButtonGroup";
+import { IconButton } from "@/shared/components/ui/IconButton";
 import { isGoalCompleted } from "../goalVisibility";
 
 export type GoalCardGoal = {

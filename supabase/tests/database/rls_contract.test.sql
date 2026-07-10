@@ -25,10 +25,20 @@ values
   ('30000000-0000-0000-0000-000000000003', 'goal-user-1', 'User 1'),
   ('40000000-0000-0000-0000-000000000004', 'goal-user-2', 'User 2');
 
-insert into public.habits (user_id, client_id, name)
+insert into public.habits (user_id, client_id, name, started_on)
 values
-  ('30000000-0000-0000-0000-000000000003', 'habit-user-1', 'User 1'),
-  ('40000000-0000-0000-0000-000000000004', 'habit-user-2', 'User 2');
+  (
+    '30000000-0000-0000-0000-000000000003',
+    'habit-user-1',
+    'User 1',
+    date '2025-01-01'
+  ),
+  (
+    '40000000-0000-0000-0000-000000000004',
+    'habit-user-2',
+    'User 2',
+    date '2025-01-01'
+  );
 
 insert into public.habit_checkins (
   user_id,

@@ -4,7 +4,7 @@ import type {
   DataResource,
   MutationKind,
   MutationStatus,
-} from "../../lib/data-v2";
+} from "@/data";
 
 export type SyncStatus = "idle" | "syncing" | "failed" | "offline";
 
@@ -26,6 +26,7 @@ export type WorkspaceSessionState = {
   pendingCount: number;
   syncIssues: SyncIssue[];
   retrySync: () => Promise<void>;
+  retrySyncItem: (id: string) => Promise<void>;
   discardSyncItem: (id: string) => Promise<void>;
   getSyncConflictDetails: (id: string) => Promise<AnyConflictDetails | null>;
   resolveSyncConflict: <R extends DataResource>(

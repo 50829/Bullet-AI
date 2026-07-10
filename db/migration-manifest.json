@@ -1,25 +1,15 @@
 {
   "freshInstall": [
     "000_current_schema.sql",
-    "006_incremental_sync_change_log.sql"
+    "006_incremental_sync_change_log.sql",
+    "007_habit_started_on_invariant.sql"
   ],
-  "legacyUpgrade": [
-    "005_domain_schema_v2.sql",
-    "006_incremental_sync_change_log.sql"
-  ],
-  "historicalArtifacts": [
-    "001_goal_color_and_sort_order.sql",
-    "002_reliability_schema_guard.sql",
-    "003_ai_rate_limit_lock.sql",
-    "004_allow_duplicate_usernames.sql"
-  ],
+  "appliedBaseline": "005_domain_schema_v2.sql",
+  "productionAppliedThrough": "007_habit_started_on_invariant.sql",
   "sha256": {
-    "000_current_schema.sql": "f08e60b44864208623bba16cbf0a8c22c9ee0732ac2042649612e475daf34763",
-    "001_goal_color_and_sort_order.sql": "76e634d50f0ef9bcc4be63be796021ecdf397c2508923d1c1c252e828dc32f5c",
-    "002_reliability_schema_guard.sql": "172b2bcc36873a7fa4bed23f8928dfd9ac5d13386fc624a52d6ca02d3f1e60dc",
-    "003_ai_rate_limit_lock.sql": "ba86e04fd260d176482cd85b0c07a4cbaf5263963afe67364a218b4f0b7d8fbf",
-    "004_allow_duplicate_usernames.sql": "a28f0f7a1eb7c448be145440f661ac1dcc7a162b3f14b292d1578831ffa53b3b",
+    "000_current_schema.sql": "e238b092bb137f8551dd0e883f352eb763866af4229075d98d8c533156ab2770",
     "005_domain_schema_v2.sql": "2941c4fd6dade22e96b15b486181abf3fdbc97591062ccb3d0fdab4498d7dcd8",
-    "006_incremental_sync_change_log.sql": "3f2c9654f9bb0181cf1bc8c8a3bb4dd59beefc7f671aedf7c68c760c7fc4efc4"
+    "006_incremental_sync_change_log.sql": "3f2c9654f9bb0181cf1bc8c8a3bb4dd59beefc7f671aedf7c68c760c7fc4efc4",
+    "007_habit_started_on_invariant.sql": "68156e827ec146cc8f1660d17c7c34e82512a4e6413ee4dc771abacb7010ca35"
   }
 }

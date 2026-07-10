@@ -38,36 +38,14 @@ https://your-domain.com/auth/callback
 ```sql
 db/migrations/000_current_schema.sql
 db/migrations/006_incremental_sync_change_log.sql
+db/migrations/007_habit_started_on_invariant.sql
 ```
 
-不要再对新项目执行 `001` 至 `005`。`000_current_schema.sql` 是 v2 基线，`006` 及后续编号是基线之上的前向迁移。基线已包含最终表结构、版本触发器、索引、RLS、AI 限流 RPC 和 Moments Storage 策略；Auth 用户创建后会由数据库触发器原子创建对应 Profile。
+不要对新项目执行 `005`。`000_current_schema.sql` 是当前基线，`006` 及后续编号是基线之上的前向迁移。基线已包含最终表结构、版本触发器、索引、RLS、AI 限流 RPC 和 Moments Storage 策略；Auth 用户创建后会由数据库触发器原子创建对应 Profile。
 
 ## 已有项目升级
 
-`005_domain_schema_v2.sql` 是破坏性迁移。它会保留未删除的核心记录，但会：
-
-- 物理删除所有 `deleted_at` 非空的记录以及 `checked = false` 的打卡；
-- 将 Moment 的旧日期回填到 `occurred_on`；
-- 将 Reflection 的旧 `content` 回填到非空 `title/body`；
-- 将 Goal 的 `status/progress` 完成状态回填到 `completed_at`；
-- 删除 soft-delete、旧图片能力、单值主题及统计缓存等遗留列；
-- 给业务实体增加 `version`，由数据库在每次 update 时原子递增；
-- 将 AI 限流改为无参数 `reserve_ai_usage_event()`，固定每用户每小时 20 次；
-- 撤销客户端直接写入 `ai_usage_events` 的 RLS policy；
-- 将浏览器 Storage 权限限制为 Moments bucket、5MB 和明确的图片 MIME 类型。
-- 回填缺失的 Profile，并在持有 `auth.users` 锁期间安装新用户 Profile 触发器，避免迁移窗口内漏建。
-
-升级顺序：
-
-1. 停止应用写入并备份完整数据库和四个旧 Storage buckets。
-2. 确认项目已经执行过历史 `000` 至 `004`。
-3. 在 SQL Editor 执行只读的 `db/operations/preflight_domain_schema_v2.sql`，保存每个结果集。
-4. 使用下方脚本审计 Storage，保存 JSON 输出。
-5. 执行 `db/migrations/005_domain_schema_v2.sql`，再执行 `db/migrations/006_incremental_sync_change_log.sql` 及后续前向迁移。
-6. 部署新版应用并完成冒烟测试。
-7. 再次审计，确认无需保留旧 bucket 后显式删除。
-
-迁移应在维护窗口执行。它会锁定核心业务表，并且不应在已经使用新版 `000` 创建的数据库上运行。
+生产数据库已经应用至 `007_habit_started_on_invariant.sql`，不要重复执行 `005-007`。下一条迁移从 `008` 开始，继续遵守前向、连续编号和不可改写约束。
 
 ## 本地数据库契约测试
 
@@ -78,13 +56,13 @@ pnpm install --frozen-lockfile
 pnpm test:db
 ```
 
-该命令启动隔离的本地 Supabase，重置本地数据库，按新库路径应用 `000 + 006`，再运行 `supabase/tests/database` 下的 pgTAP 测试。重置只作用于 project id 为 `bullet-ai` 的本地 Docker 数据库，不会读取线上项目凭据。
+该命令启动隔离的本地 Supabase，重置本地数据库，按新库路径应用 `000 + 006 + 007`，再运行 `supabase/tests/database` 下的 pgTAP 测试。重置只作用于 project id 为 `bullet-ai` 的本地 Docker 数据库，不会读取线上项目凭据。
 
 契约测试覆盖：
 
 - `version` 触发器与实际 CAS 竞争；
 - 所有用户资源及增量日志的自有/跨用户 RLS；
-- Habit 的显式 `started_on`、同用户引用与级联删除；
+- Habit 的显式且不可变 `started_on`、同用户引用与级联删除；
 - 删除 tombstone 和 change-log 游标基础契约；
 - AI 限流 RPC 的角色权限及禁止直接写事件；
 - Moments bucket 的私有属性、5 MiB/MIME 元数据和用户目录策略。
@@ -93,7 +71,7 @@ pnpm test:db
 
 ### 迁移链约定
 
-`001` 至 `005` 是既有部署的历史升级材料，不能交给 Supabase CLI 从头顺序回放。当前保持两个明确入口：新库为 `000 + 006...`，旧库为 `005 + 006...`。后续迁移必须是前向、不可改写且能同时应用于这两个已收敛到 v2 的入口；待所有部署都记录 v2 基线后，再一次性建立 Supabase migration history，避免在当前阶段破坏线上升级路径。
+`005` 是已经执行的生产基线，只保留校验记录，不再由测试或部署流程运行。`001-004` 已退役删除。新数据库使用 `000 + 006 + 007...`；manifest 记录生产已应用至 `007`。以后只新增连续编号的前向迁移，不改写已执行文件。
 
 ## Storage 审计与清理
 
@@ -132,7 +110,7 @@ pnpm storage:audit \
 - `version` 是乐观并发版本。更新必须同时按 `user_id/client_id/version` 匹配；更新成功后数据库返回递增后的版本。
 - 删除是物理删除。Habit 删除会通过外键级联删除对应打卡。
 - Weekly Habit 按用户 `week_starts_on` 划分自然周；数据库只保存真实存在的打卡行。
-- Habit 的 `started_on` 是不可变的业务起始日，离线同步不会用服务器同步时间改写它。
+- Habit 的 `started_on` 是创建时必须显式提供且之后不可变的业务起始日，离线同步不会用服务器同步时间改写它。
 - `username` 是可重复、可为空的显示名，不是账号 handle。
 - AI 使用事件只能通过安全定义的无参数 RPC 预留，客户端不能指定用户、窗口或限额。
 

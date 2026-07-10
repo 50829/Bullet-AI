@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarMonthView } from "../../../shared/components/date/CalendarMonthView";
-import { useResolvedWeekStartsOn } from "../../../shared/components/date/useResolvedWeekStartsOn";
-import type { CalendarMarker } from "../../../shared/components/date/CalendarMonthView";
-import { toDateKey } from "../../../lib/date/dateUtils";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { CalendarMonthView } from "@/shared/components/date/CalendarMonthView";
+import { useResolvedWeekStartsOn } from "@/shared/components/date/useResolvedWeekStartsOn";
+import type { CalendarMarker } from "@/shared/components/date/CalendarMonthView";
+import { toDateKey } from "@/lib/date/dateUtils";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
 
 type GoalCalendarGoal = {
   completedAt?: string | null;

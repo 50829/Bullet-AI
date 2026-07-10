@@ -8,7 +8,7 @@ import {
   isDateKeyWithinRange,
   parseDateKey,
   toDateKey,
-} from "../../../lib/date/dateUtils";
+} from "@/lib/date/dateUtils";
 import { Button } from "../ui/Button";
 import { CalendarMonthView } from "./CalendarMonthView";
 import { useResolvedWeekStartsOn } from "./useResolvedWeekStartsOn";

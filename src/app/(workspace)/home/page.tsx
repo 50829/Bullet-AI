@@ -1,10 +1,10 @@
-import HomePageClient from "../../home/HomePageClient";
+import HomePageClient from "./_components/HomePageClient";
 import {
   WorkspaceGoalsProvider,
   WorkspaceHabitsProvider,
   WorkspaceMomentsProvider,
   WorkspaceReflectionsProvider,
-} from "../../../features/workspace/data";
+} from "@/features/workspace/providers";
 
 export default function HomeRoute() {
   return (

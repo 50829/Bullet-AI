@@ -1,16 +1,16 @@
 import { Suspense, type ReactNode } from "react";
-import { WorkspaceProvider } from "../../features/workspace/WorkspaceContext";
-import { MainLayout } from "../components/layout/MainLayout";
-import { LoadingState } from "../../shared/components/ui/LoadingState";
-import { DataV2RuntimeProvider } from "../../features/workspace/data/DataV2RuntimeProvider";
-import { ProfileProvider } from "../../lib/profile/ProfileContext";
-import { ProfilePreferencesSync } from "../../lib/profile/ProfilePreferencesSync";
-import { AuthSessionProvider } from "../../lib/auth/AuthSessionContext";
+import { WorkspaceProvider } from "@/features/workspace/WorkspaceContext";
+import { MainLayout } from "@/app/(workspace)/_components/layout/MainLayout";
+import { LoadingState } from "@/shared/components/ui/LoadingState";
+import { WorkspaceDataRuntimeProvider } from "@/features/workspace/providers";
+import { ProfileProvider } from "@/features/profile/ProfileContext";
+import { ProfilePreferencesSync } from "@/features/profile/ProfilePreferencesSync";
+import { AuthSessionProvider } from "@/lib/auth/AuthSessionContext";
 
 export default function WorkspaceLayout({ children }: { children: ReactNode }) {
   return (
     <AuthSessionProvider>
-      <DataV2RuntimeProvider>
+      <WorkspaceDataRuntimeProvider>
         <ProfileProvider>
           <ProfilePreferencesSync />
           <WorkspaceProvider>
@@ -19,7 +19,7 @@ export default function WorkspaceLayout({ children }: { children: ReactNode }) {
             </Suspense>
           </WorkspaceProvider>
         </ProfileProvider>
-      </DataV2RuntimeProvider>
+      </WorkspaceDataRuntimeProvider>
     </AuthSessionProvider>
   );
 }

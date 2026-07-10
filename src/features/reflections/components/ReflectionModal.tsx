@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Button } from "../../../shared/components/ui/Button";
-import { FieldLabel } from "../../../shared/components/ui/FieldLabel";
-import { FormActions } from "../../../shared/components/ui/FormActions";
-import { FormDialogShell } from "../../../shared/components/ui/FormDialogShell";
-import { Input } from "../../../shared/components/ui/Input";
-import { Textarea } from "../../../shared/components/ui/Textarea";
-import { useToast } from "../../../shared/components/ui/Toast";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { Button } from "@/shared/components/ui/Button";
+import { FieldLabel } from "@/shared/components/ui/FieldLabel";
+import { FormActions } from "@/shared/components/ui/FormActions";
+import { FormDialogShell } from "@/shared/components/ui/FormDialogShell";
+import { Input } from "@/shared/components/ui/Input";
+import { Textarea } from "@/shared/components/ui/Textarea";
+import { useToast } from "@/shared/components/ui/Toast";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
 import type {
   CreateReflectionInput,
   ReflectionRecord,

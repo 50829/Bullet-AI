@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { createEntityId } from "../../../domain/ids";
-import type { GoalPlan } from "../../../lib/ai/goalPlan";
+import { createEntityId } from "@/domain/ids";
+import type { GoalPlan } from "@/lib/ai/goalPlan";
 import type { useGoals } from "../hooks/useGoals";
 import {
   shouldShowGoal,
@@ -10,9 +10,9 @@ import {
   sortGoalsByOrder,
 } from "../goalVisibility";
 import { useCompletedGoalRetention } from "../hooks/useCompletedGoalRetention";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import { useToast } from "../../../shared/components/ui/Toast";
-import { toDateKey } from "../../../lib/date/dateUtils";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
+import { useToast } from "@/shared/components/ui/Toast";
+import { toDateKey } from "@/lib/date/dateUtils";
 
 export type GoalRightViewMode = "unscheduled" | "schedule";
 

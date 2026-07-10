@@ -1,6 +1,6 @@
 "use client";
 
-import type { GoalPlan } from "../../../lib/ai/goalPlan";
+import type { GoalPlan } from "@/lib/ai/goalPlan";
 import type { AssistantMessage } from "../chat/types";
 import { PlanPreview } from "./PlanPreview";
 

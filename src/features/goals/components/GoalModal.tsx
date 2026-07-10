@@ -1,14 +1,14 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { DateField } from "../../../shared/components/date/DateField";
-import { Button } from "../../../shared/components/ui/Button";
-import { ColorSwatchPicker } from "../../../shared/components/ui/ColorSwatchPicker";
-import { FieldLabel } from "../../../shared/components/ui/FieldLabel";
-import { FormActions } from "../../../shared/components/ui/FormActions";
-import { FormDialogShell } from "../../../shared/components/ui/FormDialogShell";
-import { Input } from "../../../shared/components/ui/Input";
-import { Textarea } from "../../../shared/components/ui/Textarea";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { DateField } from "@/shared/components/date/DateField";
+import { Button } from "@/shared/components/ui/Button";
+import { ColorSwatchPicker } from "@/shared/components/ui/ColorSwatchPicker";
+import { FieldLabel } from "@/shared/components/ui/FieldLabel";
+import { FormActions } from "@/shared/components/ui/FormActions";
+import { FormDialogShell } from "@/shared/components/ui/FormDialogShell";
+import { Input } from "@/shared/components/ui/Input";
+import { Textarea } from "@/shared/components/ui/Textarea";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
 import type { CreateGoalInput, GoalRecord, UpdateGoalInput } from "../types";
 
 type GoalModalCreateInput = CreateGoalInput;

@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   AnyMutationRecord,
   DataResource,
-  DataV2StoreApi,
+  DataStoreApi,
   EntityByResource,
-} from "../../../lib/data-v2";
+} from "@/data";
 
 const mocks = vi.hoisted(() => ({
   remote: new Map<string, unknown[]>(),
@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   loadRemoteResource: vi.fn(),
 }));
 
-vi.mock("../data/remoteRepositoryV2", () => ({
+vi.mock("@/data/supabase", () => ({
   loadRemoteResource: mocks.loadRemoteResource,
 }));
 
@@ -86,7 +86,7 @@ function mutation(
   } as AnyMutationRecord;
 }
 
-function storeWith(mutations: AnyMutationRecord[] = []): DataV2StoreApi {
+function storeWith(mutations: AnyMutationRecord[] = []): DataStoreApi {
   return {
     listPendingMutations: vi.fn(async () => mutations),
     listConflicts: vi.fn(async () => []),
@@ -106,7 +106,7 @@ function storeWith(mutations: AnyMutationRecord[] = []): DataV2StoreApi {
           ]
         : [],
     ),
-  } as unknown as DataV2StoreApi;
+  } as unknown as DataStoreApi;
 }
 
 describe("workspaceExport", () => {

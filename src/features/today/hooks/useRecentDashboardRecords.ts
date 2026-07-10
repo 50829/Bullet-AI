@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Language } from "../../../shared/i18n/LanguageContext";
+import type { Language } from "@/shared/i18n/LanguageContext";
 import type { MomentRecord } from "../../moments/types";
 import type { ReflectionRecord } from "../../reflections/types";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Send } from "lucide-react";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
 
 type ChatComposerProps = {
   value: string;

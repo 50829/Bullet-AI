@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { createEntityId } from "../../../domain/ids";
-import { hasUnresolvedSyncIssue } from "../../../domain/sync";
-import { toDateKey } from "../../../lib/date/dateUtils";
-import { useDataMutation } from "../../../lib/data-v2";
-import { useResolvedWeekStartsOn } from "../../../shared/components/date/useResolvedWeekStartsOn";
-import { useWorkspaceResource } from "../../workspace/data/useWorkspaceResourceV2";
+import { createEntityId } from "@/domain/ids";
+import { hasUnresolvedSyncIssue } from "@/domain/sync";
+import { toDateKey } from "@/lib/date/dateUtils";
+import { useDataMutation } from "@/data";
+import { useResolvedWeekStartsOn } from "@/shared/components/date/useResolvedWeekStartsOn";
+import { useSyncedResource } from "@/data/react/useSyncedResource";
 import { projectHabit } from "../habitProjection";
 import type { CreateHabitInput, HabitRecord, UpdateHabitInput } from "../types";
 import { useHabitCheckins } from "./useHabitCheckins";
@@ -44,7 +44,7 @@ function normalizeHabitChanges(
 }
 
 export function useHabits({ userId }: UseHabitsInput) {
-  const habitsResource = useWorkspaceResource(userId, "habits");
+  const habitsResource = useSyncedResource(userId, "habits");
   const habitMutation = useDataMutation(userId ?? "anonymous", "habits");
   const weekStartsOn = useResolvedWeekStartsOn();
   const [error, setError] = useState<string | null>(null);

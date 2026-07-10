@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { MomentEntity } from "../../../domain/entities";
-import type { DataV2StoreApi } from "../../../lib/data-v2";
-import { createSignedMomentImageUrl } from "../../workspace/data/remoteRepositoryV2";
+import type { MomentEntity } from "@/domain/entities";
+import type { DataStoreApi } from "@/data";
+import { createSignedMomentImageUrl } from "@/data/supabase";
 
 const SIGNED_URL_REFRESH_MS = 50 * 60 * 1000;
 const SIGNED_URL_MIN_REMAINING_MS = 15 * 60 * 1000;
@@ -45,7 +45,7 @@ export function isMomentImageSourceReusable(
 export async function loadMomentImageSources(
   userId: string,
   moments: MomentEntity[],
-  store: DataV2StoreApi,
+  store: DataStoreApi,
 ) {
   const mutations = (await store.listPendingMutations(userId))
     .filter((mutation) => mutation.resource === "moments")
@@ -97,7 +97,7 @@ export function useMomentImageUrls({
 }: {
   userId: string | null;
   moments: MomentEntity[];
-  store: DataV2StoreApi;
+  store: DataStoreApi;
 }) {
   const resolvedRef = useRef(new Map<string, ResolvedImage>());
   const [imageUrls, setImageUrls] = useState(new Map<string, string>());

@@ -26,12 +26,6 @@ fi
 supabase start
 started_stack=1
 
-run_sql() {
-  docker exec -i supabase_db_bullet-ai \
-    psql --username postgres --dbname postgres --set ON_ERROR_STOP=on \
-    < "$1"
-}
-
 test_change_log_commit_order() {
   docker exec supabase_db_bullet-ai psql \
     --username postgres --dbname postgres --set ON_ERROR_STOP=on \
@@ -83,18 +77,3 @@ test_change_log_commit_order() {
 supabase db reset --local
 test_change_log_commit_order
 supabase test db supabase/tests/database
-
-# Legacy-upgrade contract: recreate only Supabase's platform schemas, install
-# a representative post-004 domain fixture, then apply the manifest's 005+
-# chain exactly as an existing deployment would.
-supabase db reset --local --no-seed
-
-run_sql supabase/tests/fixtures/legacy_domain_schema.sql
-while IFS= read -r migration; do
-  run_sql "db/migrations/$migration"
-done < <(
-  node -e \
-    'const m=require("./db/migration-manifest.json"); process.stdout.write(`${m.legacyUpgrade.join("\n")}\n`)'
-)
-test_change_log_commit_order
-supabase test db supabase/tests/database supabase/tests/legacy

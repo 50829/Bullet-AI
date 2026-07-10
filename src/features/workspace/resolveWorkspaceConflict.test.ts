@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DataV2StoreApi, DataV2SyncControl } from "../../lib/data-v2";
+import type { DataStoreApi, DataSyncControl } from "@/data";
 import { resolveWorkspaceConflict } from "./resolveWorkspaceConflict";
 
 describe("resolveWorkspaceConflict", () => {
@@ -15,10 +15,10 @@ describe("resolveWorkspaceConflict", () => {
         mutationId: "mutation-1",
         outcome: "requeued" as const,
       })),
-    } as unknown as DataV2StoreApi;
+    } as unknown as DataStoreApi;
     const worker = {
       requestFlush: vi.fn(async () => undefined),
-    } as unknown as DataV2SyncControl;
+    } as unknown as DataSyncControl;
     const loadRemote = vi.fn(async () => null);
 
     await resolveWorkspaceConflict(
@@ -49,10 +49,10 @@ describe("resolveWorkspaceConflict", () => {
         mutationId: "mutation-1",
         outcome: "accepted-remote" as const,
       })),
-    } as unknown as DataV2StoreApi;
+    } as unknown as DataStoreApi;
     const worker = {
       requestFlush: vi.fn(async () => undefined),
-    } as unknown as DataV2SyncControl;
+    } as unknown as DataSyncControl;
     const loadRemote = vi.fn(async () => null);
 
     await resolveWorkspaceConflict(
@@ -70,7 +70,7 @@ describe("resolveWorkspaceConflict", () => {
     const store = {
       getConflictDetails: vi.fn(async () => null),
       resolveConflict: vi.fn(),
-    } as unknown as DataV2StoreApi;
+    } as unknown as DataStoreApi;
     const loadRemote = vi.fn();
 
     await expect(

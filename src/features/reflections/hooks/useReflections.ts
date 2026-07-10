@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { createEntityId } from "../../../domain/ids";
-import { hasUnresolvedSyncIssue } from "../../../domain/sync";
-import { useDataMutation } from "../../../lib/data-v2";
-import { useWorkspaceResource } from "../../workspace/data/useWorkspaceResourceV2";
+import { createEntityId } from "@/domain/ids";
+import { hasUnresolvedSyncIssue } from "@/domain/sync";
+import { useDataMutation } from "@/data";
+import { useSyncedResource } from "@/data/react/useSyncedResource";
 import type {
   CreateReflectionInput,
   ReflectionRecord,
@@ -20,7 +20,7 @@ export function useReflections({
   userId,
   fullHistory = false,
 }: UseReflectionsInput) {
-  const resource = useWorkspaceResource(userId, "reflections", {
+  const resource = useSyncedResource(userId, "reflections", {
     fullHistory,
   });
   const mutation = useDataMutation(userId ?? "anonymous", "reflections");

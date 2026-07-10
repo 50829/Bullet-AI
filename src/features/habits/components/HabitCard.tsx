@@ -2,10 +2,10 @@
 
 import type { CSSProperties } from "react";
 import { CalendarDays, Check, Edit2, Flame, Trash2 } from "lucide-react";
-import { formatDateKey } from "../../../lib/date/dateUtils";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import { ActionButtonGroup } from "../../../shared/components/ui/ActionButtonGroup";
-import { IconButton } from "../../../shared/components/ui/IconButton";
+import { formatDateKey } from "@/lib/date/dateUtils";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
+import { ActionButtonGroup } from "@/shared/components/ui/ActionButtonGroup";
+import { IconButton } from "@/shared/components/ui/IconButton";
 import type { HabitView } from "../types";
 
 type HabitCardProps = {

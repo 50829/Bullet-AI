@@ -1,5 +1,5 @@
-import MomentsPageClient from "../../moments/MomentsPageClient";
-import { WorkspaceMomentsProvider } from "../../../features/workspace/data";
+import MomentsPageClient from "./_components/MomentsPageClient";
+import { WorkspaceMomentsProvider } from "@/features/workspace/providers";
 
 export default function MomentsRoute() {
   return (

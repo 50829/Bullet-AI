@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { createEntityId } from "../../../domain/ids";
-import { hasUnresolvedSyncIssue } from "../../../domain/sync";
-import { useDataMutation } from "../../../lib/data-v2";
-import { useWorkspaceResource } from "../../workspace/data/useWorkspaceResourceV2";
+import { createEntityId } from "@/domain/ids";
+import { hasUnresolvedSyncIssue } from "@/domain/sync";
+import { useDataMutation } from "@/data";
+import { useSyncedResource } from "@/data/react/useSyncedResource";
 import type { CreateGoalInput, GoalRecord, UpdateGoalInput } from "../types";
 
 type UseGoalsInput = {
@@ -45,7 +45,7 @@ function normalizeGoalChanges(input: UpdateGoalInput) {
 }
 
 export function useGoals({ userId }: UseGoalsInput) {
-  const resource = useWorkspaceResource(userId, "goals");
+  const resource = useSyncedResource(userId, "goals");
   const mutation = useDataMutation(userId ?? "anonymous", "goals");
 
   const goals = useMemo(

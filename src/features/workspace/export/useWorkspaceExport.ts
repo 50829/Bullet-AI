@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback } from "react";
-import { useToast } from "../../../shared/components/ui/Toast";
+import { useToast } from "@/shared/components/ui/Toast";
 import { useWorkspaceSessionContext } from "../WorkspaceContext";
-import { useDataV2 } from "../../../lib/data-v2";
+import { useDataRuntime } from "@/data";
 import {
   downloadJsonFile,
   loadWorkspaceExportPayload,
@@ -11,7 +11,7 @@ import {
 
 export function useWorkspaceExport() {
   const session = useWorkspaceSessionContext();
-  const { store } = useDataV2();
+  const { store } = useDataRuntime();
   const { showToast } = useToast();
 
   const handleExport = useCallback(async () => {

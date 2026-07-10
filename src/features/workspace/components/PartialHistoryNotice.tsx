@@ -1,8 +1,8 @@
 "use client";
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { Button } from "../../../shared/components/ui/Button";
-import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { Button } from "@/shared/components/ui/Button";
+import { useLanguage } from "@/shared/i18n/LanguageContext";
 
 export function PartialHistoryNotice({
   onRetry,

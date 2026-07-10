@@ -1,6 +1,6 @@
 # Frontend Boundaries
 
-This project keeps React code in three visible layers. The goal is to make it
+This project keeps React and data code in explicit layers. The goal is to make it
 obvious where new UI and state logic should live.
 
 `src/domain` owns framework-free entity contracts. `src/lib` owns generic
@@ -12,11 +12,11 @@ from `features` or `app`.
 `app` is the Next.js route and page composition layer.
 
 - `page.tsx`, `layout.tsx`, `template.tsx`, and `route.ts` belong here.
-- `app/components` is for application shell UI, such as workspace layout,
-  navigation, settings, and auth wrappers.
-- `app/<route>/components` is for route-private page sections. These components
+- Route groups separate `(public)`, `(auth)`, and `(workspace)` composition without changing URLs.
+- `app/(workspace)/_components` owns the authenticated shell, navigation, and settings UI.
+- `app/<route>/_components` is for route-private page sections. These components
   may compose feature components, but they should not own core business rules.
-- `app/<route>/hooks` is only for route-private controller state, such as modal
+- `app/<route>/_hooks` is only for route-private controller state, such as modal
   visibility, selected editing records, top bar bindings, and delete
   confirmation flow.
 
@@ -36,9 +36,22 @@ Do not put domain data rules or CRUD logic in `app`.
 If a component or hook would make sense on more than one route, it usually
 belongs in `features`.
 
-Supabase snake_case mapping belongs in the workspace data adapter. Feature
+Supabase snake_case mapping belongs in `src/data/supabase`. Feature
 hooks consume camelCase domain entities and must not query Supabase or
 IndexedDB directly.
+
+Composition features (`workspace`, `today`, and `profile`) may combine domain
+features. Domain features must not import composition features or other domain
+features.
+
+## `src/data`
+
+- `data/local` owns IndexedDB persistence and the durable mutation worker.
+- `data/react` adapts the local-first store to React Query.
+- `data/supabase` owns remote contracts and snake_case mapping.
+
+`data` may depend on `domain` and infrastructure in `lib`, but never on UI,
+features, or app routes.
 
 Persisted domain entities must not contain presentation-only resources such as
 signed URLs or `blob:` URLs. Feature view hooks resolve those values in memory.
@@ -58,10 +71,10 @@ signed URLs or `blob:` URLs. Feature view hooks resolve those values in memory.
 
 - Business data and business operations go in `features/<domain>/hooks`.
 - Business-specific visual components go in `features/<domain>/components`.
-- Page-only sections go in `app/<route>/components`.
-- Page-only UI/controller state goes in `app/<route>/hooks`.
+- Page-only sections go in `app/<route>/_components`.
+- Page-only UI/controller state goes in `app/<route>/_hooks`.
 - Generic visual primitives go in `shared/components/ui`.
 
 Avoid duplicate names across `app` and `features`. Prefer names that expose the
 scope, such as `GoalList` in `features/goals/components` and
-`TodayGoalsSection` in `app/home/components`.
+`TodayGoalsSection` in `app/(workspace)/home/_components`.
