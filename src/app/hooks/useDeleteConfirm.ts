@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 
 export type DeleteConfirmTarget = {
-  id: number;
+  id: string;
   name: string;
   type?: string;
   imagePath?: string | null;

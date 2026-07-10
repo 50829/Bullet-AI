@@ -44,7 +44,8 @@ function isAbortError(error: unknown) {
   );
 }
 
-export function readLlmConfig(): LlmConfigError | { ok: true; config: LlmConfig } {
+export function readLlmConfig():
+  LlmConfigError | { ok: true; config: LlmConfig } {
   const apiKey = process.env.LLM_API_KEY;
   const model = process.env.LLM_MODEL;
   const baseUrl = process.env.LLM_BASE_URL;

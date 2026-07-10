@@ -7,8 +7,10 @@ const mocks = vi.hoisted(() => ({
     userId: "user-1" as string | null,
     ready: true,
     syncStatus: "idle",
-    deadOutboxCount: 0,
+    pendingCount: 0,
+    syncIssues: [],
     retrySync: vi.fn(),
+    discardSyncItem: vi.fn(),
   },
   goalsController: {
     goals: [{ id: 1, title: "Goal" }],
@@ -32,7 +34,7 @@ const mocks = vi.hoisted(() => ({
     checkinToday: vi.fn(),
   },
   momentsController: {
-    moments: [{ id: 3, content: "Moment" }],
+    moments: [{ clientId: "moment-3", content: "Moment" }],
     loading: false,
     refreshMoments: vi.fn(),
     createMoment: vi.fn(),
@@ -40,7 +42,9 @@ const mocks = vi.hoisted(() => ({
     deleteMoment: vi.fn(),
   },
   reflectionsController: {
-    reflections: [{ id: 4, content: "Reflection" }],
+    reflections: [
+      { clientId: "reflection-4", title: "Reflection", body: "Body" },
+    ],
     loading: false,
     refreshReflections: vi.fn(),
     createReflection: vi.fn(),
@@ -140,15 +144,15 @@ describe("WorkspaceDataProvider", () => {
     expect(mocks.useHabits).toHaveBeenCalledWith({ userId: null });
     expect(mocks.useMoments).toHaveBeenCalledWith({
       userId: null,
-      remotePageSize: 0,
+      fullHistory: false,
     });
     expect(mocks.useReflections).toHaveBeenCalledWith({
       userId: null,
-      remotePageSize: 0,
+      fullHistory: false,
     });
   });
 
-  it("enables paged remote reads only for the active collection page", () => {
+  it("loads full history only for the active collection page", () => {
     mocks.usePathname.mockReturnValue("/moments");
 
     function Consumer() {
@@ -162,11 +166,13 @@ describe("WorkspaceDataProvider", () => {
 
     expect(mocks.useMoments).toHaveBeenCalledWith({
       userId: "user-1",
-      remotePageSize: 20,
+      fullHistory: true,
     });
     expect(mocks.useReflections).toHaveBeenCalledWith({
-      userId: "user-1",
-      remotePageSize: 0,
+      userId: null,
+      fullHistory: false,
     });
+    expect(mocks.useGoals).toHaveBeenCalledWith({ userId: null });
+    expect(mocks.useHabits).toHaveBeenCalledWith({ userId: null });
   });
 });

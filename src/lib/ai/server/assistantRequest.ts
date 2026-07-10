@@ -1,12 +1,10 @@
-import {
-  validateAiMessages,
-  type AiChatMessage,
-} from "../requestPolicy";
+import { validateAiMessages, type AiChatMessage } from "../requestPolicy";
+import { GOAL_PLANNING_PURPOSE } from "../goalPlan";
 
 export type AssistantTurnInput = {
   messages: AiChatMessage[];
   language?: string;
-  purpose?: string;
+  purpose: typeof GOAL_PLANNING_PURPOSE;
 };
 
 export function parseAssistantRequestBody(
@@ -30,13 +28,19 @@ export function parseAssistantRequestBody(
   if ("error" in validation) {
     return { ok: false as const, error: validation.error };
   }
+  if (purpose !== GOAL_PLANNING_PURPOSE) {
+    return {
+      ok: false as const,
+      error: `purpose must be ${GOAL_PLANNING_PURPOSE}`,
+    };
+  }
 
   return {
     ok: true as const,
     input: {
       messages: validation.messages,
       language: typeof language === "string" ? language : undefined,
-      purpose: typeof purpose === "string" ? purpose : undefined,
+      purpose: GOAL_PLANNING_PURPOSE,
     },
   };
 }

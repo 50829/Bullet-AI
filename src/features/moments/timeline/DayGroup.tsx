@@ -6,7 +6,7 @@ import { MomentEntryCard } from "./MomentEntryCard";
 
 type DayGroupProps = {
   dayCard: MomentDayCard;
-  activeHighlightMomentId: number | null;
+  activeHighlightMomentId: string | null;
   formatDayNumber: (dateKey: string) => string;
   formatDayLabel: (dateKey: string) => string;
   formatWeekday: (dateKey: string) => string;
@@ -58,10 +58,10 @@ export function DayGroup({
 
         {dayCard.moments.map((moment) => (
           <MomentEntryCard
-            key={moment.id}
+            key={moment.clientId}
             moment={moment}
-            highlighted={moment.id === activeHighlightMomentId}
-            entryTime={formatEntryTime(moment.created_at)}
+            highlighted={moment.clientId === activeHighlightMomentId}
+            entryTime={formatEntryTime(moment.createdAt)}
             onEdit={onEdit}
             onDelete={onDelete}
           />

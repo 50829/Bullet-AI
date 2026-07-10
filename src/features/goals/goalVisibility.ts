@@ -1,25 +1,24 @@
 import type { CompletedGoalRetention } from "../../lib/profile/preferences";
 
 export type GoalVisibilityItem = {
-  status?: string;
-  updated_at?: string;
-  created_at?: string;
-  sort_order?: number | null;
+  completedAt?: string | null;
+  createdAt?: string;
+  sortOrder?: number | null;
 };
 
 export function isGoalCompleted(goal: GoalVisibilityItem) {
-  return goal.status === "completed";
+  return Boolean(goal.completedAt);
 }
 
 /**
  * Effective ordering value for a goal. Smaller sorts first. Goals without an
- * explicit `sort_order` (newly created, or never dragged) fall back to the
- * negative created timestamp so the newest appears on top — matching the
+ * explicit `sortOrder` (newly created, or never dragged) fall back to the
+ * negative created timestamp so the newest appears on top, matching the
  * previous "newest first" behaviour until the user manually reorders.
  */
 function goalOrderValue(goal: GoalVisibilityItem) {
-  if (typeof goal.sort_order === "number") return goal.sort_order;
-  const created = goal.created_at ? new Date(goal.created_at).getTime() : 0;
+  if (typeof goal.sortOrder === "number") return goal.sortOrder;
+  const created = goal.createdAt ? new Date(goal.createdAt).getTime() : 0;
   return -created;
 }
 
@@ -65,7 +64,7 @@ export function shouldShowGoal(
   if (retention === "instant") return false;
 
   const completedAt = new Date(
-    goal.updated_at || goal.created_at || Date.now(),
+    goal.completedAt || goal.createdAt || Date.now(),
   );
   return startOfLocalDay(completedAt) === startOfLocalDay(now);
 }

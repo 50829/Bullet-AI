@@ -1,9 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import {
-  MAX_AI_MESSAGE_CHARS,
-  getAiRateLimitPerHour,
-  validateAiMessages,
-} from "./requestPolicy";
+import { describe, expect, it } from "vitest";
+import { MAX_AI_MESSAGE_CHARS, validateAiMessages } from "./requestPolicy";
 
 describe("requestPolicy", () => {
   it("validates AI messages", () => {
@@ -27,12 +23,5 @@ describe("requestPolicy", () => {
       ok: false,
       error: `message content cannot exceed ${MAX_AI_MESSAGE_CHARS} characters`,
     });
-  });
-
-  it("uses the configured rate limit when valid", () => {
-    vi.stubEnv("AI_RATE_LIMIT_PER_HOUR", "7");
-    expect(getAiRateLimitPerHour()).toBe(7);
-    vi.stubEnv("AI_RATE_LIMIT_PER_HOUR", "not-a-number");
-    expect(getAiRateLimitPerHour()).toBe(20);
   });
 });

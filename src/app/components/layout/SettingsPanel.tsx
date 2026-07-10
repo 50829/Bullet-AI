@@ -33,6 +33,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
           currentUsername={settings.currentUsername}
           savingUsername={settings.savingUsername}
           message={settings.message}
+          pendingCount={settings.pendingCount}
           onUsernameChange={settings.setUsername}
           onSubmit={settings.handleUsernameChange}
           onLogout={settings.handleLogout}
@@ -62,15 +63,13 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
           preferences={settings.preferences}
           savingPreference={settings.savingPreference}
           syncStatus={settings.syncStatus}
-          deadOutboxCount={settings.deadOutboxCount}
-          deadOutboxItems={settings.deadOutboxItems}
+          pendingCount={settings.pendingCount}
+          syncIssues={settings.syncIssues}
           onCompletedGoalRetentionChange={
             settings.handleCompletedGoalRetentionChange
           }
           onRetrySync={settings.retrySync}
-          onRetryDeadOutboxItem={settings.retryDeadOutboxItem}
-          onDiscardDeadOutboxItem={settings.discardDeadOutboxItem}
-          onCleanupOrphanedStorage={settings.cleanupDeadOutboxOrphanedStorage}
+          onDiscardSyncItem={settings.discardSyncItem}
           onExport={handleExport}
         />
       )}

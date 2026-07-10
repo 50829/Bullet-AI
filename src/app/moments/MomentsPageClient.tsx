@@ -1,28 +1,27 @@
 "use client";
-import React, { useCallback, useMemo, useState } from "react";
+
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useWorkspaceData } from "../../features/workspace/data";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
-import { useWorkspacePageLoading } from "../components/layout/WorkspaceNavigationContext";
+import { useTopBar } from "../components/layout/TopBarContext";
 import { useToast } from "../../shared/components/ui/Toast";
 import { Button } from "../../shared/components/ui/Button";
 import { EmptyState } from "../../shared/components/ui/EmptyState";
 import { LoadingState } from "../../shared/components/ui/LoadingState";
-import { useAssistantPanel } from "../hooks/useAssistantPanel";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
-import { useHighlightedSearchItem } from "../hooks/useHighlightedSearchItem";
 import { MonthSection } from "../../features/moments/timeline/MonthSection";
 import { useMomentTimeline } from "../../features/moments/timeline/useMomentTimeline";
 import type { MomentRecord as Moment } from "../../features/moments/types";
+import { PartialHistoryNotice } from "../../features/workspace/components/PartialHistoryNotice";
+import { useDeferredHardDelete } from "../../features/workspace/hooks/useDeferredHardDelete";
+import { UndoDeleteNotice } from "../../features/workspace/components/UndoDeleteNotice";
+import { useHighlightedSearchItem } from "../hooks/useHighlightedSearchItem";
 
-const AssistantDrawer = dynamic(
-  () =>
-    import("../../features/ai/components/AssistantDrawer").then(
-      (mod) => mod.AssistantDrawer,
-    ),
-  { ssr: false },
-);
+const getMomentId = (moment: Moment) => moment.clientId;
+const getMomentElementId = (clientId: string) => `moment-${clientId}`;
+
 const ConfirmDialog = dynamic(
   () =>
     import("../../shared/components/ui/ConfirmDialog").then(
@@ -39,27 +38,43 @@ const MomentModal = dynamic(
 );
 
 export default function MomentsPageClient() {
-  const {
-    session,
-    moments: momentsController,
-  } = useWorkspaceData();
+  const { session, moments: momentsController } = useWorkspaceData();
   const {
     moments,
     loading,
-    loadingMoreMoments,
-    hasMoreMoments,
+    error: momentsError,
     refreshMoments,
-    loadMoreMoments,
     createMoment,
     updateMoment,
     deleteMoment,
   } = momentsController;
   const searchParams = useSearchParams();
+  const highlightedMomentParam = searchParams.get("moment");
   const { t, language } = useLanguage();
   const { showToast } = useToast();
+  const { setTopBarHandlers } = useTopBar();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMoment, setEditingMoment] = useState<Moment | null>(null);
   const deleteConfirm = useDeleteConfirm();
+  const deferredDelete = useDeferredHardDelete<{ id: string; name: string }>({
+    onError: (error) => {
+      showToast({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : t("deleteFailed") || "删除失败，请稍后重试",
+      });
+      void refreshMoments();
+    },
+  });
+  const visibleMoments = useMemo(
+    () =>
+      moments.filter(
+        (moment) => moment.clientId !== deferredDelete.pendingDelete?.id,
+      ),
+    [deferredDelete.pendingDelete?.id, moments],
+  );
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(
     new Set(),
   );
@@ -71,97 +86,81 @@ export default function MomentsPageClient() {
     formatWeekday,
     formatEntryTime,
     formatEntryCount,
-  } = useMomentTimeline(moments, language);
-  const getHighlightedMomentId = useCallback((moment: Moment) => moment.id, []);
-  const getHighlightedMonthKey = useCallback(
-    (moment: Moment) => getMonthKey(moment.created_at),
+  } = useMomentTimeline(visibleMoments, language);
+  const getMomentGroupKey = useCallback(
+    (moment: Moment) => getMonthKey(moment.occurredOn),
     [getMonthKey],
   );
-  const getHighlightedElementId = useCallback(
-    (itemId: number) => `moment-${itemId}`,
-    [],
-  );
-  const activeHighlightMomentId = useHighlightedSearchItem<Moment, string>({
-    queryParam: searchParams.get("moment"),
-    items: moments,
-    getItemId: getHighlightedMomentId,
-    getGroupKey: getHighlightedMonthKey,
+  const activeHighlightMomentId = useHighlightedSearchItem({
+    targetId: highlightedMomentParam,
+    items: visibleMoments,
+    getItemId: getMomentId,
+    getElementId: getMomentElementId,
+    getGroupKey: getMomentGroupKey,
     setCollapsedGroups: setCollapsedMonths,
-    getElementId: getHighlightedElementId,
   });
-
-  const toggleMonth = (monthKey: string) => {
-    setCollapsedMonths((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(monthKey)) {
-        newSet.delete(monthKey);
-      } else {
-        newSet.add(monthKey);
-      }
-      return newSet;
-    });
-  };
 
   const handleAddMoment = useCallback(() => {
     setEditingMoment(null);
     setIsModalOpen(true);
   }, []);
-  const topBarHandlers = useMemo(
-    () => ({
-      onAddMoment: handleAddMoment,
-    }),
-    [handleAddMoment],
-  );
-  const assistantPanel = useAssistantPanel(topBarHandlers);
+
+  useEffect(() => {
+    setTopBarHandlers({ onAddMoment: handleAddMoment });
+    return () => setTopBarHandlers({});
+  }, [handleAddMoment, setTopBarHandlers]);
+
+  const toggleMonth = (monthKey: string) => {
+    setCollapsedMonths((current) => {
+      const next = new Set(current);
+      if (next.has(monthKey)) next.delete(monthKey);
+      else next.add(monthKey);
+      return next;
+    });
+  };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
     setEditingMoment(null);
   };
-  const handleModalSuccess = () => {
-    setIsModalOpen(false);
-  };
 
   const handleDelete = async () => {
     await deleteConfirm.confirm(async (target) => {
-      try {
-        await deleteMoment(target.id, target.imagePath);
-      } catch (err) {
-        console.error("删除异常:", err);
-        showToast({
-          type: "error",
-          message: t("deleteFailed") || "删除失败，请稍后重试",
-        });
-        void refreshMoments();
-        throw err;
-      }
+      deferredDelete.scheduleDelete(target, () => deleteMoment(target.id));
     });
   };
 
   const isInitialLoading = (!session.ready || loading) && moments.length === 0;
-  const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
-
   if (isInitialLoading) {
-    return isNavigationLoading ? null : (
-      <LoadingState className="min-h-[50dvh]" />
+    return <LoadingState className="min-h-[50dvh]" />;
+  }
+
+  if (momentsError && moments.length === 0) {
+    return (
+      <EmptyState
+        title={language === "en" ? "Failed to load moments" : "记录加载失败"}
+        description={
+          language === "en"
+            ? "Check your connection and try again."
+            : "请检查网络连接后重试。"
+        }
+        action={
+          <Button onClick={() => void refreshMoments()}>
+            {language === "en" ? "Retry" : "重试"}
+          </Button>
+        }
+      />
     );
   }
 
   return (
     <div className="flex min-h-full flex-col">
-      {assistantPanel.shouldRender && (
-        <AssistantDrawer
-          isOpen={assistantPanel.isOpen}
-          onClose={assistantPanel.close}
-          title={t("moments") || "记录"}
-          placeholder={t("aiInputPlaceholder") || "输入你的想法..."}
-          purpose="moment_chat"
-        />
-      )}
-
       <div className="flex-1">
         <div className="px-0 pb-4">
           <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-0">
+            {momentsError && moments.length > 0 && (
+              <PartialHistoryNotice onRetry={refreshMoments} />
+            )}
             <div className="space-y-10">
               {monthCards.length === 0 ? (
                 <EmptyState
@@ -173,46 +172,30 @@ export default function MomentsPageClient() {
                   }
                 />
               ) : (
-                <>
-                  {monthCards.map((monthCard) => (
-                    <MonthSection
-                      key={monthCard.month}
-                      monthCard={monthCard}
-                      collapsed={collapsedMonths.has(monthCard.month)}
-                      activeHighlightMomentId={activeHighlightMomentId}
-                      formatDayNumber={formatDayNumber}
-                      formatDayLabel={formatDayLabel}
-                      formatWeekday={formatWeekday}
-                      formatEntryCount={formatEntryCount}
-                      formatEntryTime={formatEntryTime}
-                      onToggle={toggleMonth}
-                      onEdit={(moment) => {
-                        setEditingMoment(moment);
-                        setIsModalOpen(true);
-                      }}
-                      onDelete={(moment) =>
-                        deleteConfirm.open({
-                          id: moment.id,
-                          name: moment.content.slice(0, 42) || "moment",
-                          imagePath: moment.image_path,
-                        })
-                      }
-                    />
-                  ))}
-                  {hasMoreMoments && (
-                    <div className="flex justify-center">
-                      <Button
-                        variant="outline"
-                        onClick={() => void loadMoreMoments()}
-                        disabled={loadingMoreMoments}
-                      >
-                        {loadingMoreMoments
-                          ? t("loadingMoments") || "加载中..."
-                          : "加载更多 / Load more"}
-                      </Button>
-                    </div>
-                  )}
-                </>
+                monthCards.map((monthCard) => (
+                  <MonthSection
+                    key={monthCard.month}
+                    monthCard={monthCard}
+                    collapsed={collapsedMonths.has(monthCard.month)}
+                    activeHighlightMomentId={activeHighlightMomentId}
+                    formatDayNumber={formatDayNumber}
+                    formatDayLabel={formatDayLabel}
+                    formatWeekday={formatWeekday}
+                    formatEntryCount={formatEntryCount}
+                    formatEntryTime={formatEntryTime}
+                    onToggle={toggleMonth}
+                    onEdit={(moment) => {
+                      setEditingMoment(moment);
+                      setIsModalOpen(true);
+                    }}
+                    onDelete={(moment) =>
+                      deleteConfirm.open({
+                        id: moment.clientId,
+                        name: moment.content.slice(0, 42) || "moment",
+                      })
+                    }
+                  />
+                ))
               )}
             </div>
           </div>
@@ -224,7 +207,6 @@ export default function MomentsPageClient() {
           isOpen
           initialMoment={editingMoment}
           onClose={handleModalClose}
-          onSuccess={handleModalSuccess}
           onCreate={createMoment}
           onUpdate={updateMoment}
         />
@@ -234,13 +216,23 @@ export default function MomentsPageClient() {
         <ConfirmDialog
           isOpen
           title={t("confirmDelete") || "确认删除这条记录吗？"}
-          description={t("cannotRecover") || "删除后不可恢复"}
+          description={
+            language === "en"
+              ? "You can undo this action for 5 seconds."
+              : "删除后 5 秒内可以撤销。"
+          }
           confirmLabel={t("confirm") || "确认"}
           cancelLabel={t("cancel") || "取消"}
           loading={deleteConfirm.loading}
           tone="danger"
           onConfirm={handleDelete}
           onCancel={deleteConfirm.cancel}
+        />
+      )}
+      {deferredDelete.pendingDelete && (
+        <UndoDeleteNotice
+          itemName={deferredDelete.pendingDelete.name}
+          onUndo={deferredDelete.undoDelete}
         />
       )}
     </div>

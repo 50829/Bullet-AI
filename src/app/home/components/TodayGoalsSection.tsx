@@ -12,6 +12,7 @@ import { useLanguage } from "../../../shared/i18n/LanguageContext";
 type TodayGoalsSectionProps = {
   goals: Goal[];
   loading: boolean;
+  error?: string | null;
   remainingCount: number;
   onCreate: () => void;
   onComplete: (goal: Goal) => void | Promise<void>;
@@ -22,6 +23,7 @@ type TodayGoalsSectionProps = {
 export function TodayGoalsSection({
   goals,
   loading,
+  error,
   remainingCount,
   onCreate,
   onComplete,
@@ -42,7 +44,11 @@ export function TodayGoalsSection({
         </Button>
       }
     >
-      {loading ? (
+      {error ? (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      ) : loading ? (
         <LoadingState />
       ) : goals.length === 0 ? (
         <EmptyState
@@ -55,7 +61,7 @@ export function TodayGoalsSection({
         <div className="divide-y divide-[var(--color-border-muted)]">
           {goals.map((goal) => (
             <GoalCard
-              key={goal.id}
+              key={goal.clientId}
               goal={goal}
               variant="list"
               onComplete={() => onComplete(goal)}

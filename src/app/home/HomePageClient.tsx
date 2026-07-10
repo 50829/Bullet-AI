@@ -12,6 +12,7 @@ import { TodayGoalsSection } from "./components/TodayGoalsSection";
 import { TodayHabitsSection } from "./components/TodayHabitsSection";
 import { TodayHeader } from "./components/TodayHeader";
 import { useTodayDashboard } from "../../features/dashboard/hooks/useTodayDashboard";
+import { UndoDeleteNotice } from "../../features/workspace/components/UndoDeleteNotice";
 
 const GoalModal = dynamic(
   () =>
@@ -43,12 +44,12 @@ const ReflectionModal = dynamic(
 );
 
 type DeleteTarget =
-  | { type: "goal"; id: number; name: string; goal: Goal }
-  | { type: "habit"; id: number; name: string; habit: HabitView };
+  | { type: "goal"; id: string; name: string; goal: Goal }
+  | { type: "habit"; id: string; name: string; habit: HabitView };
 
 export default function HomePage() {
   const dashboard = useTodayDashboard();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [momentOpen, setMomentOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -80,6 +81,7 @@ export default function HomePage() {
         <TodayGoalsSection
           goals={dashboard.visibleTodayGoals}
           loading={dashboard.goalsLoading && dashboard.goals.length === 0}
+          error={dashboard.goalsError}
           remainingCount={dashboard.openTodayGoals.length}
           onCreate={() => setGoalOpen(true)}
           onComplete={dashboard.toggleGoalCompleted}
@@ -90,7 +92,7 @@ export default function HomePage() {
           onDelete={(goal) =>
             deleteConfirm.open({
               type: "goal",
-              id: goal.id,
+              id: goal.clientId,
               name: goal.title,
               goal,
             })
@@ -101,6 +103,7 @@ export default function HomePage() {
           habits={dashboard.todayHabits}
           allHabits={dashboard.habits}
           loading={dashboard.loading && dashboard.todayHabits.length === 0}
+          error={dashboard.error}
           onCreate={() => setHabitOpen(true)}
           onCheckinToday={dashboard.checkinToday}
           onToggleCheckin={dashboard.toggleCheckin}
@@ -111,7 +114,7 @@ export default function HomePage() {
           onDelete={(habit) =>
             deleteConfirm.open({
               type: "habit",
-              id: habit.id,
+              id: habit.clientId,
               name: habit.name,
               habit,
             })
@@ -133,7 +136,6 @@ export default function HomePage() {
         <MomentModal
           isOpen
           onClose={() => setMomentOpen(false)}
-          onSuccess={() => undefined}
           onCreate={dashboard.createMoment}
           onUpdate={dashboard.updateMoment}
         />
@@ -146,7 +148,6 @@ export default function HomePage() {
             setGoalOpen(false);
             setEditingGoal(null);
           }}
-          onSuccess={() => undefined}
           onCreate={dashboard.createGoal}
           onUpdate={dashboard.updateGoal}
         />
@@ -155,7 +156,6 @@ export default function HomePage() {
         <ReflectionModal
           isOpen
           onClose={() => setReflectionOpen(false)}
-          onSuccess={() => undefined}
           onCreate={dashboard.createReflection}
           onUpdate={dashboard.updateReflection}
         />
@@ -177,13 +177,23 @@ export default function HomePage() {
         <ConfirmDialog
           isOpen
           title={`${t("confirmDelete") || "确认删除"} ${deleteConfirm.target.name}`}
-          description={t("cannotRecover") || "删除后不可恢复。"}
+          description={
+            language === "en"
+              ? "You can undo this action for 5 seconds."
+              : "删除后 5 秒内可以撤销。"
+          }
           confirmLabel={t("confirm") || "确认"}
           cancelLabel={t("cancel") || "取消"}
           tone="danger"
           loading={deleteConfirm.loading}
           onConfirm={handleDelete}
           onCancel={deleteConfirm.cancel}
+        />
+      )}
+      {dashboard.deferredDelete.pendingDelete && (
+        <UndoDeleteNotice
+          itemName={dashboard.deferredDelete.pendingDelete.name}
+          onUndo={dashboard.deferredDelete.undoDelete}
         />
       )}
     </div>

@@ -1,67 +1,202 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { createClientId } from "../../../lib/localDb/repository";
-import { createOptimisticId } from "../../../lib/localFirst/ids";
-import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
+import { createEntityId } from "../../../domain/ids";
+import { hasUnresolvedSyncIssue } from "../../../domain/sync";
+import type { MomentEntity } from "../../../domain/entities";
+import { useDataMutation, useDataV2 } from "../../../lib/data-v2";
+import { useWorkspaceResource } from "../../workspace/data/useWorkspaceResourceV2";
 import type {
   CreateMomentInput,
   MomentRecord,
   UpdateMomentInput,
 } from "../types";
+import { useMomentImageUrls } from "./useMomentImageUrls";
 
 type UseMomentsInput = {
   userId: string | null;
-  remotePageSize?: number;
+  fullHistory?: boolean;
 };
 
-export function useMoments({ userId, remotePageSize = 20 }: UseMomentsInput) {
-  const collection = useLocalFirstCollection<MomentRecord>({
-    userId,
-    collection: "moments",
-    initialRemotePageSize: remotePageSize,
+function blobFileName(blob: Blob, requestedName?: string | null) {
+  if (requestedName) return requestedName;
+  const namedBlob = blob as Blob & { name?: unknown };
+  return typeof namedBlob.name === "string" && namedBlob.name
+    ? namedBlob.name
+    : "moment-image.jpg";
+}
+
+export function useMoments({ userId, fullHistory = false }: UseMomentsInput) {
+  const resource = useWorkspaceResource(userId, "moments", {
+    fullHistory,
   });
+  const mutation = useDataMutation(userId ?? "anonymous", "moments");
+  const { store } = useDataV2();
+  const media = useMomentImageUrls({
+    userId,
+    moments: resource.items,
+    store,
+  });
+
+  const requireUser = useCallback(() => {
+    if (!userId) throw new Error("请先登录");
+    return userId;
+  }, [userId]);
+
+  const refreshMoments = useCallback(async () => {
+    requireUser();
+    await resource.refresh();
+  }, [requireUser, resource]);
 
   const createMoment = useCallback(
     async (input: CreateMomentInput) => {
+      const activeUserId = requireUser();
       const now = new Date().toISOString();
-      const createdAt = input.created_at ?? now;
-      await collection.add({
-        id: input.id ?? createOptimisticId(),
-        client_id: input.client_id ?? createClientId("moment"),
-        content: input.content,
-        image_path: input.image_path ?? null,
-        image_url: input.image_url ?? null,
-        local_file: input.local_file ?? null,
-        local_file_name: input.local_file_name ?? null,
-        previous_image_path: input.previous_image_path ?? null,
-        created_at: createdAt,
-        updated_at: now,
-        date: input.date ?? createdAt.split("T")[0],
+      const clientId = input.clientId ?? createEntityId("moment");
+      const imageFile = input.imageFile ?? null;
+      const content = input.content.trim();
+      if (!content) throw new Error("记录内容不能为空");
+      if (!input.occurredOn) throw new Error("记录日期不能为空");
+      const optimistic: MomentEntity = {
+        clientId,
+        userId: activeUserId,
+        version: 0,
+        createdAt: now,
+        updatedAt: now,
+        content,
+        occurredOn: input.occurredOn,
+        imagePath: input.imagePath ?? null,
+      };
+
+      await mutation.mutateAsync({
+        kind: "create",
+        clientId,
+        baseVersion: null,
+        optimistic,
+        changes: {
+          content: optimistic.content,
+          occurredOn: optimistic.occurredOn,
+          imagePath: optimistic.imagePath,
+        },
+        blobs: imageFile
+          ? [
+              {
+                slot: "image",
+                blob: imageFile,
+                fileName: blobFileName(imageFile, input.imageFileName),
+              },
+            ]
+          : undefined,
       });
     },
-    [collection],
+    [mutation, requireUser],
   );
 
   const updateMoment = useCallback(
-    async (id: number, updates: UpdateMomentInput) => {
-      await collection.update(id, updates);
+    async (clientId: string, input: UpdateMomentInput) => {
+      requireUser();
+      const current = resource.items.find((item) => item.clientId === clientId);
+      if (!current) throw new Error("记录不存在或已删除");
+      if (hasUnresolvedSyncIssue(current)) {
+        throw new Error("请先在设置中处理这条记录的同步冲突");
+      }
+
+      const imageFile = input.imageFile ?? null;
+      const changes: Partial<
+        Pick<MomentEntity, "content" | "occurredOn" | "imagePath">
+      > = {};
+      if (input.content !== undefined) {
+        const content = input.content.trim();
+        if (!content) throw new Error("记录内容不能为空");
+        changes.content = content;
+      }
+      if (input.occurredOn !== undefined) {
+        if (!input.occurredOn) throw new Error("记录日期不能为空");
+        changes.occurredOn = input.occurredOn;
+      }
+      if (input.imagePath !== undefined) changes.imagePath = input.imagePath;
+      if (imageFile) {
+        changes.imagePath = null;
+      }
+      if (Object.keys(changes).length === 0) return;
+
+      const optimistic: MomentEntity = {
+        ...current,
+        ...changes,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await mutation.mutateAsync({
+        kind: "patch",
+        clientId,
+        baseVersion: current.version,
+        optimistic,
+        changes,
+        cleanup:
+          imageFile || input.imagePath !== undefined
+            ? { momentImagePath: current.imagePath }
+            : undefined,
+        blobs: imageFile
+          ? [
+              {
+                slot: "image",
+                blob: imageFile,
+                fileName: blobFileName(imageFile, input.imageFileName),
+              },
+            ]
+          : undefined,
+      });
     },
-    [collection],
+    [mutation, requireUser, resource.items],
+  );
+
+  const deleteMoment = useCallback(
+    async (clientId: string) => {
+      requireUser();
+      const current = resource.items.find((item) => item.clientId === clientId);
+      if (!current) return;
+      if (hasUnresolvedSyncIssue(current)) {
+        throw new Error("请先在设置中处理这条记录的同步冲突");
+      }
+      await mutation.mutateAsync({
+        kind: "delete",
+        clientId,
+        baseVersion: current.version,
+        optimistic: current,
+        cleanup: { momentImagePath: current.imagePath },
+      });
+    },
+    [mutation, requireUser, resource.items],
+  );
+
+  const moments = useMemo(
+    () =>
+      resource.items.map((moment): MomentRecord => ({
+        ...moment,
+        imageUrl: media.imageUrls.get(moment.clientId) ?? null,
+      })),
+    [media.imageUrls, resource.items],
   );
 
   return useMemo(
     () => ({
-      moments: collection.items,
-      loading: collection.loading,
-      loadingMoreMoments: collection.loadingMore,
-      hasMoreMoments: collection.hasMore,
-      refreshMoments: () => collection.refresh(),
-      loadMoreMoments: () => collection.loadMore(),
+      moments,
+      loading: resource.loading,
+      error: resource.error ?? media.error,
+      refreshMoments,
       createMoment,
       updateMoment,
-      deleteMoment: collection.remove,
+      deleteMoment,
     }),
-    [collection, createMoment, updateMoment],
+    [
+      createMoment,
+      deleteMoment,
+      refreshMoments,
+      media.error,
+      resource.error,
+      resource.loading,
+      moments,
+      updateMoment,
+    ],
   );
 }

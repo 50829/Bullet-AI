@@ -9,7 +9,7 @@ import { AuthCard } from "../components/auth/AuthCard";
 import { AuthInput } from "../components/auth/AuthInput";
 import { PasswordField } from "../components/auth/PasswordField";
 import { isPasswordStrong } from "../../lib/auth/passwordValidation";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../lib/supabase/client";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 
 export default function RegisterPage() {

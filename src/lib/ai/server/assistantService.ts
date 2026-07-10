@@ -1,9 +1,6 @@
-import {
-  extractPlanFromReply,
-  removePlanFromReply,
-  toFrontendPlan,
-} from "../planParser";
-import { getAiSystemPrompt, normalizeAiPurpose } from "../promptRegistry";
+import { GOAL_PLANNING_PURPOSE } from "../goalPlan";
+import { parsePlanReply } from "../planParser";
+import { getAiSystemPrompt } from "../promptRegistry";
 import { normalizeLanguage } from "../../profile/preferences";
 import { logger } from "../../observability/logger";
 import { reserveAiUsageEvent } from "./aiRateLimit";
@@ -39,10 +36,8 @@ export async function runAssistantTurn({
     };
   }
 
-  const { data: reserved, error: reserveError } = await reserveAiUsageEvent(
-    supabase,
-    userId,
-  );
+  const { data: reserved, error: reserveError } =
+    await reserveAiUsageEvent(supabase);
 
   if (reserveError) {
     logger.error("ai_rate_limit_reservation_failed", {
@@ -65,11 +60,10 @@ export async function runAssistantTurn({
   // A successful reservation represents an attempted provider call. Timeouts
   // and provider failures intentionally consume quota.
   const normalizedLanguage = normalizeLanguage(input.language);
-  const normalizedPurpose = normalizeAiPurpose(input.purpose);
 
   const system: ChatMessage = {
     role: "system",
-    content: getAiSystemPrompt(normalizedPurpose, normalizedLanguage),
+    content: getAiSystemPrompt(normalizedLanguage),
   };
   const messages: ChatMessage[] = [system, ...input.messages];
 
@@ -83,7 +77,7 @@ export async function runAssistantTurn({
     if (error instanceof LlmTimeoutError) {
       logger.warn("ai_llm_timeout", {
         userId,
-        purpose: normalizedPurpose,
+        purpose: GOAL_PLANNING_PURPOSE,
         timeoutMs: config.config.timeoutMs,
       });
       return {
@@ -94,7 +88,7 @@ export async function runAssistantTurn({
 
     logger.error("ai_llm_request_failed", {
       userId,
-      purpose: normalizedPurpose,
+      purpose: GOAL_PLANNING_PURPOSE,
       error,
     });
     return {
@@ -107,7 +101,7 @@ export async function runAssistantTurn({
     const errorText = await resp.text();
     logger.warn("ai_llm_bad_response", {
       userId,
-      purpose: normalizedPurpose,
+      purpose: GOAL_PLANNING_PURPOSE,
       status: resp.status,
       errorText,
     });
@@ -123,7 +117,7 @@ export async function runAssistantTurn({
     } catch (error) {
       logger.warn("ai_llm_error_parse_failed", {
         userId,
-        purpose: normalizedPurpose,
+        purpose: GOAL_PLANNING_PURPOSE,
         error,
       });
     }
@@ -135,17 +129,25 @@ export async function runAssistantTurn({
   }
 
   const data = await resp.json();
+  const providerReply = data?.choices?.[0]?.message?.content;
+  if (typeof providerReply !== "string" || !providerReply.trim()) {
+    logger.warn("ai_llm_invalid_response", {
+      userId,
+      purpose: GOAL_PLANNING_PURPOSE,
+    });
+    return {
+      status: 502,
+      body: { error: "AI 服务返回了无效响应，请稍后再试" },
+    };
+  }
 
-  let reply: string = data.choices?.[0]?.message?.content || "";
-  const internalPlan = extractPlanFromReply(reply);
-  reply = removePlanFromReply(reply);
-  const frontendPlan = internalPlan ? toFrontendPlan(internalPlan) : undefined;
+  const parsedReply = parsePlanReply(providerReply);
+  const body: AssistantTurnResult = parsedReply.plan
+    ? { reply: parsedReply.reply, plan: parsedReply.plan }
+    : { reply: parsedReply.reply };
 
   return {
     status: 200,
-    body: {
-      reply,
-      plan: frontendPlan,
-    },
+    body,
   };
 }

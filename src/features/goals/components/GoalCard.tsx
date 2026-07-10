@@ -8,12 +8,12 @@ import { IconButton } from "../../../shared/components/ui/IconButton";
 import { isGoalCompleted } from "../goalVisibility";
 
 export type GoalCardGoal = {
-  id: number;
+  clientId: string;
   title: string;
   description?: string | null;
-  status?: string;
+  completedAt?: string | null;
   color?: string | null;
-  _local?: { failed?: boolean };
+  sync?: { blocked?: boolean; conflict?: boolean };
 };
 
 type GoalCardMoveAction = {
@@ -39,7 +39,7 @@ export function GoalCard({
   moveAction,
   variant = "card",
 }: GoalCardProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const completed = isGoalCompleted(goal);
   const accent = goal.color || "var(--color-primary)";
   const MoveIcon = moveAction?.direction === "back" ? ArrowLeft : ArrowRight;
@@ -86,9 +86,13 @@ export function GoalCard({
           >
             {goal.title}
           </h4>
-          {goal._local?.failed && (
+          {(goal.sync?.blocked || goal.sync?.conflict) && (
             <span className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">
-              {t("syncFailed") || "同步失败"}
+              {goal.sync.conflict
+                ? language === "en"
+                  ? "Conflict"
+                  : "存在冲突"
+                : t("syncFailed") || "同步失败"}
             </span>
           )}
         </div>

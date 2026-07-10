@@ -13,36 +13,40 @@ import {
   imageValidationMessage,
   validateImageBlob,
 } from "../../../lib/media/imageValidation";
-import type { CreateMomentInput, MomentRecord, UpdateMomentInput } from "../types";
-
-export type MomentModalInitialMoment = Pick<
+import { toDateKey } from "../../../lib/date/dateUtils";
+import type {
+  CreateMomentInput,
   MomentRecord,
-  "id" | "content" | "created_at" | "image_url" | "image_path"
+  UpdateMomentInput,
+} from "../types";
+
+type MomentModalInitialMoment = Pick<
+  MomentRecord,
+  "clientId" | "content" | "occurredOn" | "imageUrl"
 >;
 
-export type MomentModalCreateInput = CreateMomentInput;
+type MomentModalCreateInput = CreateMomentInput;
 
-export type MomentModalUpdateInput = UpdateMomentInput;
+type MomentModalUpdateInput = UpdateMomentInput;
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
   onCreate: (moment: MomentModalCreateInput) => Promise<void>;
-  onUpdate: (id: number, updates: MomentModalUpdateInput) => Promise<void>;
+  onUpdate: (
+    clientId: string,
+    updates: MomentModalUpdateInput,
+  ) => Promise<void>;
   initialMoment?: MomentModalInitialMoment | null;
 };
 
 function toDateInputValue(value?: string) {
-  if (!value) return new Date().toISOString().split("T")[0];
-  if (value.includes("T")) return value.split("T")[0];
-  return value;
+  return value || toDateKey();
 }
 
 export const MomentModal = ({
   isOpen,
   onClose,
-  onSuccess,
   onCreate,
   onUpdate,
   initialMoment = null,
@@ -53,6 +57,7 @@ export const MomentModal = ({
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue());
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const objectUrlRef = useRef<string | null>(null);
   const isEditing = Boolean(initialMoment);
 
@@ -63,7 +68,7 @@ export const MomentModal = ({
     }
 
     if (!file) {
-      setPreviewUrl(initialMoment?.image_url ?? null);
+      setPreviewUrl(initialMoment?.imageUrl ?? null);
       return;
     }
 
@@ -76,13 +81,13 @@ export const MomentModal = ({
     if (!isOpen) return;
 
     setContent(initialMoment?.content ?? "");
-    setSelectedDate(toDateInputValue(initialMoment?.created_at));
+    setSelectedDate(toDateInputValue(initialMoment?.occurredOn));
     setImageFile(null);
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = null;
     }
-    setPreviewUrl(initialMoment?.image_url ?? null);
+    setPreviewUrl(initialMoment?.imageUrl ?? null);
   }, [initialMoment, isOpen]);
 
   useEffect(() => {
@@ -118,38 +123,26 @@ export const MomentModal = ({
       return;
     }
 
-    const dateISO = `${selectedDate}T00:00:00.000Z`;
-
-    const localImageUrl = objectUrlRef.current;
-
+    setSaving(true);
     try {
       if (isEditing && initialMoment) {
-        await onUpdate(initialMoment.id, {
+        await onUpdate(initialMoment.clientId, {
           content,
-          created_at: dateISO,
-          image_path: imageFile ? null : (initialMoment.image_path ?? null),
-          image_url:
-            localImageUrl || previewUrl || initialMoment.image_url || null,
-          local_file: imageFile,
-          local_file_name: imageFile?.name ?? null,
-          previous_image_path: imageFile
-            ? (initialMoment.image_path ?? null)
-            : null,
+          occurredOn: selectedDate,
+          imageFile,
+          imageFileName: imageFile?.name ?? null,
         });
       } else {
         await onCreate({
           content,
-          image_path: null,
-          image_url: localImageUrl || previewUrl,
-          local_file: imageFile,
-          local_file_name: imageFile?.name ?? null,
-          created_at: dateISO,
-          date: dateISO.split("T")[0],
+          occurredOn: selectedDate,
+          imagePath: null,
+          imageFile,
+          imageFileName: imageFile?.name ?? null,
         });
       }
 
       handleClose();
-      onSuccess();
     } catch (error) {
       showToast({
         type: "error",
@@ -158,6 +151,8 @@ export const MomentModal = ({
             ? error.message
             : t("saveFailed") || "保存失败",
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -230,12 +225,21 @@ export const MomentModal = ({
         <Button
           variant="secondary"
           onClick={handleClose}
+          disabled={saving}
           className="min-w-[60px] h-10"
         >
           {t("cancel") || "取消"}
         </Button>
-        <Button onClick={handleSubmit} className="min-w-[60px] h-10">
-          {isEditing ? t("update") || "更新" : t("save") || "记录"}
+        <Button
+          onClick={handleSubmit}
+          disabled={saving}
+          className="min-w-[60px] h-10"
+        >
+          {saving
+            ? t("saving") || "保存中..."
+            : isEditing
+              ? t("update") || "更新"
+              : t("save") || "记录"}
         </Button>
       </FormActions>
     </FormDialogShell>

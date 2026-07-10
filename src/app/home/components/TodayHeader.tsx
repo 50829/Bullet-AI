@@ -1,9 +1,9 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw, WifiOff } from "lucide-react";
 import { Button } from "../../../shared/components/ui/Button";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import type { SyncStatus } from "../../../lib/localDb/types";
+import type { SyncStatus } from "../../../features/workspace/types";
 
 type TodayHeaderProps = {
   syncStatus: SyncStatus;
@@ -23,11 +23,8 @@ export function TodayHeader({
   return (
     <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="text-sm font-semibold text-[var(--color-primary)]">
-          Today
-        </p>
-        <h1 className="mt-1 text-3xl font-bold text-[var(--color-text-primary)]">
-          {t("todayWorkbench") || "今天的成长工作台"}
+        <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">
+          {language === "en" ? "Today" : "今天"}
         </h1>
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
           {new Date().toLocaleDateString(
@@ -48,9 +45,16 @@ export function TodayHeader({
               {t("syncFailed") || "同步失败"}
             </span>
             <Button variant="outline" onClick={() => void onRetrySync()}>
+              <RefreshCw size={16} />
               {t("retry") || "重试"}
             </Button>
           </>
+        )}
+        {syncStatus === "offline" && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-bg-surface)] px-3 py-1 text-xs font-semibold text-[var(--color-text-secondary)]">
+            <WifiOff size={14} />
+            {language === "en" ? "Offline" : "离线"}
+          </span>
         )}
         <Button variant="secondary" onClick={onNewMoment}>
           <Plus size={16} />

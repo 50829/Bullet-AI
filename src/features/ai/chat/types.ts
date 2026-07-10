@@ -1,13 +1,8 @@
-export type AssistantMode = "chat" | "planning";
-
-export type PlanData = {
-  daily: { title: string; description: string }[];
-  future: { title: string; description: string }[];
-};
+import type { GoalPlan } from "../../../lib/ai/goalPlan";
 
 export type AssistantMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  planData?: PlanData | null;
+  planData?: GoalPlan | null;
 };

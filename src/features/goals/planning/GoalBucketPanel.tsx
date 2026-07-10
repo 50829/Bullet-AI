@@ -11,7 +11,7 @@ import type { GoalRecord } from "../types";
 type GoalBucketPanelProps = {
   goals: GoalRecord[];
   emptyTitle: string;
-  onReorder: (orderedIds: number[]) => void;
+  onReorder: (orderedIds: string[]) => void;
   onComplete: (goal: GoalRecord) => void | Promise<void>;
   onEdit: (goal: GoalRecord) => void;
   onDelete: (goal: GoalRecord) => void;
@@ -38,11 +38,11 @@ export function GoalBucketPanel({
       {goals.length === 0 && <EmptyState title={emptyTitle} />}
       <div className="min-h-0 flex-1 divide-y divide-[var(--color-border-muted)] overflow-y-auto">
         <SortableGoalList
-          ids={goals.map((goal) => goal.id)}
+          ids={goals.map((goal) => goal.clientId)}
           onReorder={(orderedIds) => onReorder(orderedIds)}
         >
           {goals.map((goal) => (
-            <SortableGoalItem key={goal.id} id={goal.id}>
+            <SortableGoalItem key={goal.clientId} id={goal.clientId}>
               <GoalCard
                 goal={goal}
                 variant="list"

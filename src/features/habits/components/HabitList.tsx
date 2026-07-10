@@ -31,13 +31,13 @@ export function HabitList({
   onDelete,
 }: HabitListProps) {
   const { t } = useLanguage();
-  const [selectedHabitId, setSelectedHabitId] = useState<number | null>(null);
+  const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const visibleHabits = useMemo(
     () => (limit ? habits.slice(0, limit) : habits),
     [habits, limit],
   );
   const selectedHabit =
-    habits.find((habit) => habit.id === selectedHabitId) ?? null;
+    habits.find((habit) => habit.clientId === selectedHabitId) ?? null;
 
   if (loading) return <LoadingState />;
 
@@ -61,9 +61,9 @@ export function HabitList({
       <div className="divide-y divide-[var(--color-border-muted)]">
         {visibleHabits.map((habit) => (
           <HabitCard
-            key={habit.id}
+            key={habit.clientId}
             habit={habit}
-            onOpen={() => setSelectedHabitId(habit.id)}
+            onOpen={() => setSelectedHabitId(habit.clientId)}
             onCheckinToday={onCheckinToday}
             onEdit={onEdit}
             onDelete={onDelete}

@@ -1,13 +1,14 @@
 "use client";
 
-import type { AssistantMessage, PlanData } from "../chat/types";
+import type { GoalPlan } from "../../../lib/ai/goalPlan";
+import type { AssistantMessage } from "../chat/types";
 import { PlanPreview } from "./PlanPreview";
 
 type MessageListProps = {
   messages: AssistantMessage[];
   loading: boolean;
   adding: boolean;
-  onAddGoals: (plan: PlanData) => void | Promise<void>;
+  onAddGoals: (plan: GoalPlan) => void | Promise<void>;
 };
 
 export function MessageList({

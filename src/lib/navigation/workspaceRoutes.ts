@@ -2,7 +2,7 @@ export type WorkspacePage = "home" | "goals" | "moments" | "reflections";
 
 export const WORKSPACE_HOME_PATH = "/home";
 
-export const WORKSPACE_ROUTES: Record<WorkspacePage, string> = {
+const WORKSPACE_ROUTES: Record<WorkspacePage, string> = {
   home: WORKSPACE_HOME_PATH,
   goals: "/goals",
   moments: "/moments",

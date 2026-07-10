@@ -11,6 +11,8 @@ import { IconButton } from "../../../shared/components/ui/IconButton";
 import { WORKSPACE_PAGE_ORDER } from "../../../lib/navigation/workspaceRoutes";
 import { WorkspaceNavLink } from "./WorkspaceNavLink";
 import { getWorkspaceNavItemMeta } from "./workspacePageMeta";
+import { useWorkspaceSessionContext } from "../../../features/workspace/WorkspaceContext";
+import { useDataV2 } from "../../../lib/data-v2";
 
 const LogoutConfirmDialog = dynamic(() => import("./LogoutConfirmDialog"), {
   ssr: false,
@@ -21,8 +23,11 @@ export const BottomSidebar = () => {
   const { t } = useLanguage();
   const router = useRouter();
   const { showToast } = useToast();
+  const { userId, pendingCount } = useWorkspaceSessionContext();
+  const { store, worker } = useDataV2();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleSettingsClick = () => {
     setShowSettingsPanel(true);
@@ -34,22 +39,27 @@ export const BottomSidebar = () => {
 
   const handleLogoutConfirm = async () => {
     try {
-      setShowLogoutDialog(false);
-      const { error } = await signOutAndClearLocalData();
+      setLoggingOut(true);
+      const { error } = await signOutAndClearLocalData({
+        userId,
+        store,
+        worker,
+      });
 
       if (error) {
         console.error("退出登录失败:", error);
         showToast({ type: "error", message: `退出登录失败: ${error.message}` });
-        setShowLogoutDialog(true);
         return;
       }
 
+      setShowLogoutDialog(false);
       router.replace("/");
     } catch (error) {
       console.error("退出登录过程出错:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
       showToast({ type: "error", message: `退出登录出错: ${errorMsg}` });
-      setShowLogoutDialog(true);
+    } finally {
+      setLoggingOut(false);
     }
   };
 
@@ -121,6 +131,8 @@ export const BottomSidebar = () => {
         <LogoutConfirmDialog
           onConfirm={handleLogoutConfirm}
           onCancel={handleLogoutCancel}
+          pendingCount={pendingCount}
+          loading={loggingOut}
         />
       )}
 

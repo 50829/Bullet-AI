@@ -10,7 +10,9 @@ describe("AI feature boundaries", () => {
       existsSync(new URL("./chat/useAssistantChat.ts", import.meta.url)),
     ).toBe(true);
     expect(
-      existsSync(new URL("../../app/components/AssistantDrawer.tsx", import.meta.url)),
+      existsSync(
+        new URL("../../app/components/AssistantDrawer.tsx", import.meta.url),
+      ),
     ).toBe(false);
     expect(
       existsSync(new URL("../../app/components/assistant", import.meta.url)),

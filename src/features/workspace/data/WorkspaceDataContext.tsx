@@ -33,17 +33,23 @@ const WorkspaceDataContext = createContext<WorkspaceDataState | undefined>(
 export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
   const session = useWorkspaceSessionContext();
   const pathname = usePathname();
-  const momentsRemotePageSize = pathname?.includes("/moments") ? 20 : 0;
-  const reflectionsRemotePageSize = pathname?.includes("/reflections") ? 20 : 0;
-  const goals = useGoals({ userId: session.userId });
-  const habits = useHabits({ userId: session.userId });
+  const isHome = pathname?.includes("/home") ?? false;
+  const isGoals = pathname?.includes("/goals") ?? false;
+  const isMoments = pathname?.includes("/moments") ?? false;
+  const isReflections = pathname?.includes("/reflections") ?? false;
+  const goals = useGoals({
+    userId: isHome || isGoals ? session.userId : null,
+  });
+  const habits = useHabits({
+    userId: isHome || isGoals ? session.userId : null,
+  });
   const moments = useMoments({
-    userId: session.userId,
-    remotePageSize: momentsRemotePageSize,
+    userId: isHome || isMoments ? session.userId : null,
+    fullHistory: isMoments,
   });
   const reflections = useReflections({
-    userId: session.userId,
-    remotePageSize: reflectionsRemotePageSize,
+    userId: isHome || isReflections ? session.userId : null,
+    fullHistory: isReflections,
   });
 
   const value = useMemo<WorkspaceDataState>(

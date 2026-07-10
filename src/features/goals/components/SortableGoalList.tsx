@@ -27,8 +27,8 @@ const animateLayoutChanges: AnimateLayoutChanges = (args) =>
   defaultAnimateLayoutChanges({ ...args, wasDragging: true });
 
 type SortableGoalListProps = {
-  ids: number[];
-  onReorder: (orderedIds: number[]) => void;
+  ids: string[];
+  onReorder: (orderedIds: string[]) => void;
   children: ReactNode;
 };
 
@@ -48,8 +48,8 @@ export function SortableGoalList({
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = ids.indexOf(Number(active.id));
-    const newIndex = ids.indexOf(Number(over.id));
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
     if (oldIndex < 0 || newIndex < 0) return;
     onReorder(arrayMove(ids, oldIndex, newIndex));
   };
@@ -71,7 +71,7 @@ export function SortableGoalItem({
   id,
   children,
 }: {
-  id: number;
+  id: string;
   children: ReactNode;
 }) {
   const {

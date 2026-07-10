@@ -8,8 +8,8 @@ import { toDateKey } from "../../../lib/date/dateUtils";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 
 type GoalCalendarGoal = {
-  status?: string | null;
-  due_date?: string | null;
+  completedAt?: string | null;
+  dueDate?: string | null;
 };
 
 type GoalCalendarProps = {
@@ -33,13 +33,13 @@ export const GoalCalendar = ({
     const markers = new Map<string, CalendarMarker[]>();
 
     goals.forEach((goal) => {
-      if (!goal.due_date) return;
-      const current = markers.get(goal.due_date) ?? [];
+      if (!goal.dueDate) return;
+      const current = markers.get(goal.dueDate) ?? [];
       current.push({
-        tone: goal.status === "completed" ? "completed" : "open",
-        label: goal.status === "completed" ? "completed" : "open",
+        tone: goal.completedAt ? "completed" : "open",
+        label: goal.completedAt ? "completed" : "open",
       });
-      markers.set(goal.due_date, current.slice(0, 3));
+      markers.set(goal.dueDate, current.slice(0, 3));
     });
 
     return Object.fromEntries(markers);

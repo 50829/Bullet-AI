@@ -29,9 +29,6 @@ export function RecentRecordsSection({
     <DashboardCardSection
       className="lg:col-span-3"
       title={t("recentRecords") || "最近更新"}
-      description={
-        t("recentRecordsDescription") || "生活记录和感悟会在这里汇总。"
-      }
       action={
         <Button variant="outline" onClick={onNewReflection}>
           <Edit2 size={16} />

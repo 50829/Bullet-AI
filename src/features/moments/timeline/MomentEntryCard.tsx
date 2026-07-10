@@ -26,7 +26,7 @@ export function MomentEntryCard({
 
   return (
     <div
-      id={`moment-${moment.id}`}
+      id={`moment-${moment.clientId}`}
       className={`group/item relative overflow-hidden rounded-lg border border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] px-4 py-4 shadow-sm transition-[background-color,box-shadow,border-color] duration-700 ease-out hover:border-[var(--color-border)] motion-reduce:transition-none ${
         highlighted
           ? "bg-[var(--color-primary-light)] ring-2 ring-[var(--color-primary)]"
@@ -56,10 +56,10 @@ export function MomentEntryCard({
         </p>
       )}
 
-      {moment.image_url && (
+      {moment.imageUrl && (
         <div className="mt-4 overflow-hidden rounded-lg border border-[var(--color-border-muted)] bg-[var(--color-bg-primary)]">
           <PlainImage
-            src={moment.image_url}
+            src={moment.imageUrl}
             alt="时刻图片"
             className="h-auto max-h-[520px] w-full object-cover"
           />

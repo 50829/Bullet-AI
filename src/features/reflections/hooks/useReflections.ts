@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { createClientId } from "../../../lib/localDb/repository";
-import { createOptimisticId } from "../../../lib/localFirst/ids";
-import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
+import { createEntityId } from "../../../domain/ids";
+import { hasUnresolvedSyncIssue } from "../../../domain/sync";
+import { useDataMutation } from "../../../lib/data-v2";
+import { useWorkspaceResource } from "../../workspace/data/useWorkspaceResourceV2";
 import type {
   CreateReflectionInput,
   ReflectionRecord,
@@ -12,60 +13,135 @@ import type {
 
 type UseReflectionsInput = {
   userId: string | null;
-  remotePageSize?: number;
+  fullHistory?: boolean;
 };
 
 export function useReflections({
   userId,
-  remotePageSize = 20,
+  fullHistory = false,
 }: UseReflectionsInput) {
-  const collection = useLocalFirstCollection<ReflectionRecord>({
-    userId,
-    collection: "reflections",
-    initialRemotePageSize: remotePageSize,
+  const resource = useWorkspaceResource(userId, "reflections", {
+    fullHistory,
   });
+  const mutation = useDataMutation(userId ?? "anonymous", "reflections");
+
+  const requireUser = useCallback(() => {
+    if (!userId) throw new Error("请先登录");
+    return userId;
+  }, [userId]);
+
+  const refreshReflections = useCallback(async () => {
+    requireUser();
+    await resource.refresh();
+  }, [requireUser, resource]);
 
   const createReflection = useCallback(
     async (input: CreateReflectionInput) => {
+      const activeUserId = requireUser();
       const now = new Date().toISOString();
-      const createdAt = input.created_at ?? now;
-      await collection.add({
-        id: input.id ?? createOptimisticId(),
-        client_id: input.client_id ?? createClientId("reflection"),
-        content: input.content,
-        title: input.title ?? null,
-        body: input.body ?? null,
-        source: input.source ?? null,
-        source_type: input.source_type ?? null,
-        location: input.location ?? null,
-        image_url: input.image_url ?? null,
-        image_path: input.image_path ?? null,
-        created_at: createdAt,
-        updated_at: now,
+      const clientId = input.clientId ?? createEntityId("reflection");
+      const title = input.title.trim();
+      const body = input.body.trim();
+      if (!title) throw new Error("感悟标题不能为空");
+      if (!body) throw new Error("感悟内容不能为空");
+      const optimistic: ReflectionRecord = {
+        clientId,
+        userId: activeUserId,
+        version: 0,
+        createdAt: now,
+        updatedAt: now,
+        title,
+        body,
+      };
+
+      await mutation.mutateAsync({
+        kind: "create",
+        clientId,
+        baseVersion: null,
+        optimistic,
+        changes: {
+          title: optimistic.title,
+          body: optimistic.body,
+        },
       });
     },
-    [collection],
+    [mutation, requireUser],
   );
 
   const updateReflection = useCallback(
-    async (id: number, updates: UpdateReflectionInput) => {
-      await collection.update(id, updates);
+    async (clientId: string, input: UpdateReflectionInput) => {
+      requireUser();
+      const current = resource.items.find((item) => item.clientId === clientId);
+      if (!current) throw new Error("感悟不存在或已删除");
+      if (hasUnresolvedSyncIssue(current)) {
+        throw new Error("请先在设置中处理这条感悟的同步冲突");
+      }
+
+      const changes: UpdateReflectionInput = {};
+      if (input.title !== undefined) {
+        const title = input.title.trim();
+        if (!title) throw new Error("感悟标题不能为空");
+        changes.title = title;
+      }
+      if (input.body !== undefined) {
+        const body = input.body.trim();
+        if (!body) throw new Error("感悟内容不能为空");
+        changes.body = body;
+      }
+      if (Object.keys(changes).length === 0) return;
+      const optimistic: ReflectionRecord = {
+        ...current,
+        ...changes,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await mutation.mutateAsync({
+        kind: "patch",
+        clientId,
+        baseVersion: current.version,
+        optimistic,
+        changes,
+      });
     },
-    [collection],
+    [mutation, requireUser, resource.items],
+  );
+
+  const deleteReflection = useCallback(
+    async (clientId: string) => {
+      requireUser();
+      const current = resource.items.find((item) => item.clientId === clientId);
+      if (!current) return;
+      if (hasUnresolvedSyncIssue(current)) {
+        throw new Error("请先在设置中处理这条感悟的同步冲突");
+      }
+      await mutation.mutateAsync({
+        kind: "delete",
+        clientId,
+        baseVersion: current.version,
+        optimistic: current,
+      });
+    },
+    [mutation, requireUser, resource.items],
   );
 
   return useMemo(
     () => ({
-      reflections: collection.items,
-      loading: collection.loading,
-      loadingMoreReflections: collection.loadingMore,
-      hasMoreReflections: collection.hasMore,
-      refreshReflections: () => collection.refresh(),
-      loadMoreReflections: () => collection.loadMore(),
+      reflections: resource.items,
+      loading: resource.loading,
+      error: resource.error,
+      refreshReflections,
       createReflection,
       updateReflection,
-      deleteReflection: collection.remove,
+      deleteReflection,
     }),
-    [collection, createReflection, updateReflection],
+    [
+      createReflection,
+      deleteReflection,
+      refreshReflections,
+      resource.error,
+      resource.items,
+      resource.loading,
+      updateReflection,
+    ],
   );
 }

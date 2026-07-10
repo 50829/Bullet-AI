@@ -1,23 +1,21 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-describe("DataSettingsSection dead-letter diagnostics wiring", () => {
-  it("renders diagnostics rows with per-item retry and confirmed discard wiring", () => {
+describe("DataSettingsSection v2 diagnostics wiring", () => {
+  it("renders actionable conflicts without exposing a dead-letter queue", () => {
     const source = readFileSync(
       new URL("./DataSettingsSection.tsx", import.meta.url),
       "utf8",
     );
 
-    expect(source).toContain("deadOutboxItems.length > 0");
-    expect(source).toContain("item.collection");
-    expect(source).toContain("item.entityId");
+    expect(source).toContain("syncIssues.length > 0");
+    expect(source).toContain("item.resource");
     expect(source).toContain("item.operation");
-    expect(source).toContain("item.errorKind");
-    expect(source).toContain("item.attemptCount");
-    expect(source).toContain("await onRetryDeadOutboxItem(id)");
-    expect(source).toContain("retryOne(item.id)");
+    expect(source).toContain("item.status");
+    expect(source).toContain("item.error");
     expect(source).toContain("setDiscardTarget(item)");
     expect(source).toContain("<ConfirmDialog");
-    expect(source).toContain("onDiscardDeadOutboxItem(discardTarget.id)");
+    expect(source).toContain("onDiscardSyncItem(discardTarget.id)");
+    expect(source).not.toContain("deadOutbox");
   });
 });

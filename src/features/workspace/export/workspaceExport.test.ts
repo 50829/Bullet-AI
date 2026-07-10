@@ -1,219 +1,204 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-type TestRecord = {
-  id: number;
-  client_id: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at?: string | null;
-  content?: string;
-  title?: string;
-  name?: string;
-  description?: string | null;
-  frequency?: "daily" | "weekly";
-  color?: string | null;
-  habit_id?: number | null;
-  habit_client_id?: string;
-  checked_on?: string;
-  checked?: boolean;
-  _local?: {
-    pending?: boolean;
-    failed?: boolean;
-  };
-};
+import type {
+  AnyMutationRecord,
+  DataResource,
+  DataV2StoreApi,
+  EntityByResource,
+} from "../../../lib/data-v2";
 
 const mocks = vi.hoisted(() => ({
-  localRows: new Map<string, TestRecord[]>(),
-  remoteRows: new Map<string, TestRecord[]>(),
-  remoteFailures: new Set<string>(),
+  remote: new Map<string, unknown[]>(),
+  failure: null as Error | null,
+  loadRemoteResource: vi.fn(),
 }));
 
-vi.mock("../../../lib/localDb/collectionRepository", () => ({
-  getCollectionRepository: vi.fn((collection: string) => ({
-    list: vi.fn(async () => mocks.localRows.get(collection) ?? []),
-  })),
+vi.mock("../data/remoteRepositoryV2", () => ({
+  loadRemoteResource: mocks.loadRemoteResource,
 }));
 
-vi.mock("../../../lib/localDb/remoteReader", () => ({
-  readRemoteCollection: vi.fn(async (_userId: string, collection: string) => {
-    if (mocks.remoteFailures.has(collection)) {
-      throw new Error("remote unavailable");
-    }
-    return mocks.remoteRows.get(collection) ?? [];
-  }),
-}));
+const { loadWorkspaceExportPayload } = await import("./workspaceExport");
 
-const {
-  buildWorkspaceExportPayload,
-  loadWorkspaceExportPayload,
-  mergeRemoteWithLocalOverrides,
-} = await import("./workspaceExport");
-const { readRemoteCollection } = await import("../../../lib/localDb/remoteReader");
+const now = "2026-07-10T08:00:00.000Z";
 
-function row(overrides: Partial<TestRecord>): TestRecord {
+function base(clientId: string) {
   return {
-    id: 1,
-    client_id: "row-1",
-    user_id: "user-1",
-    created_at: "2026-07-09T00:00:00.000Z",
-    updated_at: "2026-07-09T00:00:00.000Z",
-    deleted_at: null,
-    ...overrides,
+    clientId,
+    userId: "user-1",
+    version: 1,
+    createdAt: now,
+    updatedAt: now,
   };
+}
+
+function remoteFixtures(): Record<DataResource, unknown[]> {
+  return {
+    profiles: [
+      {
+        ...base("user-1"),
+        username: "Mira",
+        preferredLanguage: "zh",
+        accentColor: "sage",
+        colorScheme: "system",
+        completedGoalRetention: "next_day",
+        weekStartsOn: "auto",
+      },
+    ],
+    moments: [
+      {
+        ...base("moment-1"),
+        content: "cloud",
+        occurredOn: "2026-07-09",
+        imagePath: null,
+      },
+    ],
+    reflections: [],
+    goals: [
+      {
+        ...base("goal-1"),
+        title: "Remove me",
+        description: "",
+        dueDate: null,
+        completedAt: null,
+        color: null,
+        sortOrder: 0,
+      },
+    ],
+    habits: [],
+    habit_checkins: [],
+  };
+}
+
+function mutation(
+  overrides: Partial<AnyMutationRecord> &
+    Pick<AnyMutationRecord, "resource" | "clientId" | "kind" | "optimistic">,
+): AnyMutationRecord {
+  return {
+    mutationId: `mutation-${overrides.clientId}`,
+    userId: "user-1",
+    baseVersion: overrides.kind === "create" ? null : 1,
+    changes: overrides.kind === "delete" ? null : {},
+    status: "queued",
+    attemptCount: 0,
+    nextAttemptAt: now,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  } as AnyMutationRecord;
+}
+
+function storeWith(mutations: AnyMutationRecord[] = []): DataV2StoreApi {
+  return {
+    listPendingMutations: vi.fn(async () => mutations),
+    listConflicts: vi.fn(async () => []),
+    getMutationBlobs: vi.fn(async (mutationId: string) =>
+      mutationId === "mutation-moment-1"
+        ? [
+            {
+              blobId: "blob-1",
+              mutationId,
+              userId: "user-1",
+              slot: "image",
+              blob: new Blob(["image"], { type: "image/jpeg" }),
+              fileName: "moment.jpg",
+              mimeType: "image/jpeg",
+              createdAt: now,
+            },
+          ]
+        : [],
+    ),
+  } as unknown as DataV2StoreApi;
 }
 
 describe("workspaceExport", () => {
   beforeEach(() => {
-    mocks.localRows.clear();
-    mocks.remoteRows.clear();
-    mocks.remoteFailures.clear();
-    vi.mocked(readRemoteCollection).mockClear();
+    mocks.remote = new Map(Object.entries(remoteFixtures()));
+    mocks.failure = null;
+    mocks.loadRemoteResource.mockReset();
+    mocks.loadRemoteResource.mockImplementation(
+      async (_userId: string, resource: DataResource) => {
+        if (mocks.failure) throw mocks.failure;
+        return mocks.remote.get(resource) ?? [];
+      },
+    );
   });
 
-  it("builds a payload with exported_at and the four workspace collections", () => {
-    const payload = buildWorkspaceExportPayload(
-      {
-        moments: [row({ id: 1, client_id: "moment-1", content: "Moment" })],
-        goals: [row({ id: 2, client_id: "goal-1", title: "Goal" })],
-        reflections: [
-          row({ id: 3, client_id: "reflection-1", content: "Reflection" }),
-        ],
-        habits: [
-          {
-            ...row({ id: 4, client_id: "habit-1", name: "Habit" }),
-            frequency: "daily",
-            description: null,
-            color: null,
-            checkedToday: false,
-            todayCheckinId: null,
-            checkinCount: 0,
-            lastCheckedOn: null,
-            streak: 0,
-            checkins: [],
-          },
-        ],
-      } as never,
-      "2026-07-09T00:00:00.000Z",
+  it("requests full cloud history for every resource", async () => {
+    const payload = await loadWorkspaceExportPayload(
+      "user-1",
+      storeWith(),
+      now,
     );
 
-    expect(payload).toEqual({
-      exported_at: "2026-07-09T00:00:00.000Z",
-      moments: [expect.objectContaining({ id: 1, content: "Moment" })],
-      goals: [expect.objectContaining({ id: 2, title: "Goal" })],
-      reflections: [
-        expect.objectContaining({ id: 3, content: "Reflection" }),
-      ],
-      habits: [expect.objectContaining({ id: 4, name: "Habit" })],
+    expect(mocks.loadRemoteResource).toHaveBeenCalledTimes(6);
+    expect(mocks.loadRemoteResource).toHaveBeenCalledWith("user-1", "moments", {
+      fullHistory: true,
     });
+    expect(payload.schemaVersion).toBe(2);
+    expect(payload.exportedAt).toBe(now);
+    expect(payload.profiles[0]).toEqual(
+      expect.objectContaining({ username: "Mira" }),
+    );
   });
 
-  it("merges full remote rows with pending local overrides by client id", () => {
-    const remoteOld = row({
-      id: 1,
-      client_id: "moment-1",
-      content: "remote old",
-      created_at: "2026-07-08T00:00:00.000Z",
-    });
-    const remoteOther = row({
-      id: 2,
-      client_id: "moment-2",
-      content: "remote other",
-      created_at: "2026-07-07T00:00:00.000Z",
-    });
-    const pendingUpdate = row({
-      id: 1,
-      client_id: "moment-1",
-      content: "pending update",
-      created_at: "2026-07-08T00:00:00.000Z",
-      _local: { pending: true },
-    });
-    const staleCached = row({
-      id: 3,
-      client_id: "moment-stale",
-      content: "stale cached",
-      created_at: "2026-07-10T00:00:00.000Z",
-    });
-
-    expect(
-      mergeRemoteWithLocalOverrides(
-        [remoteOld, remoteOther] as never,
-        [pendingUpdate, staleCached] as never,
-      ),
-    ).toEqual([
-      expect.objectContaining({ content: "pending update" }),
-      expect.objectContaining({ content: "remote other" }),
-    ]);
-  });
-
-  it("loads all export collections from remote and projects habits with checkins", async () => {
-    mocks.remoteRows.set("moments", [
-      row({ id: 1, client_id: "moment-1", content: "old remote moment" }),
-      row({ id: 2, client_id: "moment-2", content: "full remote moment" }),
-    ]);
-    mocks.localRows.set("moments", [
-      row({
-        id: 1,
-        client_id: "moment-1",
-        content: "pending local moment",
-        _local: { pending: true },
+  it("overlays queued writes and includes attachment metadata", async () => {
+    const updatedMoment: EntityByResource["moments"] = {
+      ...(remoteFixtures().moments[0] as EntityByResource["moments"]),
+      content: "local draft",
+    };
+    const newReflection: EntityByResource["reflections"] = {
+      ...base("reflection-1"),
+      title: "Offline",
+      body: "Draft",
+    };
+    const mutations = [
+      mutation({
+        resource: "moments",
+        clientId: "moment-1",
+        kind: "patch",
+        optimistic: updatedMoment,
+        changes: { content: "local draft" },
       }),
-    ]);
-    mocks.remoteRows.set("goals", [
-      row({ id: 3, client_id: "goal-1", title: "Goal", description: "" }),
-    ]);
-    mocks.remoteRows.set("reflections", [
-      row({ id: 4, client_id: "reflection-1", content: "Reflection" }),
-    ]);
-    mocks.remoteRows.set("habits", [
-      row({
-        id: 5,
-        client_id: "habit-1",
-        name: "Habit",
-        description: null,
-        frequency: "daily",
-        color: null,
+      mutation({
+        resource: "goals",
+        clientId: "goal-1",
+        kind: "delete",
+        optimistic: remoteFixtures().goals[0] as EntityByResource["goals"],
       }),
-    ]);
-    mocks.remoteRows.set("habit_checkins", [
-      row({
-        id: 6,
-        client_id: "checkin-1",
-        habit_client_id: "habit-1",
-        habit_id: 5,
-        checked_on: "2026-07-09",
-        checked: true,
+      mutation({
+        resource: "reflections",
+        clientId: "reflection-1",
+        kind: "create",
+        optimistic: newReflection,
+        changes: { title: "Offline", body: "Draft" },
       }),
-    ]);
+    ];
 
     const payload = await loadWorkspaceExportPayload(
       "user-1",
-      "2026-07-09T00:00:00.000Z",
+      storeWith(mutations),
+      now,
     );
 
-    expect(readRemoteCollection).toHaveBeenCalledWith("user-1", "moments");
-    expect(readRemoteCollection).toHaveBeenCalledWith("user-1", "reflections");
-    expect(payload.moments).toEqual([
-      expect.objectContaining({ content: "pending local moment" }),
-      expect.objectContaining({ content: "full remote moment" }),
-    ]);
-    expect(payload.habits).toEqual([
+    expect(payload.moments[0]).toEqual(
       expect.objectContaining({
-        name: "Habit",
-        checkinCount: 1,
-        checkins: [expect.objectContaining({ checked_on: "2026-07-09" })],
+        content: "local draft",
+        sync: expect.objectContaining({ pending: true }),
       }),
+    );
+    expect(payload.goals).toEqual([]);
+    expect(payload.reflections[0]).toEqual(
+      expect.objectContaining({ title: "Offline" }),
+    );
+    expect(payload.pendingMutations[0].attachments).toEqual([
+      expect.objectContaining({ fileName: "moment.jpg", size: 5 }),
     ]);
   });
 
-  it("fails instead of exporting a partial local cache when remote cannot be read", async () => {
-    mocks.remoteFailures.add("moments");
-    mocks.localRows.set("moments", [
-      row({ id: 1, client_id: "moment-1", content: "cached moment" }),
-    ]);
+  it("fails rather than exporting a partial cache", async () => {
+    mocks.failure = new Error("remote unavailable");
 
     await expect(
-      loadWorkspaceExportPayload("user-1", "2026-07-09T00:00:00.000Z"),
+      loadWorkspaceExportPayload("user-1", storeWith(), now),
     ).rejects.toThrow("remote unavailable");
   });
 });

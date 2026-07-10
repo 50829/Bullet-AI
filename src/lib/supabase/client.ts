@@ -14,7 +14,7 @@ function getSupabaseConfig() {
   return { supabaseUrl, supabaseAnonKey };
 }
 
-export function createClient() {
+function createClient() {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig();
   return createBrowserClient(supabaseUrl, supabaseAnonKey);
 }

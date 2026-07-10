@@ -26,19 +26,11 @@ export function HabitCard({
   const { t, language } = useLanguage();
   const frequencyLabel =
     habit.frequency === "daily" ? t("daily") || "每日" : t("weekly") || "每周";
-  const checked = habit.checkedToday;
+  const checked = habit.isCurrentPeriodComplete;
   const accent = habit.color || "var(--color-primary)";
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen(habit)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") onOpen(habit);
-      }}
-      className="group grid w-full cursor-pointer grid-cols-[32px_minmax(0,1fr)_auto] items-start gap-3 rounded-lg px-2 py-3 text-left transition-colors duration-150 hover:bg-[var(--color-bg-primary)] motion-reduce:transition-none"
-    >
+    <div className="group grid w-full grid-cols-[32px_minmax(0,1fr)_auto] items-start gap-3 rounded-lg px-2 py-3 text-left transition-colors duration-150 hover:bg-[var(--color-bg-primary)] motion-reduce:transition-none">
       <button
         type="button"
         onClick={(event) => {
@@ -60,7 +52,11 @@ export function HabitCard({
         <Check size={18} strokeWidth={2.5} />
       </button>
 
-      <div className="min-w-0">
+      <button
+        type="button"
+        onClick={() => onOpen(habit)}
+        className="min-w-0 text-left"
+      >
         <div className="flex flex-wrap items-center gap-2">
           <span
             className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -86,12 +82,12 @@ export function HabitCard({
             {t("checkinCount") || "打卡"} {habit.checkinCount}{" "}
             {t("times") || "次"}
           </span>
-          {habit.frequency === "daily" && (
-            <span className="inline-flex items-center gap-1">
-              <Flame size={14} />
-              {habit.streak} {language === "en" ? "day streak" : "天连续"}
-            </span>
-          )}
+          <span className="inline-flex items-center gap-1">
+            <Flame size={14} />
+            {language === "en"
+              ? `${habit.streak} ${habit.streakUnit}${habit.streak === 1 ? "" : "s"} streak`
+              : `连续 ${habit.streak} ${habit.streakUnit === "week" ? "周" : "天"}`}
+          </span>
           {habit.lastCheckedOn && (
             <span>
               {t("lastCheckin") || "上次："}
@@ -99,7 +95,7 @@ export function HabitCard({
             </span>
           )}
         </div>
-      </div>
+      </button>
 
       <ActionButtonGroup
         variant="inline"

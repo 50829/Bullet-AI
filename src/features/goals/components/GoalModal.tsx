@@ -11,29 +11,22 @@ import { Textarea } from "../../../shared/components/ui/Textarea";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import type { CreateGoalInput, GoalRecord, UpdateGoalInput } from "../types";
 
-export type GoalModalCreateInput = CreateGoalInput;
-export type GoalModalUpdateInput = Pick<
+type GoalModalCreateInput = CreateGoalInput;
+type GoalModalUpdateInput = Pick<
   UpdateGoalInput,
-  "title" | "description" | "due_date" | "color"
+  "title" | "description" | "dueDate" | "color"
 >;
 
-export type GoalModalInitialGoal = Pick<
+type GoalModalInitialGoal = Pick<
   GoalRecord,
-  | "id"
-  | "title"
-  | "description"
-  | "due_date"
-  | "progress"
-  | "status"
-  | "color"
+  "clientId" | "title" | "description" | "dueDate" | "color"
 >;
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
   onCreate: (goal: GoalModalCreateInput) => Promise<void>;
-  onUpdate: (id: number, updates: GoalModalUpdateInput) => Promise<void>;
+  onUpdate: (clientId: string, updates: GoalModalUpdateInput) => Promise<void>;
   initialGoal?: GoalModalInitialGoal | null;
 };
 
@@ -50,7 +43,6 @@ const GOAL_COLORS: Array<{ value: string | null; swatch: string }> = [
 export const GoalModal = ({
   isOpen,
   onClose,
-  onSuccess,
   onCreate,
   onUpdate,
   initialGoal = null,
@@ -68,7 +60,7 @@ export const GoalModal = ({
     if (!isOpen) return;
     setTitle(initialGoal?.title ?? "");
     setDescription(initialGoal?.description ?? "");
-    setDueDate(initialGoal?.due_date ?? "");
+    setDueDate(initialGoal?.dueDate ?? "");
     setColor(initialGoal?.color ?? null);
     setMessage(null);
   }, [initialGoal, isOpen]);
@@ -97,14 +89,13 @@ export const GoalModal = ({
 
     try {
       if (isEditing && initialGoal) {
-        await onUpdate(initialGoal.id, {
+        await onUpdate(initialGoal.clientId, {
           title: title.trim(),
           description: description.trim(),
-          due_date: dueDate || null,
+          dueDate: dueDate || null,
           color,
         });
         setLoading(false);
-        onSuccess();
         handleClose();
         return;
       }
@@ -112,11 +103,10 @@ export const GoalModal = ({
       await onCreate({
         title: title.trim(),
         description: description.trim(),
-        due_date: dueDate || null,
+        dueDate: dueDate || null,
         color,
       });
       setLoading(false);
-      onSuccess();
       handleClose();
     } catch (err) {
       console.error("捕获到异常:", err);

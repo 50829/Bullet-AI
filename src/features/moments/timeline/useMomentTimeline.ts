@@ -115,7 +115,7 @@ export function useMomentTimeline(moments: Moment[], language: "zh" | "en") {
     const groupedByDate = new Map<string, Moment[]>();
 
     moments.forEach((moment) => {
-      const dateKey = getDateKey(moment.created_at);
+      const dateKey = getDateKey(moment.occurredOn);
       const current = groupedByDate.get(dateKey) ?? [];
       current.push(moment);
       groupedByDate.set(dateKey, current);
@@ -126,7 +126,7 @@ export function useMomentTimeline(moments: Moment[], language: "zh" | "en") {
         date: dateKey,
         moments: items.sort(
           (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         ),
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

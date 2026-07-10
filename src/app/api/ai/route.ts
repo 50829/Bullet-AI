@@ -23,10 +23,7 @@ export async function POST(req: Request) {
 
     const parsedRequest = parseAssistantRequestBody(body);
     if ("error" in parsedRequest) {
-      return NextResponse.json(
-        { error: parsedRequest.error },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: parsedRequest.error }, { status: 400 });
     }
 
     const result = await runAssistantTurn({

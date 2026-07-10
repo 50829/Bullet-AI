@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { useToast } from "../../../shared/components/ui/Toast";
 import { useWorkspaceData } from "../data";
+import { useDataV2 } from "../../../lib/data-v2";
 import {
   downloadJsonFile,
   loadWorkspaceExportPayload,
@@ -10,6 +11,7 @@ import {
 
 export function useWorkspaceExport() {
   const { session } = useWorkspaceData();
+  const { store } = useDataV2();
   const { showToast } = useToast();
 
   const handleExport = useCallback(async () => {
@@ -19,8 +21,8 @@ export function useWorkspaceExport() {
     }
 
     try {
-      const payload = await loadWorkspaceExportPayload(session.userId);
-      const dateKey = payload.exported_at.slice(0, 10);
+      const payload = await loadWorkspaceExportPayload(session.userId, store);
+      const dateKey = payload.exportedAt.slice(0, 10);
       downloadJsonFile(payload, `bullet-ai-export-${dateKey}.json`);
     } catch (error) {
       showToast({
@@ -29,7 +31,7 @@ export function useWorkspaceExport() {
           error instanceof Error ? error.message : "导出失败，请稍后重试",
       });
     }
-  }, [session.userId, showToast]);
+  }, [session.userId, showToast, store]);
 
   return { handleExport };
 }

@@ -1,34 +1,21 @@
-import type { LocalFirstEntity } from "../../lib/localFirst/types";
+import type { MomentEntity } from "../../domain/entities";
 
-export type MomentRecord = LocalFirstEntity & {
-  content: string;
-  local_file?: File | Blob | null;
-  local_file_name?: string | null;
-  previous_image_path?: string | null;
+export type MomentRecord = MomentEntity & {
+  imageUrl: string | null;
 };
 
 export type CreateMomentInput = {
-  id?: number;
-  client_id?: string;
+  clientId?: string;
   content: string;
-  created_at?: string;
-  image_path?: string | null;
-  image_url?: string | null;
-  local_file?: File | Blob | null;
-  local_file_name?: string | null;
-  previous_image_path?: string | null;
-  date?: string;
+  occurredOn: string;
+  imagePath?: string | null;
+  imageFile?: File | Blob | null;
+  imageFileName?: string | null;
 };
 
 export type UpdateMomentInput = Partial<
-  Pick<
-    MomentRecord,
-    | "content"
-    | "created_at"
-    | "image_path"
-    | "image_url"
-    | "local_file"
-    | "local_file_name"
-    | "previous_image_path"
-  >
->;
+  Pick<MomentRecord, "content" | "occurredOn" | "imagePath">
+> & {
+  imageFile?: File | Blob | null;
+  imageFileName?: string | null;
+};

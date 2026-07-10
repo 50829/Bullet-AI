@@ -13,6 +13,8 @@ import {
   toDateKey,
 } from "../../../lib/date/dateUtils";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
+import { useResolvedWeekStartsOn } from "../../../shared/components/date/useResolvedWeekStartsOn";
+import { startOfWeekKey } from "../habitProjection";
 import type { HabitView } from "../types";
 
 type HabitDetailDialogProps = {
@@ -27,6 +29,7 @@ export function HabitDetailDialog({
   onToggleCheckin,
 }: HabitDetailDialogProps) {
   const { t, language } = useLanguage();
+  const weekStartsOn = useResolvedWeekStartsOn();
   const today = toDateKey();
   const [dateKey, setDateKey] = useState(today);
   const [saving, setSaving] = useState(false);
@@ -35,14 +38,21 @@ export function HabitDetailDialog({
   useEffect(() => {
     setDateKey(today);
     setMessage(null);
-  }, [habit?.id, today]);
+  }, [habit?.clientId, today]);
 
-  const createdOn = habit ? toDateKey(habit.created_at) : today;
-  const checkedDateSet = useMemo(
-    () => new Set(habit?.checkins.map((checkin) => checkin.checked_on) ?? []),
-    [habit],
-  );
-  const isChecked = checkedDateSet.has(dateKey);
+  const createdOn = habit?.startedOn ?? today;
+  const isChecked = useMemo(() => {
+    if (!habit) return false;
+    const periodKey =
+      habit.frequency === "weekly"
+        ? startOfWeekKey(dateKey, weekStartsOn)
+        : dateKey;
+    return habit.checkins.some((checkin) =>
+      habit.frequency === "weekly"
+        ? startOfWeekKey(checkin.checkedOn, weekStartsOn) === periodKey
+        : checkin.checkedOn === periodKey,
+    );
+  }, [dateKey, habit, weekStartsOn]);
   const isBeforeCreated = isDateKeyBefore(dateKey, createdOn);
   const isFuture = isDateKeyAfter(dateKey, today);
   const canToggle = Boolean(habit) && !isBeforeCreated && !isFuture;
@@ -97,7 +107,7 @@ export function HabitDetailDialog({
             {language === "en" ? "Current streak" : "当前连续"}
           </p>
           <p className="mt-1 text-2xl font-semibold text-[var(--color-text-primary)]">
-            {habit.frequency === "daily" ? habit.streak : "-"}
+            {habit.streak}
           </p>
         </div>
         <div className="rounded-xl bg-[var(--color-bg-surface)] p-3">
@@ -114,7 +124,13 @@ export function HabitDetailDialog({
 
       <div className="mt-5 rounded-xl border border-[var(--color-border)] p-4">
         <FieldLabel>
-          {language === "en" ? "Manage a check-in date" : "管理某一天的打卡"}
+          {habit.frequency === "weekly"
+            ? language === "en"
+              ? "Manage a completed week"
+              : "管理某一周的完成状态"
+            : language === "en"
+              ? "Manage a check-in date"
+              : "管理某一天的打卡"}
         </FieldLabel>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
           <DateField
@@ -165,12 +181,12 @@ export function HabitDetailDialog({
           <div className="mt-3 flex flex-wrap gap-2">
             {recentCheckins.map((checkin) => (
               <button
-                key={checkin.id}
+                key={checkin.clientId}
                 type="button"
-                onClick={() => setDateKey(checkin.checked_on)}
+                onClick={() => setDateKey(checkin.checkedOn)}
                 className="rounded-full bg-[var(--color-bg-surface)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-text-on-primary)]"
               >
-                {formatDateKey(checkin.checked_on, language)}
+                {formatDateKey(checkin.checkedOn, language)}
               </button>
             ))}
           </div>

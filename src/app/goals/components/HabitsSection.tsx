@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { Button } from "../../../shared/components/ui/Button";
 import { Card } from "../../../shared/components/ui/Card";
 import { HabitList } from "../../../features/habits/components/HabitList";
@@ -38,6 +39,7 @@ export function HabitsSection({
             {title}
           </h3>
           <Button onClick={onCreateClick} variant="outline">
+            <Plus size={16} />
             {newLabel}
           </Button>
         </div>

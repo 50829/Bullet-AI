@@ -2,31 +2,26 @@
 
 import { ChatComposer } from "./ChatComposer";
 import { MessageList } from "./MessageList";
-import type { AssistantMode, PlanData } from "../chat/types";
 import { useAssistantChat } from "../chat/useAssistantChat";
 import { Drawer } from "../../../shared/components/ui/Drawer";
-import type { AiPurpose } from "../../../lib/ai/promptRegistry";
+import type { GoalPlan } from "../../../lib/ai/goalPlan";
 
 type AssistantDrawerProps = {
   isOpen: boolean;
   title: string;
-  purpose?: AiPurpose;
-  mode?: AssistantMode;
   placeholder?: string;
   onClose: () => void;
-  onAddGoals?: (plan: PlanData) => Promise<void>;
+  onAddGoals: (plan: GoalPlan) => Promise<void>;
 };
 
 export function AssistantDrawer({
   isOpen,
   title,
-  purpose = "moment_chat",
-  mode = "chat",
   placeholder,
   onClose,
   onAddGoals,
 }: AssistantDrawerProps) {
-  const assistant = useAssistantChat({ purpose, mode, onAddGoals });
+  const assistant = useAssistantChat({ onAddGoals });
 
   return (
     <Drawer isOpen={isOpen} onClose={onClose} title={title}>

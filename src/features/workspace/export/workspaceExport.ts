@@ -1,102 +1,156 @@
-import { getCollectionRepository } from "../../../lib/localDb/collectionRepository";
-import { readRemoteCollection } from "../../../lib/localDb/remoteReader";
-import type { LocalCollection } from "../../../lib/localDb/types";
-import type { LocalFirstEntity } from "../../../lib/localFirst/types";
-import { projectHabit } from "../../habits/habitProjection";
-import type { HabitCheckin, HabitRecord, HabitView } from "../../habits/types";
-import type { GoalRecord } from "../../goals/types";
-import type { MomentRecord } from "../../moments/types";
-import type { ReflectionRecord } from "../../reflections/types";
+import type {
+  AnyMutationRecord,
+  DataResource,
+  DataV2StoreApi,
+  EntityByResource,
+} from "../../../lib/data-v2";
+import { loadRemoteResource } from "../data/remoteRepositoryV2";
 
-export type WorkspaceExportPayload = {
-  exported_at: string;
-  moments: MomentRecord[];
-  goals: GoalRecord[];
-  reflections: ReflectionRecord[];
-  habits: HabitView[];
+const EXPORT_RESOURCES = [
+  "profiles",
+  "moments",
+  "reflections",
+  "goals",
+  "habits",
+  "habit_checkins",
+] as const satisfies readonly DataResource[];
+
+type ExportCollections = {
+  [R in DataResource]: EntityByResource[R][];
 };
 
-export function buildWorkspaceExportPayload(
-  data: Omit<WorkspaceExportPayload, "exported_at">,
-  exportedAt = new Date().toISOString(),
-): WorkspaceExportPayload {
-  return {
-    exported_at: exportedAt,
-    moments: data.moments,
-    goals: data.goals,
-    reflections: data.reflections,
-    habits: data.habits,
-  };
+export type WorkspaceExportPayload = ExportCollections & {
+  schemaVersion: 2;
+  exportedAt: string;
+  pendingMutations: Array<{
+    mutationId: string;
+    resource: DataResource;
+    clientId: string;
+    kind: AnyMutationRecord["kind"];
+    status: AnyMutationRecord["status"];
+    baseVersion: number | null;
+    changes: unknown;
+    error: string | null;
+    attachments: Array<{
+      slot: string;
+      fileName: string;
+      mimeType: string;
+      size: number;
+    }>;
+  }>;
+  conflicts: Awaited<ReturnType<DataV2StoreApi["listConflicts"]>>;
+};
+
+function sortEntities<R extends DataResource>(items: EntityByResource[R][]) {
+  return [...items].sort(
+    (left, right) =>
+      right.createdAt.localeCompare(left.createdAt) ||
+      left.clientId.localeCompare(right.clientId),
+  );
 }
 
-function exportIdentityFor(item: LocalFirstEntity) {
-  return item.client_id || String(item.id);
-}
-
-function sortForExport<T extends LocalFirstEntity>(items: T[]) {
-  return [...items].sort((a, b) => {
-    const created = b.created_at.localeCompare(a.created_at);
-    if (created !== 0) return created;
-    return exportIdentityFor(a).localeCompare(exportIdentityFor(b));
-  });
-}
-
-function isLocalExportOverride(item: LocalFirstEntity) {
-  return Boolean(item._local?.pending || item._local?.failed);
-}
-
-export function mergeRemoteWithLocalOverrides<T extends LocalFirstEntity>(
-  remoteRows: T[],
-  localRows: T[],
+function applyMutations<R extends DataResource>(
+  remote: EntityByResource[R][],
+  mutations: AnyMutationRecord[],
+  resource: R,
 ) {
-  const byIdentity = new Map<string, T>();
-  remoteRows.forEach((row) => {
-    byIdentity.set(exportIdentityFor(row), row);
-  });
-  localRows.filter(isLocalExportOverride).forEach((row) => {
-    byIdentity.set(exportIdentityFor(row), row);
-  });
-  return sortForExport([...byIdentity.values()]);
-}
-
-async function listLocalRows<T extends LocalFirstEntity>(
-  userId: string,
-  collection: LocalCollection,
-) {
-  const repository = getCollectionRepository<T>(collection);
-  return repository.list(userId);
-}
-
-async function loadCollectionForExport<T extends LocalFirstEntity>(
-  userId: string,
-  collection: LocalCollection,
-) {
-  const localRows = await listLocalRows<T>(userId, collection);
-  const remoteRows = await readRemoteCollection<T>(userId, collection);
-  return mergeRemoteWithLocalOverrides(remoteRows, localRows);
+  const entities = new Map(
+    remote.map((entity) => [entity.clientId, entity] as const),
+  );
+  mutations
+    .filter((mutation) => mutation.resource === resource)
+    .sort(
+      (left, right) =>
+        left.createdAt.localeCompare(right.createdAt) ||
+        left.mutationId.localeCompare(right.mutationId),
+    )
+    .forEach((mutation) => {
+      if (mutation.kind === "delete") {
+        entities.delete(mutation.clientId);
+        return;
+      }
+      entities.set(mutation.clientId, {
+        ...(mutation.optimistic as EntityByResource[R]),
+        sync: {
+          pending:
+            mutation.status === "queued" || mutation.status === "sending",
+          blocked: mutation.status === "blocked",
+          conflict: mutation.status === "conflict",
+        },
+      });
+    });
+  return sortEntities([...entities.values()]);
 }
 
 export async function loadWorkspaceExportPayload(
   userId: string,
+  store: DataV2StoreApi,
   exportedAt = new Date().toISOString(),
-) {
-  const [moments, goals, reflections, habits, checkins] = await Promise.all([
-    loadCollectionForExport<MomentRecord>(userId, "moments"),
-    loadCollectionForExport<GoalRecord>(userId, "goals"),
-    loadCollectionForExport<ReflectionRecord>(userId, "reflections"),
-    loadCollectionForExport<HabitRecord>(userId, "habits"),
-    loadCollectionForExport<HabitCheckin>(userId, "habit_checkins"),
+): Promise<WorkspaceExportPayload> {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    throw new Error("完整导出需要联网读取云端历史数据");
+  }
+
+  const [remoteCollections, mutations, conflicts] = await Promise.all([
+    Promise.all(
+      EXPORT_RESOURCES.map((resource) =>
+        loadRemoteResource(userId, resource, {
+          fullHistory: true,
+        }),
+      ),
+    ),
+    store.listPendingMutations(userId),
+    store.listConflicts(userId),
   ]);
 
-  return buildWorkspaceExportPayload(
-    {
-      moments,
-      goals,
-      reflections,
-      habits: habits.map((habit) => projectHabit(habit, checkins)),
-    },
-    exportedAt,
+  const attachmentEntries = await Promise.all(
+    mutations.map(async (mutation) => {
+      const blobs = await store.getMutationBlobs(mutation.mutationId);
+      return [
+        mutation.mutationId,
+        blobs.map((blob) => ({
+          slot: blob.slot,
+          fileName: blob.fileName,
+          mimeType: blob.mimeType,
+          size: blob.blob.size,
+        })),
+      ] as const;
+    }),
   );
+  const attachments = new Map(attachmentEntries);
+  const remote = Object.fromEntries(
+    EXPORT_RESOURCES.map((resource, index) => [
+      resource,
+      remoteCollections[index],
+    ]),
+  ) as ExportCollections;
+
+  return {
+    schemaVersion: 2,
+    exportedAt,
+    profiles: applyMutations(remote.profiles, mutations, "profiles"),
+    moments: applyMutations(remote.moments, mutations, "moments"),
+    reflections: applyMutations(remote.reflections, mutations, "reflections"),
+    goals: applyMutations(remote.goals, mutations, "goals"),
+    habits: applyMutations(remote.habits, mutations, "habits"),
+    habit_checkins: applyMutations(
+      remote.habit_checkins,
+      mutations,
+      "habit_checkins",
+    ),
+    pendingMutations: mutations.map((mutation) => ({
+      mutationId: mutation.mutationId,
+      resource: mutation.resource,
+      clientId: mutation.clientId,
+      kind: mutation.kind,
+      status: mutation.status,
+      baseVersion: mutation.baseVersion,
+      changes: mutation.changes,
+      error: mutation.lastError ?? null,
+      attachments: attachments.get(mutation.mutationId) ?? [],
+    })),
+    conflicts,
+  };
 }
 
 export function downloadJsonFile(payload: unknown, filename: string) {

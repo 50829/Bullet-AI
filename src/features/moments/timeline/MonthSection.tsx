@@ -8,7 +8,7 @@ import { DayGroup } from "./DayGroup";
 type MonthSectionProps = {
   monthCard: MomentMonthCard;
   collapsed: boolean;
-  activeHighlightMomentId: number | null;
+  activeHighlightMomentId: string | null;
   formatDayNumber: (dateKey: string) => string;
   formatDayLabel: (dateKey: string) => string;
   formatWeekday: (dateKey: string) => string;

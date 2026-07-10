@@ -9,7 +9,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useProfile } from "./ProfileContext";
 import {
   ACCENT_COLOR_STORAGE_KEY,
   COLOR_SCHEME_STORAGE_KEY,
@@ -45,7 +44,6 @@ const PREFERENCE_STORAGE_KEYS = new Set<string>([
 ]);
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
-  const { profile } = useProfile();
   const [preferences, setPreferences] = useState<UserPreferences>(
     DEFAULT_USER_PREFERENCES,
   );
@@ -95,10 +93,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     },
     [applyPreferences],
   );
-
-  useEffect(() => {
-    if (profile) replacePreferences(profile.preferences);
-  }, [profile, replacePreferences]);
 
   const updatePreferences = useCallback(
     (updates: Partial<UserPreferences>) => {

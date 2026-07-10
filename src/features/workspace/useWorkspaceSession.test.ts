@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-describe("useWorkspaceSession dead-letter diagnostics wiring", () => {
-  it("exposes dead-letter diagnostics and per-item actions", () => {
+describe("useWorkspaceSession v2 diagnostics wiring", () => {
+  it("derives status from the shared mutation store", () => {
     const source = readFileSync(
       new URL("./useWorkspaceSession.ts", import.meta.url),
       "utf8",
@@ -11,15 +11,14 @@ describe("useWorkspaceSession dead-letter diagnostics wiring", () => {
       encoding: "utf8",
     });
 
-    expect(source).toContain("listDeadOutboxDiagnostics");
-    expect(source).toContain("setDeadOutboxItems(items)");
-    expect(source).toContain("retryDeadOutboxItem(userId, id)");
-    expect(source).toContain("discardDeadOutboxItem(userId, id)");
-    expect(source).toContain("const [ready, setReady] = useState(false)");
-    expect(source).toContain("setReady(true)");
-    expect(typeSource).toContain("ready: boolean");
-    expect(typeSource).toContain("deadOutboxItems: DeadOutboxDiagnostic[]");
-    expect(typeSource).toContain("retryDeadOutboxItem: (id: string)");
-    expect(typeSource).toContain("discardDeadOutboxItem: (id: string)");
+    expect(source).toContain("store.getDiagnostics(userId)");
+    expect(source).toContain('mutation.status === "blocked"');
+    expect(source).toContain('mutation.status === "conflict"');
+    expect(source).toContain("worker?.requestFlush()");
+    expect(source).toContain("store.discardMutation(id)");
+    expect(source).not.toContain("localDb");
+    expect(typeSource).toContain("pendingCount: number");
+    expect(typeSource).toContain("syncIssues: SyncIssue[]");
+    expect(typeSource).toContain("discardSyncItem: (id: string)");
   });
 });

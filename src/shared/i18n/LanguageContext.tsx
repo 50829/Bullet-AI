@@ -1,11 +1,11 @@
 "use client";
 
-import { NextIntlClientProvider, useTranslations } from "next-intl";
 import {
   createContext,
   useCallback,
   useContext,
   useMemo,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import enMessages from "../../../messages/en.json";
@@ -29,13 +29,26 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
   undefined,
 );
 
+const subscribeToHydration = () => () => undefined;
+
+function useIsHydrated() {
+  return useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false,
+  );
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const { preferences, updatePreferences } = usePreferences();
   const language = preferences.preferred_language;
 
-  const setLanguage = useCallback((nextLanguage: Language) => {
-    updatePreferences({ preferred_language: nextLanguage });
-  }, [updatePreferences]);
+  const setLanguage = useCallback(
+    (nextLanguage: Language) => {
+      updatePreferences({ preferred_language: nextLanguage });
+    },
+    [updatePreferences],
+  );
 
   const value = useMemo(
     () => ({
@@ -47,42 +60,29 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   return (
     <LanguageContext.Provider value={value}>
-      <NextIntlClientProvider
-        locale={language}
-        messages={messages[language]}
-        getMessageFallback={({ key }) => key}
-        onError={(error) => {
-          if (error.code !== "MISSING_MESSAGE") {
-            console.error(error);
-          }
-        }}
-        timeZone="Asia/Shanghai"
-      >
-        {children}
-      </NextIntlClientProvider>
+      {children}
     </LanguageContext.Provider>
   );
 }
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
-  const translate = useTranslations();
+  const isHydrated = useIsHydrated();
 
   if (!context) {
     throw new Error("useLanguage must be used within a LanguageProvider");
   }
 
+  // Every consumer uses the server locale for its own hydration pass. This is
+  // important for components inside selectively hydrated Suspense boundaries.
+  const language = isHydrated ? context.language : "zh";
+
   const t = (key: string, fallback = "") => {
-    try {
-      const message = translate(key);
-      return message === key ? fallback : message;
-    } catch {
-      return fallback;
-    }
+    return messages[language][key] ?? fallback;
   };
 
   return {
-    language: context.language,
+    language,
     setLanguage: context.setLanguage,
     t,
   };

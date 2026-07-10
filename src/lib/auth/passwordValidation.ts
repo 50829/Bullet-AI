@@ -1,4 +1,4 @@
-export const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MIN_LENGTH = 8;
 
 export function isPasswordStrong(password: string): boolean {
   return (

@@ -8,7 +8,7 @@ import { AuthCard } from "../components/auth/AuthCard";
 import { AuthInput } from "../components/auth/AuthInput";
 import { OAuthButton } from "../components/auth/OAuthButton";
 import { PasswordField } from "../components/auth/PasswordField";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../lib/supabase/client";
 import { useLanguage } from "../../shared/i18n/LanguageContext";
 import { getPostLoginRedirect } from "../../lib/auth/getPostLoginRedirect";
 import { getLoginErrorMessage } from "../../lib/auth/loginErrorMessage";

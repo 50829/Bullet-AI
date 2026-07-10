@@ -1,44 +1,53 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { createEntityId } from "../../../domain/ids";
+import { hasUnresolvedSyncIssue } from "../../../domain/sync";
 import { toDateKey } from "../../../lib/date/dateUtils";
-import { createClientId } from "../../../lib/localDb/repository";
-import { createOptimisticId } from "../../../lib/localFirst/ids";
-import { useLocalFirstCollection } from "../../../lib/localFirst/useLocalFirstCollection";
+import { useDataMutation } from "../../../lib/data-v2";
+import { useResolvedWeekStartsOn } from "../../../shared/components/date/useResolvedWeekStartsOn";
+import { useWorkspaceResource } from "../../workspace/data/useWorkspaceResourceV2";
 import { projectHabit } from "../habitProjection";
-import type {
-  CreateHabitInput,
-  HabitCheckin,
-  HabitRecord,
-  HabitView,
-  UpdateHabitInput,
-} from "../types";
+import type { CreateHabitInput, HabitRecord, UpdateHabitInput } from "../types";
+import { useHabitCheckins } from "./useHabitCheckins";
 
 type UseHabitsInput = {
   userId: string | null;
 };
 
-export function useHabits({ userId }: UseHabitsInput) {
-  const habitsCollection = useLocalFirstCollection<HabitRecord>({
-    userId,
-    collection: "habits",
-  });
-  const checkinsCollection = useLocalFirstCollection<HabitCheckin>({
-    userId,
-    collection: "habit_checkins",
-    remoteOrder: { column: "checked_on", ascending: false },
-  });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function habitFields(habit: HabitRecord) {
+  return {
+    name: habit.name,
+    description: habit.description,
+    frequency: habit.frequency,
+    color: habit.color,
+    startedOn: habit.startedOn,
+  };
+}
 
-  const habits = useMemo(
-    () =>
-      habitsCollection.items
-        .filter((habit) => !habit.deleted_at)
-        .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .map((habit) => projectHabit(habit, checkinsCollection.items)),
-    [checkinsCollection.items, habitsCollection.items],
-  );
+function normalizeHabitChanges(
+  input: UpdateHabitInput,
+): Partial<ReturnType<typeof habitFields>> {
+  if (Object.hasOwn(input, "name") && !input.name?.trim()) {
+    throw new Error("习惯名称不能为空");
+  }
+  return {
+    ...(Object.hasOwn(input, "name") ? { name: input.name!.trim() } : {}),
+    ...(Object.hasOwn(input, "description")
+      ? { description: input.description?.trim() || null }
+      : {}),
+    ...(Object.hasOwn(input, "frequency") && input.frequency
+      ? { frequency: input.frequency }
+      : {}),
+    ...(Object.hasOwn(input, "color") ? { color: input.color ?? null } : {}),
+  };
+}
+
+export function useHabits({ userId }: UseHabitsInput) {
+  const habitsResource = useWorkspaceResource(userId, "habits");
+  const habitMutation = useDataMutation(userId ?? "anonymous", "habits");
+  const weekStartsOn = useResolvedWeekStartsOn();
+  const [error, setError] = useState<string | null>(null);
 
   const requireUser = useCallback(() => {
     if (!userId) throw new Error("请先登录");
@@ -48,161 +57,139 @@ export function useHabits({ userId }: UseHabitsInput) {
   const runMutation = useCallback(
     async (operation: (activeUserId: string) => Promise<unknown>) => {
       const activeUserId = requireUser();
-      setSaving(true);
       setError(null);
       try {
         await operation(activeUserId);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "保存习惯失败";
+      } catch (caught) {
+        const message =
+          caught instanceof Error ? caught.message : "保存习惯失败";
         setError(message);
-        throw error;
-      } finally {
-        setSaving(false);
+        throw caught;
       }
     },
     [requireUser],
   );
+  const checkins = useHabitCheckins({ userId, weekStartsOn, runMutation });
+
+  const habits = useMemo(
+    () =>
+      [...habitsResource.items]
+        .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+        .map((habit) =>
+          projectHabit(habit, checkins.items, toDateKey(), weekStartsOn),
+        ),
+    [checkins.items, habitsResource.items, weekStartsOn],
+  );
 
   const refreshHabits = useCallback(async () => {
     requireUser();
-    await Promise.all([
-      habitsCollection.refresh(undefined, { showLoading: true }),
-      checkinsCollection.refresh(undefined, { showLoading: true }),
-    ]);
-  }, [checkinsCollection, habitsCollection, requireUser]);
+    await Promise.all([habitsResource.refresh(), checkins.refresh()]);
+  }, [checkins, habitsResource, requireUser]);
 
   const createHabit = useCallback(
     async (input: CreateHabitInput) => {
       await runMutation(async (activeUserId) => {
         const now = new Date().toISOString();
-        await habitsCollection.add({
-          id: createOptimisticId(),
-          client_id: input.client_id ?? createClientId("habit"),
-          user_id: activeUserId,
+        const clientId = input.clientId ?? createEntityId("habit");
+        if (habitsResource.items.some((habit) => habit.clientId === clientId)) {
+          return;
+        }
+        const optimistic: HabitRecord = {
+          clientId,
+          userId: activeUserId,
+          version: 0,
+          createdAt: now,
+          updatedAt: now,
           name: input.name.trim(),
           description: input.description?.trim() || null,
           frequency: input.frequency,
           color: input.color ?? null,
-          created_at: now,
-          updated_at: now,
-          deleted_at: null,
+          startedOn: toDateKey(),
+        };
+        if (!optimistic.name) throw new Error("习惯名称不能为空");
+
+        await habitMutation.mutateAsync({
+          kind: "create",
+          clientId,
+          baseVersion: null,
+          optimistic,
+          changes: habitFields(optimistic),
         });
       });
     },
-    [habitsCollection, runMutation],
+    [habitMutation, habitsResource.items, runMutation],
   );
 
   const updateHabit = useCallback(
-    async (habitId: number, input: UpdateHabitInput) => {
+    async (habitClientId: string, input: UpdateHabitInput) => {
       await runMutation(async () => {
-        const current = habitsCollection.items.find(
-          (habit) => habit.id === habitId,
+        const current = habitsResource.items.find(
+          (habit) => habit.clientId === habitClientId,
         );
         if (!current) throw new Error("习惯不存在或已删除");
-
-        await habitsCollection.update(habitId, {
-          name:
-            typeof input.name === "string" ? input.name.trim() : current.name,
-          description:
-            typeof input.description === "string"
-              ? input.description.trim() || null
-              : current.description,
-          frequency: input.frequency ?? current.frequency,
-          color: "color" in input ? (input.color ?? null) : current.color,
+        if (hasUnresolvedSyncIssue(current)) {
+          throw new Error("请先在设置中处理这条习惯的同步冲突");
+        }
+        const changes = normalizeHabitChanges(input);
+        if (Object.keys(changes).length === 0) return;
+        const optimistic: HabitRecord = {
+          ...current,
+          ...changes,
+          sync: undefined,
+          updatedAt: new Date().toISOString(),
+        };
+        await habitMutation.mutateAsync({
+          kind: "patch",
+          clientId: habitClientId,
+          baseVersion: current.version,
+          optimistic,
+          changes,
         });
       });
     },
-    [habitsCollection, runMutation],
+    [habitMutation, habitsResource.items, runMutation],
   );
 
   const deleteHabit = useCallback(
-    async (habitId: number) => {
+    async (habitClientId: string) => {
       await runMutation(async () => {
-        const habit = habitsCollection.items.find(
-          (item) => item.id === habitId,
+        const current = habitsResource.items.find(
+          (habit) => habit.clientId === habitClientId,
         );
-        if (!habit) return;
-
-        const related = checkinsCollection.items.filter(
-          (checkin) => checkin.habit_client_id === habit.client_id,
-        );
-        await Promise.all(
-          related.map((checkin) => checkinsCollection.remove(checkin.id)),
-        );
-        await habitsCollection.remove(habit.id);
-      });
-    },
-    [checkinsCollection, habitsCollection, runMutation],
-  );
-
-  const setHabitCheckin = useCallback(
-    async (habit: HabitView, checkedOn: string, checked: boolean) => {
-      await runMutation(async (activeUserId) => {
-        const createdOn = toDateKey(habit.created_at);
-        const today = toDateKey();
-        if (checkedOn < createdOn)
-          throw new Error("不能给习惯创建日前的日期打卡");
-        if (checkedOn > today) throw new Error("不能提前给未来日期打卡");
-
-        const habitClientId = habit.client_id;
-        if (!habitClientId) throw new Error("习惯缺少本地同步标识");
-
-        const clientId = `habit-checkin:${habitClientId}:${checkedOn}`;
-        const current = checkinsCollection.items.find(
-          (checkin) => checkin.client_id === clientId,
-        );
-        const now = new Date().toISOString();
-        const checkin: HabitCheckin = {
-          id: current?.id ?? createOptimisticId(),
-          client_id: clientId,
-          user_id: activeUserId,
-          habit_id: current?.habit_id ?? null,
-          habit_client_id: habitClientId,
-          checked_on: checkedOn,
-          checked,
-          created_at: current?.created_at ?? now,
-          updated_at: now,
-          deleted_at: null,
-        };
-
-        if (current) {
-          await checkinsCollection.update(current.id, checkin);
-          return;
+        if (!current) return;
+        if (hasUnresolvedSyncIssue(current)) {
+          throw new Error("请先在设置中处理这条习惯的同步冲突");
         }
-
-        await checkinsCollection.add(checkin);
+        if (current.version === 0) {
+          await checkins.removeForUnsyncedHabit(habitClientId);
+        }
+        await habitMutation.mutateAsync({
+          kind: "delete",
+          clientId: habitClientId,
+          baseVersion: current.version,
+          optimistic: { ...current, sync: undefined },
+        });
       });
     },
-    [checkinsCollection, runMutation],
-  );
-
-  const toggleCheckin = useCallback(
-    async (habit: HabitView, dateKey: string) => {
-      const checked = !habit.checkins.some(
-        (checkin) => checkin.checked_on === dateKey,
-      );
-      await setHabitCheckin(habit, dateKey, checked);
-    },
-    [setHabitCheckin],
-  );
-
-  const checkinToday = useCallback(
-    async (habit: HabitView) => {
-      if (!habit.checkedToday) await toggleCheckin(habit, toDateKey());
-    },
-    [toggleCheckin],
+    [checkins, habitMutation, habitsResource.items, runMutation],
   );
 
   return {
     habits,
-    loading: habitsCollection.loading || checkinsCollection.loading,
-    saving,
-    error,
+    loading: habitsResource.loading || checkins.loading,
+    saving: habitMutation.isPending || checkins.saving,
+    error:
+      error ??
+      (habitsResource.error instanceof Error
+        ? habitsResource.error.message
+        : checkins.error instanceof Error
+          ? checkins.error.message
+          : null),
     refreshHabits,
     createHabit,
     updateHabit,
     deleteHabit,
-    toggleCheckin,
-    checkinToday,
+    toggleCheckin: checkins.toggleCheckin,
+    checkinToday: checkins.checkinToday,
   };
 }

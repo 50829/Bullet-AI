@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { GoalPlan } from "../types";
-import type { WorkspaceDataCollections } from "../../workspace/data";
+import { useMemo, useRef, useState } from "react";
+import { createEntityId } from "../../../domain/ids";
+import type { GoalPlan } from "../../../lib/ai/goalPlan";
+import type { useGoals } from "../hooks/useGoals";
 import {
-  isGoalCompleted,
   shouldShowGoal,
   sortGoalsByCompletion,
   sortGoalsByOrder,
@@ -12,30 +12,36 @@ import {
 import { useCompletedGoalRetention } from "../hooks/useCompletedGoalRetention";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { useToast } from "../../../shared/components/ui/Toast";
+import { toDateKey } from "../../../lib/date/dateUtils";
 
-export type GoalRightViewMode = "migration" | "schedule";
+export type GoalRightViewMode = "unscheduled" | "schedule";
 
 function getTodayDate() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-export function formatDateToLocal(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 type UseGoalPlanningPageInput = {
-  goalsController: WorkspaceDataCollections["goals"];
+  goalsController: ReturnType<typeof useGoals>;
+  hiddenGoalClientIds?: ReadonlySet<string>;
 };
 
 export function useGoalPlanningPage({
   goalsController,
+  hiddenGoalClientIds,
 }: UseGoalPlanningPageInput) {
-  const goalsContext = goalsController;
-  const { goals, updateGoal, createGoal } = goalsContext;
+  const goals = useMemo(
+    () =>
+      goalsController.goals.filter(
+        (goal) => !hiddenGoalClientIds?.has(goal.clientId),
+      ),
+    [goalsController.goals, hiddenGoalClientIds],
+  );
+  const {
+    updateGoal,
+    createGoal,
+    toggleGoalCompleted: toggleGoalCommand,
+  } = goalsController;
   const { t } = useLanguage();
   const { showToast } = useToast();
   const completedGoalRetention = useCompletedGoalRetention();
@@ -43,28 +49,29 @@ export function useGoalPlanningPage({
     getTodayDate(),
   );
   const [rightViewMode, setRightViewMode] =
-    useState<GoalRightViewMode>("migration");
+    useState<GoalRightViewMode>("unscheduled");
+  const planTaskIds = useRef(new WeakMap<GoalPlan, string[]>());
 
   const selectedDateGoals = useMemo(() => {
     if (!selectedDate) return [];
-    const dateStr = formatDateToLocal(selectedDate);
+    const dateStr = toDateKey(selectedDate);
     return sortGoalsByCompletion(
       sortGoalsByOrder(
         goals.filter((goal) => {
-          if (goal.due_date !== dateStr) return false;
+          if (goal.dueDate !== dateStr) return false;
           return shouldShowGoal(goal, completedGoalRetention);
         }),
       ),
     );
   }, [completedGoalRetention, goals, selectedDate]);
 
-  const migrationListGoals = useMemo(
+  const unscheduledGoals = useMemo(
     () =>
       sortGoalsByCompletion(
         sortGoalsByOrder(
           goals.filter(
             (goal) =>
-              !goal.due_date && shouldShowGoal(goal, completedGoalRetention),
+              !goal.dueDate && shouldShowGoal(goal, completedGoalRetention),
           ),
         ),
       ),
@@ -78,11 +85,7 @@ export function useGoalPlanningPage({
 
   const toggleGoalCompleted = async (goal: (typeof goals)[number]) => {
     try {
-      const completed = isGoalCompleted(goal);
-      await updateGoal(goal.id, {
-        status: completed ? "pending" : "completed",
-        progress: completed ? 0 : 100,
-      });
+      await toggleGoalCommand(goal);
     } catch (err) {
       showToast({
         type: "error",
@@ -92,62 +95,78 @@ export function useGoalPlanningPage({
     }
   };
 
-  const migrateGoalToSelectedDate = async (goal: (typeof goals)[number]) => {
+  const scheduleGoalForSelectedDate = async (goal: (typeof goals)[number]) => {
     if (!selectedDate) return;
     try {
-      await updateGoal(goal.id, {
-        due_date: formatDateToLocal(selectedDate),
+      await updateGoal(goal.clientId, {
+        dueDate: toDateKey(selectedDate),
       });
       setRightViewMode("schedule");
     } catch (err) {
       showToast({
         type: "error",
         message:
-          err instanceof Error ? err.message : t("migrateFailed") || "迁移失败",
+          err instanceof Error ? err.message : t("updateFailed") || "更新失败",
       });
     }
   };
 
-  const moveGoalBack = async (goal: (typeof goals)[number]) => {
+  const moveGoalToUnscheduled = async (goal: (typeof goals)[number]) => {
     try {
-      await updateGoal(goal.id, {
-        due_date: null,
+      await updateGoal(goal.clientId, {
+        dueDate: null,
       });
-      setRightViewMode("migration");
+      setRightViewMode("unscheduled");
     } catch (err) {
       showToast({
         type: "error",
         message:
-          err instanceof Error
-            ? err.message
-            : t("moveBackFailed") || "迁回失败",
+          err instanceof Error ? err.message : t("updateFailed") || "更新失败",
       });
     }
   };
 
   const addTasksFromAIReply = async (plan: GoalPlan) => {
+    const tasks = [
+      ...plan.daily.map((task) => ({
+        ...task,
+        dueDate: toDateKey(getTodayDate()),
+      })),
+      ...plan.future.map((task) => ({ ...task, dueDate: null })),
+    ];
+    const clientIds =
+      planTaskIds.current.get(plan) ?? tasks.map(() => createEntityId("goal"));
+    planTaskIds.current.set(plan, clientIds);
+    const lowestOrder = goals.reduce(
+      (lowest, goal) => Math.min(lowest, goal.sortOrder),
+      0,
+    );
+
     await Promise.all(
-      [...plan.daily, ...plan.future].map((task) =>
+      tasks.map((task, index) =>
         createGoal({
+          clientId: clientIds[index],
           title: task.title,
           description: task.description,
-          due_date: null,
+          dueDate: task.dueDate,
+          sortOrder: lowestOrder - tasks.length + index,
         }),
       ),
     );
   };
 
   return {
-    ...goalsContext,
+    ...goalsController,
+    goals,
     selectedDate,
     rightViewMode,
     selectedDateGoals,
-    migrationListGoals,
+    unscheduledGoals,
     setRightViewMode,
     handleDateSelect,
     toggleGoalCompleted,
-    migrateGoalToSelectedDate,
-    moveGoalBack,
+    scheduleGoalForSelectedDate,
+    moveGoalToUnscheduled,
     addTasksFromAIReply,
   };
 }

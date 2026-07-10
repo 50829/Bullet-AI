@@ -14,48 +14,80 @@ import { useCompletedGoalRetention } from "../../goals/hooks/useCompletedGoalRet
 import { useWorkspaceData } from "../../workspace/data";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { useToast } from "../../../shared/components/ui/Toast";
+import { toDateKey } from "../../../lib/date/dateUtils";
+import { useDeferredHardDelete } from "../../workspace/hooks/useDeferredHardDelete";
 import {
   useRecentDashboardRecords,
   type RecentDashboardItem,
 } from "./useRecentDashboardRecords";
-
-function todayKey() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
-    now.getDate(),
-  ).padStart(2, "0")}`;
-}
 
 export type { RecentDashboardItem };
 
 export function useTodayDashboard() {
   const router = useRouter();
   const {
-    session: { userId, syncStatus, retrySync },
+    session: { syncStatus, retrySync },
     moments: { moments, createMoment, updateMoment },
     reflections: { reflections, createReflection, updateReflection },
-    goals: { goals, loading: goalsLoading, createGoal, updateGoal, deleteGoal },
+    goals: {
+      goals,
+      loading: goalsLoading,
+      error: goalsError,
+      createGoal,
+      updateGoal,
+      toggleGoalCompleted: toggleGoalCompletedCommand,
+      deleteGoal,
+    },
     habits: habitsState,
   } = useWorkspaceData();
-  const { habits } = habitsState;
   const { t, language } = useLanguage();
   const { showToast } = useToast();
+  const deferredDelete = useDeferredHardDelete<{
+    type: "goal" | "habit";
+    id: string;
+    name: string;
+  }>({
+    onError: (error) => {
+      showToast({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : t("deleteFailed") || "删除失败，请稍后重试",
+      });
+    },
+  });
+  const visibleGoals = useMemo(
+    () =>
+      goals.filter(
+        (goal) =>
+          deferredDelete.pendingDelete?.type !== "goal" ||
+          goal.clientId !== deferredDelete.pendingDelete.id,
+      ),
+    [deferredDelete.pendingDelete, goals],
+  );
+  const habits = useMemo(
+    () =>
+      habitsState.habits.filter(
+        (habit) =>
+          deferredDelete.pendingDelete?.type !== "habit" ||
+          habit.clientId !== deferredDelete.pendingDelete.id,
+      ),
+    [deferredDelete.pendingDelete, habitsState.habits],
+  );
   const recentRecords = useRecentDashboardRecords({
-    userId,
     language,
     newMomentLabel: t("newMoment") || "记录",
-    fallbackMoments: moments,
-    fallbackReflections: reflections,
+    moments,
+    reflections,
   });
   const completedGoalRetention = useCompletedGoalRetention();
-  const today = todayKey();
+  const today = toDateKey();
   const todayGoals = useMemo(
-    () => goals.filter((goal) => goal.due_date === today),
-    [goals, today],
+    () => visibleGoals.filter((goal) => goal.dueDate === today),
+    [today, visibleGoals],
   );
-  const openTodayGoals = todayGoals.filter(
-    (goal) => goal.status !== "completed",
-  );
+  const openTodayGoals = todayGoals.filter((goal) => !isGoalCompleted(goal));
   const visibleTodayGoals = useMemo(
     () =>
       sortGoalsByCompletion(
@@ -75,11 +107,7 @@ export function useTodayDashboard() {
 
   const toggleGoalCompleted = async (goal: Goal) => {
     try {
-      const completed = isGoalCompleted(goal);
-      await updateGoal(goal.id, {
-        status: completed ? "pending" : "completed",
-        progress: completed ? 0 : 100,
-      });
+      await toggleGoalCompletedCommand(goal);
     } catch (error) {
       showToast({
         type: "error",
@@ -92,17 +120,24 @@ export function useTodayDashboard() {
   };
 
   const deleteHabit = async (habit: HabitView) => {
-    await habitsState.deleteHabit(habit.id);
+    deferredDelete.scheduleDelete(
+      { type: "habit", id: habit.clientId, name: habit.name },
+      () => habitsState.deleteHabit(habit.clientId),
+    );
   };
 
   const deleteTodayGoal = async (goal: Goal) => {
-    await deleteGoal(goal.id, goal.image_path);
+    deferredDelete.scheduleDelete(
+      { type: "goal", id: goal.clientId, name: goal.title },
+      () => deleteGoal(goal.clientId),
+    );
   };
 
   return {
     ...habitsState,
-    goals,
+    goals: visibleGoals,
     goalsLoading,
+    goalsError,
     createGoal,
     updateGoal,
     createMoment,
@@ -121,5 +156,6 @@ export function useTodayDashboard() {
     toggleGoalCompleted,
     deleteHabit,
     deleteTodayGoal,
+    deferredDelete,
   };
 }

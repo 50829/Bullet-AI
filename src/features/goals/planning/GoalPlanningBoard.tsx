@@ -11,25 +11,25 @@ type GoalPlanningBoardProps = {
   allGoals: GoalRecord[];
   selectedDate: Date | null;
   rightViewMode: GoalRightViewMode;
-  migrationListGoals: GoalRecord[];
+  unscheduledGoals: GoalRecord[];
   selectedDateGoals: GoalRecord[];
   language: "zh" | "en";
   t: (key: string) => string;
   onDateSelect: (date: Date) => void;
   onViewModeChange: (mode: GoalRightViewMode) => void;
-  onReorderGoals: (orderedIds: number[]) => void;
+  onReorderGoals: (orderedIds: string[]) => void;
   onCompleteGoal: (goal: GoalRecord) => void | Promise<void>;
   onEditGoal: (goal: GoalRecord) => void;
   onDeleteGoal: (goal: GoalRecord) => void;
-  onMigrateGoal: (goal: GoalRecord) => void | Promise<void>;
-  onMoveGoalBack: (goal: GoalRecord) => void | Promise<void>;
+  onScheduleGoal: (goal: GoalRecord) => void | Promise<void>;
+  onMoveGoalToUnscheduled: (goal: GoalRecord) => void | Promise<void>;
 };
 
 export function GoalPlanningBoard({
   allGoals,
   selectedDate,
   rightViewMode,
-  migrationListGoals,
+  unscheduledGoals,
   selectedDateGoals,
   language,
   t,
@@ -39,8 +39,8 @@ export function GoalPlanningBoard({
   onCompleteGoal,
   onEditGoal,
   onDeleteGoal,
-  onMigrateGoal,
-  onMoveGoalBack,
+  onScheduleGoal,
+  onMoveGoalToUnscheduled,
 }: GoalPlanningBoardProps) {
   const scheduleTitle = selectedDate
     ? language === "en"
@@ -71,8 +71,10 @@ export function GoalPlanningBoard({
         >
           <div className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="text-2xl font-semibold text-theme-primary">
-              {rightViewMode === "migration"
-                ? t("migrationList") || "待分配任务"
+              {rightViewMode === "unscheduled"
+                ? language === "en"
+                  ? "Unscheduled"
+                  : "待安排"
                 : scheduleTitle}
             </h3>
             <SegmentedControl<GoalRightViewMode>
@@ -80,20 +82,20 @@ export function GoalPlanningBoard({
               onChange={onViewModeChange}
               options={[
                 {
-                  value: "migration",
-                  label: t("migrationList") || "待分配任务",
+                  value: "unscheduled",
+                  label: language === "en" ? "Unscheduled" : "待安排",
                 },
                 {
                   value: "schedule",
-                  label: t("schedulePlanning") || "日程规划",
+                  label: language === "en" ? "Schedule" : "日程",
                 },
               ]}
             />
           </div>
 
-          {rightViewMode === "migration" && (
+          {rightViewMode === "unscheduled" && (
             <GoalBucketPanel
-              goals={migrationListGoals}
+              goals={unscheduledGoals}
               emptyTitle={language === "en" ? "No tasks" : "暂无任务"}
               onReorder={onReorderGoals}
               onComplete={onCompleteGoal}
@@ -103,8 +105,8 @@ export function GoalPlanningBoard({
                 selectedDate
                   ? {
                       direction: "forward",
-                      label: t("migrate") || "迁移",
-                      onClick: () => onMigrateGoal(goal),
+                      label: language === "en" ? "Schedule" : "安排",
+                      onClick: () => onScheduleGoal(goal),
                     }
                   : undefined
               }
@@ -121,8 +123,8 @@ export function GoalPlanningBoard({
               onDelete={onDeleteGoal}
               getMoveAction={(goal) => ({
                 direction: "back",
-                label: t("moveBack") || "迁回",
-                onClick: () => onMoveGoalBack(goal),
+                label: language === "en" ? "Unscheduled" : "移至待安排",
+                onClick: () => onMoveGoalToUnscheduled(goal),
               })}
             />
           )}

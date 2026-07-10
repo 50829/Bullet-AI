@@ -22,6 +22,7 @@ import {
 import { useWorkspaceSessionContext } from "../../../../features/workspace/WorkspaceContext";
 import { signOutAndClearLocalData } from "../../../../lib/auth/logout";
 import type { FormMessage } from "./types";
+import { useDataV2 } from "../../../../lib/data-v2";
 
 type UseSettingsProfileInput = {
   onClose: () => void;
@@ -38,14 +39,14 @@ export function useSettingsProfile({ onClose }: UseSettingsProfileInput) {
     updatePreferences: updateCloudPreferences,
   } = useProfile();
   const router = useRouter();
+  const { store, worker } = useDataV2();
   const {
+    userId,
     syncStatus,
-    deadOutboxCount,
-    deadOutboxItems,
+    pendingCount,
+    syncIssues,
     retrySync,
-    retryDeadOutboxItem,
-    discardDeadOutboxItem,
-    cleanupDeadOutboxOrphanedStorage,
+    discardSyncItem,
   } = useWorkspaceSessionContext();
   const { showToast } = useToast();
   const [username, setUsername] = useState("");
@@ -186,7 +187,11 @@ export function useSettingsProfile({ onClose }: UseSettingsProfileInput) {
   };
 
   const handleLogout = async () => {
-    const { error } = await signOutAndClearLocalData();
+    const { error } = await signOutAndClearLocalData({
+      userId,
+      store,
+      worker,
+    });
     if (error) {
       showToast({
         type: "error",
@@ -195,7 +200,7 @@ export function useSettingsProfile({ onClose }: UseSettingsProfileInput) {
             ? `Failed to log out: ${error.message}`
             : `退出登录失败: ${error.message}`,
       });
-      return;
+      throw error;
     }
 
     onClose();
@@ -212,12 +217,10 @@ export function useSettingsProfile({ onClose }: UseSettingsProfileInput) {
     savingPreference,
     message,
     syncStatus,
-    deadOutboxCount,
-    deadOutboxItems,
+    pendingCount,
+    syncIssues,
     retrySync,
-    retryDeadOutboxItem,
-    discardDeadOutboxItem,
-    cleanupDeadOutboxOrphanedStorage,
+    discardSyncItem,
     handleUsernameChange,
     handleLanguageChange,
     handleAccentChange,

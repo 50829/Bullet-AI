@@ -1,78 +1,96 @@
-# Bullet-AI 🚀
+# Bullet-AI
 
-**个人成长与生活管理 Web 应用** — 记录瞬间、沉淀思考、管理目标、养成习惯。
+Bullet-AI 是一个以 Today 为入口的个人生活工作区，用于记录生活、沉淀感悟、安排目标和追踪习惯。AI 只负责把大目标拆成可执行步骤，不承担泛聊天、陪伴或自动读取个人记录。
 
-> 2025 年 10 月版: https://bullet-ai.vercel.app/
->
-> 2026 年 1 月版：https://www.bulletai.top/
->
-> 2026 年 7 月版：在 [Preview](https://github.com/50829/Bullet-AI/deployments/Preview) 中获取新版网址来体验
+## 当前业务
 
-## 功能概览
+- **Today**：聚合今日目标、当前周期习惯和近期记录。
+- **Moments**：按发生日期组织的图文生活记录。
+- **Reflections**：只有标题和正文的思考记录。
+- **Goals**：待安排或安排到某天的目标，可完成、排序，并可由 AI 规划生成。
+- **Habits**：每日或每周习惯；weekly 按用户设置的周起始日计算完成状态和连续周数。
 
-- **Moments** — 图文日记，回溯记录生活瞬间
-- **Reflections** — 结构化思想感悟，支持来源/地点标注
-- **Goals** — 日历视图目标管理 + 迁移清单
-- **Habits** — 基于 `habit_checkins` 的每日/每周习惯历史打卡追踪
+删除采用物理删除。业务页面先隐藏记录并提供 5 秒撤销，倒计时结束后才写入删除 mutation。
 
-Moments、Reflections、Goals、Habits 和 Habit Check-ins 均采用本地优先写入：浏览器先将实体与 outbox 原子写入 IndexedDB，再由同步引擎异步提交到 Supabase。断网期间的变更会在恢复联网后自动重试。
+## 数据流
+
+Supabase Postgres 是事实源。浏览器中的 IndexedDB 是可丢弃的 90 天近期快照和持久化写队列，不是第二套业务数据库。
+
+```text
+React feature hook
+  -> IndexedDB mutation + optional image Blob (atomic)
+  -> React Query pending overlay
+  -> DataSyncWorker (online + visible + Web Lock)
+  -> Supabase CAS write (client_id + version)
+  -> remote snapshot / conflict draft
+```
+
+- create 使用稳定 `clientId`，可幂等重试。
+- patch/delete 使用 `version` 做 compare-and-swap，冲突不会静默覆盖云端。
+- 临时网络错误无限退避；鉴权错误暂停；永久错误和冲突在设置页可见。
+- Moments/Reflections 离线保留近期快照；在线记录页读取完整历史但不把完整历史写入近期缓存。
+- IndexedDB 有数据时先立即渲染，云端读取与队列 flush 在后台进行；过期远端响应不能覆盖较新的本地快照。
+- 已同步的空集合也有持久标记，冷启动不会因为“没有行”退化成等待慢网络。
+- Moment 只持久化私有 Storage 路径，签名 URL 与本地 `blob:` URL 只存在于内存视图。
+- JSON 导出在线分页读取完整云端历史，再叠加本地 pending/conflict，并包含离线附件元数据。
+
+详细边界和不变量见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
 ## 技术栈
 
-- **框架**: Next.js 15.5 + React 19 + TypeScript
-- **样式**: Tailwind CSS v4
-- **后端**: Supabase（Postgres + Auth + Storage）
-- **对话服务**: 可配置的第三方 LLM API
-- **部署**: Vercel
+- Next.js 15.5、React 19、TypeScript
+- Tailwind CSS v4
+- TanStack Query v5、IndexedDB (`idb`)
+- Supabase Auth、Postgres、Storage、RLS
+- OpenAI-compatible LLM endpoint，仅由 `/api/ai` 服务端路由调用
 
 ## 本地开发
 
 ```bash
 pnpm install
+cp .env.example .env.local
 pnpm dev
 ```
 
-需要配置环境变量:
+必填环境变量：
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+```
 
-AI 对话服务默认可不配置；未配置时应用仍可运行，但 AI 接口会返回服务端配置错误。启用 AI 需要同时配置：
+启用目标规划 AI 时还需配置：
 
-- `LLM_API_KEY`
-- `LLM_BASE_URL`
-- `LLM_MODEL`
+```text
+LLM_API_KEY
+LLM_BASE_URL
+LLM_MODEL
+```
 
-## 数据库迁移
+## 数据库
 
-在 Supabase SQL Editor 执行这一个文件即可。它同时支持新库建表和旧库修复：
+新项目只执行：
 
-```sql
+```text
 db/migrations/000_current_schema.sql
 ```
 
-已经执行过旧版迁移的线上项目需要继续按序执行新的增量迁移；历史迁移文件的后续编辑不会自动重放。完整增量列表见 `SUPABASE_SETUP.md`，已经跑过 `002` 的项目至少还需要执行：
+旧项目先备份并在 SQL Editor 运行只读预检
+`db/operations/preflight_domain_schema_v2.sql`，再执行破坏性增量迁移：
 
-```sql
-db/migrations/003_ai_rate_limit_lock.sql
+```text
+db/migrations/005_domain_schema_v2.sql
 ```
 
-这个脚本会：
+`005` 会收敛旧字段、迁移可保留数据并移除软删除语义。旧 Storage bucket 不由线上任务自动删除，需按 [SUPABASE_SETUP.md](SUPABASE_SETUP.md) 审计后显式处理。
 
-- 创建 `habit_checkins` 历史打卡表。
-- 为习惯打卡补齐稳定 `client_id`、`habit_client_id` 和可合并的打卡状态字段。
-- 创建 `ai_usage_events`，用于限制登录用户的 AI 调用频率；成功预留后即计为一次 AI 调用尝试，后续 LLM 超时或供应商错误也会消耗额度。
-- 为同一用户、同一习惯客户端 ID、同一日期添加唯一约束。
-- 为目标补齐颜色和手动排序字段。
-- 启用 RLS，限制用户只能读写自己的打卡记录。
-- 将旧 `habits.last_checkin` 最近一次打卡兼容迁移为一条历史记录。
-- 将语言、强调色、浅色/深色/跟随系统、完成目标保留策略等偏好保存到 `profiles`。
-- 刷新 Supabase/PostgREST schema cache。
-
-## 验证命令
+## 验证
 
 ```bash
 pnpm exec tsc --noEmit
 pnpm lint
+pnpm test
 pnpm build
 ```
+
+`docs/requirements-analysis.md`、数据库课程报告和 ER 材料是历史交付快照，不是当前实现契约。

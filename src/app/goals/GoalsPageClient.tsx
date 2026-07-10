@@ -6,6 +6,7 @@ import { LoadingState } from "../../shared/components/ui/LoadingState";
 import { GoalPlanningBoard } from "../../features/goals/planning/GoalPlanningBoard";
 import { HabitsSection } from "./components/HabitsSection";
 import { useGoalsPageController } from "./hooks/useGoalsPageController";
+import { UndoDeleteNotice } from "../../features/workspace/components/UndoDeleteNotice";
 
 const AssistantDrawer = dynamic(
   () =>
@@ -43,9 +44,7 @@ export default function GoalsPageClient() {
   } = page;
 
   if (page.isInitialLoading) {
-    return page.isNavigationLoading ? null : (
-      <LoadingState className="min-h-[50dvh]" />
-    );
+    return <LoadingState className="min-h-[50dvh]" />;
   }
 
   return (
@@ -54,10 +53,8 @@ export default function GoalsPageClient() {
         <AssistantDrawer
           isOpen={assistantPanel.isOpen}
           onClose={assistantPanel.close}
-          mode="planning"
-          title={language === "en" ? "Planning" : "规划"}
+          title={language === "en" ? "Goal planner" : "目标拆解"}
           placeholder={t("aiGoalInputPlaceholder") || "输入你想完成的大目标..."}
-          purpose="goal_planning"
           onAddGoals={goalPage.addTasksFromAIReply}
         />
       )}
@@ -65,11 +62,16 @@ export default function GoalsPageClient() {
       <div className="flex-1">
         <div className="px-0 pb-4">
           <div className="mx-auto max-w-6xl">
+            {goalPage.error && (
+              <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                {goalPage.error}
+              </p>
+            )}
             <GoalPlanningBoard
               allGoals={goalPage.goals}
               selectedDate={goalPage.selectedDate}
               rightViewMode={goalPage.rightViewMode}
-              migrationListGoals={goalPage.migrationListGoals}
+              unscheduledGoals={goalPage.unscheduledGoals}
               selectedDateGoals={goalPage.selectedDateGoals}
               language={language}
               t={t}
@@ -83,18 +85,17 @@ export default function GoalsPageClient() {
               onDeleteGoal={(goal) =>
                 deleteConfirm.open({
                   type: "goal",
-                  id: goal.id,
+                  id: goal.clientId,
                   name: goal.title,
-                  imagePath: goal.image_path,
                 })
               }
-              onMigrateGoal={goalPage.migrateGoalToSelectedDate}
-              onMoveGoalBack={goalPage.moveGoalBack}
+              onScheduleGoal={goalPage.scheduleGoalForSelectedDate}
+              onMoveGoalToUnscheduled={goalPage.moveGoalToUnscheduled}
             />
 
             <HabitsSection
               title={t("myHabits") || "我的习惯"}
-              newLabel={`+ ${t("new")} ${t("habit")}`}
+              newLabel={`${t("new")} ${t("habit")}`}
               habits={habitsSection.habits}
               loading={
                 habitsSection.loading && habitsSection.habits.length === 0
@@ -107,7 +108,7 @@ export default function GoalsPageClient() {
               onDelete={(habit) =>
                 deleteConfirm.open({
                   type: "habit",
-                  id: habit.id,
+                  id: habit.clientId,
                   name: habit.name,
                 })
               }
@@ -121,7 +122,6 @@ export default function GoalsPageClient() {
           isOpen
           initialGoal={goalModal.editingGoal}
           onClose={goalModal.close}
-          onSuccess={() => undefined}
           onCreate={goalPage.createGoal}
           onUpdate={goalPage.updateGoal}
         />
@@ -142,13 +142,23 @@ export default function GoalsPageClient() {
         <ConfirmDialog
           isOpen
           title={`${t("confirmDelete") || "确认删除"} ${deleteConfirm.target.name}`}
-          description={t("cannotRecover") || "删除后不可恢复"}
+          description={
+            language === "en"
+              ? "You can undo this action for 5 seconds."
+              : "删除后 5 秒内可以撤销。"
+          }
           confirmLabel={t("confirm") || "确认"}
           cancelLabel={t("cancel") || "取消"}
           loading={deleteConfirm.loading}
           tone="danger"
           onConfirm={page.handleDelete}
           onCancel={deleteConfirm.cancel}
+        />
+      )}
+      {page.deferredDelete.pendingDelete && (
+        <UndoDeleteNotice
+          itemName={page.deferredDelete.pendingDelete.name}
+          onUndo={page.deferredDelete.undoDelete}
         />
       )}
     </div>

@@ -2,20 +2,18 @@
 
 import { useState } from "react";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import type { AiPurpose } from "../../../lib/ai/promptRegistry";
-import type { AssistantMessage, AssistantMode, PlanData } from "./types";
+import {
+  GOAL_PLANNING_PURPOSE,
+  parseGoalPlanningResponse,
+  type GoalPlan,
+} from "../../../lib/ai/goalPlan";
+import type { AssistantMessage } from "./types";
 
 type UseAssistantChatInput = {
-  purpose: AiPurpose;
-  mode: AssistantMode;
-  onAddGoals?: (plan: PlanData) => Promise<void>;
+  onAddGoals: (plan: GoalPlan) => Promise<void>;
 };
 
-export function useAssistantChat({
-  purpose,
-  mode,
-  onAddGoals,
-}: UseAssistantChatInput) {
+export function useAssistantChat({ onAddGoals }: UseAssistantChatInput) {
   const { t, language } = useLanguage();
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState("");
@@ -48,7 +46,7 @@ export function useAssistantChat({
         body: JSON.stringify({
           messages: messagesToSend,
           language: language || "zh",
-          purpose: mode === "planning" ? "goal_planning" : purpose,
+          purpose: GOAL_PLANNING_PURPOSE,
         }),
       });
 
@@ -57,14 +55,26 @@ export function useAssistantChat({
         throw new Error(errorData?.error || `HTTP ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = parseGoalPlanningResponse(await response.json());
+      if (!data) {
+        throw new Error(
+          language === "en"
+            ? "The planning service returned an invalid response."
+            : "规划服务返回了无效响应。",
+        );
+      }
+      const assistantContent = data.reply.trim()
+        ? data.reply
+        : language === "en"
+          ? "Here is your plan."
+          : "已为你生成计划。";
       setMessages((current) => [
         ...current,
         {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          content: data.reply || t("aiError") || "抱歉，没有收到回复。",
-          planData: mode === "planning" ? (data.plan ?? null) : null,
+          content: assistantContent,
+          planData: data.plan ?? null,
         },
       ]);
     } catch (error) {
@@ -85,8 +95,7 @@ export function useAssistantChat({
     }
   };
 
-  const addGoals = async (plan: PlanData) => {
-    if (!onAddGoals) return;
+  const addGoals = async (plan: GoalPlan) => {
     setIsAdding(true);
     try {
       await onAddGoals(plan);
@@ -103,6 +112,7 @@ export function useAssistantChat({
           planData: null,
         },
       ]);
+      throw error;
     } finally {
       setIsAdding(false);
     }

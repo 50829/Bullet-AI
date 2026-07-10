@@ -11,12 +11,11 @@ import {
   TopBarContext,
   TopBarProvider,
   type TopBarHandlers,
-  useTopBar,
 } from "./TopBarContext";
 import { useCurrentUsername } from "./useCurrentUsername";
 import { getWorkspacePageMeta } from "./workspacePageMeta";
 
-export { TopBarProvider, useTopBar };
+export { TopBarProvider };
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);

@@ -11,6 +11,7 @@ type TodayHabitsSectionProps = {
   habits: HabitView[];
   allHabits: HabitView[];
   loading: boolean;
+  error?: string | null;
   onCreate: () => void;
   onCheckinToday: (habit: HabitView) => Promise<void>;
   onToggleCheckin: (habit: HabitView, dateKey: string) => Promise<void>;
@@ -22,6 +23,7 @@ export function TodayHabitsSection({
   habits,
   allHabits,
   loading,
+  error,
   onCreate,
   onCheckinToday,
   onToggleCheckin,
@@ -29,7 +31,9 @@ export function TodayHabitsSection({
   onDelete,
 }: TodayHabitsSectionProps) {
   const { t } = useLanguage();
-  const checkedCount = allHabits.filter((habit) => habit.checkedToday).length;
+  const checkedCount = allHabits.filter(
+    (habit) => habit.isCurrentPeriodComplete,
+  ).length;
 
   return (
     <DashboardCardSection
@@ -43,6 +47,11 @@ export function TodayHabitsSection({
         </Button>
       }
     >
+      {error && (
+        <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      )}
       <HabitList
         habits={habits}
         loading={loading}

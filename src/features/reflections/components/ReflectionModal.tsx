@@ -9,32 +9,27 @@ import { Input } from "../../../shared/components/ui/Input";
 import { Textarea } from "../../../shared/components/ui/Textarea";
 import { useToast } from "../../../shared/components/ui/Toast";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
-import { parseReflectionContent } from "../../../lib/reflections/reflectionContent";
 import type {
   CreateReflectionInput,
   ReflectionRecord,
   UpdateReflectionInput,
 } from "../types";
 
-export type ReflectionModalInitialReflection = Pick<
+type ReflectionModalInitialReflection = Pick<
   ReflectionRecord,
-  "id" | "content" | "title" | "body" | "created_at"
+  "clientId" | "title" | "body"
 >;
 
-export type ReflectionModalCreateInput = CreateReflectionInput;
+type ReflectionModalCreateInput = CreateReflectionInput;
 
-export type ReflectionModalUpdateInput = Pick<
-  UpdateReflectionInput,
-  "title" | "body" | "content"
->;
+type ReflectionModalUpdateInput = UpdateReflectionInput;
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
   onCreate: (reflection: ReflectionModalCreateInput) => Promise<void>;
   onUpdate: (
-    id: number,
+    clientId: string,
     updates: ReflectionModalUpdateInput,
   ) => Promise<void>;
   initialReflection?: ReflectionModalInitialReflection | null;
@@ -43,7 +38,6 @@ type Props = {
 export const ReflectionModal = ({
   isOpen,
   onClose,
-  onSuccess,
   onCreate,
   onUpdate,
   initialReflection = null,
@@ -57,11 +51,8 @@ export const ReflectionModal = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    const parsed = initialReflection
-      ? parseReflectionContent(initialReflection)
-      : { title: "", body: "" };
-    setTitle(parsed.title);
-    setBody(parsed.body);
+    setTitle(initialReflection?.title ?? "");
+    setBody(initialReflection?.body ?? "");
   }, [initialReflection, isOpen]);
 
   if (!isOpen) return null;
@@ -95,30 +86,21 @@ export const ReflectionModal = ({
 
     const nextTitle = title.trim();
     const nextBody = body.trim();
-    const content = `${nextTitle}\n\n${nextBody}`;
 
     setSaving(true);
     try {
       if (isEditing && initialReflection) {
-        await onUpdate(initialReflection.id, {
+        await onUpdate(initialReflection.clientId, {
           title: nextTitle,
           body: nextBody,
-          content,
         });
       } else {
         await onCreate({
           title: nextTitle,
           body: nextBody,
-          content,
-          source: null,
-          source_type: null,
-          location: null,
-          image_url: null,
-          image_path: null,
         });
       }
       handleClose();
-      onSuccess();
     } catch (error) {
       showToast({
         type: "error",

@@ -3,18 +3,9 @@ export type AiChatMessage = {
   content: string;
 };
 
-export const AI_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
-export const DEFAULT_AI_RATE_LIMIT_PER_HOUR = 20;
-export const MAX_AI_MESSAGES = 20;
+const MAX_AI_MESSAGES = 20;
 export const MAX_AI_MESSAGE_CHARS = 4000;
-export const MAX_AI_TOTAL_CHARS = 12000;
-
-export function getAiRateLimitPerHour() {
-  const configured = Number(process.env.AI_RATE_LIMIT_PER_HOUR);
-  if (Number.isFinite(configured) && configured > 0)
-    return Math.floor(configured);
-  return DEFAULT_AI_RATE_LIMIT_PER_HOUR;
-}
+const MAX_AI_TOTAL_CHARS = 12000;
 
 export function validateAiMessages(
   value: unknown,

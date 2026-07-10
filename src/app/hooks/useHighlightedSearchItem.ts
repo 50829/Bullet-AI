@@ -1,36 +1,36 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 
-type HighlightedSearchItemInput<T, K extends string | number> = {
-  itemId?: number | null;
-  queryParam?: string | null;
+type HighlightedSearchItemInput<
+  T,
+  Id extends string | number,
+  GroupKey extends string | number,
+> = {
+  targetId: Id | null;
   items: T[];
-  getItemId: (item: T) => number;
-  getGroupKey?: (item: T) => K;
-  setCollapsedGroups?: Dispatch<SetStateAction<Set<K>>>;
-  getElementId: (itemId: number) => string;
+  getItemId: (item: T) => Id;
+  getElementId: (itemId: Id) => string;
+  getGroupKey?: (item: T) => GroupKey;
+  setCollapsedGroups?: Dispatch<SetStateAction<Set<GroupKey>>>;
 };
 
-export function useHighlightedSearchItem<T, K extends string | number>({
-  itemId,
-  queryParam,
+export function useHighlightedSearchItem<
+  T,
+  Id extends string | number,
+  GroupKey extends string | number = string,
+>({
+  targetId,
   items,
   getItemId,
+  getElementId,
   getGroupKey,
   setCollapsedGroups,
-  getElementId,
-}: HighlightedSearchItemInput<T, K>) {
-  const [activeHighlightId, setActiveHighlightId] = useState<number | null>(
-    null,
-  );
-  const resolvedItemId = itemId ?? (queryParam ? Number(queryParam) : null);
+}: HighlightedSearchItemInput<T, Id, GroupKey>) {
+  const [activeHighlightId, setActiveHighlightId] = useState<Id | null>(null);
 
   useEffect(() => {
-    if (!resolvedItemId || !Number.isFinite(resolvedItemId)) return;
-
-    const target = items.find((item) => getItemId(item) === resolvedItemId);
+    if (targetId === null) return;
+    const target = items.find((item) => getItemId(item) === targetId);
     if (!target) return;
-
-    setActiveHighlightId(resolvedItemId);
 
     if (getGroupKey && setCollapsedGroups) {
       const groupKey = getGroupKey(target);
@@ -41,29 +41,30 @@ export function useHighlightedSearchItem<T, K extends string | number>({
         return next;
       });
     }
+    setActiveHighlightId(targetId);
 
     const frame = window.requestAnimationFrame(() => {
       document
-        .getElementById(getElementId(resolvedItemId))
+        .getElementById(getElementId(targetId))
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
-    const highlightTimer = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       setActiveHighlightId((current) =>
-        current === resolvedItemId ? null : current,
+        current === targetId ? null : current,
       );
-    }, 1000);
+    }, 1_000);
 
     return () => {
       window.cancelAnimationFrame(frame);
-      window.clearTimeout(highlightTimer);
+      window.clearTimeout(timer);
     };
   }, [
     getElementId,
     getGroupKey,
     getItemId,
-    resolvedItemId,
     items,
     setCollapsedGroups,
+    targetId,
   ]);
 
   return activeHighlightId;

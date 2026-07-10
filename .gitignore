@@ -42,4 +42,9 @@ yarn-error.log*
 next-env.d.ts
 package-lock.json
 
-docs/
+# Keep course artifacts local, but version the maintained architecture contract.
+docs/*
+!docs/ARCHITECTURE.md
+!docs/dev/
+docs/dev/*
+!docs/dev/FRONTEND_BOUNDARIES.md

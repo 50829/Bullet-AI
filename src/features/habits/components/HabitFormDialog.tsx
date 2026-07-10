@@ -23,7 +23,7 @@ type HabitFormDialogProps = {
   habit?: HabitView | null;
   onClose: () => void;
   onCreate: (input: CreateHabitInput) => Promise<void>;
-  onUpdate?: (habitId: number, input: UpdateHabitInput) => Promise<void>;
+  onUpdate?: (habitClientId: string, input: UpdateHabitInput) => Promise<void>;
 };
 
 const HABIT_COLORS = ["#2f6f5e", "#4f7c8a", "#7c5c9e", "#b45309", "#64748b"];
@@ -78,7 +78,7 @@ export function HabitFormDialog({
 
     try {
       if (isEditing && habit && onUpdate) {
-        await onUpdate(habit.id, { name, description, frequency, color });
+        await onUpdate(habit.clientId, { name, description, frequency, color });
       } else {
         await onCreate({
           name,

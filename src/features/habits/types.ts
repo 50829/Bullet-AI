@@ -1,33 +1,25 @@
-import type { LocalFirstEntity } from "../../lib/localFirst/types";
+import type {
+  HabitCheckinEntity,
+  HabitEntity,
+  HabitFrequency,
+} from "../../domain/entities";
 
-export type HabitFrequency = "daily" | "weekly";
-
-export type HabitRecord = LocalFirstEntity & {
-  name: string;
-  description: string | null;
-  frequency: HabitFrequency;
-  color: string | null;
-};
-
-export type HabitCheckin = LocalFirstEntity & {
-  user_id: string;
-  habit_id: number | null;
-  habit_client_id: string;
-  checked_on: string;
-  checked: boolean;
-};
+export type { HabitFrequency };
+export type HabitRecord = HabitEntity;
+export type HabitCheckin = HabitCheckinEntity;
 
 export type HabitView = HabitRecord & {
-  checkedToday: boolean;
-  todayCheckinId: number | null;
+  isCurrentPeriodComplete: boolean;
+  currentPeriodCheckinId: string | null;
   checkinCount: number;
   lastCheckedOn: string | null;
   streak: number;
+  streakUnit: "day" | "week";
   checkins: HabitCheckin[];
 };
 
 export type CreateHabitInput = {
-  client_id?: string;
+  clientId?: string;
   name: string;
   description?: string;
   frequency: HabitFrequency;

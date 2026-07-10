@@ -1,4 +1,4 @@
-export const MAX_IMAGE_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set([
   "image/jpeg",
@@ -8,7 +8,7 @@ const ALLOWED_IMAGE_MIME_TYPES = new Set([
   "image/gif",
 ]);
 
-export function formatImageSizeLimit() {
+function formatImageSizeLimit() {
   return `${Math.round(MAX_IMAGE_FILE_SIZE_BYTES / 1024 / 1024)}MB`;
 }
 
@@ -43,12 +43,8 @@ export function imageValidationMessage(
   }
 
   if (error.startsWith("Image file cannot exceed")) {
-    return language === "en"
-      ? error
-      : `图片不能超过 ${formatImageSizeLimit()}`;
+    return language === "en" ? error : `图片不能超过 ${formatImageSizeLimit()}`;
   }
 
-  return language === "en"
-    ? error
-    : "请选择 JPG/JPEG、PNG、WebP 或 GIF 图片";
+  return language === "en" ? error : "请选择 JPG/JPEG、PNG、WebP 或 GIF 图片";
 }

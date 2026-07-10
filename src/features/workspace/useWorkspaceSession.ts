@@ -1,144 +1,79 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { clearLocalAppData } from "../../lib/localDb/clearLocalAppData";
-import { supabase } from "../../lib/supabaseClient";
-import {
-  cleanupDeadOutboxOrphanedStorage,
-  discardDeadOutboxItem,
-  flushOutbox,
-  installSyncTriggers,
-  listDeadOutboxDiagnostics,
-  retryDeadOutboxItem,
-  retryDeadOutboxItems,
-  subscribeSyncStatus,
-} from "../../lib/localDb/syncEngine";
-import type { DeadOutboxDiagnostic, SyncStatus } from "../../lib/localDb/types";
-import type { WorkspaceSessionState } from "./types";
+import { useDataV2 } from "../../lib/data-v2";
+import { useAuthSession } from "../../lib/auth/AuthSessionContext";
+import type { SyncIssue, SyncStatus, WorkspaceSessionState } from "./types";
 
 export function useWorkspaceSession(): WorkspaceSessionState {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
+  const { userId, ready } = useAuthSession();
+  const { store, worker, notifier } = useDataV2();
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
-  const [deadOutboxCount, setDeadOutboxCount] = useState(0);
-  const [deadOutboxItems, setDeadOutboxItems] = useState<
-    DeadOutboxDiagnostic[]
-  >([]);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncIssues, setSyncIssues] = useState<SyncIssue[]>([]);
+
+  const refreshDiagnostics = useCallback(async () => {
+    if (!userId) {
+      setPendingCount(0);
+      setSyncIssues([]);
+      setSyncStatus("idle");
+      return;
+    }
+    const diagnostics = await store.getDiagnostics(userId);
+    const online = typeof navigator === "undefined" || navigator.onLine;
+    const issues = diagnostics.mutations
+      .filter(
+        (mutation) =>
+          mutation.status === "blocked" || mutation.status === "conflict",
+      )
+      .map((mutation) => ({
+        id: mutation.mutationId,
+        resource: mutation.resource,
+        operation: mutation.kind,
+        status: mutation.status,
+        error: mutation.lastError ?? null,
+        attemptCount: mutation.attemptCount,
+        updatedAt: mutation.updatedAt,
+      }));
+    setPendingCount(diagnostics.mutations.length);
+    setSyncIssues(issues);
+    setSyncStatus(
+      !online
+        ? "offline"
+        : diagnostics.blocked > 0 || diagnostics.conflicts > 0
+          ? "failed"
+          : diagnostics.sending > 0 || diagnostics.queued > 0
+            ? "syncing"
+            : "idle",
+    );
+  }, [store, userId]);
 
   useEffect(() => {
-    let isMounted = true;
-    let activeUserId: string | null = null;
-    let initialSessionLoaded = false;
-
-    const refreshDeadOutboxCount = async (nextUserId: string | null) => {
-      if (!nextUserId) {
-        if (isMounted) setDeadOutboxCount(0);
-        if (isMounted) setDeadOutboxItems([]);
-        return;
-      }
-
-      const items = await listDeadOutboxDiagnostics(nextUserId);
-      if (isMounted && activeUserId === nextUserId) {
-        setDeadOutboxItems(items);
-        setDeadOutboxCount(items.length);
-        if (items.length > 0) setSyncStatus("failed");
-      }
-    };
-
-    const setActiveUser = async (nextUserId: string | null) => {
-      const previousUserId = activeUserId;
-      if (
-        initialSessionLoaded &&
-        previousUserId &&
-        previousUserId !== nextUserId
-      ) {
-        try {
-          await clearLocalAppData();
-        } catch (error) {
-          console.warn("Failed to clear local app data:", error);
-        }
-      }
-
-      initialSessionLoaded = true;
-      activeUserId = nextUserId;
-      if (isMounted) setUserId(nextUserId);
-      if (isMounted) setReady(true);
-      void refreshDeadOutboxCount(nextUserId);
-    };
-
-    const unsubscribeSync = subscribeSyncStatus((status) => {
-      setSyncStatus(status);
-      if (status === "failed") void refreshDeadOutboxCount(activeUserId);
+    void refreshDiagnostics();
+    const unsubscribe = notifier.subscribe((event) => {
+      if (event.userId === userId) void refreshDiagnostics();
     });
-    const uninstallSyncTriggers = installSyncTriggers();
-
-    async function loadSession() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      await setActiveUser(session?.user?.id ?? null);
-    }
-
-    void loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      void setActiveUser(session?.user?.id ?? null);
-    });
-
+    const handleConnectivity = () => void refreshDiagnostics();
+    window.addEventListener("online", handleConnectivity);
+    window.addEventListener("offline", handleConnectivity);
     return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-      unsubscribeSync();
-      uninstallSyncTriggers();
+      unsubscribe();
+      window.removeEventListener("online", handleConnectivity);
+      window.removeEventListener("offline", handleConnectivity);
     };
-  }, []);
+  }, [notifier, refreshDiagnostics, userId]);
 
   const retrySync = useCallback(async () => {
-    if (userId) {
-      await retryDeadOutboxItems(userId);
-    }
-    await flushOutbox();
-    if (userId) {
-      const items = await listDeadOutboxDiagnostics(userId);
-      setDeadOutboxItems(items);
-      setDeadOutboxCount(items.length);
-    }
-  }, [userId]);
+    await worker?.requestFlush();
+    await refreshDiagnostics();
+  }, [refreshDiagnostics, worker]);
 
-  const retryOneDeadOutboxItem = useCallback(
+  const discardSyncItem = useCallback(
     async (id: string) => {
-      if (!userId) return;
-      await retryDeadOutboxItem(userId, id);
-      await flushOutbox();
-      const items = await listDeadOutboxDiagnostics(userId);
-      setDeadOutboxItems(items);
-      setDeadOutboxCount(items.length);
+      await store.discardMutation(id);
+      await refreshDiagnostics();
     },
-    [userId],
-  );
-
-  const discardOneDeadOutboxItem = useCallback(
-    async (id: string) => {
-      if (!userId) return;
-      await discardDeadOutboxItem(userId, id);
-      const items = await listDeadOutboxDiagnostics(userId);
-      setDeadOutboxItems(items);
-      setDeadOutboxCount(items.length);
-    },
-    [userId],
-  );
-
-  const cleanupOneDeadOutboxOrphanedStorage = useCallback(
-    async (id: string) => {
-      if (!userId) return;
-      await cleanupDeadOutboxOrphanedStorage(userId, id);
-      const items = await listDeadOutboxDiagnostics(userId);
-      setDeadOutboxItems(items);
-      setDeadOutboxCount(items.length);
-    },
-    [userId],
+    [refreshDiagnostics, store],
   );
 
   return useMemo(
@@ -146,22 +81,17 @@ export function useWorkspaceSession(): WorkspaceSessionState {
       userId,
       ready,
       syncStatus,
-      deadOutboxCount,
-      deadOutboxItems,
+      pendingCount,
+      syncIssues,
       retrySync,
-      retryDeadOutboxItem: retryOneDeadOutboxItem,
-      discardDeadOutboxItem: discardOneDeadOutboxItem,
-      cleanupDeadOutboxOrphanedStorage:
-        cleanupOneDeadOutboxOrphanedStorage,
+      discardSyncItem,
     }),
     [
-      cleanupOneDeadOutboxOrphanedStorage,
-      deadOutboxCount,
-      deadOutboxItems,
-      discardOneDeadOutboxItem,
+      discardSyncItem,
+      pendingCount,
       ready,
-      retryOneDeadOutboxItem,
       retrySync,
+      syncIssues,
       syncStatus,
       userId,
     ],

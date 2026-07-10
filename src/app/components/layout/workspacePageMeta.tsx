@@ -24,7 +24,7 @@ type WorkspacePageDisplayMeta = {
   showAssistantButton: boolean;
 };
 
-export function getWorkspacePageDisplayMeta(
+function getWorkspacePageDisplayMeta(
   page: WorkspacePage,
   t: TranslationFn,
 ): WorkspacePageDisplayMeta {

@@ -43,7 +43,7 @@ export function normalizeLanguage(value: unknown): PreferredLanguage {
   return value === "en" ? "en" : "zh";
 }
 
-export function normalizeUiTheme(value?: unknown): UiTheme {
+function normalizeUiTheme(value?: unknown): UiTheme {
   void value;
   return "calm";
 }
@@ -112,7 +112,7 @@ export function normalizePreferences(
   };
 }
 
-export function resolveColorScheme(colorScheme: ColorScheme): "light" | "dark" {
+function resolveColorScheme(colorScheme: ColorScheme): "light" | "dark" {
   if (colorScheme === "light" || colorScheme === "dark") return colorScheme;
   if (
     typeof window !== "undefined" &&

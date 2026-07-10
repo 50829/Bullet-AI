@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronDown, ChevronUp, Edit2, Trash2 } from "lucide-react";
-import { parseReflectionContent } from "../../../lib/reflections/reflectionContent";
 import { ActionButtonGroup } from "../../../shared/components/ui/ActionButtonGroup";
 import { Card } from "../../../shared/components/ui/Card";
 import { IconButton } from "../../../shared/components/ui/IconButton";
@@ -12,7 +11,7 @@ type ReflectionCardProps = {
   reflection: Reflection;
   collapsed: boolean;
   highlighted: boolean;
-  onToggle: (reflectionId: number) => void;
+  onToggle: (reflectionId: string) => void;
   onEdit: (reflection: Reflection) => void;
   onDelete: (reflection: Reflection) => void;
 };
@@ -26,11 +25,10 @@ export function ReflectionCard({
   onDelete,
 }: ReflectionCardProps) {
   const { t, language } = useLanguage();
-  const parsed = parseReflectionContent(reflection);
 
   return (
     <Card
-      id={`reflection-${reflection.id}`}
+      id={`reflection-${reflection.clientId}`}
       className={`group/item relative w-full transition-[background-color,box-shadow] duration-700 ease-out motion-reduce:transition-none ${
         highlighted
           ? "bg-[var(--color-primary-light)] ring-2 ring-[var(--color-primary)]"
@@ -59,22 +57,22 @@ export function ReflectionCard({
           icon={collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           label={collapsed ? "Expand reflection" : "Collapse reflection"}
           tone="neutral"
-          onClick={() => onToggle(reflection.id)}
+          onClick={() => onToggle(reflection.clientId)}
           className="mt-1"
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-3 pr-20">
             <div className="min-w-0 flex-1">
               <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
-                {parsed.title || t("insights") || "感悟"}
+                {reflection.title || t("insights") || "感悟"}
               </h2>
               <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-                {new Date(
-                  reflection.updated_at || reflection.created_at,
-                ).toLocaleString(language === "en" ? "en-US" : "zh-CN")}
+                {new Date(reflection.updatedAt).toLocaleString(
+                  language === "en" ? "en-US" : "zh-CN",
+                )}
               </p>
             </div>
-            {reflection._local?.failed && (
+            {(reflection.sync?.blocked || reflection.sync?.conflict) && (
               <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-600">
                 {t("syncFailed") || "同步失败"}
               </span>
@@ -82,7 +80,7 @@ export function ReflectionCard({
           </div>
           {!collapsed && (
             <p className="mt-4 whitespace-pre-line text-base leading-7 text-[var(--color-text-primary)]">
-              {parsed.body}
+              {reflection.body}
             </p>
           )}
         </div>

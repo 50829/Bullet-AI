@@ -7,21 +7,45 @@ import { useWorkspaceData } from "../../../features/workspace/data";
 import { useGoalPlanningPage } from "../../../features/goals/planning/useGoalPlanningPage";
 import { useLanguage } from "../../../shared/i18n/LanguageContext";
 import { useToast } from "../../../shared/components/ui/Toast";
-import { useWorkspacePageLoading } from "../../components/layout/WorkspaceNavigationContext";
+import { useDeferredHardDelete } from "../../../features/workspace/hooks/useDeferredHardDelete";
 import { useAssistantPanel } from "../../hooks/useAssistantPanel";
 import { useDeleteConfirm } from "../../hooks/useDeleteConfirm";
 
 type DeleteTarget = {
   type: "goal" | "habit";
-  id: number;
+  id: string;
   name: string;
-  imagePath?: string | null;
 };
 
 export function useGoalsPageController() {
   const { goals: goalsController, habits: habitsController } =
     useWorkspaceData();
-  const goalPage = useGoalPlanningPage({ goalsController });
+  const { t, language } = useLanguage();
+  const { showToast } = useToast();
+  const deferredDelete = useDeferredHardDelete<DeleteTarget>({
+    onError: (error) => {
+      showToast({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : t("deleteFailed") || "删除失败，请稍后重试",
+      });
+    },
+  });
+  const hiddenGoalClientIds = useMemo(
+    () =>
+      new Set(
+        deferredDelete.pendingDelete?.type === "goal"
+          ? [deferredDelete.pendingDelete.id]
+          : [],
+      ),
+    [deferredDelete.pendingDelete],
+  );
+  const goalPage = useGoalPlanningPage({
+    goalsController,
+    hiddenGoalClientIds,
+  });
   const {
     habits,
     loading: habitsLoading,
@@ -33,8 +57,15 @@ export function useGoalsPageController() {
     checkinToday,
     toggleCheckin,
   } = habitsController;
-  const { t, language } = useLanguage();
-  const { showToast } = useToast();
+  const visibleHabits = useMemo(
+    () =>
+      habits.filter(
+        (habit) =>
+          deferredDelete.pendingDelete?.type !== "habit" ||
+          habit.clientId !== deferredDelete.pendingDelete.id,
+      ),
+    [deferredDelete.pendingDelete, habits],
+  );
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<GoalRecord | null>(null);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
@@ -83,17 +114,17 @@ export function useGoalsPageController() {
     await deleteConfirm.confirm(async (target) => {
       try {
         if (target.type === "goal") {
-          await goalPage.deleteGoal(target.id, target.imagePath);
+          deferredDelete.scheduleDelete(target, () =>
+            goalPage.deleteGoal(target.id),
+          );
         } else {
-          await deleteHabit(target.id);
+          deferredDelete.scheduleDelete(target, () => deleteHabit(target.id));
         }
       } catch (err) {
-        console.error("删除异常:", err);
         showToast({
           type: "error",
           message: t("deleteFailed") || "删除失败，请稍后重试",
         });
-        if (target.type === "goal") void goalPage.refreshGoals();
         throw err;
       }
     });
@@ -101,17 +132,15 @@ export function useGoalsPageController() {
 
   const isInitialLoading =
     (goalPage.loading && goalPage.goals.length === 0) ||
-    (habitsLoading && habits.length === 0);
-  const isNavigationLoading = useWorkspacePageLoading(isInitialLoading);
-
+    (habitsLoading && visibleHabits.length === 0);
   return {
     t,
     language,
     goalPage,
     assistantPanel,
     isInitialLoading,
-    isNavigationLoading,
     deleteConfirm,
+    deferredDelete,
     handleDelete,
     goalModal: {
       isOpen: isGoalModalOpen,
@@ -128,7 +157,7 @@ export function useGoalsPageController() {
       close: closeHabitModal,
     },
     habitsSection: {
-      habits,
+      habits: visibleHabits,
       loading: habitsLoading,
       saving: habitsSaving,
       error: habitsError,
